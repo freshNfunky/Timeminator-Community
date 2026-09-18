@@ -1,0 +1,30 @@
+# Timeminator on Nginx (there is no .htaccess on Nginx).
+# Adjust the root and the PHP-FPM socket to your setup. This assumes the app
+# lives in its own server or location; for a subfolder, wrap accordingly.
+
+server {
+    listen 80;
+    server_name public.example.com;
+    root /var/www/timeminator;
+    index index.php;
+
+    # Deny sensitive files and the data directory.
+    location = /config.php        { deny all; return 404; }
+    location = /config.sample.php { deny all; return 404; }
+    location = /VERSION           { deny all; return 404; }
+    location ~* \.(sqlite|sqlite-journal|sqlite-wal|sqlite-shm|sql|md)$ { deny all; return 404; }
+    location ^~ /data/            { deny all; return 404; }
+    location ^~ /schema/          { deny all; return 404; }
+    location ^~ /src/             { deny all; return 404; }
+    location ^~ /views/           { deny all; return 404; }
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_pass unix:/run/php/php8.2-fpm.sock;  # adjust
+    }
+}

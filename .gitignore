@@ -1,0 +1,13 @@
+# Local configuration with credentials
+/config.php
+
+# Local SQLite database + any data artifacts
+/data/*.sqlite
+/data/*.sqlite-journal
+/data/*.sqlite-wal
+/data/*.sqlite-shm
+
+# OS / editor cruft
+.DS_Store
+*.swp
+Thumbs.db

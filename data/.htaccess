@@ -1,0 +1,6 @@
+# Deny all web access to the data directory (SQLite db, downloads, etc.)
+Require all denied
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

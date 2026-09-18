@@ -1,0 +1,38 @@
+# Timeminator - Apache config (All-Inkl / shared hosting friendly)
+# The app works WITHOUT rewriting (query-string router). Rewrites below are
+# optional prettification and are guarded so the app still runs if mod_rewrite
+# is unavailable.
+
+# --- Protect sensitive files ---
+<FilesMatch "\.(sqlite|sqlite-journal|sqlite-wal|sqlite-shm|sql|md|json|dist)$">
+    Require all denied
+</FilesMatch>
+
+<Files "config.php">
+    Require all denied
+</Files>
+<Files "config.sample.php">
+    Require all denied
+</Files>
+<Files "VERSION">
+    Require all denied
+</Files>
+
+# Fallback for older Apache (2.2) syntax
+<IfModule !mod_authz_core.c>
+    <FilesMatch "\.(sqlite|sql|md)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
+
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Pretty routing is optional; the app reads ?r= itself. If you want pretty
+    # URLs, uncomment the block below (and set a <base> via config if needed).
+    # RewriteCond %{REQUEST_FILENAME} !-f
+    # RewriteCond %{REQUEST_FILENAME} !-d
+    # RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
