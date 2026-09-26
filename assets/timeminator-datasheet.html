@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timeminator – KMU Zeiterfassung & Ressourcenplanung</title>
+    <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --ink: #0B1020;
+            --ink-2: #141C31;
+            --slate: #5C6779;
+            --line: rgba(11,16,32,.13);
+            --line-soft: rgba(11,16,32,.07);
+            --paper: #EDF0F5;
+            --white: #FBFCFD;
+            --cobalt: #1E3FCC;
+            --cyan: #12A29C;
+            --cyan-lit: #5FD7D0;
+            --alert: #C8385E;
+
+            --display: 'Jost','Sofia Pro','Futura',sans-serif;
+            --body: 'IBM Plex Sans',system-ui,sans-serif;
+            --mono: 'IBM Plex Mono',ui-monospace,monospace;
+            --r: 5px;
+        }
+
+        @page { size: A4; margin: 0; }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--body);
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .bg-geo { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+        .bg-geo::before {
+            content: ''; position: absolute; inset: -15% -10% auto -10%; height: 150%;
+            background:
+                radial-gradient(46% 46% at 82% 10%, rgba(30,63,204,.12), transparent 66%),
+                radial-gradient(40% 42% at 8% 88%, rgba(18,162,156,.12), transparent 70%);
+            filter: blur(8px);
+        }
+        .grid-lines {
+            position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(11,16,32,.028) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(11,16,32,.028) 1px, transparent 1px);
+            background-size: 26px 26px;
+        }
+
+        .page {
+            position: relative; z-index: 1;
+            padding: 10mm 15mm 8mm;
+            min-height: 297mm;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* HEADER */
+        .header {
+            display: grid; grid-template-columns: 1fr auto; align-items: start;
+            padding-bottom: 3.5mm; border-bottom: 1px solid var(--line); margin-bottom: 5mm;
+        }
+        .logo-area { display: flex; flex-direction: column; gap: 6px; }
+        .logo-text {
+            font-family: var(--display); font-weight: 600; font-size: 20px;
+            color: var(--ink); letter-spacing: -0.015em;
+        }
+        .logo-sub {
+            font-family: var(--mono); font-size: 8.5px; letter-spacing: .2em;
+            color: var(--slate); text-transform: uppercase;
+        }
+        .header-right { text-align: right; display: flex; flex-direction: column; gap: 5px; align-items: flex-end; }
+        .tag {
+            font-family: var(--mono); font-size: 8px; letter-spacing: .16em; text-transform: uppercase;
+            padding: 3px 9px; border: 1px solid var(--cobalt); color: var(--cobalt); border-radius: 2px;
+        }
+        .tag.teal { border-color: var(--cyan); color: var(--cyan); }
+        .stage { font-family: var(--mono); font-size: 8px; color: var(--slate); letter-spacing: .1em; }
+
+        /* HERO */
+        .hero { margin-bottom: 3.5mm; }
+        .hero-headline {
+            font-family: var(--display); font-weight: 500; font-size: 28px; line-height: 1.08;
+            letter-spacing: -.015em; color: var(--ink); max-width: 158mm; margin-bottom: 3mm;
+        }
+        .hero-headline em { font-style: normal; color: var(--cobalt); }
+        .hero-sub {
+            font-size: 9.5px; line-height: 1.62; color: var(--slate); max-width: 150mm;
+        }
+        .hero-sub b { color: var(--ink); font-weight: 600; }
+
+        /* CREDIBILITY STRIP */
+        .strip {
+            display: grid; grid-template-columns: repeat(4,1fr);
+            border: 1px solid var(--line); border-radius: var(--r); overflow: hidden;
+            background: var(--white); margin-bottom: 3.5mm;
+        }
+        .cell { padding: 3mm 4mm; border-right: 1px solid var(--line-soft); }
+        .cell:last-child { border-right: 0; }
+        .cell .k { font-family: var(--mono); font-size: 8px; letter-spacing: .14em; text-transform: uppercase; color: var(--cobalt); }
+        .cell .v { font-family: var(--display); font-weight: 500; font-size: 11.5px; margin-top: 4px; line-height: 1.25; color: var(--ink); }
+
+        /* SECTION LABEL */
+        .section-label {
+            font-family: var(--mono); font-size: 8px; letter-spacing: .2em; text-transform: uppercase;
+            color: var(--cobalt); margin-bottom: 2.5mm; display: flex; align-items: center; gap: 8px;
+        }
+        .section-label::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+        /* THREE CAPABILITY CARDS */
+        .main-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3.5mm; margin-bottom: 3.5mm; }
+        .card {
+            background: var(--white); border: 1px solid var(--line); border-radius: var(--r);
+            padding: 4mm; position: relative; overflow: hidden;
+        }
+        .card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 2.5px; height: 100%;
+            background: var(--cobalt); border-radius: var(--r) 0 0 var(--r);
+        }
+        .card.teal::before { background: var(--cyan); }
+        .card.alert::before { background: var(--alert); }
+        .card-label {
+            font-family: var(--mono); font-size: 7.5px; letter-spacing: .16em; text-transform: uppercase;
+            color: var(--slate); margin-bottom: 2.5mm;
+        }
+        .card-title {
+            font-family: var(--display); font-weight: 500; font-size: 14px; line-height: 1.22;
+            letter-spacing: -.01em; color: var(--ink); margin-bottom: 2mm;
+        }
+        .card-body { font-size: 8.5px; line-height: 1.62; color: var(--slate); }
+        .card-body b { color: var(--ink); font-weight: 600; }
+
+        /* TWO-COLUMN SECTION */
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; margin-bottom: 3.5mm; }
+        .feature-item { display: flex; gap: 3mm; margin-bottom: 2.2mm; align-items: flex-start; }
+        .feature-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--cobalt); margin-top: 3.5px; flex-shrink: 0; }
+        .feature-dot.teal { background: var(--cyan); }
+        .feature-text { font-size: 8.5px; line-height: 1.5; color: var(--slate); }
+        .feature-text strong { color: var(--ink); font-weight: 600; }
+
+        /* COMPARISON TABLE */
+        .comparison {
+            background: var(--white); border: 1px solid var(--line); border-radius: var(--r);
+            padding: 4mm; margin-bottom: 3.5mm; overflow-x: auto;
+        }
+        .comp-table {
+            width: 100%; border-collapse: collapse; font-size: 7.5px;
+        }
+        .comp-table th {
+            background: #f5f5f5; padding: 2.5mm 2mm; text-align: left;
+            font-family: var(--mono); font-weight: 600; color: var(--cobalt); letter-spacing: .1em;
+            border-bottom: 1px solid var(--line); text-transform: uppercase;
+        }
+        .comp-table td {
+            padding: 2.2mm 2mm; border-bottom: 1px solid var(--line-soft); color: var(--slate);
+        }
+        .comp-table tr:last-child td { border-bottom: 0; }
+        .comp-table td:first-child { font-weight: 500; color: var(--ink); }
+        .comp-check { color: #28a745; font-weight: 600; }
+        .comp-x { color: #dc3545; font-weight: 600; }
+        .comp-partial { color: #ffc107; font-weight: 600; }
+
+        /* USE CASES */
+        .use-cases { display: grid; grid-template-columns: repeat(4,1fr); gap: 2.5mm; margin-bottom: 3.5mm; }
+        .use-case {
+            background: var(--white); border: 1px solid var(--line); border-radius: var(--r);
+            padding: 2.6mm 3.5mm; text-align: center;
+        }
+        .use-case-icon { font-size: 15px; margin-bottom: 1.5mm; display: block; }
+        .use-case-label { font-size: 8px; color: var(--slate); line-height: 1.4; }
+        .use-case-label strong { display: block; color: var(--ink); font-size: 8.5px; margin-bottom: 1px; font-weight: 600; }
+
+        /* ENGAGEMENT / CTA */
+        .engage {
+            background: var(--white); border: 1px solid var(--line); border-radius: var(--r);
+            padding: 3.5mm 5.5mm; display: grid; grid-template-columns: 1.15fr auto; gap: 6mm;
+            align-items: center; margin-bottom: 3.5mm;
+        }
+        .engage-label {
+            font-family: var(--mono); font-size: 8px; letter-spacing: .16em; text-transform: uppercase;
+            color: var(--cobalt); margin-bottom: 2.5mm;
+        }
+        .steps { display: flex; flex-direction: column; gap: 2.4mm; }
+        .step { display: flex; gap: 2.5mm; align-items: flex-start; }
+        .step-num {
+            font-family: var(--mono); font-size: 7.5px; color: var(--cobalt);
+            background: rgba(30,63,204,.09); padding: 1.5px 5px; border-radius: 2px; flex-shrink: 0; margin-top: .5px;
+        }
+        .step-text { font-size: 8.5px; line-height: 1.5; color: var(--slate); }
+        .step-text strong { color: var(--ink); font-weight: 600; }
+        .cta {
+            background: var(--cobalt); color: var(--white); border-radius: var(--r);
+            padding: 5mm; min-width: 60mm; box-shadow: 0 2px 6px rgba(30,63,204,.20);
+        }
+        .cta-k { font-family: var(--mono); font-size: 7.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--cyan-lit); margin-bottom: 2mm; }
+        .cta-title { font-family: var(--display); font-weight: 500; font-size: 16px; line-height: 1.15; margin-bottom: 2.5mm; }
+        .cta-contact { font-family: var(--mono); font-size: 9px; line-height: 1.7; color: rgba(255,255,255,.9); }
+        .cta-contact a { color: #fff; text-decoration: none; }
+
+        /* FOOTER */
+        .footer {
+            margin-top: auto; border-top: 1px solid var(--line); padding-top: 4mm;
+            display: grid; grid-template-columns: 1.3fr 1fr auto; align-items: end; gap: 5mm;
+        }
+        .founder-name { font-family: var(--display); font-weight: 500; font-size: 12.5px; color: var(--ink); margin-bottom: 1mm; }
+        .founder-title { font-size: 7.8px; color: var(--slate); line-height: 1.55; }
+        .contact-block { text-align: left; }
+        .contact-item { font-family: var(--mono); font-size: 7.5px; color: var(--slate); line-height: 1.75; }
+        .contact-item a { color: var(--slate); text-decoration: none; }
+        .conf-block { text-align: right; }
+        .conf-label { font-family: var(--mono); font-size: 6.8px; letter-spacing: .12em; text-transform: uppercase; color: var(--slate); margin-bottom: 1mm; }
+        .conf-text { font-size: 7px; color: rgba(11,16,32,.4); line-height: 1.5; }
+    </style>
+</head>
+<body>
+<div class="bg-geo"><div class="grid-lines"></div></div>
+
+<div class="page">
+
+    <!-- HEADER -->
+    <header class="header">
+        <div class="logo-area">
+            <div class="logo-text">Timeminator</div>
+            <div class="logo-sub">Self-Hosted Time Tracking · Resource Planning</div>
+        </div>
+        <div class="header-right">
+            <span class="tag">Product Datasheet</span>
+            <span class="stage">Core · Analytics · Self-Hosted</span>
+        </div>
+    </header>
+
+    <!-- HERO -->
+    <div class="hero">
+        <h1 class="hero-headline">
+            Time tracking that doesn't <em>complicate</em>,<br>
+            it <em>clarifies.</em>
+        </h1>
+        <p class="hero-sub">
+            Timeminator is a <b>self-hosted, project-based time tracker</b> built for SMBs that track resources
+            internally. No invoicing bloat, no SaaS lock-in: <b>live timer, custom categories, budget-vs-actual
+            analytics, and team sentiment tracking</b> — all audit-ready, all on your own server.
+        </p>
+    </div>
+
+    <!-- CREDIBILITY STRIP -->
+    <div class="strip">
+        <div class="cell"><div class="k">Deployment</div><div class="v">PHP 8.1+ · MySQL / SQLite</div></div>
+        <div class="cell"><div class="k">Auditable</div><div class="v">Full booking history · Immutable imports</div></div>
+        <div class="cell"><div class="k">No dependencies</div><div class="v">Zero-setup SQLite or standard hosting</div></div>
+        <div class="cell"><div class="k">Privacy</div><div class="v">Self-hosted · GDPR-compliant · No SaaS</div></div>
+    </div>
+
+    <!-- THREE CORE FEATURES -->
+    <div class="section-label">Core capabilities</div>
+    <div class="main-grid">
+        <div class="card">
+            <div class="card-label">Time Tracking</div>
+            <div class="card-title">Live timer + manual booking</div>
+            <div class="card-body">
+                <b>Flexible input methods:</b> start/stop timer for real-time tracking or manually log hours.
+                <b>Custom categories</b> (Client Project, Research, Internal) let teams allocate time exactly how they work.
+            </div>
+        </div>
+
+        <div class="card teal">
+            <div class="card-label">Budget Analytics</div>
+            <div class="card-title">Three curves per project</div>
+            <div class="card-body">
+                <b>Budget vs. Time vs. Resources:</b> overlay your plan against actuals in one view.
+                <b>Pro-employee breakdowns</b> show time allocation across project types, catching imbalance early.
+            </div>
+        </div>
+
+        <div class="card alert">
+            <div class="card-label">Team Pulse</div>
+            <div class="card-title">Sentiment + workload signals</div>
+            <div class="card-body">
+                Monthly <b>sentiment ratings</b> (personal & project-level) combined with workload data
+                surface burnout risk, staffing gaps, and customer satisfaction in one loop.
+            </div>
+        </div>
+    </div>
+
+    <!-- KEY DIFFERENTIATORS -->
+    <div class="section-label">Why Timeminator, not SaaS</div>
+    <div class="two-col">
+        <div>
+            <div class="feature-item"><div class="feature-dot"></div><div class="feature-text">
+                <strong>No bloat.</strong> Invoicing, expense reports, mileage tracking—removed. You get time tracking,
+                budget analytics, and team sentiment. That is it.
+            </div></div>
+            <div class="feature-item"><div class="feature-dot"></div><div class="feature-text">
+                <strong>Custom categories.</strong> Define your own project types (Kunde / Forschung / Intern). Most SaaS
+                force generic "projects" + "tags."
+            </div></div>
+            <div class="feature-item"><div class="feature-dot"></div><div class="feature-text">
+                <strong>Budget insights.</strong> Three-curve view (Budget / Time / Resources) is unique to Timeminator.
+                Toggl and Clockify have zero budget integration.
+            </div></div>
+        </div>
+        <div>
+            <div class="feature-item"><div class="feature-dot teal"></div><div class="feature-text">
+                <strong>Self-hosted.</strong> Run locally on SQLite (zero infrastructure) or on your own MySQL server.
+                No vendor lock-in, no SaaS bills, full GDPR control.
+            </div></div>
+            <div class="feature-item"><div class="feature-dot teal"></div><div class="feature-text">
+                <strong>Sentiment tracking.</strong> Combine workload data with team mood. No other time tracker does this
+                out of the box.
+            </div></div>
+            <div class="feature-item"><div class="feature-dot teal"></div><div class="feature-text">
+                <strong>Audit-ready by design.</strong> Immutable booking history, versioned imports, role-based permissions.
+                Built for teams that need proof.
+            </div></div>
+        </div>
+    </div>
+
+    <!-- COMPARISON TABLE -->
+    <div class="section-label">Head-to-head: Timeminator vs. market</div>
+    <div class="comparison">
+        <table class="comp-table">
+            <thead>
+                <tr>
+                    <th style="width: 32%;">Feature</th>
+                    <th style="width: 17%;">Timeminator</th>
+                    <th style="width: 17%;">Clockify</th>
+                    <th style="width: 17%;">Float</th>
+                    <th style="width: 17%;">Toggl</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><b>Time Tracking</b></td>
+                    <td class="comp-check">✓</td>
+                    <td class="comp-check">✓</td>
+                    <td class="comp-x">✗</td>
+                    <td class="comp-check">✓</td>
+                </tr>
+                <tr>
+                    <td>Custom Categories (3+ types)</td>
+                    <td class="comp-check">✓</td>
+                    <td class="comp-x">✗</td>
+                    <td class="comp-check">✓</td>
+                    <td class="comp-x">✗</td>
+                </tr>
+                <tr>
+                    <td><b>Budget vs. Actual</b></td>
+                    <td class="comp-check">✓</td>
+                    <td class="comp-x">✗</td>
+                    <td class="comp-check">✓</td>
+                    <td class="comp-x">✗</td>
+                </tr>
+                <tr>
+                    <td>3 Curves (Budget/Time/Resources)</td>
+                    <td class="comp-check">✓</td>
+                    <td class="comp-x">✗</td>
+                    <td class="comp-partial">⊘ (2)</td>
+                    <td class="comp-x">✗</td>
+                </tr>
+                <tr>
+                    <td><b>Sentiment Tracking</b></td>
+                    <td class="comp-check">✓</td>
+                    <td class="comp-x">✗</td>
+                    <td class="comp-x">✗</td>
+                    <td class="comp-x">✗</td>
+                </tr>
+                <tr>
+                    <td>Self-Hosted / On-Premise</td>
+                    <td class="comp-check">✓</td>
+                    <td class="comp-x">✗</td>
+                    <td class="comp-x">✗</td>
+                    <td class="comp-x">✗</td>
+                </tr>
+                <tr>
+                    <td><b>Pricing (SMB)</b></td>
+                    <td class="comp-check">1x fee</td>
+                    <td class="comp-check">$10–15/u</td>
+                    <td class="comp-partial">~$150/mo</td>
+                    <td class="comp-check">$10/u</td>
+                </tr>
+                <tr>
+                    <td>Zero Setup (SQLite)</td>
+                    <td class="comp-check">✓</td>
+                    <td class="comp-x">✗</td>
+                    <td class="comp-x">✗</td>
+                    <td class="comp-x">✗</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- USE CASES -->
+    <div class="section-label">Built for these teams</div>
+    <div class="use-cases">
+        <div class="use-case"><span class="use-case-icon">🏢</span><div class="use-case-label"><strong>Agencies</strong>Project-based resource allocation</div></div>
+        <div class="use-case"><span class="use-case-icon">🔬</span><div class="use-case-label"><strong>R&D Teams</strong>Track client vs. research split</div></div>
+        <div class="use-case"><span class="use-case-icon">🏭</span><div class="use-case-label"><strong>Consulting</strong>Budget-ready actuals for steering</div></div>
+        <div class="use-case"><span class="use-case-icon">🚀</span><div class="use-case-label"><strong>Startups</strong>No SaaS lock-in, full data control</div></div>
+    </div>
+
+    <!-- ENGAGEMENT + CTA -->
+    <div class="engage">
+        <div>
+            <div class="engage-label">Getting started</div>
+            <div class="steps">
+                <div class="step"><span class="step-num">01</span><span class="step-text"><strong>Web installer</strong> — set up in 2 minutes, no CLI.</span></div>
+                <div class="step"><span class="step-num">02</span><span class="step-text"><strong>Create projects & team</strong> — define your categories, add users.</span></div>
+                <div class="step"><span class="step-num">03</span><span class="step-text"><strong>Start tracking</strong> — timer, manual logs, and reports are live instantly.</span></div>
+            </div>
+        </div>
+        <div class="cta">
+            <div class="cta-k">Try it now</div>
+            <div class="cta-title">Deploy locally</div>
+            <div class="cta-contact">
+                github.com/freshNfunky/Timeminator<br>
+                MIT (Community) or Pro License<br>
+                PHP 8.1+ · MySQL / SQLite
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="founder-block">
+            <div class="founder-name">Timeminator Pro</div>
+            <div class="founder-title">
+                Self-hosted time tracking · project-based resource planning · team sentiment integration<br>
+                Built for SMBs that need audit trails, budget control, and data ownership.
+            </div>
+        </div>
+        <div class="contact-block">
+            <div class="contact-item">freshNfunky/Timeminator</div>
+            <div class="contact-item">github.com</div>
+            <div class="contact-item">Open Source + Pro</div>
+        </div>
+        <div class="conf-block">
+            <div class="conf-label">Product Datasheet</div>
+            <div class="conf-text">
+                For evaluation.<br>
+                Feature comparison Sept 2026.<br>
+                © Timeminator
+            </div>
+        </div>
+    </footer>
+
+</div>
+</body>
+</html>
