@@ -1,0 +1,109 @@
+name: Bug report
+description: Something is broken or behaves unexpectedly.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. If this is a security issue, please read
+        [SECURITY.md](https://github.com/freshNfunky/Timeminator-Community/blob/HEAD/SECURITY.md)
+        instead and report privately.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A concise description of the bug.
+      placeholder: "When I click X, Y happens instead of Z."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal, ordered steps.
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Timeminator version
+      description: From the VERSION file, or the footer of the app.
+      placeholder: "0.2.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: db
+    attributes:
+      label: Database driver
+      options:
+        - MySQL / MariaDB
+        - SQLite
+    validations:
+      required: true
+
+  - type: input
+    id: php
+    attributes:
+      label: PHP version
+      description: "Output of `php -v`."
+      placeholder: "8.2.15"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: server
+    attributes:
+      label: Web server
+      options:
+        - Apache
+        - Nginx
+        - Built-in PHP server (development)
+        - Other (specify in reproduction)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: Install method
+      options:
+        - Web installer (install.php)
+        - Manual (edited config.php + schema)
+        - In-app updater
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: |
+        PHP error log excerpts (last ~20 lines), browser console errors,
+        or the update log. Redact secrets first.
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: This is **not** a security issue (if it is, I will report per SECURITY.md).
+          required: true

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/freshNfunky/Timeminator-Community/security/advisories/new
+    about: Report a security issue privately. Do not open a public issue.
+  - name: Question or discussion
+    url: https://github.com/freshNfunky/Timeminator-Community/discussions
+    about: Ask a question or share how you use Timeminator (enable Discussions first).
+  - name: Timeminator Pro
+    url: https://timeminator.felixschaller.com
+    about: Budgeting, quoting, invoicing, and accounting connectors — separate product.
