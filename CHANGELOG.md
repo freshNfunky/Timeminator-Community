@@ -8,6 +8,16 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Unreleased changes live in the `[Unreleased]` section and move under a
 version heading when a release is cut.
 
+> **Status: pre-1.0 (alpha / beta).**
+> Every `0.x` release is considered pre-stable. Data model, config keys,
+> permission codes, HTTP routes and the on-disk layout can still change in
+> incompatible ways between minor versions — each such change will be
+> called out in the changelog. Version `1.0.0` will mark the first
+> release with an API and data-model stability commitment. Until then,
+> pin an exact version in production and read the release notes before
+> updating. The initial commit was mislabelled "v1.0.0"; the `VERSION`
+> file is authoritative.
+
 ## [Unreleased]
 
 ### Added
