@@ -11,3 +11,9 @@
 .DS_Store
 *.swp
 Thumbs.db
+
+# Test tooling — kept out of the release so the ship stays Composer-free.
+/phpunit.phar
+/.phpunit.cache/
+/.phpunit.result.cache
+/phpunit.xml

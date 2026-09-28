@@ -82,10 +82,26 @@ Never open a PR directly against `main` — it will not be merged.
 
 ## Testing
 
-There is no test suite yet (see [#14](https://github.com/freshNfunky/Timeminator-Community/issues/14)).
-Until it exists, please describe the manual smoke test you ran in the PR
-body — at minimum, install fresh on SQLite, log in, and exercise the code
-path you touched.
+A small PHPUnit suite lives under `tests/`. It stays Composer-free — the
+project does not ship a `vendor/` directory. Download the phar once, then
+run from the repo root:
+
+```bash
+curl -L https://phar.phpunit.de/phpunit-11.phar -o phpunit.phar
+chmod +x phpunit.phar
+./phpunit.phar --colors=always
+```
+
+`phpunit.phar` is git-ignored so each contributor can update it independently.
+See `tests/README.md` for what's covered and what isn't.
+
+CI runs `php -l` across the codebase, the PHPUnit suite on PHP 8.1 – 8.4, and
+a smoke check that a fresh SQLite install boots the login screen (see
+`.github/workflows/ci.yml`).
+
+If your PR touches code that isn't unit-tested yet, please describe the
+manual smoke test you ran in the PR body — at minimum, install fresh on
+SQLite, log in, and exercise the code path you touched.
 
 ## Reporting bugs
 
