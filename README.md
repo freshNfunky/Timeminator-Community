@@ -1,5 +1,11 @@
 # Timeminator Community
 
+> **Status: pre-1.0 (alpha / beta).** Current version: see the [`VERSION`](VERSION)
+> file. Data model, config keys, permission codes and routes may still change
+> between minor versions; a `1.0.0` will mark the first stable release. Pin an
+> exact version in production and read the [`CHANGELOG`](CHANGELOG.md) before
+> updating. Not fit for critical or regulated use yet.
+
 Self-hosted, project-based time tracking with a live timer, an auditable
 booking model (client, project, task, time entry) and built-in statistics and
 charts. Timeminator runs on ordinary PHP shared hosting (Apache + MySQL /
