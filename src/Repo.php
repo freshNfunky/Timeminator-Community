@@ -161,8 +161,12 @@ final class Repo
         );
     }
 
-    public static function deleteEntry(int $id, int $userId): void
+    public static function deleteEntry(int $id, int $userId, bool $isAdmin = false): void
     {
+        if ($isAdmin) {
+            DB::run('DELETE FROM time_entries WHERE id = ?', [$id]);
+            return;
+        }
         DB::run('DELETE FROM time_entries WHERE id = ? AND user_id = ?', [$id, $userId]);
     }
 
