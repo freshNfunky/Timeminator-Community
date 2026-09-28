@@ -184,3 +184,74 @@ function app_version(): string
     $f = __DIR__ . '/../VERSION';
     return is_file($f) ? trim((string) file_get_contents($f)) : '0.0.0';
 }
+
+/**
+ * Client IP address, respecting a trusted-proxy allow-list from `trusted_proxies`
+ * in config. When the request came directly, REMOTE_ADDR is used verbatim; when
+ * the immediate peer is a listed trusted proxy, the last untrusted address in
+ * X-Forwarded-For is returned instead. Everything else falls back to REMOTE_ADDR
+ * so a header-forging client cannot spoof its IP.
+ */
+/**
+ * Send response headers that harden the browser side of the app: a
+ * Content-Security-Policy, X-Content-Type-Options, X-Frame-Options,
+ * Referrer-Policy, Permissions-Policy and — under HTTPS — HSTS.
+ *
+ * The default CSP allows `'unsafe-inline'` for scripts and styles because a
+ * handful of views ship inline event handlers and inline style attributes;
+ * tightening that is a follow-up. Hosters can override the whole policy
+ * via `csp` in config.php, or pass an empty string to suppress it.
+ */
+function send_security_headers(): void
+{
+    if (headers_sent()) {
+        return;
+    }
+    $csp = cfg('csp', null);
+    if ($csp === null) {
+        $csp = "default-src 'self'; "
+             . "script-src 'self' 'unsafe-inline'; "
+             . "style-src 'self' 'unsafe-inline'; "
+             . "img-src 'self' data:; "
+             . "font-src 'self'; "
+             . "connect-src 'self'; "
+             . "object-src 'none'; "
+             . "base-uri 'self'; "
+             . "frame-ancestors 'none'; "
+             . "form-action 'self'";
+    }
+    if ($csp !== '') {
+        header('Content-Security-Policy: ' . $csp);
+    }
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: DENY');
+    header('Referrer-Policy: no-referrer');
+    header('Permissions-Policy: interest-cohort=()');
+    $https = ($_SERVER['HTTPS'] ?? '') === 'on'
+        || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443)
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+    if ($https) {
+        header('Strict-Transport-Security: max-age=15552000; includeSubDomains');
+    }
+}
+
+function client_ip(): string
+{
+    $remote = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+    $trusted = (array) cfg('trusted_proxies', []);
+    if (!$trusted || !in_array($remote, $trusted, true)) {
+        return $remote;
+    }
+    $header = (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? '');
+    if ($header === '') {
+        return $remote;
+    }
+    $chain = array_map('trim', explode(',', $header));
+    for ($i = count($chain) - 1; $i >= 0; $i--) {
+        $addr = $chain[$i];
+        if ($addr !== '' && !in_array($addr, $trusted, true)) {
+            return $addr;
+        }
+    }
+    return $remote;
+}

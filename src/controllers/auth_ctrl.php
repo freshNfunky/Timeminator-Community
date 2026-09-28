@@ -11,12 +11,32 @@ function ctrl_login(): void
         csrf_check();
         $username = trim((string) post('username'));
         $password = (string) post('password');
-        if (Auth::attempt($username, $password)) {
+        $ip = client_ip();
+
+        $lock = LoginThrottle::lockoutReason($username, $ip);
+        if ($lock !== null) {
+            LoginThrottle::record($username !== '' ? $username : null, null, $ip, false);
+            $error = $lock;
+        } elseif (Auth::attempt($username, $password)) {
+            $uid = Auth::id();
+            if ($uid !== null) {
+                LoginThrottle::clearForUser($uid);
+            }
+            LoginThrottle::record($username, $uid, $ip, true);
             flash('Willkommen zurueck, ' . (Auth::user()['display_name'] ?: $username) . '.');
             redirect_route('dashboard');
+        } else {
+            $existing = $username !== ''
+                ? DB::one('SELECT id FROM users WHERE username = ?', [$username])
+                : null;
+            $uid = $existing ? (int) $existing['id'] : null;
+            LoginThrottle::record($username !== '' ? $username : null, $uid, $ip, false);
+            usleep(LoginThrottle::backoffMicroseconds($username));
+            $error = 'Benutzername oder Passwort falsch.';
         }
-        $error = 'Benutzername oder Passwort falsch.';
-        usleep(300000); // small delay against brute force
+        if (random_int(0, 25) === 0) {
+            LoginThrottle::prune();
+        }
     }
     view_bare('login', ['error' => $error], 'Anmelden');
 }

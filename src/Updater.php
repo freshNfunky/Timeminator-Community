@@ -75,10 +75,24 @@ final class Updater
         return [200, $body];
     }
 
+    public static function manifestUrl(): string
+    {
+        $override = (string) Settings::get('update_manifest_url_override', '');
+        return $override !== '' ? $override : (string) cfg('update_manifest_url', '');
+    }
+
+    public static function isDisabled(): bool
+    {
+        return (bool) Settings::get('update_check_disabled', false);
+    }
+
     /** Query the release channel; cache the result in Settings. */
     public static function check(): array
     {
-        $url = (string) cfg('update_manifest_url', '');
+        if (self::isDisabled()) {
+            return ['ok' => false, 'error' => 'Update-Pruefung ist administrativ deaktiviert.'];
+        }
+        $url = self::manifestUrl();
         if ($url === '') {
             return ['ok' => false, 'error' => 'Keine update_manifest_url konfiguriert.'];
         }
@@ -196,24 +210,35 @@ final class Updater
         }
     }
 
-    /** Apply schema/migrations/*.sql that have not been applied yet. */
+    /**
+     * Apply pending migrations for the active driver.
+     *
+     * Files live in schema/migrations/<driver>/*.sql. A portable
+     * schema/migrations/*.sql layer is still honoured for legacy files.
+     * Applied migrations are recorded by basename in Settings.
+     */
     private static function runMigrations(): void
     {
-        $dir = APP_ROOT . '/schema/migrations';
-        if (!is_dir($dir)) {
-            return;
-        }
         $applied = (array) Settings::get('applied_migrations', []);
-        $files = glob($dir . '/*.sql') ?: [];
-        sort($files);
-        foreach ($files as $file) {
-            $name = basename($file);
-            if (in_array($name, $applied, true)) {
+        $dirs = [
+            APP_ROOT . '/schema/migrations',
+            APP_ROOT . '/schema/migrations/' . DB::driver(),
+        ];
+        foreach ($dirs as $dir) {
+            if (!is_dir($dir)) {
                 continue;
             }
-            DB::applySqlFile($file);
-            $applied[] = $name;
-            Settings::set('applied_migrations', $applied);
+            $files = glob($dir . '/*.sql') ?: [];
+            sort($files);
+            foreach ($files as $file) {
+                $name = basename($file);
+                if (in_array($name, $applied, true)) {
+                    continue;
+                }
+                DB::applySqlFile($file);
+                $applied[] = $name;
+                Settings::set('applied_migrations', $applied);
+            }
         }
     }
 
