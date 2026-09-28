@@ -101,7 +101,7 @@ final class DB
         return (int) self::pdo()->lastInsertId();
     }
 
-    /** Apply a whole .sql file, splitting on ';' safely enough for our schema. */
+    /** Apply a whole .sql file. */
     public static function applySqlFile(string $file): void
     {
         $sql = file_get_contents($file);
@@ -109,19 +109,7 @@ final class DB
             throw new RuntimeException("Cannot read schema file: $file");
         }
         $pdo = self::pdo();
-        // Strip line comments, then split on semicolons at line ends.
-        $lines = preg_split('/\R/', $sql) ?: [];
-        $clean = [];
-        foreach ($lines as $line) {
-            $t = trim($line);
-            if ($t === '' || str_starts_with($t, '--')) {
-                continue;
-            }
-            $clean[] = $line;
-        }
-        $joined = implode("\n", $clean);
-        foreach (array_filter(array_map('trim', explode(";\n", $joined . "\n"))) as $stmt) {
-            $stmt = rtrim($stmt, "; \n\r\t");
+        foreach (self::splitSqlStatements($sql) as $stmt) {
             if ($stmt === '') {
                 continue;
             }
@@ -131,5 +119,72 @@ final class DB
             }
             $pdo->exec($stmt);
         }
+    }
+
+    /**
+     * Split a SQL string into statements. Respects single-, double- and
+     * backtick-quoted strings (with backslash escapes), MySQL `#` and SQL
+     * `--` line comments and `/* ... *\/` block comments, so a semicolon
+     * inside a literal or a comment is not mistaken for a terminator.
+     */
+    private static function splitSqlStatements(string $sql): array
+    {
+        $statements = [];
+        $current = '';
+        $len = strlen($sql);
+        $inSingle = false;
+        $inDouble = false;
+        $inBacktick = false;
+        for ($i = 0; $i < $len; $i++) {
+            $ch = $sql[$i];
+            $next = $i + 1 < $len ? $sql[$i + 1] : '';
+            if (($inSingle || $inDouble) && $ch === '\\' && $next !== '') {
+                $current .= $ch . $next;
+                $i++;
+                continue;
+            }
+            if (!$inSingle && !$inDouble && !$inBacktick) {
+                if (($ch === '-' && $next === '-') || $ch === '#') {
+                    $eol = strpos($sql, "\n", $i);
+                    if ($eol === false) {
+                        $i = $len;
+                    } else {
+                        $i = $eol;
+                        $current .= "\n";
+                    }
+                    continue;
+                }
+                if ($ch === '/' && $next === '*') {
+                    $end = strpos($sql, '*/', $i + 2);
+                    if ($end === false) {
+                        $i = $len;
+                    } else {
+                        $i = $end + 1;
+                    }
+                    continue;
+                }
+                if ($ch === ';') {
+                    $trimmed = trim($current);
+                    if ($trimmed !== '') {
+                        $statements[] = $trimmed;
+                    }
+                    $current = '';
+                    continue;
+                }
+            }
+            if ($ch === "'" && !$inDouble && !$inBacktick) {
+                $inSingle = !$inSingle;
+            } elseif ($ch === '"' && !$inSingle && !$inBacktick) {
+                $inDouble = !$inDouble;
+            } elseif ($ch === '`' && !$inSingle && !$inDouble) {
+                $inBacktick = !$inBacktick;
+            }
+            $current .= $ch;
+        }
+        $trimmed = trim($current);
+        if ($trimmed !== '') {
+            $statements[] = $trimmed;
+        }
+        return $statements;
     }
 }

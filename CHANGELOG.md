@@ -11,6 +11,11 @@ version heading when a release is cut.
 ## [Unreleased]
 
 ### Added
+- Dark mode via `prefers-color-scheme`, with a manual override hook
+  (`data-theme="light|dark"` on the document root). Palette moved into
+  CSS custom properties on `:root`; the canvas chart renderer reads
+  `--panel`, `--ink`, `--muted`, `--line`, `--brand` from the theme so
+  the charts follow (fixes #18).
 - `SECURITY.md` with a private vulnerability-reporting policy, supported
   versions, response-time expectations, and scope (fixes #9).
 - `CONTRIBUTING.md` restating the "no Composer, no build step" constraint,
@@ -27,6 +32,16 @@ version heading when a release is cut.
   feature ships in this edition yet (fixes #6). The wiki
   [Data Model](https://github.com/freshNfunky/Timeminator-Community/wiki/Data-Model)
   page carries the same correction.
+- `DB::applySqlFile` now uses a proper SQL statement splitter that
+  respects single-, double- and backtick-quoted strings and both `--`
+  and `#` line comments and `/* … */` block comments, so future
+  migrations with non-trivial bodies apply correctly (fixes #5).
+
+### Fixed
+- Administrators can now delete other users' time entries.
+  `Repo::deleteEntry` previously enforced `user_id = current_user`,
+  silently blocking admins for entries they did not own — inconsistent
+  with edit, which already respected the admin bypass (fixes #1).
 
 ## [0.2.0] — 2026-09-28
 

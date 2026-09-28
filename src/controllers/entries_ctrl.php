@@ -90,7 +90,7 @@ function ctrl_entry_delete(): void
     csrf_check();
     $id = post_int('id');
     if ($id) {
-        Repo::deleteEntry($id, Auth::id());
+        Repo::deleteEntry($id, Auth::id(), Auth::isAdmin());
         flash('Eintrag geloescht.');
     }
     redirect_route('entries');

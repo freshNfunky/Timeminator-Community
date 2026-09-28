@@ -6,6 +6,24 @@ window.TmCharts = (function () {
                  '#ec4899','#84cc16','#f97316','#6366f1','#14b8a6','#a855f7'];
   function color(i){ return PALETTE[i % PALETTE.length]; }
 
+  // Theme-aware colors read from CSS custom properties, with hard-coded
+  // fallbacks so a page without app.css still renders.
+  function cssVar(name, fallback){
+    try {
+      var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      return v || fallback;
+    } catch (_) { return fallback; }
+  }
+  function theme(){
+    return {
+      panel: cssVar('--panel', '#ffffff'),
+      ink:   cssVar('--ink',   '#1e293b'),
+      muted: cssVar('--muted', '#64748b'),
+      line:  cssVar('--line',  '#e2e8f0'),
+      brand: cssVar('--brand', '#2563eb')
+    };
+  }
+
   function setup(canvas){
     var dpr = window.devicePixelRatio || 1;
     var w = canvas.clientWidth || canvas.parentNode.clientWidth || 400;
@@ -29,7 +47,7 @@ window.TmCharts = (function () {
   }
 
   function empty(ctx, w, h){
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = theme().muted;
     ctx.textAlign = 'center';
     ctx.fillText('Keine Daten', w / 2, h / 2);
   }
@@ -51,8 +69,9 @@ window.TmCharts = (function () {
       ctx.fill();
       a0 = a1;
     }
-    ctx.beginPath(); ctx.fillStyle = '#fff'; ctx.arc(cx, cy, rI, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#1e293b'; ctx.textAlign = 'center';
+    var t = theme();
+    ctx.beginPath(); ctx.fillStyle = t.panel; ctx.arc(cx, cy, rI, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = t.ink; ctx.textAlign = 'center';
     ctx.font = 'bold 15px -apple-system,Segoe UI,sans-serif';
     ctx.fillText(total.toFixed(1) + ' h', cx, cy);
     if (legendEl){
@@ -72,8 +91,9 @@ window.TmCharts = (function () {
     var padL = 34, padB = 46, padT = 10, padR = 8;
     var plotW = s.w - padL - padR, plotH = s.h - padT - padB;
     var max = niceMax(Math.max.apply(null, values));
+    var t = theme();
     // gridlines + y labels
-    ctx.textAlign = 'right'; ctx.strokeStyle = '#e2e8f0'; ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'right'; ctx.strokeStyle = t.line; ctx.fillStyle = t.muted;
     for (var g = 0; g <= 4; g++){
       var yv = max * g / 4, y = padT + plotH - (yv / max) * plotH;
       ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y); ctx.stroke();
@@ -84,11 +104,11 @@ window.TmCharts = (function () {
     for (var i = 0; i < n; i++){
       var x = padL + bw * i + (bw - bar) / 2;
       var bh = (values[i] / max) * plotH;
-      ctx.fillStyle = '#2563eb';
+      ctx.fillStyle = t.brand;
       roundRect(ctx, x, padT + plotH - bh, bar, bh, 3); ctx.fill();
       if (i % showEvery === 0){
         ctx.save(); ctx.translate(x + bar / 2, padT + plotH + 6);
-        ctx.rotate(-Math.PI / 4); ctx.fillStyle = '#64748b'; ctx.textAlign = 'right';
+        ctx.rotate(-Math.PI / 4); ctx.fillStyle = t.muted; ctx.textAlign = 'right';
         ctx.fillText(shorten(labels[i], 12), 0, 6); ctx.restore();
       }
     }
@@ -100,15 +120,16 @@ window.TmCharts = (function () {
     var padL = 120, padR = 44, padT = 6, padB = 6;
     var plotW = s.w - padL - padR, plotH = s.h - padT - padB;
     var max = Math.max.apply(null, values);
+    var t = theme();
     var n = values.length, rowH = plotH / n, bar = Math.min(rowH * 0.62, 30);
     for (var i = 0; i < n; i++){
       var y = padT + rowH * i + (rowH - bar) / 2;
       var bwv = (values[i] / max) * plotW;
       ctx.fillStyle = color(i);
       roundRect(ctx, padL, y, Math.max(2, bwv), bar, 3); ctx.fill();
-      ctx.fillStyle = '#334155'; ctx.textAlign = 'right';
+      ctx.fillStyle = t.ink; ctx.textAlign = 'right';
       ctx.fillText(shorten(labels[i], 18), padL - 8, y + bar / 2);
-      ctx.fillStyle = '#64748b'; ctx.textAlign = 'left';
+      ctx.fillStyle = t.muted; ctx.textAlign = 'left';
       ctx.fillText(values[i].toFixed(2) + ' h', padL + bwv + 6, y + bar / 2);
     }
   }
@@ -122,7 +143,8 @@ window.TmCharts = (function () {
     var padL = 38, padB = 60, padT = 24, padR = 8;
     var plotW = s.w - padL - padR, plotH = s.h - padT - padB;
     var max = niceMax(Math.max.apply(null, all));
-    ctx.textAlign = 'right'; ctx.strokeStyle = '#e2e8f0'; ctx.fillStyle = '#94a3b8';
+    var t = theme();
+    ctx.textAlign = 'right'; ctx.strokeStyle = t.line; ctx.fillStyle = t.muted;
     for (var g = 0; g <= 4; g++){
       var yv = max * g / 4, y = padT + plotH - (yv / max) * plotH;
       ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y); ctx.stroke();
@@ -139,14 +161,14 @@ window.TmCharts = (function () {
         roundRect(ctx, gx + j * barW, padT + plotH - bh, barW - 2, bh, 2); ctx.fill();
       }
       ctx.save(); ctx.translate(padL + groupW * i + groupW / 2, padT + plotH + 6);
-      ctx.rotate(-Math.PI / 5); ctx.fillStyle = '#64748b'; ctx.textAlign = 'right';
+      ctx.rotate(-Math.PI / 5); ctx.fillStyle = t.muted; ctx.textAlign = 'right';
       ctx.fillText(shorten(labels[i], 16), 0, 6); ctx.restore();
     }
     // legend
     var lx = padL, ly = 12;
     series.forEach(function(se){
       ctx.fillStyle = se.color; ctx.fillRect(lx, ly - 6, 10, 10);
-      ctx.fillStyle = '#334155'; ctx.textAlign = 'left'; ctx.fillText(se.label, lx + 14, ly);
+      ctx.fillStyle = t.ink; ctx.textAlign = 'left'; ctx.fillText(se.label, lx + 14, ly);
       lx += 22 + ctx.measureText(se.label).width + 14;
     });
   }
