@@ -140,7 +140,12 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .r{text-align:right}
 .nowrap{white-space:nowrap}
 .muted{color:var(--muted)}
-.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:middle}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:middle;background-color:#888}
+/* Utility classes to keep views free of inline `style=""` attributes (strict CSP). */
+.hidden{display:none!important}
+.fading-out{transition:opacity .4s;opacity:0}
+.summary-adv{cursor:pointer;color:var(--muted);margin:14px 0 8px}
+.note-pro{font-size:.85em}
 .pill{display:inline-block;background:var(--pill-bg);color:var(--muted);padding:2px 9px;border-radius:20px;font-size:12px}
 .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600}
 .badge-live{background:var(--badge-live-bg);color:var(--badge-live-ink)}

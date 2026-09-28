@@ -91,7 +91,7 @@
           <td class="r"><?= (int) $b['entry_count'] ?></td>
           <td class="nowrap"><?= h(fmt_dt($b['created_at'])) ?></td>
           <td class="r">
-            <form method="post" action="<?= h(route('imports_delete')) ?>" class="inline" onsubmit="return confirm('Batch #<?= (int) $b['id'] ?> mit <?= (int) $b['entry_count'] ?> Buchungen unwiderruflich loeschen?')">
+            <form method="post" action="<?= h(route('imports_delete')) ?>" class="inline" data-confirm="Batch #<?= (int) $b['id'] ?> mit <?= (int) $b['entry_count'] ?> Buchungen unwiderruflich loeschen?">
               <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $b['id'] ?>">
               <button class="btn btn-sm btn-danger" type="submit">Batch loeschen</button>
             </form>

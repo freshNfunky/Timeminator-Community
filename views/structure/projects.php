@@ -22,7 +22,7 @@
       <label>Farbe <input type="color" name="color" value="<?= h($edit['color'] ?? '#10b981') ?>"></label>
       <label class="check"><input type="checkbox" name="active" value="1" <?= (!$edit || $edit['active']) ? 'checked' : '' ?>> aktiv</label>
 
-      <p class="muted" style="font-size:.85em">Zeit-/Geldbudget, Planung und Fortschritts-Report sind Teil von <b>Timeminator Pro</b>.</p>
+      <p class="muted note-pro">Zeit-/Geldbudget, Planung und Fortschritts-Report sind Teil von <b>Timeminator Pro</b>.</p>
 
       <div class="form-actions">
         <button class="btn btn-primary" type="submit">Speichern</button>
@@ -39,7 +39,7 @@
       <?php foreach ($projects as $p): ?>
         <tr class="<?= $p['active'] ? '' : 'muted' ?>">
           <td><?= h($p['client_name']) ?></td>
-          <td><span class="dot" style="background:<?= h($p['color'] ?: ($p['client_color'] ?: '#888')) ?>"></span><?= h($p['name']) ?> <?= $p['active'] ? '' : '<span class="pill">inaktiv</span>' ?></td>
+          <td><span class="dot" data-color="<?= h(strtolower((string) ($p['color'] ?: ($p['client_color'] ?: '')))) ?>"></span><?= h($p['name']) ?> <?= $p['active'] ? '' : '<span class="pill">inaktiv</span>' ?></td>
           <td><?= h($p['track'] ?: ($p['client_track'] ?? '')) ?></td>
           <td class="r"><a class="btn btn-sm" href="<?= h(route('projects', ['edit' => $p['id']])) ?>">bearb.</a></td>
         </tr>

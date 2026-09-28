@@ -37,7 +37,7 @@ $example = [
           <td><strong><?= h($s['name']) ?></strong><?= $s['description'] ? '<br><span class="muted">' . h($s['description']) . '</span>' : '' ?></td>
           <td class="r nowrap">
             <a class="btn btn-sm" href="<?= h(route('scopes', ['edit' => $s['id']])) ?>">bearb.</a>
-            <form method="post" action="<?= h(route('scope_delete')) ?>" class="inline" onsubmit="return confirm('Loeschen?')">
+            <form method="post" action="<?= h(route('scope_delete')) ?>" class="inline" data-confirm="Loeschen?">
               <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $s['id'] ?>">
               <button class="btn btn-sm btn-danger" type="submit">x</button>
             </form>
