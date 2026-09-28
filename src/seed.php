@@ -12,6 +12,7 @@ function permission_catalog(): array
         'admin.users'      => ['Benutzer verwalten',                    'Administration'],
         'admin.roles'      => ['Rollen und Rechte verwalten',          'Administration'],
         'admin.system'     => ['System, Updates und Registrierung',     'Administration'],
+        'admin.imports'    => ['CSV-Importe hochladen und zuruecknehmen', 'Administration'],
     ];
 }
 

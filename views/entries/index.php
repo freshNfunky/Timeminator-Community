@@ -22,6 +22,8 @@
     </select>
   </label>
   <button class="btn" type="submit">Filtern</button>
+  <a class="btn" href="<?= h(route('entries_export', array_filter($filter, static fn($v) => $v !== '' && $v !== 0 && $v !== null) + ['format' => 'csv'])) ?>">CSV</a>
+  <a class="btn" href="<?= h(route('entries_export', array_filter($filter, static fn($v) => $v !== '' && $v !== 0 && $v !== null) + ['format' => 'json'])) ?>">JSON</a>
   <a class="btn btn-primary" href="<?= h(route('entry_form')) ?>">+ Eintrag</a>
 </form>
 

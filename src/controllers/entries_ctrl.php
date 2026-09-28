@@ -17,14 +17,7 @@ function parse_dtlocal(?string $v): ?string
 function ctrl_entries_index(): void
 {
     require_perm('entries.manage');
-    $f = [
-        'user_id'    => Auth::id(),
-        'from'       => (string) get('from', ''),
-        'to'         => (string) get('to', ''),
-        'client_id'  => (int) get('client_id', 0),
-        'project_id' => (int) get('project_id', 0),
-        'limit'      => 500,
-    ];
+    $f = entries_filter_from_request();
     $entries = Repo::entries($f);
     view('entries/index', [
         'entries'  => $entries,
@@ -33,6 +26,88 @@ function ctrl_entries_index(): void
         'filter'   => $f,
         'total'    => Stats::totalMinutes($entries),
     ], 'Zeiteintraege');
+}
+
+/**
+ * Build a Repo::entries filter from the query string. Admins may pass
+ * `all=1` to include every user's entries; anyone else is pinned to their
+ * own. The limit stays generous for exports.
+ */
+function entries_filter_from_request(): array
+{
+    $all = Auth::isAdmin() && (int) get('all', 0) === 1;
+    return [
+        'user_id'    => $all ? 0 : Auth::id(),
+        'from'       => (string) get('from', ''),
+        'to'         => (string) get('to', ''),
+        'client_id'  => (int) get('client_id', 0),
+        'project_id' => (int) get('project_id', 0),
+        'limit'      => 5000,
+    ];
+}
+
+function ctrl_entries_export(): void
+{
+    require_perm('entries.manage');
+    $format = strtolower((string) get('format', 'csv'));
+    if (!in_array($format, ['csv', 'json'], true)) {
+        http_response_code(400);
+        exit('Unsupported format. Use csv or json.');
+    }
+    $f = entries_filter_from_request();
+    $rows = Repo::entries($f);
+    $filename = 'timeminator-entries-' . date('Ymd-His') . '.' . $format;
+
+    if ($format === 'json') {
+        header('Content-Type: application/json; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        echo json_encode(
+            array_map(static fn(array $r) => entries_export_row($r), $rows),
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
+        );
+        exit;
+    }
+
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    $out = fopen('php://output', 'w');
+    fputcsv($out, [
+        'start_ts', 'end_ts', 'duration_min', 'client_code', 'client_name',
+        'project_code', 'project_name', 'task_name', 'user_id', 'note',
+        'source', 'evidence', 'batch_id',
+    ], ',', '"', '\\');
+    foreach ($rows as $r) {
+        $exp = entries_export_row($r);
+        fputcsv($out, [
+            $exp['start_ts'], $exp['end_ts'], $exp['duration_min'],
+            $exp['client_code'] ?? '', $exp['client_name'],
+            $exp['project_code'] ?? '', $exp['project_name'],
+            $exp['task_name'], $exp['user_id'], $exp['note'],
+            $exp['source'], $exp['evidence'] ?? '', $exp['batch_id'] ?? '',
+        ], ',', '"', '\\');
+    }
+    fclose($out);
+    exit;
+}
+
+/** Shape one Repo::entries row for export. */
+function entries_export_row(array $r): array
+{
+    return [
+        'start_ts'     => $r['start_ts'],
+        'end_ts'       => $r['end_ts'],
+        'duration_min' => (int) $r['duration_min'],
+        'client_code'  => $r['client_code'] ?? null,
+        'client_name'  => $r['client_name'],
+        'project_code' => $r['project_code'] ?? null,
+        'project_name' => $r['project_name'],
+        'task_name'    => $r['task_name'],
+        'user_id'      => (int) $r['user_id'],
+        'note'         => (string) $r['note'],
+        'source'       => (string) ($r['source'] ?? 'manual'),
+        'evidence'     => $r['evidence'] ?? null,
+        'batch_id'     => isset($r['batch_id']) ? (int) $r['batch_id'] : null,
+    ];
 }
 
 function ctrl_entry_form(): void
