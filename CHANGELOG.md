@@ -60,6 +60,22 @@ version heading when a release is cut.
   `import_batches` row and tags every inserted `time_entries` row with
   its `batch_id`. Batches can be rolled back as a unit from the same
   screen. New permission `admin.imports` (fixes #16).
+- Updater now verifies the SHA-256 of every downloaded release archive
+  against a sibling `<zip>.sha256` or a `SHA256SUMS` asset from the
+  release before extracting. A mismatch fails the update; a release
+  that ships no checksum at all logs a warning by default and hard-
+  fails when `require_release_checksum` is set in config (fixes #2).
+- Updater now prunes stale files inside `src/`, `views/`, `assets/`
+  and `schema/` that used to exist locally but are no longer part of
+  the release. Top-level custom files and everything under `data/`,
+  `config.php`, `.git`, `vendor/` and `.phpunit.cache/` stay untouched
+  (fixes #3).
+- Updater takes a full snapshot of every file it is about to overwrite
+  or prune into `data/backup_<ts>/` and restores from it on any failure
+  during the copy / prune / migration phase, so a half-written update
+  never leaves the site broken. On success the backup manifest is kept
+  in Settings, and `Updater::rollbackLast()` lets a future admin action
+  restore the previous version (fixes #4).
 - `SECURITY.md` with a private vulnerability-reporting policy, supported
   versions, response-time expectations, and scope (fixes #9).
 - `CONTRIBUTING.md` restating the "no Composer, no build step" constraint,
