@@ -119,6 +119,15 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
   applied_at TEXT NOT NULL
 );
 
+-- Login throttling (issue #7). One row per failed attempt; buckets are
+-- 'ip:<addr>' and 'user:<name>' so both dimensions are throttled.
+CREATE TABLE IF NOT EXISTS auth_login_attempts (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  bucket       TEXT NOT NULL,
+  attempted_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_ala_bucket_time ON auth_login_attempts (bucket, attempted_at);
+
 -- Hinweis: Planung/Budget/Report, Angebote und Rechnungen (inkl. Buchhaltungs-
 -- Konnektoren) sind Teil von Timeminator Pro und nicht in dieser Community-
 -- Edition enthalten. Siehe README.md.

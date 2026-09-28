@@ -21,12 +21,33 @@ version heading when a release is cut.
 - `PULL_REQUEST_TEMPLATE.md` with a manual smoke-test section and a
   release-readiness checklist (fixes #10).
 - This `CHANGELOG.md`, following Keep a Changelog (fixes #11).
+- Security response headers on every response — `Content-Security-Policy`,
+  `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`,
+  `X-Frame-Options`, and `Strict-Transport-Security` on HTTPS requests. CSP,
+  HSTS, and session `SameSite` are all overridable via `config.php` keys
+  `csp`, `hsts`, and `session_samesite` (fixes #8).
+- Login brute-force throttling — per-IP and per-username counters over a
+  15-minute window; after 5 failures the bucket locks with exponential
+  backoff (1 min → 4 h ceiling). Every failed attempt is written to the
+  PHP error log. Backed by a new `auth_login_attempts` table (fresh installs)
+  and a driver-aware migration under `schema/migrations/{sqlite,mysql}/`
+  (fixes #7).
+- Updater verifies the downloaded release archive against a `SHA256SUMS`
+  asset published with the release. When no `SHA256SUMS` is present the
+  update is refused unless the new `update_allow_unverified` config flag is
+  true (default true for backward compat with existing releases; should be
+  set to false once you rely on releases that publish `SHA256SUMS`) (fixes #2).
 
 ### Changed
 - README no longer claims that CSV imports are rollbackable — no import
   feature ships in this edition yet (fixes #6). The wiki
   [Data Model](https://github.com/freshNfunky/Timeminator-Community/wiki/Data-Model)
   page carries the same correction.
+- Migrations are now driver-aware. Files under
+  `schema/migrations/<driver>/*.sql` are applied only against that driver;
+  the applied-migrations list is keyed by driver so switching drivers
+  replays migrations against the new one. The legacy driver-agnostic layout
+  is still honored when the new subfolders do not exist.
 
 ## [0.2.0] — 2026-09-28
 

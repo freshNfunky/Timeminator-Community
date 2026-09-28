@@ -126,6 +126,15 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
   applied_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Login throttling (issue #7). One row per failed attempt; buckets are
+-- 'ip:<addr>' and 'user:<name>' so both dimensions are throttled.
+CREATE TABLE IF NOT EXISTS auth_login_attempts (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  bucket       VARCHAR(160) NOT NULL,
+  attempted_at DATETIME     NOT NULL,
+  INDEX idx_ala_bucket_time (bucket, attempted_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET foreign_key_checks = 1;
 
 -- Hinweis: Planung/Budget/Report, Angebote und Rechnungen (inkl. Buchhaltungs-
