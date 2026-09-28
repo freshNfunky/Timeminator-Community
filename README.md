@@ -6,10 +6,12 @@ charts. Timeminator runs on ordinary PHP shared hosting (Apache + MySQL /
 MariaDB) and can also run locally with zero infrastructure using SQLite.
 
 It was built to replace weak time-tracker plugins with something defensible:
-every booking keeps its origin, imports can be rolled back as a whole, and the
-same clean data set feeds several views (per project or client, a time series
-by day / week / month, a generic two-group comparison, and a configurable
-"proof" view with an optional cutover date).
+every booking keeps its origin, the schema is prepared for auditable imports
+with per-batch rollback (see `import_batches` in `schema/*.sql`), and the same
+clean data set feeds several views (per project or client, a time series by
+day / week / month, a generic two-group comparison, and a configurable "proof"
+view with an optional cutover date). A CSV import UI is not yet part of this
+edition — see [#16](https://github.com/freshNfunky/Timeminator-Community/issues/16).
 
 - Login required, role-based permissions (admin, user, and any role you add).
 - Live start / stop timer plus manual bookings.
@@ -166,8 +168,9 @@ The hierarchy is client, project, task, time entry. Grouping labels ("track"),
 a per-project proof flag, and saved analysis views are generic attributes, so
 the reporting works for any set of projects without hardcoding. Denormalized
 project and client references on each entry keep history stable and make the
-statistics fast. Imported entries carry their evidence and a batch id so a whole
-import can be removed again.
+statistics fast. The schema reserves an `evidence` field and a `batch_id` on
+each time entry so that a future CSV import can be rolled back as a whole
+batch; no import UI ships in this edition yet.
 
 ## Tech
 
