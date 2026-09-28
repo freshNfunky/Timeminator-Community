@@ -19,6 +19,8 @@ require __DIR__ . '/src/Registration.php';
 $GLOBALS['APP_CONFIG'] = ['app_name' => 'Timeminator'];
 date_default_timezone_set('Europe/Berlin');
 
+send_security_headers();
+
 session_name('timeminator_install');
 session_start();
 
@@ -50,6 +52,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $driver = ($_POST['db_driver'] ?? 'sqlite') === 'mysql' ? 'mysql' : 'sqlite';
         $tz = trim((string) ($_POST['timezone'] ?? 'Europe/Berlin')) ?: 'Europe/Berlin';
 
+        $defaultManifest = 'https://api.github.com/repos/freshNfunky/Timeminator-Community/releases/latest';
+        $defaultRegistration = 'https://public.felixschaller.com/timeminator-registry/register.php';
+        $manifestUrl = trim((string) ($_POST['update_manifest_url'] ?? $defaultManifest)) ?: $defaultManifest;
+        $registrationUrl = trim((string) ($_POST['registration_endpoint'] ?? $defaultRegistration)) ?: $defaultRegistration;
+        $updateDisabled = !empty($_POST['disable_update_check']);
+        $registrationDisabled = !empty($_POST['disable_registration']);
+        if ($manifestUrl !== '' && !preg_match('~^https?://~i', $manifestUrl)) {
+            $errors[] = 'Update-Manifest-URL muss mit http:// oder https:// beginnen.';
+        }
+        if ($registrationUrl !== '' && !preg_match('~^https?://~i', $registrationUrl)) {
+            $errors[] = 'Registrierungs-Endpoint muss mit http:// oder https:// beginnen.';
+        }
+
         $config = [
             'db_driver' => $driver,
             'mysql' => [
@@ -68,8 +83,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             'app_name' => trim((string) ($_POST['app_name'] ?? 'Timeminator Community')) ?: 'Timeminator Community',
             'debug' => false,
             'pro_url' => 'https://timeminator.felixschaller.com',
-            'update_manifest_url' => 'https://api.github.com/repos/freshNfunky/Timeminator-Community/releases/latest',
-            'registration_endpoint' => 'https://public.felixschaller.com/timeminator-registry/register.php',
+            'update_manifest_url' => $manifestUrl,
+            'registration_endpoint' => $registrationUrl,
         ];
 
         // Admin account validation.
@@ -99,8 +114,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     throw new RuntimeException('config.php konnte nicht geschrieben werden.');
                 }
 
-                // Optional registration (opt-in).
-                if (!empty($_POST['reg_opt_in']) && !empty($_POST['reg_email'])) {
+                // Persist runtime toggles (endpoints can be edited later in Admin -> System).
+                if ($updateDisabled) {
+                    Settings::set('update_check_disabled', true);
+                }
+                if ($registrationDisabled) {
+                    Settings::set('registration_disabled', true);
+                }
+
+                // Optional registration (opt-in). Skipped when administratively disabled.
+                if (!$registrationDisabled && !empty($_POST['reg_opt_in']) && !empty($_POST['reg_email'])) {
                     Registration::save(true, trim((string) $_POST['reg_email']));
                 }
 

@@ -16,6 +16,28 @@ version heading when a release is cut.
   CSS custom properties on `:root`; the canvas chart renderer reads
   `--panel`, `--ink`, `--muted`, `--line`, `--brand` from the theme so
   the charts follow (fixes #18).
+- Login brute-force protection: rolling-window lockout per username
+  (5 fails / 15 min) and per IP (20 fails / 15 min), with a progressive
+  backoff (300 ms → 3 s) before the lockout trips. Failed attempts are
+  logged to a new `login_attempts` table (fresh installs from the
+  schema, existing v0.1/v0.2 installations from
+  `schema/migrations/<driver>/`), old rows are pruned opportunistically,
+  and a successful login clears its user's failure record. New
+  `client_ip()` helper respects a `trusted_proxies` allow-list from
+  config so `X-Forwarded-For` is only honoured behind a listed peer
+  (fixes #7).
+- Security response headers on every response: a Content-Security-Policy
+  (permissive on inline handlers today, tightening is a follow-up),
+  X-Content-Type-Options, X-Frame-Options, Referrer-Policy,
+  Permissions-Policy and — under HTTPS — HSTS. Wired into `app_boot`
+  and `install.php`. Overridable per-host via a `csp` key in
+  `config.php` (fixes #8).
+- Installer exposes the update-manifest URL and the registration
+  endpoint as editable fields behind an "Erweitert" section (defaults
+  pre-filled), plus check boxes to disable the update check and the
+  registration outright. Admin → System gains a matching "Endpoints"
+  form so the same overrides can be edited later without touching
+  `config.php`; overrides live in `settings.json` (fixes #12).
 - `SECURITY.md` with a private vulnerability-reporting policy, supported
   versions, response-time expectations, and scope (fixes #9).
 - `CONTRIBUTING.md` restating the "no Composer, no build step" constraint,

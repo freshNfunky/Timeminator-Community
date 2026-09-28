@@ -150,11 +150,17 @@ function ctrl_system_index(): void
         redirect_route('admin_system');
     }
     view('admin/system', [
-        'version'      => app_version(),
-        'update'       => Updater::cached(),
-        'registration' => Registration::status(),
-        'reg_endpoint' => Registration::endpoint(),
-        'manifest'     => cfg('update_manifest_url'),
+        'version'         => app_version(),
+        'update'          => Updater::cached(),
+        'registration'    => Registration::status(),
+        'reg_endpoint'    => Registration::endpoint(),
+        'reg_endpoint_default' => (string) cfg('registration_endpoint', ''),
+        'reg_endpoint_override' => (string) Settings::get('registration_endpoint_override', ''),
+        'reg_disabled'    => Registration::isDisabled(),
+        'manifest'        => Updater::manifestUrl(),
+        'manifest_default' => (string) cfg('update_manifest_url', ''),
+        'manifest_override' => (string) Settings::get('update_manifest_url_override', ''),
+        'update_disabled' => Updater::isDisabled(),
     ], 'System');
 }
 
@@ -190,5 +196,27 @@ function ctrl_registration_save(): void
     $email = trim((string) post('email'));
     $res = Registration::save($optIn, $email);
     flash($res['message'], $res['ok'] ? 'ok' : 'err');
+    redirect_route('admin_system');
+}
+
+function ctrl_endpoints_save(): void
+{
+    require_perm('admin.system');
+    csrf_check();
+    $manifest = trim((string) post('manifest_override'));
+    $reg = trim((string) post('registration_override'));
+    if ($manifest !== '' && !preg_match('~^https?://~i', $manifest)) {
+        flash('Update-URL muss mit http:// oder https:// beginnen.', 'err');
+        redirect_route('admin_system');
+    }
+    if ($reg !== '' && !preg_match('~^https?://~i', $reg)) {
+        flash('Registration-URL muss mit http:// oder https:// beginnen.', 'err');
+        redirect_route('admin_system');
+    }
+    Settings::set('update_manifest_url_override', $manifest);
+    Settings::set('registration_endpoint_override', $reg);
+    Settings::set('update_check_disabled', (bool) post('update_disabled'));
+    Settings::set('registration_disabled', (bool) post('registration_disabled'));
+    flash('Endpoints gespeichert.');
     redirect_route('admin_system');
 }

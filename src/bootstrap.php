@@ -12,6 +12,7 @@ define('APP_ROOT', dirname(__DIR__));
 require __DIR__ . '/helpers.php';
 require __DIR__ . '/db.php';
 require __DIR__ . '/auth.php';
+require __DIR__ . '/LoginThrottle.php';
 
 function config_exists(): bool
 {
@@ -29,6 +30,8 @@ function load_config(): array
 function app_boot(): void
 {
     $config = load_config();
+
+    send_security_headers();
 
     // Timezone: everything is stored and shown in this zone.
     date_default_timezone_set($config['timezone'] ?? 'Europe/Berlin');

@@ -66,6 +66,19 @@
       <label class="check"><input type="checkbox" name="reg_opt_in" value="1"> Ja, ueber Updates informieren</label>
       <label>E-Mail <input type="email" name="reg_email" value="<?= h($post['reg_email'] ?? '') ?>"></label>
 
+      <details>
+        <summary style="cursor:pointer;color:var(--muted);margin:14px 0 8px">Erweitert: Update- und Registrierungs-URLs</summary>
+        <p class="muted">Die Voreinstellungen zeigen auf den offiziellen Timeminator-Kanal. Fork-Betreiber koennen hier auf einen eigenen Manifest- oder Registry-Server umbiegen, oder beides ganz abschalten.</p>
+        <label>Update-Manifest-URL
+          <input type="url" name="update_manifest_url" value="<?= h($post['update_manifest_url'] ?? 'https://api.github.com/repos/freshNfunky/Timeminator-Community/releases/latest') ?>">
+        </label>
+        <label class="check"><input type="checkbox" name="disable_update_check" value="1" <?= !empty($post['disable_update_check']) ? 'checked' : '' ?>> Update-Pruefung deaktivieren</label>
+        <label>Registrierungs-Endpoint
+          <input type="url" name="registration_endpoint" value="<?= h($post['registration_endpoint'] ?? 'https://public.felixschaller.com/timeminator-registry/register.php') ?>">
+        </label>
+        <label class="check"><input type="checkbox" name="disable_registration" value="1" <?= !empty($post['disable_registration']) ? 'checked' : '' ?>> Registrierung ganz deaktivieren</label>
+      </details>
+
       <button class="btn btn-primary btn-block" type="submit">Installieren</button>
     </form>
     <?php endif; ?>

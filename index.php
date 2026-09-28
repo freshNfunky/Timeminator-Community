@@ -65,6 +65,7 @@ $routes = [
     'update_check' => 'ctrl_update_check',
     'update_apply' => 'ctrl_update_apply',
     'registration_save' => 'ctrl_registration_save',
+    'endpoints_save'    => 'ctrl_endpoints_save',
 ];
 
 $handler = $routes[$r] ?? null;
