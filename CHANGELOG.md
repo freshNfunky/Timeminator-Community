@@ -48,6 +48,18 @@ version heading when a release is cut.
   registration outright. Admin → System gains a matching "Endpoints"
   form so the same overrides can be edited later without touching
   `config.php`; overrides live in `settings.json` (fixes #12).
+- CSV / JSON export of time entries at `?r=entries_export`, honouring the
+  existing filter bar and streaming stable columns (client and project
+  codes included so the exported file round-trips back through the
+  importer). Admins may pass `all=1` to export every user's entries
+  (fixes #15).
+- CSV import (Admin → Import): upload with an auto-detected `,`/`;`
+  delimiter, a per-row preview showing which entries will be inserted
+  and which are skipped (unknown client / project / task / user, or a
+  bad timestamp), and confirm-to-write. Each import creates one
+  `import_batches` row and tags every inserted `time_entries` row with
+  its `batch_id`. Batches can be rolled back as a unit from the same
+  screen. New permission `admin.imports` (fixes #16).
 - `SECURITY.md` with a private vulnerability-reporting policy, supported
   versions, response-time expectations, and scope (fixes #9).
 - `CONTRIBUTING.md` restating the "no Composer, no build step" constraint,

@@ -17,13 +17,16 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
 <?php if (Auth::can('scopes.manage')): ?>
   <a href="<?= h(route('scopes')) ?>"<?= $active(['scopes']) ?>>Sichten</a>
 <?php endif; ?>
-<?php if (Auth::can('admin.users') || Auth::can('admin.roles') || Auth::can('admin.system')): ?>
+<?php if (Auth::can('admin.users') || Auth::can('admin.roles') || Auth::can('admin.system') || Auth::can('admin.imports')): ?>
   <span class="nav-sep"></span>
   <?php if (Auth::can('admin.users')): ?>
     <a href="<?= h(route('admin_users')) ?>"<?= $active(['admin_users']) ?>>Benutzer</a>
   <?php endif; ?>
   <?php if (Auth::can('admin.roles')): ?>
     <a href="<?= h(route('admin_roles')) ?>"<?= $active(['admin_roles']) ?>>Rollen</a>
+  <?php endif; ?>
+  <?php if (Auth::can('admin.imports')): ?>
+    <a href="<?= h(route('imports')) ?>"<?= $active(['imports']) ?>>Import</a>
   <?php endif; ?>
   <?php if (Auth::can('admin.system')): ?>
     <a href="<?= h(route('admin_system')) ?>"<?= $active(['admin_system']) ?>>System</a>
