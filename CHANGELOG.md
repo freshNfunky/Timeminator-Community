@@ -87,6 +87,16 @@ version heading when a release is cut.
 - `PULL_REQUEST_TEMPLATE.md` with a manual smoke-test section and a
   release-readiness checklist (fixes #10).
 - This `CHANGELOG.md`, following Keep a Changelog (fixes #11).
+- GitHub Actions CI workflow: a `php -l` sweep across the codebase, the
+  PHPUnit test suite on a matrix of PHP 8.1 / 8.2 / 8.3 / 8.4, and a smoke
+  check that a fresh SQLite install boots the login screen and emits the
+  security response headers (fixes #13).
+- Initial PHPUnit test suite under `tests/`: `Stats` math (work-day
+  boundary, track fallback, aggregate sums, day series), helpers (`h()`,
+  `cfg()`, `client_ip()` proxy hardening) and `LoginThrottle` behaviour
+  (per-user and per-IP lockouts, `clearForUser`, `prune()` horizon).
+  Kept Composer-free — the phar is downloaded on demand, the app itself
+  ships no `vendor/` (fixes #14).
 
 ### Changed
 - README no longer claims that CSV imports are rollbackable — no import
