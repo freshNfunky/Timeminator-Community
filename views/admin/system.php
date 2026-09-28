@@ -35,7 +35,7 @@
                (installiert <?= h($update['current']) ?>).</p>
             <?php if (!empty($update['url'])): ?><p><a href="<?= h($update['url']) ?>" target="_blank" rel="noopener">Release-Notes ansehen</a></p><?php endif; ?>
             <?php if (!$update_disabled): ?>
-              <form method="post" action="<?= h(route('update_apply')) ?>" onsubmit="return confirm('Update jetzt einspielen? config.php und Daten bleiben erhalten.')">
+              <form method="post" action="<?= h(route('update_apply')) ?>" data-confirm="Update jetzt einspielen? config.php und Daten bleiben erhalten.">
                 <?= csrf_field() ?>
                 <button class="btn btn-primary" type="submit">Update einspielen</button>
               </form>

@@ -193,14 +193,33 @@ function app_version(): string
  * so a header-forging client cannot spoof its IP.
  */
 /**
- * Send response headers that harden the browser side of the app: a
+ * Per-request CSP nonce used to authorize the single inline `<style>` block the
+ * layout emits for dynamic color rules. Generated on first access and cached
+ * for the request; empty string in the CLI (never rendered anyway).
+ */
+function csp_nonce(): string
+{
+    static $nonce = null;
+    if ($nonce === null) {
+        try {
+            $nonce = base64_encode(random_bytes(16));
+        } catch (Throwable) {
+            $nonce = '';
+        }
+    }
+    return $nonce;
+}
+
+/**
+ * Send response headers that harden the browser side of the app: a strict
  * Content-Security-Policy, X-Content-Type-Options, X-Frame-Options,
  * Referrer-Policy, Permissions-Policy and — under HTTPS — HSTS.
  *
- * The default CSP allows `'unsafe-inline'` for scripts and styles because a
- * handful of views ship inline event handlers and inline style attributes;
- * tightening that is a follow-up. Hosters can override the whole policy
- * via `csp` in config.php, or pass an empty string to suppress it.
+ * The default policy has no `'unsafe-inline'`: views ship no inline scripts
+ * and no `style=""` attributes; the layout emits one inline `<style>` block
+ * (dynamic color rules) authorized by a per-request nonce. Hosters can override
+ * the whole policy via `csp` in config.php, or pass an empty string to
+ * suppress it.
  */
 function send_security_headers(): void
 {
@@ -209,9 +228,11 @@ function send_security_headers(): void
     }
     $csp = cfg('csp', null);
     if ($csp === null) {
+        $nonce = csp_nonce();
         $csp = "default-src 'self'; "
-             . "script-src 'self' 'unsafe-inline'; "
-             . "style-src 'self' 'unsafe-inline'; "
+             . "script-src 'self'; "
+             . "style-src 'self' 'nonce-" . $nonce . "'; "
+             . "style-src-attr 'none'; "
              . "img-src 'self' data:; "
              . "font-src 'self'; "
              . "connect-src 'self'; "
@@ -233,6 +254,38 @@ function send_security_headers(): void
     if ($https) {
         header('Strict-Transport-Security: max-age=15552000; includeSubDomains');
     }
+}
+
+/**
+ * Return the current set of client + project colors, deduplicated and
+ * sanitized. Used by the layout to emit one `<style>` block that assigns
+ * dynamic background colors to `.dot[data-color=...]` elements without
+ * needing inline `style=""` attributes.
+ *
+ * Only colors matching `#RGB` or `#RRGGBB` are emitted so we can never inject
+ * arbitrary CSS through this path.
+ *
+ * @return array<int,string>
+ */
+function collect_theme_colors(): array
+{
+    try {
+        $rows = DB::all(
+            "SELECT color FROM clients  WHERE color IS NOT NULL AND color <> ''
+             UNION
+             SELECT color FROM projects WHERE color IS NOT NULL AND color <> ''"
+        );
+    } catch (Throwable) {
+        return [];
+    }
+    $out = [];
+    foreach ($rows as $r) {
+        $c = trim((string) $r['color']);
+        if (preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $c)) {
+            $out[strtolower($c)] = true;
+        }
+    }
+    return array_keys($out);
 }
 
 function client_ip(): string

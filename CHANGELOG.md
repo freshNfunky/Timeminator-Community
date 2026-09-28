@@ -36,8 +36,9 @@ version heading when a release is cut.
   `client_ip()` helper respects a `trusted_proxies` allow-list from
   config so `X-Forwarded-For` is only honoured behind a listed peer
   (fixes #7).
-- Security response headers on every response: a Content-Security-Policy
-  (permissive on inline handlers today, tightening is a follow-up),
+- Security response headers on every response: a strict
+  Content-Security-Policy (`script-src 'self'`, `style-src 'self'
+  'nonce-…'`, `style-src-attr 'none'` — no `'unsafe-inline'`),
   X-Content-Type-Options, X-Frame-Options, Referrer-Policy,
   Permissions-Policy and — under HTTPS — HSTS. Wired into `app_boot`
   and `install.php`. Overridable per-host via a `csp` key in
@@ -96,6 +97,12 @@ version heading when a release is cut.
   respects single-, double- and backtick-quoted strings and both `--`
   and `#` line comments and `/* … */` block comments, so future
   migrations with non-trivial bodies apply correctly (fixes #5).
+- Views no longer carry `onclick=` / `onsubmit=` / `onchange=` or
+  `style=""` attributes; `app.js` no longer sets `element.style.foo`.
+  A per-request CSP nonce authorizes one `<style>` block in the layout
+  that assigns dynamic client / project colors to `.dot[data-color=…]`
+  elements. This lets the default CSP drop `'unsafe-inline'` from both
+  `script-src` and `style-src` (finishes #8).
 
 ### Fixed
 - Administrators can now delete other users' time entries.

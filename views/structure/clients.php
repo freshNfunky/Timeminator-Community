@@ -27,7 +27,7 @@
       <tbody>
       <?php foreach ($clients as $c): ?>
         <tr class="<?= $c['active'] ? '' : 'muted' ?>">
-          <td><span class="dot" style="background:<?= h($c['color'] ?: '#888') ?>"></span><?= h($c['name']) ?></td>
+          <td><span class="dot" data-color="<?= h(strtolower((string) ($c['color'] ?: ''))) ?>"></span><?= h($c['name']) ?></td>
           <td><code><?= h($c['code']) ?></code></td>
           <td><?= h($c['track'] ?? '') ?></td>
           <td><?= $c['active'] ? '' : '<span class="pill">inaktiv</span>' ?></td>

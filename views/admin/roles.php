@@ -48,7 +48,7 @@ foreach ($permissions as $p) { $byGroup[$p['grp']][] = $p; }
           <td class="r"><a class="btn btn-sm" href="<?= h(route('admin_roles', ['edit' => $r['id']])) ?>">bearb.</a></td>
           <td class="r">
             <?php if (!$r['is_system']): ?>
-              <form method="post" action="<?= h(route('role_delete')) ?>" class="inline" onsubmit="return confirm('Rolle loeschen?')">
+              <form method="post" action="<?= h(route('role_delete')) ?>" class="inline" data-confirm="Rolle loeschen?">
                 <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $r['id'] ?>">
                 <button class="btn btn-sm btn-danger" type="submit">x</button>
               </form>

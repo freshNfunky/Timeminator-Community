@@ -1,4 +1,5 @@
 <?php /** @var string $__content @var string $__title */ ?>
+<?php $__nonce = csp_nonce(); $__colors = collect_theme_colors(); ?>
 <!doctype html>
 <html lang="de">
 <head>
@@ -6,6 +7,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= h($__title) ?> · <?= h(cfg('app_name', 'Timeminator')) ?></title>
 <link rel="stylesheet" href="<?= h(asset('app.css')) ?>">
+<?php if ($__colors): ?>
+<style nonce="<?= h($__nonce) ?>">
+<?php foreach ($__colors as $__c): ?>
+.dot[data-color="<?= h($__c) ?>"] { background-color: <?= h($__c) ?>; }
+<?php endforeach; ?>
+</style>
+<?php endif; ?>
 </head>
 <body>
 <header class="topbar">
