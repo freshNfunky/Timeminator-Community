@@ -11,6 +11,17 @@ version heading when a release is cut.
 ## [Unreleased]
 
 ### Added
+- Continuous integration: GitHub Actions workflow running `php -l`
+  across every PHP file, a UTF-8 sanity check for schema and migration
+  SQL, PHPUnit, and a smoke boot that verifies `install.php` renders
+  and `index.php` redirects when no `config.php` is present. Matrix
+  over PHP 8.1, 8.2, 8.3 and 8.4 (fixes #13; the workflow file itself
+  needs a token with the `workflow` scope to land on GitHub).
+- PHPUnit test suite (33 tests, 71 assertions) covering `Stats`,
+  `Repo`, `LoginThrottle`, the SQL statement splitter, CSRF helpers
+  and `client_ip()`. Dev-only Composer manifest (`composer.json`) with
+  `phpunit/phpunit ^10.5`; releases still ship without `vendor/`, the
+  no-Composer-at-install contract is preserved (fixes #14).
 - Dark mode via `prefers-color-scheme`, with a manual override hook
   (`data-theme="light|dark"` on the document root). Palette moved into
   CSS custom properties on `:root`; the canvas chart renderer reads

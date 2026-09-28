@@ -11,3 +11,9 @@
 .DS_Store
 *.swp
 Thumbs.db
+
+# Dev tooling (releases ship without vendor/)
+/vendor/
+/composer.lock
+/.phpunit.cache/
+/.phpunit.result.cache
