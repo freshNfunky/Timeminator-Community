@@ -20,6 +20,13 @@ version heading when a release is cut.
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-09-29
+
+Big rollup. All the work under `[Unreleased]` since 0.2.0 lands here in one
+release. Highlights: dark mode, login brute-force protection, strict CSP,
+CSV import + export, updater integrity + rollback, installer endpoint
+control, PHPUnit suite, repo-hygiene docs.
+
 ### Added
 - Dark mode via `prefers-color-scheme`, with a manual override hook
   (`data-theme="light|dark"` on the document root). Palette moved into
@@ -157,6 +164,7 @@ version heading when a release is cut.
   0.x. This is a cosmetic mislabel; the on-disk `VERSION` file is the
   source of truth.
 
-[Unreleased]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.2.0...v0.5.0
 [0.2.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/freshNfunky/Timeminator-Community/releases/tag/v0.1.0
