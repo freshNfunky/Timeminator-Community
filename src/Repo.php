@@ -161,8 +161,12 @@ final class Repo
         );
     }
 
-    public static function deleteEntry(int $id, int $userId): void
+    public static function deleteEntry(int $id, int $userId, bool $isAdmin = false): void
     {
+        if ($isAdmin) {
+            DB::run('DELETE FROM time_entries WHERE id = ?', [$id]);
+            return;
+        }
         DB::run('DELETE FROM time_entries WHERE id = ? AND user_id = ?', [$id, $userId]);
     }
 
@@ -235,7 +239,9 @@ final class Repo
         if (!empty($f['client_id']))  { $where[] = 'e.client_id = ?'; $args[] = (int) $f['client_id']; }
         if (!empty($f['project_id'])) { $where[] = 'e.project_id = ?'; $args[] = (int) $f['project_id']; }
         if (!empty($f['user_id']))    { $where[] = 'e.user_id = ?'; $args[] = (int) $f['user_id']; }
-        $sql = 'SELECT e.*, t.name AS task_name, p.name AS project_name, c.name AS client_name,
+        $sql = 'SELECT e.*, t.name AS task_name,
+                       p.name AS project_name, p.code AS project_code,
+                       c.name AS client_name,  c.code AS client_code,
                        c.color AS client_color, p.color AS project_color,
                        p.track AS project_track, c.track AS client_track
                   FROM time_entries e

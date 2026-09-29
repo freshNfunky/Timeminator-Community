@@ -40,10 +40,10 @@
 
       <h3>Datenbank</h3>
       <div class="db-toggle">
-        <label class="check"><input type="radio" name="db_driver" value="mysql" <?= (($post['db_driver'] ?? '') === 'mysql') ? 'checked' : '' ?> onchange="document.getElementById('mysqlBox').style.display='block'"> MySQL / MariaDB (Hosting)</label>
-        <label class="check"><input type="radio" name="db_driver" value="sqlite" <?= (($post['db_driver'] ?? 'sqlite') !== 'mysql') ? 'checked' : '' ?> onchange="document.getElementById('mysqlBox').style.display='none'"> SQLite (lokal, ohne Server)</label>
+        <label class="check"><input type="radio" name="db_driver" value="mysql" <?= (($post['db_driver'] ?? '') === 'mysql') ? 'checked' : '' ?> data-toggle-target="mysqlBox"> MySQL / MariaDB (Hosting)</label>
+        <label class="check"><input type="radio" name="db_driver" value="sqlite" <?= (($post['db_driver'] ?? 'sqlite') !== 'mysql') ? 'checked' : '' ?> data-toggle-target="|mysqlBox"> SQLite (lokal, ohne Server)</label>
       </div>
-      <div id="mysqlBox" style="display:<?= (($post['db_driver'] ?? '') === 'mysql') ? 'block' : 'none' ?>">
+      <div id="mysqlBox" class="<?= (($post['db_driver'] ?? '') === 'mysql') ? '' : 'hidden' ?>">
         <div class="row">
           <label class="grow">Host <input type="text" name="mysql_host" value="<?= h($post['mysql_host'] ?? 'localhost') ?>"></label>
           <label>Port <input type="number" name="mysql_port" value="<?= h($post['mysql_port'] ?? '3306') ?>"></label>
@@ -66,10 +66,24 @@
       <label class="check"><input type="checkbox" name="reg_opt_in" value="1"> Ja, ueber Updates informieren</label>
       <label>E-Mail <input type="email" name="reg_email" value="<?= h($post['reg_email'] ?? '') ?>"></label>
 
+      <details>
+        <summary class="summary-adv">Erweitert: Update- und Registrierungs-URLs</summary>
+        <p class="muted">Die Voreinstellungen zeigen auf den offiziellen Timeminator-Kanal. Fork-Betreiber koennen hier auf einen eigenen Manifest- oder Registry-Server umbiegen, oder beides ganz abschalten.</p>
+        <label>Update-Manifest-URL
+          <input type="url" name="update_manifest_url" value="<?= h($post['update_manifest_url'] ?? 'https://api.github.com/repos/freshNfunky/Timeminator-Community/releases/latest') ?>">
+        </label>
+        <label class="check"><input type="checkbox" name="disable_update_check" value="1" <?= !empty($post['disable_update_check']) ? 'checked' : '' ?>> Update-Pruefung deaktivieren</label>
+        <label>Registrierungs-Endpoint
+          <input type="url" name="registration_endpoint" value="<?= h($post['registration_endpoint'] ?? 'https://public.felixschaller.com/timeminator-registry/register.php') ?>">
+        </label>
+        <label class="check"><input type="checkbox" name="disable_registration" value="1" <?= !empty($post['disable_registration']) ? 'checked' : '' ?>> Registrierung ganz deaktivieren</label>
+      </details>
+
       <button class="btn btn-primary btn-block" type="submit">Installieren</button>
     </form>
     <?php endif; ?>
   <?php endif; ?>
 </div>
+<script src="<?= h(asset('app.js')) ?>"></script>
 </body>
 </html>

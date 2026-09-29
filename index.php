@@ -27,6 +27,7 @@ require __DIR__ . '/src/controllers/entries_ctrl.php';
 require __DIR__ . '/src/controllers/structure_ctrl.php';
 require __DIR__ . '/src/controllers/stats_ctrl.php';
 require __DIR__ . '/src/controllers/admin_ctrl.php';
+require __DIR__ . '/src/controllers/imports_ctrl.php';
 
 $r = (string) get('r', Auth::check() ? 'dashboard' : 'login');
 
@@ -35,10 +36,11 @@ $routes = [
     'logout'       => 'ctrl_logout',
     'dashboard'    => 'ctrl_dashboard',
 
-    'entries'      => 'ctrl_entries_index',
-    'entry_form'   => 'ctrl_entry_form',
-    'entry_save'   => 'ctrl_entry_save',
-    'entry_delete' => 'ctrl_entry_delete',
+    'entries'         => 'ctrl_entries_index',
+    'entries_export'  => 'ctrl_entries_export',
+    'entry_form'      => 'ctrl_entry_form',
+    'entry_save'      => 'ctrl_entry_save',
+    'entry_delete'    => 'ctrl_entry_delete',
     'timer_start'  => 'ctrl_timer_start',
     'timer_stop'   => 'ctrl_timer_stop',
     'timer_status' => 'ctrl_timer_status',
@@ -65,6 +67,13 @@ $routes = [
     'update_check' => 'ctrl_update_check',
     'update_apply' => 'ctrl_update_apply',
     'registration_save' => 'ctrl_registration_save',
+    'endpoints_save'    => 'ctrl_endpoints_save',
+
+    'imports'         => 'ctrl_imports_index',
+    'imports_upload'  => 'ctrl_imports_upload',
+    'imports_confirm' => 'ctrl_imports_confirm',
+    'imports_discard' => 'ctrl_imports_discard',
+    'imports_delete'  => 'ctrl_imports_delete',
 ];
 
 $handler = $routes[$r] ?? null;

@@ -12,7 +12,13 @@ final class Registration
 {
     public static function endpoint(): string
     {
-        return (string) cfg('registration_endpoint', '');
+        $override = (string) Settings::get('registration_endpoint_override', '');
+        return $override !== '' ? $override : (string) cfg('registration_endpoint', '');
+    }
+
+    public static function isDisabled(): bool
+    {
+        return (bool) Settings::get('registration_disabled', false);
     }
 
     public static function status(): array
@@ -34,11 +40,17 @@ final class Registration
         if (!$optIn) {
             return ['ok' => true, 'message' => 'Registrierung deaktiviert. Es werden keine Daten gesendet.'];
         }
+        if (self::isDisabled()) {
+            return ['ok' => false, 'message' => 'Registrierung ist administrativ deaktiviert.'];
+        }
         return self::send($email);
     }
 
     public static function send(string $email): array
     {
+        if (self::isDisabled()) {
+            return ['ok' => false, 'message' => 'Registrierung ist administrativ deaktiviert.'];
+        }
         $endpoint = self::endpoint();
         if ($endpoint === '') {
             return ['ok' => false, 'message' => 'Kein Registrierungs-Endpoint konfiguriert.'];

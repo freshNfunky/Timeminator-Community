@@ -1,0 +1,55 @@
+name: Feature request
+description: Suggest a new capability for the Community edition.
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Community features must respect the "no Composer, no build step, no
+        framework" constraint. Features around budgeting, quoting, invoicing,
+        or accounting connectors belong in **Pro**, not here.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the pain, not the solution yet.
+      placeholder: "Currently I cannot ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Sketch the UX / API you have in mind. Small is good.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What did you try or think about before opening this?
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Is this Community or Pro scope?
+      options:
+        - Community (self-hostable, no external services required)
+        - I'm not sure — please help me decide
+        - I think this belongs in Pro
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: This feature does **not** require Composer, a build step, or an external CDN.
+          required: true
