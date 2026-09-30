@@ -20,6 +20,23 @@ version heading when a release is cut.
 
 ## [Unreleased]
 
+### Changed
+- **LoginThrottle now escalates the lockout window for repeat offenders**
+  in a 24 h horizon: 15 min → 1 h → 4 h → 24 h. The first lockout stays
+  at the baseline 15 min; every subsequent lockout inside the horizon
+  climbs one rung. Message copy reflects the actual wait ("… in 1 Stunde
+  erneut versuchen") (fixes #38).
+- `ctrl_login` now returns **HTTP 429 Too Many Requests** with a
+  `Retry-After: <seconds>` header when `LoginThrottle` refuses a login.
+  The German error string in the page body stays unchanged, so the
+  human path is identical; the change is for monitoring probes, health
+  checks and retry scripts (fixes #37).
+
+### Added
+- `LoginThrottle::retryAfterSeconds($username, $ip)` — precise upper
+  bound in seconds until whichever locked bucket clears first; used to
+  fill the `Retry-After` header.
+
 ## [0.5.0] — 2026-09-29
 
 Big rollup. All the work under `[Unreleased]` since 0.2.0 lands here in one
