@@ -17,3 +17,5 @@ Thumbs.db
 /.phpunit.cache/
 /.phpunit.result.cache
 /phpunit.xml
+/vendor/
+/composer.lock

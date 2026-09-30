@@ -37,4 +37,19 @@ final class TestSupport
             [$username, ucfirst($username), password_hash('irrelevant', PASSWORD_DEFAULT), date('Y-m-d H:i:s')]
         );
     }
+
+    /**
+     * Reset the Settings cache and delete data/settings.json, so a test
+     * starts from a clean state and does not leak into siblings. Settings
+     * is a static singleton in production; tests need to poke it directly.
+     */
+    public static function resetSettings(): void
+    {
+        $prop = new ReflectionProperty(Settings::class, 'cache');
+        $prop->setValue(null, null);
+        $file = APP_ROOT . '/data/settings.json';
+        if (is_file($file)) {
+            @unlink($file);
+        }
+    }
 }

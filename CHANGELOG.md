@@ -36,6 +36,32 @@ version heading when a release is cut.
 - `LoginThrottle::retryAfterSeconds($username, $ip)` — precise upper
   bound in seconds until whichever locked bucket clears first; used to
   fill the `Retry-After` header.
+- **Update banner.** Admins see a small "new version available" panel
+  under the top bar when the release manifest reports a newer version.
+  Three actions: **Ignorieren** (dismiss for this session — comes back
+  next login), **Ueberspringen** (skip this specific version until a
+  newer one appears; persisted globally), **Update** (jump to
+  Admin → System to apply). All buttons are forms with CSRF tokens; no
+  inline JS. The banner respects `Updater::isDisabled()` and stays
+  hidden for non-admins.
+- **Opportunistic update check.** The layout partial triggers
+  `Updater::opportunisticCheck()` once every 24 h per install (throttled
+  by the cache timestamp). Silent on failure — a page never breaks
+  because the release manifest is unreachable.
+- **`.php` data migrations.** `Updater::runMigrations()` now picks up
+  both `.sql` and `.php` files from `schema/migrations/<driver>/`. PHP
+  migrations are `require`d in an isolated closure and receive access
+  to `DB` and `Settings` — for backfills that cannot be expressed as
+  one SQL statement. Applied migrations are tracked by basename in
+  `Settings['applied_migrations']` as before, so an existing install is
+  unaffected.
+- **`docs/schema-migrations.md`.** Documents the migration naming
+  convention (`YYYY-MM-DD-NN-slug.<ext>`), the additive-by-default
+  policy, the `.php` migration flow and the pre-1.0 compatibility
+  contract.
+- **`referrer_or_default()` helper.** Same-origin-only redirect helper
+  for the new dismiss/skip flow — keeps the admin on whatever page they
+  were on instead of jumping to the dashboard.
 
 ## [0.5.0] — 2026-09-29
 

@@ -52,6 +52,36 @@ function redirect_route(string $r = 'dashboard', array $params = []): never
     redirect(route($r, $params));
 }
 
+/**
+ * Return the HTTP Referer only when it points back into this same app; else
+ * $default. Used by side-effect POST handlers (dismiss / skip) so the admin
+ * lands back on the page they were on, without letting an attacker POST from
+ * elsewhere and pick the redirect target.
+ */
+function referrer_or_default(string $default): string
+{
+    $ref = (string) ($_SERVER['HTTP_REFERER'] ?? '');
+    if ($ref === '') {
+        return $default;
+    }
+    $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+    $scheme = ((($_SERVER['HTTPS'] ?? '') === 'on') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https'))
+        ? 'https' : 'http';
+    $parts = parse_url($ref);
+    if (!is_array($parts) || empty($parts['host'])) {
+        return $default;
+    }
+    if ($host !== '' && strcasecmp((string) $parts['host'], $host) !== 0) {
+        return $default;
+    }
+    $path = (string) ($parts['path'] ?? '');
+    $base = base_path();
+    if ($base !== '' && !str_starts_with($path, $base . '/')) {
+        return $default;
+    }
+    return $scheme . '://' . $host . $path . (isset($parts['query']) ? '?' . $parts['query'] : '');
+}
+
 function is_post(): bool
 {
     return ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';

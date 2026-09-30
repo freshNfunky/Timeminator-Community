@@ -28,6 +28,8 @@
   </div>
 </header>
 
+<?php require __DIR__ . '/partials/update_banner.php'; ?>
+
 <main class="wrap">
   <?php foreach (flash_take() as $f): ?>
     <div class="flash flash-<?= h($f['type']) ?>"><?= h($f['msg']) ?></div>

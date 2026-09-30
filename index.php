@@ -64,8 +64,11 @@ $routes = [
     'role_save'    => 'ctrl_role_save',
     'role_delete'  => 'ctrl_role_delete',
     'admin_system' => 'ctrl_system_index',
-    'update_check' => 'ctrl_update_check',
-    'update_apply' => 'ctrl_update_apply',
+    'update_check'   => 'ctrl_update_check',
+    'update_apply'   => 'ctrl_update_apply',
+    'update_dismiss' => 'ctrl_update_dismiss',
+    'update_skip'    => 'ctrl_update_skip',
+    'update_clear_skipped' => 'ctrl_update_clear_skipped',
     'registration_save' => 'ctrl_registration_save',
     'endpoints_save'    => 'ctrl_endpoints_save',
 

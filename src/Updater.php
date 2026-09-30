@@ -159,6 +159,117 @@ final class Updater
         return Settings::get('update');
     }
 
+    /**
+     * Refresh the update cache at most once every $throttleSeconds. Called on
+     * boot from the layout, so the banner has a fresh answer without hitting
+     * the release manifest on every request. Any error is swallowed — a page
+     * load must never fail because the release manifest is unreachable.
+     */
+    public static function opportunisticCheck(int $throttleSeconds = 86400): void
+    {
+        if (self::isDisabled()) {
+            return;
+        }
+        if (self::manifestUrl() === '') {
+            return;
+        }
+        $cached = self::cached();
+        $last = 0;
+        if (is_array($cached) && !empty($cached['checked_at'])) {
+            try {
+                $last = (new DateTimeImmutable((string) $cached['checked_at']))->getTimestamp();
+            } catch (Throwable) {
+                $last = 0;
+            }
+        }
+        if (time() - $last < $throttleSeconds) {
+            return;
+        }
+        try {
+            self::check();
+        } catch (Throwable) {
+            // silent — offline server, blocked outbound, throttled manifest.
+        }
+    }
+
+    /**
+     * Return the cached update info only when it points to a version that
+     *  a) is newer than the running one,
+     *  b) has not been skipped by an administrator, and
+     *  c) has not been dismissed in this session.
+     * Otherwise null. The banner uses this — everywhere else keeps calling
+     * cached() directly.
+     */
+    public static function bannerInfo(): ?array
+    {
+        $info = self::cached();
+        if (!is_array($info) || empty($info['ok']) || empty($info['newer'])) {
+            return null;
+        }
+        $latest = (string) ($info['latest'] ?? '');
+        if ($latest === '') {
+            return null;
+        }
+        if (self::isVersionSkipped($latest)) {
+            return null;
+        }
+        if (isset($_SESSION['update_banner_dismissed_for'])
+            && (string) $_SESSION['update_banner_dismissed_for'] === self::normalize($latest)) {
+            return null;
+        }
+        return $info;
+    }
+
+    public static function isVersionSkipped(string $version): bool
+    {
+        $v = self::normalize($version);
+        if ($v === '') {
+            return false;
+        }
+        $skipped = (array) Settings::get('update_skipped_versions', []);
+        foreach ($skipped as $s) {
+            if (self::normalize((string) $s) === $v) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Persist a "skip this version forever" — until a newer one shows up. */
+    public static function skipVersion(string $version): void
+    {
+        $v = self::normalize($version);
+        if ($v === '') {
+            return;
+        }
+        $skipped = (array) Settings::get('update_skipped_versions', []);
+        $skipped[] = $v;
+        Settings::set('update_skipped_versions', array_values(array_unique(
+            array_map([self::class, 'normalize'], $skipped)
+        )));
+    }
+
+    /** Session-scoped dismiss ("show me again next login"). */
+    public static function dismissForSession(string $version): void
+    {
+        $_SESSION['update_banner_dismissed_for'] = self::normalize($version);
+    }
+
+    /** Wipe every remembered skip — the operator wants to see all offers again. */
+    public static function clearSkippedVersions(): void
+    {
+        Settings::set('update_skipped_versions', []);
+    }
+
+    /** @return array<int,string> the persisted list of skipped versions */
+    public static function skippedVersions(): array
+    {
+        return array_values(array_map(
+            [self::class, 'normalize'],
+            (array) Settings::get('update_skipped_versions', [])
+        ));
+    }
+
     /** Download + apply the latest release. Returns [ok, message]. */
     public static function apply(): array
     {
@@ -485,13 +596,17 @@ final class Updater
     /**
      * Apply pending migrations for the active driver.
      *
-     * Files live in schema/migrations/<driver>/*.sql. A portable
-     * schema/migrations/*.sql layer is still honoured for legacy files.
-     * Applied migrations are recorded by basename in Settings.
+     * Files live in `schema/migrations/<driver>/YYYY-MM-DD-NN-slug.<ext>`.
+     * A portable `schema/migrations/*.sql` layer is still honoured for
+     * legacy files. Both `.sql` (DDL / DML) and `.php` (data
+     * transformations) files are supported; `.php` files are `require`d
+     * in a scope that exposes DB and Settings. Applied migrations are
+     * recorded by basename in Settings — see docs/schema-migrations.md.
      */
-    private static function runMigrations(): void
+    public static function runMigrations(): int
     {
         $applied = (array) Settings::get('applied_migrations', []);
+        $ran = 0;
         $dirs = [
             APP_ROOT . '/schema/migrations',
             APP_ROOT . '/schema/migrations/' . DB::driver(),
@@ -500,18 +615,39 @@ final class Updater
             if (!is_dir($dir)) {
                 continue;
             }
-            $files = glob($dir . '/*.sql') ?: [];
+            $files = array_merge(
+                glob($dir . '/*.sql') ?: [],
+                glob($dir . '/*.php') ?: []
+            );
             sort($files);
             foreach ($files as $file) {
                 $name = basename($file);
                 if (in_array($name, $applied, true)) {
                     continue;
                 }
-                DB::applySqlFile($file);
+                if (str_ends_with($name, '.php')) {
+                    self::runPhpMigration($file);
+                } else {
+                    DB::applySqlFile($file);
+                }
                 $applied[] = $name;
                 Settings::set('applied_migrations', $applied);
+                $ran++;
             }
         }
+        return $ran;
+    }
+
+    /**
+     * `require` a data-migration script in an isolated closure so its
+     * top-level variables never leak into caller scope. Any throw
+     * propagates — the caller decides whether to record it as applied.
+     */
+    private static function runPhpMigration(string $file): void
+    {
+        (static function (string $__file) {
+            require $__file;
+        })($file);
     }
 
     private static function rrmdir(string $dir): void
