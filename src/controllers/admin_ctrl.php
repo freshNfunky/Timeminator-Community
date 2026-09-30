@@ -188,6 +188,50 @@ function ctrl_update_apply(): void
     redirect_route('admin_system');
 }
 
+/**
+ * Dismiss the update banner for this session. The next login (or a fresh
+ * session cookie) will show it again — this is the "Ignorieren" button.
+ */
+function ctrl_update_dismiss(): void
+{
+    require_perm('admin.system');
+    csrf_check();
+    $version = trim((string) post('version'));
+    if ($version !== '') {
+        Updater::dismissForSession($version);
+    }
+    redirect(referrer_or_default(route('dashboard')));
+}
+
+/**
+ * Skip a specific released version. The banner comes back only when a newer
+ * one appears — this is the "Ueberspringen" button.
+ */
+function ctrl_update_skip(): void
+{
+    require_perm('admin.system');
+    csrf_check();
+    $version = trim((string) post('version'));
+    if ($version === '') {
+        redirect_route('admin_system');
+    }
+    Updater::skipVersion($version);
+    flash('Version ' . $version . ' wird uebersprungen.');
+    redirect(referrer_or_default(route('dashboard')));
+}
+
+/**
+ * Forget every skipped version so all offers are shown again.
+ */
+function ctrl_update_clear_skipped(): void
+{
+    require_perm('admin.system');
+    csrf_check();
+    Updater::clearSkippedVersions();
+    flash('Uebersprungene Versionen zurueckgesetzt.');
+    redirect_route('admin_system');
+}
+
 function ctrl_registration_save(): void
 {
     require_perm('admin.system');
