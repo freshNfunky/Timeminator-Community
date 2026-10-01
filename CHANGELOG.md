@@ -36,6 +36,15 @@ version heading when a release is cut.
 - `LoginThrottle::retryAfterSeconds($username, $ip)` — precise upper
   bound in seconds until whichever locked bucket clears first; used to
   fill the `Retry-After` header.
+- **Dockerfile + docker-compose.yml** for zero-infrastructure local
+  evaluation and self-hosting. Image is `php:8.3-apache` with PDO
+  (MySQL and SQLite), zip for the in-app updater and mod_rewrite
+  enabled — the same shape as a typical PHP shared host. Two Compose
+  profiles: `sqlite` (single service) and `mysql` (app + MariaDB).
+  `data/` is persisted on a named volume. The project remains
+  Composer-free at install time: `composer.json` and `vendor/` are
+  excluded from the build context via `.dockerignore`. README gains a
+  "Run it in Docker" section (fixes #19).
 - **Update banner.** Admins see a small "new version available" panel
   under the top bar when the release manifest reports a newer version.
   Three actions: **Ignorieren** (dismiss for this session — comes back

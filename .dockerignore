@@ -1,0 +1,46 @@
+# Keep the build context lean and reproducible across checkouts.
+# Nothing listed here is required at runtime.
+
+# Dev-only Composer install (release ships without vendor/)
+/vendor/
+/composer.lock
+/composer.json
+
+# Test tooling
+/phpunit.phar
+/phpunit.xml
+/.phpunit.cache/
+/.phpunit.result.cache
+/tests/
+
+# Local state and secrets — these must NOT be baked into the image
+/config.php
+/data/*.sqlite
+/data/*.sqlite-journal
+/data/*.sqlite-wal
+/data/*.sqlite-shm
+/data/php-error.log
+/data/settings.json
+/data/update_*
+/data/backup_*
+
+# VCS + CI tooling
+/.git/
+/.github/
+/.gitignore
+/.gitattributes
+
+# OS / editor cruft
+.DS_Store
+*.swp
+Thumbs.db
+
+# Docker config itself — never recursive
+/Dockerfile
+/docker-compose.yml
+/.dockerignore
+/.docker/
+
+# Scratchpads and local experiments
+/.claude/
+/docs/private/

@@ -1,0 +1,81 @@
+# Timeminator Community — Compose recipes.
+#
+# Two profiles, pick one:
+#
+#   docker compose --profile sqlite up --build   # single service, no DB server
+#   docker compose --profile mysql  up --build   # app + MariaDB (persisted volume)
+#
+# On first visit, open http://localhost:8080/ and finish the installer.
+# The named volume `tm_data` keeps your SQLite file, settings and update
+# cache across restarts. The installer-generated `config.php` is NOT
+# persisted by default — see the comment on the `app-*` services for how
+# to pin it to a host file.
+
+services:
+  app-sqlite:
+    profiles: [sqlite]
+    build: .
+    image: timeminator-community:local
+    ports:
+      - "8080:80"
+    volumes:
+      - tm_data:/var/www/html/data
+      # Uncomment to pin config.php to a host file so it survives
+      # `docker compose down`. Create the file empty first:
+      #   touch .docker/sqlite.config.php
+      # - ./.docker/sqlite.config.php:/var/www/html/config.php
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost/install.php > /dev/null || curl -fsS http://localhost/index.php > /dev/null"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  app-mysql:
+    profiles: [mysql]
+    build: .
+    image: timeminator-community:local
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    environment:
+      # Hints for whoever is clicking through install.php on first visit:
+      # host "db", user "timeminator", password "timeminator".
+      # The app does NOT read these at runtime — config.php is the
+      # source of truth once the installer has written it.
+      TM_DB_HOST: db
+      TM_DB_PORT: "3306"
+      TM_DB_NAME: timeminator
+      TM_DB_USER: timeminator
+    volumes:
+      - tm_data:/var/www/html/data
+      # - ./.docker/mysql.config.php:/var/www/html/config.php
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost/install.php > /dev/null || curl -fsS http://localhost/index.php > /dev/null"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  db:
+    profiles: [mysql]
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: timeminator
+      MARIADB_USER: timeminator
+      MARIADB_PASSWORD: timeminator
+      MARIADB_RANDOM_ROOT_PASSWORD: "1"
+    volumes:
+      - tm_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  tm_data:
+  tm_db:
