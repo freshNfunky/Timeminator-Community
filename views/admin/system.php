@@ -56,37 +56,15 @@
       </form>
     </div>
 
-    <div class="card">
-      <h2>Endpoints</h2>
-      <p class="muted">Update-Kanal und Registrierungs-Endpoint sind vom Installer vorbelegt. Hier kannst du sie ueberschreiben oder ganz abschalten. Leer lassen = Standard aus <code>config.php</code>.</p>
-      <form method="post" action="<?= h(route('endpoints_save')) ?>">
-        <?= csrf_field() ?>
-        <label>Update-Manifest-URL
-          <input type="url" name="manifest_override" value="<?= h($manifest_override) ?>" placeholder="<?= h($manifest_default) ?>">
-        </label>
-        <label class="check">
-          <input type="checkbox" name="update_disabled" value="1" <?= $update_disabled ? 'checked' : '' ?>>
-          Update-Pruefung deaktivieren
-        </label>
-        <label>Registrierungs-Endpoint
-          <input type="url" name="registration_override" value="<?= h($reg_endpoint_override) ?>" placeholder="<?= h($reg_endpoint_default) ?>">
-        </label>
-        <label class="check">
-          <input type="checkbox" name="registration_disabled" value="1" <?= $reg_disabled ? 'checked' : '' ?>>
-          Registrierung deaktivieren (sperrt auch neue Opt-ins)
-        </label>
-        <div class="form-actions"><button class="btn btn-primary" type="submit">Speichern</button></div>
-      </form>
-    </div>
   </div>
 
   <div class="col-form">
     <div class="card">
-      <h2>Registrierung (optional)</h2>
-      <p class="muted">Rein freiwillig. Uebertragen werden nur Kontakt-E-Mail, Domain und Version - niemals Zeiterfassungsdaten. Jederzeit abschaltbar.</p>
+      <h2>Benachrichtigungen <span class="muted">(optional, opt-in)</span></h2>
+      <p class="muted">Nur wenn du es ausdruecklich moechtest: der Maintainer informiert dich ueber neue Releases und Sicherheitshinweise. Keine Lizenz, kein Account &mdash; die Community-Edition ist MIT-lizenziert und kostenlos. Uebertragen werden nur deine E-Mail, Domain und App-Version; niemals Zeiterfassungsdaten.</p>
       <p class="muted">Endpoint: <code><?= h($reg_endpoint ?: '—') ?></code></p>
       <?php if ($reg_disabled): ?>
-        <div class="flash flash-err">Registrierung ist administrativ deaktiviert. Es werden keine Daten gesendet.</div>
+        <div class="flash flash-err">Benachrichtigungen sind administrativ deaktiviert. Es werden keine Daten gesendet.</div>
       <?php endif; ?>
       <form method="post" action="<?= h(route('registration_save')) ?>">
         <?= csrf_field() ?>
@@ -104,4 +82,35 @@
       </form>
     </div>
   </div>
+</div>
+
+<div class="card">
+  <h2>Endpoints</h2>
+  <p class="muted">Zwei URLs steuert die Community-Edition: wo sie nach neuen Releases schaut (<em>Update-Kanal</em>) und wohin die Opt-in-Benachrichtigungs-Anmeldung geht (<em>Benachrichtigungs-Endpoint</em>). <strong>Kein Lizenzserver</strong> &mdash; die Community-Edition hat keine Lizenz-Mechanik. Felder leer lassen = Standard aus <code>config.php</code>.</p>
+  <form method="post" action="<?= h(route('endpoints_save')) ?>" class="endpoint-form">
+    <?= csrf_field() ?>
+    <label>Update-Manifest-URL
+      <input type="url" name="manifest_override"
+             value="<?= h($manifest_override) ?>"
+             placeholder="z.B. <?= h($manifest_default) ?>"
+             title="<?= h($manifest_override !== '' ? $manifest_override : $manifest_default) ?>">
+      <small class="muted">Aktiv: <code><?= h($manifest ?: '—') ?></code></small>
+    </label>
+    <label class="check">
+      <input type="checkbox" name="update_disabled" value="1" <?= $update_disabled ? 'checked' : '' ?>>
+      Update-Pruefung deaktivieren
+    </label>
+    <label>Benachrichtigungs-Endpoint <span class="muted">(opt-in Update/Security-Mails)</span>
+      <input type="url" name="registration_override"
+             value="<?= h($reg_endpoint_override) ?>"
+             placeholder="z.B. <?= h($reg_endpoint_default) ?>"
+             title="<?= h($reg_endpoint_override !== '' ? $reg_endpoint_override : $reg_endpoint_default) ?>">
+      <small class="muted">Aktiv: <code><?= h($reg_endpoint ?: '—') ?></code></small>
+    </label>
+    <label class="check">
+      <input type="checkbox" name="registration_disabled" value="1" <?= $reg_disabled ? 'checked' : '' ?>>
+      Benachrichtigungen deaktivieren (sperrt auch neue Opt-ins)
+    </label>
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Speichern</button></div>
+  </form>
 </div>
