@@ -69,7 +69,9 @@ final class Updater
             $body = curl_exec($ch);
             $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
             $err = curl_error($ch);
-            curl_close($ch);
+            // Since PHP 8.0 the cURL handle is an object that auto-closes
+            // when $ch goes out of scope; curl_close() is a no-op and was
+            // formally deprecated in PHP 8.5.
             if ($fh) fclose($fh);
             if ($body === false && $err) {
                 throw new RuntimeException('HTTP error: ' . $err);
