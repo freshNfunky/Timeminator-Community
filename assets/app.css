@@ -217,6 +217,13 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .update-banner-close:hover{color:var(--ink)}
 .update-banner-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 
+/* Endpoints form: show the currently-active URL as monospace below each input,
+   and let the input take full card width so long URLs aren't cut off. */
+.endpoint-form label{display:block;margin-bottom:14px}
+.endpoint-form input[type=url]{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+.endpoint-form small{display:block;margin-top:4px;font-size:12px;word-break:break-all}
+.endpoint-form small code{background:transparent;padding:0;font-size:12px}
+
 @media(max-width:820px){
   .cols{grid-template-columns:1fr}
   .chart-grid{grid-template-columns:1fr}
