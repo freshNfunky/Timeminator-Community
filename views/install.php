@@ -74,7 +74,7 @@
         </label>
         <label class="check"><input type="checkbox" name="disable_update_check" value="1" <?= !empty($post['disable_update_check']) ? 'checked' : '' ?>> Update-Pruefung deaktivieren</label>
         <label>Registrierungs-Endpoint
-          <input type="url" name="registration_endpoint" value="<?= h($post['registration_endpoint'] ?? 'https://public.felixschaller.com/timeminator-registry/register.php') ?>">
+          <input type="url" name="registration_endpoint" value="<?= h($post['registration_endpoint'] ?? 'https://license.felixschaller.com/timeminator-registry/register.php') ?>">
         </label>
         <label class="check"><input type="checkbox" name="disable_registration" value="1" <?= !empty($post['disable_registration']) ? 'checked' : '' ?>> Registrierung ganz deaktivieren</label>
       </details>
