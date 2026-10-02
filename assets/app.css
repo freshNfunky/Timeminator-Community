@@ -147,8 +147,47 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .summary-adv{cursor:pointer;color:var(--muted);margin:14px 0 8px}
 .note-pro{font-size:.85em}
 .pill{display:inline-block;background:var(--pill-bg);color:var(--muted);padding:2px 9px;border-radius:20px;font-size:12px}
+.pill-pro{background:#fde68a;color:#92400e;font-weight:600;letter-spacing:.02em}
+:root[data-theme="dark"] .pill-pro,
+:root:not([data-theme="light"]) .pill-pro{background:#78350f;color:#fde68a}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .pill-pro{background:#78350f;color:#fde68a}
+}
 .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600}
 .badge-live{background:var(--badge-live-bg);color:var(--badge-live-ink)}
+
+/* Entries: Liste/Kalender toggle sits in the filter bar. */
+.view-toggle{display:inline-flex;gap:4px;padding:2px;border:1px solid var(--line);border-radius:9px}
+.view-toggle .btn-sm{padding:5px 10px}
+
+/* Calendar teaser — the dimmed Pro-feature mockup. */
+.calendar-teaser-card{position:relative}
+.calendar-teaser-wrap{position:relative;min-height:460px}
+.calendar-grid{opacity:.35;pointer-events:none;filter:saturate(.5)}
+.calendar-head{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+.calendar-dow{text-align:center;font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:.04em;padding:4px 0}
+.calendar-body{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:72px;gap:4px}
+.calendar-cell{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px 6px;overflow:hidden;display:flex;flex-direction:column;gap:3px}
+.calendar-cell-out{opacity:.4}
+.calendar-cell-today{outline:2px solid var(--brand);outline-offset:-1px}
+.calendar-cell-num{font-size:11px;color:var(--muted);text-align:right}
+.calendar-event{font-size:11px;line-height:1.2;padding:2px 5px;border-radius:4px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background-color:var(--brand)}
+.calendar-event[data-color-var="--ok"]{background-color:var(--ok)}
+.calendar-event[data-color-var="--warn"]{background-color:var(--warn)}
+.calendar-event[data-color-var="--brand"]{background-color:var(--brand)}
+
+/* Upsell overlay on top of the dimmed grid. */
+.pro-upsell{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:min(380px,92%);
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:20px 22px;box-shadow:var(--shadow-modal);
+  text-align:left
+}
+.pro-upsell h3{margin:0 0 10px;font-size:17px;display:flex;align-items:center;gap:8px}
+.pro-upsell h3::before{content:'⭐';filter:saturate(1.3)}
+.pro-upsell p{margin:6px 0;font-size:14px;line-height:1.45}
+.pro-upsell-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
 
 /* Layout helpers */
 .cols{display:grid;grid-template-columns:360px 1fr;gap:18px;align-items:start}
