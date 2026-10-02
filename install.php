@@ -53,7 +53,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $tz = trim((string) ($_POST['timezone'] ?? 'Europe/Berlin')) ?: 'Europe/Berlin';
 
         $defaultManifest = 'https://api.github.com/repos/freshNfunky/Timeminator-Community/releases/latest';
-        $defaultRegistration = 'https://public.felixschaller.com/timeminator-registry/register.php';
+        $defaultRegistration = 'https://license.felixschaller.com/timeminator-registry/register.php';
         $manifestUrl = trim((string) ($_POST['update_manifest_url'] ?? $defaultManifest)) ?: $defaultManifest;
         $registrationUrl = trim((string) ($_POST['registration_endpoint'] ?? $defaultRegistration)) ?: $defaultRegistration;
         $updateDisabled = !empty($_POST['disable_update_check']);
