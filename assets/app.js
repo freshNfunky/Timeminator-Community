@@ -59,34 +59,6 @@
     }
   }
 
-  // Promo-sidebar carousel. Rotates through .promo-banner children of a
-  // .promo-carousel container every data-promo-interval ms (default 6s).
-  // Dots are clickable and reset the timer. CSP-strict: only classList
-  // mutations, no inline style assignments.
-  var promoCarousel = document.querySelector('.promo-carousel');
-  if (promoCarousel) {
-    var banners = promoCarousel.querySelectorAll('.promo-banner');
-    var dots    = document.querySelectorAll('.promo-dot');
-    if (banners.length > 1) {
-      var promoIdx   = 0;
-      var promoInt   = parseInt(promoCarousel.getAttribute('data-promo-interval'), 10) || 6000;
-      var promoTimer = null;
-      var showPromo  = function (i) {
-        promoIdx = ((i % banners.length) + banners.length) % banners.length;
-        banners.forEach(function (b, j) { b.classList.toggle('is-active', j === promoIdx); });
-        dots.forEach(function (d, j)    { d.classList.toggle('is-active', j === promoIdx); });
-      };
-      var armPromo = function () {
-        if (promoTimer) { clearInterval(promoTimer); }
-        promoTimer = setInterval(function () { showPromo(promoIdx + 1); }, promoInt);
-      };
-      dots.forEach(function (d, j) {
-        d.addEventListener('click', function () { showPromo(j); armPromo(); });
-      });
-      armPromo();
-    }
-  }
-
   // Collapsible nav groups: close an open .nav-group when clicking outside
   // of it. The native <details> element handles open/close on the summary
   // itself; this just dismisses stale dropdowns.
@@ -117,4 +89,158 @@
       if (t) { t.classList.add('hidden'); }
     });
   });
+
+  // Community banner carousel (Issue #22). Loads creatives from a first-party
+  // route (which server-side proxies the banner subdomain and falls back to a
+  // bundled default set), then rotates through them. Fully non-blocking: the
+  // main page never waits on this, and any failure just hides the slot.
+  initBannerCarousel();
+
+  function initBannerCarousel() {
+    var mount = document.getElementById('bannerCarousel');
+    var bar = document.getElementById('bannerbar');
+    if (!mount || !bar) {
+      return;
+    }
+
+    // Collapse toggle, remembered per browser.
+    var toggle = document.getElementById('bannerbarToggle');
+    var STORE_KEY = 'tm_banner_collapsed';
+    try {
+      if (window.localStorage && localStorage.getItem(STORE_KEY) === '1') {
+        bar.classList.add('collapsed');
+        if (toggle) { toggle.setAttribute('aria-expanded', 'false'); toggle.textContent = '+'; }
+      }
+    } catch (e) { /* storage blocked — default to expanded */ }
+
+    if (toggle) {
+      toggle.addEventListener('click', function () {
+        var collapsed = bar.classList.toggle('collapsed');
+        toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        toggle.textContent = collapsed ? '+' : '–';
+        try { if (window.localStorage) { localStorage.setItem(STORE_KEY, collapsed ? '1' : '0'); } } catch (e) {}
+      });
+    }
+
+    var endpoint = mount.getAttribute('data-endpoint');
+    if (!endpoint) { return; }
+    var interval = parseInt(mount.getAttribute('data-interval'), 10) || 7000;
+
+    fetch(endpoint, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data || !data.enabled || !Array.isArray(data.items) || data.items.length === 0) {
+          bar.remove();
+          return;
+        }
+        renderCarousel(mount, data.items, interval);
+      })
+      .catch(function () { bar.remove(); });
+  }
+
+  function renderCarousel(mount, items, interval) {
+    mount.textContent = '';
+    var cards = items.map(function (it) { return buildCard(it); });
+    cards.forEach(function (c, i) {
+      if (i > 0) { c.classList.add('hidden'); }
+      mount.appendChild(c);
+    });
+
+    if (cards.length < 2) { return; }
+
+    var dots = document.createElement('div');
+    dots.className = 'banner-dots';
+    var dotEls = cards.map(function (_, i) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'banner-dot' + (i === 0 ? ' active' : '');
+      b.setAttribute('aria-label', 'Banner ' + (i + 1));
+      b.addEventListener('click', function () { show(i); restart(); });
+      dots.appendChild(b);
+      return b;
+    });
+    mount.appendChild(dots);
+
+    var current = 0;
+    var timer = null;
+
+    function show(i) {
+      cards[current].classList.add('hidden');
+      dotEls[current].classList.remove('active');
+      current = (i + cards.length) % cards.length;
+      cards[current].classList.remove('hidden');
+      dotEls[current].classList.add('active');
+    }
+    function tick() { show(current + 1); }
+    function start() { timer = window.setInterval(tick, interval); }
+    function restart() { if (timer) { window.clearInterval(timer); } start(); }
+
+    mount.addEventListener('mouseenter', function () { if (timer) { window.clearInterval(timer); timer = null; } });
+    mount.addEventListener('mouseleave', function () { if (!timer) { start(); } });
+    start();
+  }
+
+  function buildCard(it) {
+    // One flexible card layout for every creative: top 2/3 is the hero
+    // image (object-fit:cover, so a 9:16 or 3:4 asset fills the slot
+    // without letterboxing), bottom 1/3 is title + body + CTA. The split
+    // is CSS so the ~200x1000 column reflows gracefully when the
+    // viewport changes. If the item has no image, the text block
+    // expands to fill the whole card.
+    var card = document.createElement('a');
+    card.className = 'banner-card';
+    if (it.href) {
+      card.href = it.href;
+      card.target = '_blank';
+      card.rel = 'noopener noreferrer';
+    }
+
+    if (it.image) {
+      var hero = document.createElement('div');
+      hero.className = 'banner-hero';
+      var img = document.createElement('img');
+      img.src = it.image;
+      img.alt = it.title || it.cta || 'Anzeige';
+      img.loading = 'lazy';
+      hero.appendChild(img);
+      // Gradient scrim that fades from the hero into the body panel,
+      // so the title doesn't have to live on a hard image/text seam.
+      var scrim = document.createElement('div');
+      scrim.className = 'banner-scrim';
+      hero.appendChild(scrim);
+      card.appendChild(hero);
+    } else {
+      card.classList.add('is-textonly');
+    }
+
+    var body = document.createElement('div');
+    body.className = 'banner-body';
+    if (it.title) {
+      var t = document.createElement('span');
+      t.className = 'banner-title';
+      t.textContent = it.title;
+      body.appendChild(t);
+    }
+    if (it.text) {
+      var p = document.createElement('span');
+      p.className = 'banner-text';
+      p.textContent = it.text;
+      body.appendChild(p);
+    }
+    if (it.cta && it.href) {
+      var cta = document.createElement('span');
+      cta.className = 'banner-cta';
+      cta.textContent = it.cta;
+      body.appendChild(cta);
+    }
+    // No body copy at all? Treat the card as a full-image creative
+    // (baked SVG / artwork): let the hero fill the whole slot and
+    // skip the empty text region.
+    if (body.children.length === 0) {
+      card.classList.add('is-full-image');
+    } else {
+      card.appendChild(body);
+    }
+    return card;
+  }
 })();

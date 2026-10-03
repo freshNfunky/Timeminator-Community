@@ -161,6 +161,13 @@ function ctrl_system_index(): void
         'manifest_default' => (string) cfg('update_manifest_url', ''),
         'manifest_override' => (string) Settings::get('update_manifest_url_override', ''),
         'update_disabled' => Updater::isDisabled(),
+        'banner_config_off'        => Banners::isConfigDisabled(),
+        'banner_visible'           => (bool) Settings::get('banner_visible', true),
+        'banner_telemetry'         => Banners::telemetryEnabled(),
+        'banner_endpoint'          => Banners::endpoint(),
+        'banner_endpoint_default'  => Banners::endpointDefault(),
+        'banner_endpoint_override' => (string) Settings::get('banner_endpoint_override', ''),
+        'install_id'               => Banners::installId(),
     ], 'System');
 }
 

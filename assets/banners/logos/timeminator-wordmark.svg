@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="30 140 1340 220" role="img" aria-label="TIMEMINATOR">
+  <defs>
+    <linearGradient id="chrome" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e2e8f0"/>
+      <stop offset=".08" stop-color="#f8fafc"/>
+      <stop offset=".32" stop-color="#cbd5e1"/>
+      <stop offset=".48" stop-color="#334155"/>
+      <stop offset=".52" stop-color="#1e293b"/>
+      <stop offset=".68" stop-color="#64748b"/>
+      <stop offset=".85" stop-color="#f1f5f9"/>
+      <stop offset="1" stop-color="#334155"/>
+    </linearGradient>
+    <clipPath id="wordClip">
+      <text x="700" y="330" text-anchor="middle"
+            font-family="'Impact','Arial Narrow Bold','Oswald','Anton',sans-serif"
+            font-size="230" font-weight="900" letter-spacing="6"
+            font-stretch="condensed">TIMEMINATOR</text>
+    </clipPath>
+  </defs>
+  <g id="wordmark">
+    <text x="700" y="330" text-anchor="middle"
+          font-family="'Impact','Arial Narrow Bold','Oswald','Anton',sans-serif"
+          font-size="230" font-weight="900" letter-spacing="6" font-stretch="condensed"
+          stroke="#0f172a" stroke-width="10" fill="none" style="paint-order:stroke;">TIMEMINATOR</text>
+    <text x="700" y="330" text-anchor="middle"
+          font-family="'Impact','Arial Narrow Bold','Oswald','Anton',sans-serif"
+          font-size="230" font-weight="900" letter-spacing="6" font-stretch="condensed"
+          fill="url(#chrome)">TIMEMINATOR</text>
+    <g clip-path="url(#wordClip)">
+      <rect x="60" y="215" width="1280" height="9" fill="#0f172a" opacity=".85"/>
+      <rect x="60" y="310" width="1280" height="4" fill="#f8fafc" opacity=".35"/>
+    </g>
+    <text x="700" y="330" text-anchor="middle"
+          font-family="'Impact','Arial Narrow Bold','Oswald','Anton',sans-serif"
+          font-size="230" font-weight="900" letter-spacing="6" font-stretch="condensed"
+          fill="none" stroke="#0f172a" stroke-width="1.2" opacity=".8">TIMEMINATOR</text>
+  </g>
+</svg>
