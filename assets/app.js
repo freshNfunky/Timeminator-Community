@@ -59,6 +59,43 @@
     }
   }
 
+  // Promo-sidebar carousel. Rotates through .promo-banner children of a
+  // .promo-carousel container every data-promo-interval ms (default 6s).
+  // Dots are clickable and reset the timer. CSP-strict: only classList
+  // mutations, no inline style assignments.
+  var promoCarousel = document.querySelector('.promo-carousel');
+  if (promoCarousel) {
+    var banners = promoCarousel.querySelectorAll('.promo-banner');
+    var dots    = document.querySelectorAll('.promo-dot');
+    if (banners.length > 1) {
+      var promoIdx   = 0;
+      var promoInt   = parseInt(promoCarousel.getAttribute('data-promo-interval'), 10) || 6000;
+      var promoTimer = null;
+      var showPromo  = function (i) {
+        promoIdx = ((i % banners.length) + banners.length) % banners.length;
+        banners.forEach(function (b, j) { b.classList.toggle('is-active', j === promoIdx); });
+        dots.forEach(function (d, j)    { d.classList.toggle('is-active', j === promoIdx); });
+      };
+      var armPromo = function () {
+        if (promoTimer) { clearInterval(promoTimer); }
+        promoTimer = setInterval(function () { showPromo(promoIdx + 1); }, promoInt);
+      };
+      dots.forEach(function (d, j) {
+        d.addEventListener('click', function () { showPromo(j); armPromo(); });
+      });
+      armPromo();
+    }
+  }
+
+  // Collapsible nav groups: close an open .nav-group when clicking outside
+  // of it. The native <details> element handles open/close on the summary
+  // itself; this just dismisses stale dropdowns.
+  document.addEventListener('click', function (ev) {
+    document.querySelectorAll('details.nav-group[open]').forEach(function (d) {
+      if (!d.contains(ev.target)) { d.open = false; }
+    });
+  });
+
   // Toggle visibility of elements listed in a radio's `data-toggle-target`
   // attribute — space-separated element ids to reveal, followed by an
   // optional "|" and the ids to hide. Replaces `onchange="element.style..."`.
