@@ -14,6 +14,7 @@ require __DIR__ . '/src/Stats.php';
 require __DIR__ . '/src/Settings.php';
 require __DIR__ . '/src/Updater.php';
 require __DIR__ . '/src/Registration.php';
+require __DIR__ . '/src/PromoFeed.php';
 require __DIR__ . '/src/seed.php';
 require __DIR__ . '/src/Migrator.php';
 

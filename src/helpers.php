@@ -259,13 +259,19 @@ function send_security_headers(): void
     $csp = cfg('csp', null);
     if ($csp === null) {
         $nonce = csp_nonce();
+        // Allow iframes and images from the promo feed host (banner.felixschaller.com by
+        // default) so promo-sidebar HTML snippets served as cross-origin iframes and
+        // first-party SVG creatives render under the strict default policy.
+        $promoHost = (string) parse_url((string) cfg('promo_feed_url', 'https://banner.felixschaller.com/feed.json'), PHP_URL_HOST);
+        $promoOrigin = $promoHost !== '' ? ' https://' . $promoHost : '';
         $csp = "default-src 'self'; "
              . "script-src 'self'; "
              . "style-src 'self' 'nonce-" . $nonce . "'; "
              . "style-src-attr 'none'; "
-             . "img-src 'self' data:; "
+             . "img-src 'self' data:" . $promoOrigin . "; "
              . "font-src 'self'; "
              . "connect-src 'self'; "
+             . "frame-src 'self'" . $promoOrigin . "; "
              . "object-src 'none'; "
              . "base-uri 'self'; "
              . "frame-ancestors 'none'; "

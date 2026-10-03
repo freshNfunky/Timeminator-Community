@@ -1,0 +1,40 @@
+{
+  "_comment": "Bundled fallback for the promo sidebar. Loaded when banner.felixschaller.com/feed.json is unreachable, returns no items, or doesn't exist yet. Same shape as the live feed. Each item needs an `href` on an allow-listed host; `html`, `svg`, or text (`title`/`body`/`cta`) picks the renderer.",
+  "items": [
+    {
+      "slug": "ai-transformation",
+      "title": "AI Transformation",
+      "body": "Von ungesteuerter KI zu einem Stack, den du steuern, auditieren und skalieren kannst.",
+      "cta": "Mehr",
+      "href": "https://felixschaller.com/services/ai-transformation"
+    },
+    {
+      "slug": "autonomy-risk",
+      "title": "Autonomy Risk Evaluation",
+      "body": "Strukturelles Risiko in der Architektur — nicht erst im Backlog.",
+      "cta": "Mehr",
+      "href": "https://felixschaller.com/services/autonomy-risk-evaluation"
+    },
+    {
+      "slug": "technical-dd",
+      "title": "Technical Due Diligence",
+      "body": "Autonomy & AI — fuer Investoren, die Claims verifizieren statt wiederholen.",
+      "cta": "Mehr",
+      "href": "https://felixschaller.com/services/technical-dd"
+    },
+    {
+      "slug": "fractional",
+      "title": "Fractional Technical Leadership",
+      "body": "Engineering-Ownership ohne feste Headcount-Stelle.",
+      "cta": "Mehr",
+      "href": "https://felixschaller.com/services/fractional"
+    },
+    {
+      "slug": "digital-twin",
+      "title": "Digital Twin Perception",
+      "body": "Prozesse simulieren bevor du sie umbaust.",
+      "cta": "Mehr",
+      "href": "https://felixschaller.com/tools/digital-twin-perception"
+    }
+  ]
+}
