@@ -88,6 +88,53 @@ final class PromoFeedTest extends TestCase
         self::assertSame('fallback title', $out[1]['title']);
     }
 
+    public function testSanitizeAcceptsImageDataUri(): void
+    {
+        $m = new ReflectionMethod(PromoFeed::class, 'sanitize');
+        $out = $m->invoke(null, [
+            [
+                'href'  => 'https://felixschaller.com/x',
+                'image' => 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0i...',
+                'title' => 'Baked SVG',
+            ],
+        ]);
+        self::assertCount(1, $out);
+        self::assertArrayHasKey('image', $out[0]);
+        self::assertStringStartsWith('data:image/svg+xml;', $out[0]['image']);
+    }
+
+    public function testSanitizeDropsForeignImageUrls(): void
+    {
+        $m = new ReflectionMethod(PromoFeed::class, 'sanitize');
+        $out = $m->invoke(null, [
+            [
+                'href'  => 'https://felixschaller.com/x',
+                'image' => 'https://evil.example.com/sneaky.png',
+                'title' => 'still has text so item survives',
+            ],
+        ]);
+        self::assertCount(1, $out);
+        self::assertArrayNotHasKey('image', $out[0]);
+        self::assertSame('still has text so item survives', $out[0]['title']);
+    }
+
+    public function testSanitizeMapsFeedTextFieldToBody(): void
+    {
+        // The live banner.felixschaller.com feed names its copy field
+        // `text`; the sidebar renders `body`. Items with only `text`
+        // should still land in the fallback card.
+        $m = new ReflectionMethod(PromoFeed::class, 'sanitize');
+        $out = $m->invoke(null, [
+            [
+                'href'  => 'https://felixschaller.com/x',
+                'title' => 'T',
+                'text'  => 'live-feed copy',
+            ],
+        ]);
+        self::assertCount(1, $out);
+        self::assertSame('live-feed copy', $out[0]['body']);
+    }
+
     public function testSanitizeRequiresHttpsOnCta(): void
     {
         $m = new ReflectionMethod(PromoFeed::class, 'sanitize');

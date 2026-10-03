@@ -13,14 +13,13 @@ declare(strict_types=1);
  *
  * Each feed item is a slide in the promo carousel. Shape:
  *   { "href": "https://...",         // required CTA destination
- *     "html_url": "https://...",     // preferred: cross-origin iframe to the
- *                                    // promo feed host, so HTML+CSS creatives
- *                                    // live on banner.felixschaller.com
- *     "svg_url":  "https://...",     // SVG served from the feed host (<img>)
- *     "html": "<p>...</p>",          // inline fallback snippet (sandboxed iframe
- *                                    // via srcdoc)
- *     "svg":  "<svg>...</svg>",      // inline SVG source
- *     "title":"…", "body":"…",       // text fallback
+ *     "image":  "data:image/svg+xml;base64,…"   // common case today:
+ *               | "https://banner…/x.svg"       //   baked image creative
+ *     "html_url": "https://banner…/x.html",     // cross-origin iframe to the
+ *                                               // promo feed host
+ *     "html":  "<p>…</p>",                      // inline sandboxed snippet
+ *     "svg":   "<svg>…</svg>",                  // inline SVG source
+ *     "title":"…", "text":"…" (or "body"),     // text fallback
  *     "cta":"Mehr" }
  *
  * Links are gated through `promo_feed_allowed_hosts` (defaults to
@@ -174,6 +173,19 @@ final class PromoFeed
     }
 
     /**
+     * Accept either a `data:image/(svg+xml|png|jpeg|gif|webp)` URI or an
+     * https image on the promo feed host. These are the only sources that
+     * work under the strict default CSP (img-src 'self' data: + feed host).
+     */
+    private static function imageSrcAllowed(string $src): bool
+    {
+        if (preg_match('~^data:image/(?:svg\+xml|png|jpeg|jpg|gif|webp)[;,]~i', $src)) {
+            return true;
+        }
+        return self::feedAssetUrlAllowed($src);
+    }
+
+    /**
      * Keep only items with a safe https CTA on an allow-listed host. Drops
      * `html` / `svg` content that contains forbidden sinks so a compromised
      * feed cannot inject script into our viewers' pages.
@@ -196,7 +208,13 @@ final class PromoFeed
             $slug  = isset($it['slug']) ? preg_replace('~[^A-Za-z0-9_-]~', '', (string) $it['slug']) : '';
             $clean = ['slug' => $slug ?? '', 'href' => $href];
 
-            // Preferred: cross-origin iframe/img URL hosted on the feed server.
+            // Most common path today: a baked image creative delivered as a
+            // data: URI or an https URL on the feed host.
+            $image = isset($it['image']) ? trim((string) $it['image']) : '';
+            if ($image !== '' && self::imageSrcAllowed($image)) {
+                $clean['image'] = $image;
+            }
+            // Cross-origin iframe to an HTML creative on the feed server.
             $htmlUrl = isset($it['html_url']) ? trim((string) $it['html_url']) : '';
             if ($htmlUrl !== '' && self::feedAssetUrlAllowed($htmlUrl)) {
                 $clean['html_url'] = $htmlUrl;
@@ -214,13 +232,19 @@ final class PromoFeed
             if ($svg !== '' && !self::looksDangerous($svg)) {
                 $clean['svg'] = $svg;
             }
-            foreach (['title', 'body', 'cta'] as $key) {
+            // Accept both `body` (our shape) and `text` (the feed server's).
+            foreach (['title', 'cta'] as $key) {
                 if (isset($it[$key]) && is_string($it[$key])) {
                     $clean[$key] = trim($it[$key]);
                 }
             }
+            if (isset($it['body']) && is_string($it['body']) && trim($it['body']) !== '') {
+                $clean['body'] = trim($it['body']);
+            } elseif (isset($it['text']) && is_string($it['text']) && trim($it['text']) !== '') {
+                $clean['body'] = trim($it['text']);
+            }
             // Need at least one renderable payload.
-            if (!isset($clean['html_url']) && !isset($clean['svg_url'])
+            if (!isset($clean['image']) && !isset($clean['html_url']) && !isset($clean['svg_url'])
                 && !isset($clean['html']) && !isset($clean['svg'])
                 && !isset($clean['title']) && !isset($clean['body'])) {
                 continue;

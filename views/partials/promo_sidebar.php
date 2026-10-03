@@ -65,14 +65,17 @@ $__wrapHtml = static function (string $html): string {
         $__href = isset($p['href']) ? (string) $p['href'] : '';
     ?>
       <?php
-        $__kind = isset($p['html_url']) ? 'html'
+        $__kind = isset($p['image'])    ? 'image'
+                : (isset($p['html_url']) ? 'html'
                 : (isset($p['html'])     ? 'html'
                 : (isset($p['svg_url']) ? 'svg'
-                : (isset($p['svg'])     ? 'svg' : 'text')));
+                : (isset($p['svg'])     ? 'svg' : 'text'))));
       ?>
       <a class="promo-banner<?= $__i === 0 ? ' is-active' : '' ?> promo-banner-<?= h($__kind) ?>"
          href="<?= h($__href) ?>" target="_blank" rel="noopener" data-slug="<?= h($__slug) ?>">
-        <?php if (isset($p['html_url'])): ?>
+        <?php if (isset($p['image'])): ?>
+          <img class="promo-image" src="<?= h((string) $p['image']) ?>" alt="<?= h($p['title'] ?? 'Anzeige') ?>" loading="lazy">
+        <?php elseif (isset($p['html_url'])): ?>
           <iframe class="promo-iframe" sandbox="allow-popups allow-popups-to-escape-sandbox"
                   loading="lazy" referrerpolicy="no-referrer"
                   src="<?= h((string) $p['html_url']) ?>"
@@ -85,7 +88,7 @@ $__wrapHtml = static function (string $html): string {
                   title="<?= h($p['title'] ?? 'Anzeige') ?>"></iframe>
           <span class="promo-iframe-click" aria-hidden="true"></span>
         <?php elseif (isset($p['svg_url'])): ?>
-          <img class="promo-svg-img" src="<?= h((string) $p['svg_url']) ?>" alt="<?= h($p['title'] ?? 'Anzeige') ?>" loading="lazy">
+          <img class="promo-image" src="<?= h((string) $p['svg_url']) ?>" alt="<?= h($p['title'] ?? 'Anzeige') ?>" loading="lazy">
         <?php elseif (isset($p['svg'])): ?>
           <span class="promo-svg-wrap"><?= $p['svg'] /* already sanitized by PromoFeed */ ?></span>
         <?php else: ?>

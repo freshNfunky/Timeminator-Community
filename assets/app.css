@@ -267,7 +267,13 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
    catches the click because the iframe swallows pointer events on its
    own (`.promo-iframe-click` is a transparent overlay for that). */
 .promo-banner-html,
-.promo-banner-svg{padding:0;border-radius:12px;overflow:hidden}
+.promo-banner-svg,
+.promo-banner-image{padding:0;border-radius:12px;overflow:hidden}
+/* Feed images are typically portrait "skyscraper" SVGs with baked-in
+   copy; object-fit:contain keeps the full creative visible and
+   vertically centered without distorting it. background matches the
+   card so the letterbox blends with the sidebar. */
+.promo-image{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;display:block;background:var(--panel)}
 .promo-iframe{
   position:absolute;inset:0;
   width:100%;height:100%;border:0;background:transparent;
