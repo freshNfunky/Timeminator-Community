@@ -224,7 +224,6 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
    the main content never has to compete with it for space. */
 .promo-sidebar{
   position:fixed;top:72px;right:0;bottom:0;width:200px;
-  min-height:1000px;
   display:flex;flex-direction:column;gap:10px;
   padding:14px 12px;
   background:var(--soft);border-left:1px solid var(--line);
