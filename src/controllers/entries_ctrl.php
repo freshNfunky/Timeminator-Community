@@ -17,18 +17,53 @@ function parse_dtlocal(?string $v): ?string
 function ctrl_entries_index(): void
 {
     require_perm('entries.manage');
-    $view = get('view') === 'calendar' ? 'calendar' : 'list';
-    $f = entries_filter_from_request();
+    // Calendar is the default; the flat list is an opt-in via ?view=list.
+    $view = get('view') === 'list' ? 'list' : 'calendar';
+    $f    = entries_filter_from_request();
+
+    if ($view === 'calendar') {
+        $weekStart = entries_week_start_from_request();
+        $weekEnd   = $weekStart->modify('+6 days');
+        // In the calendar view the from/to filter follows the visible week.
+        $f['from'] = $weekStart->format('Y-m-d');
+        $f['to']   = $weekEnd->format('Y-m-d');
+    }
+
     $entries = Repo::entries($f);
     view('entries/index', [
-        'entries'  => $entries,
-        'clients'  => Repo::clients(),
-        'projects' => Repo::projects(),
-        'filter'   => $f,
-        'total'    => Stats::totalMinutes($entries),
-        'view'     => $view,
-        'pro_url'  => (string) cfg('pro_url', 'https://timeminator.felixschaller.com'),
+        'entries'     => $entries,
+        'clients'     => Repo::clients(),
+        'projects'    => Repo::projects(),
+        'filter'      => $f,
+        'total'       => Stats::totalMinutes($entries),
+        'view'        => $view,
+        'pro_url'     => (string) cfg('pro_url', 'https://timeminator.felixschaller.com'),
+        'week_start'  => $view === 'calendar' ? ($weekStart ?? null) : null,
     ], 'Zeiteintraege');
+}
+
+/**
+ * Parse the ?week=YYYY-Www parameter into the Monday of that ISO week, or
+ * fall back to the Monday of the current week. Clamped to a 10-year window
+ * around today so a malicious value can never produce an absurd range.
+ */
+function entries_week_start_from_request(): DateTimeImmutable
+{
+    $raw = (string) get('week', '');
+    if ($raw !== '' && preg_match('/^(\d{4})-W(\d{1,2})$/', $raw, $m)) {
+        try {
+            $wk = (new DateTimeImmutable('today'))->setISODate((int) $m[1], (int) $m[2], 1);
+            $now = new DateTimeImmutable('today');
+            if (abs($wk->getTimestamp() - $now->getTimestamp()) < 10 * 365 * 86400) {
+                return $wk;
+            }
+        } catch (Throwable) {
+            // fall through to default
+        }
+    }
+    $today = new DateTimeImmutable('today');
+    $dow   = (int) $today->format('N'); // Monday = 1 … Sunday = 7
+    return $today->modify('-' . ($dow - 1) . ' days');
 }
 
 /**

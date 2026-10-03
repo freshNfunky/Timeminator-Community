@@ -47,6 +47,18 @@
     }
   });
 
+  // Scroll the week-calendar grid to the earliest booking of the week on
+  // load, so the user doesn't start staring at the empty pre-dawn hours.
+  // Offset is set by the server as `--cal-scroll` on `.cal-week` inside a
+  // nonce-authorized <style> block (see views/entries/calendar_week.php).
+  var calWeek = document.querySelector('.cal-week');
+  if (calWeek) {
+    var scrollTo = parseFloat(getComputedStyle(calWeek).getPropertyValue('--cal-scroll')) || 0;
+    if (scrollTo > 56) {
+      calWeek.scrollTop = scrollTo - 24;
+    }
+  }
+
   // Toggle visibility of elements listed in a radio's `data-toggle-target`
   // attribute — space-separated element ids to reveal, followed by an
   // optional "|" and the ids to hide. Replaces `onchange="element.style..."`.
