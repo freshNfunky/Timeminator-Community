@@ -1,8 +1,16 @@
 <?php
-/** @var array $entries @var array $clients @var array $projects @var array $filter @var int $total */
+/**
+ * @var array $entries @var array $clients @var array $projects
+ * @var array $filter @var int $total
+ * @var string $view     'list' (default) or 'calendar'
+ * @var string $pro_url  pricing/landing page link, injected from config
+ */
+$__isCalendar = ($view ?? 'list') === 'calendar';
+$__filterQp = array_filter($filter, static fn($v) => $v !== '' && $v !== 0 && $v !== null);
 ?>
 <form method="get" class="card filter-bar">
   <input type="hidden" name="r" value="entries">
+  <?php if ($__isCalendar): ?><input type="hidden" name="view" value="calendar"><?php endif; ?>
   <label>Von <input type="date" name="from" value="<?= h($filter['from']) ?>"></label>
   <label>Bis <input type="date" name="to" value="<?= h($filter['to']) ?>"></label>
   <label>Kunde
@@ -22,11 +30,20 @@
     </select>
   </label>
   <button class="btn" type="submit">Filtern</button>
-  <a class="btn" href="<?= h(route('entries_export', array_filter($filter, static fn($v) => $v !== '' && $v !== 0 && $v !== null) + ['format' => 'csv'])) ?>">CSV</a>
-  <a class="btn" href="<?= h(route('entries_export', array_filter($filter, static fn($v) => $v !== '' && $v !== 0 && $v !== null) + ['format' => 'json'])) ?>">JSON</a>
+  <span class="view-toggle">
+    <a class="btn btn-sm <?= !$__isCalendar ? 'btn-primary' : '' ?>" href="<?= h(route('entries', $__filterQp)) ?>">Liste</a>
+    <a class="btn btn-sm <?= $__isCalendar ? 'btn-primary' : '' ?>" href="<?= h(route('entries', $__filterQp + ['view' => 'calendar'])) ?>">
+      Kalender <span class="pill pill-pro">Pro</span>
+    </a>
+  </span>
+  <a class="btn" href="<?= h(route('entries_export', $__filterQp + ['format' => 'csv'])) ?>">CSV</a>
+  <a class="btn" href="<?= h(route('entries_export', $__filterQp + ['format' => 'json'])) ?>">JSON</a>
   <a class="btn btn-primary" href="<?= h(route('entry_form')) ?>">+ Eintrag</a>
 </form>
 
+<?php if ($__isCalendar): ?>
+  <?php require __DIR__ . '/calendar_teaser.php'; ?>
+<?php else: ?>
 <div class="card">
   <div class="card-head">
     <h2><?= count($entries) ?> Eintraege</h2>
@@ -58,3 +75,4 @@
   </table>
   <?php endif; ?>
 </div>
+<?php endif; ?>

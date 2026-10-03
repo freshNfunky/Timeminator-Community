@@ -17,6 +17,7 @@ function parse_dtlocal(?string $v): ?string
 function ctrl_entries_index(): void
 {
     require_perm('entries.manage');
+    $view = get('view') === 'calendar' ? 'calendar' : 'list';
     $f = entries_filter_from_request();
     $entries = Repo::entries($f);
     view('entries/index', [
@@ -25,6 +26,8 @@ function ctrl_entries_index(): void
         'projects' => Repo::projects(),
         'filter'   => $f,
         'total'    => Stats::totalMinutes($entries),
+        'view'     => $view,
+        'pro_url'  => (string) cfg('pro_url', 'https://timeminator.felixschaller.com'),
     ], 'Zeiteintraege');
 }
 
