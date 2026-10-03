@@ -38,7 +38,14 @@ function route(string $r = 'dashboard', array $params = []): string
 /** URL to a bundled asset. */
 function asset(string $path): string
 {
-    return base_path() . '/assets/' . ltrim($path, '/');
+    $rel  = ltrim($path, '/');
+    $url  = base_path() . '/assets/' . $rel;
+    $disk = __DIR__ . '/../assets/' . $rel;
+    // Append the file's mtime as a cache-buster so a redeployed CSS/JS
+    // file is picked up on the next request without relying on the user
+    // to hard-reload. Falls back silently if the file is unreadable.
+    $mtime = @filemtime($disk);
+    return $mtime ? $url . '?v=' . $mtime : $url;
 }
 
 function redirect(string $url): never

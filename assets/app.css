@@ -223,9 +223,11 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
    as a carousel (see .promo-carousel below). Hidden below 1280 px so
    the main content never has to compete with it for space. */
 .promo-sidebar{
-  position:fixed;top:80px;right:16px;width:200px;
-  height:1000px;max-height:calc(100vh - 96px);
+  position:fixed;top:72px;right:0;bottom:0;width:200px;
+  min-height:1000px;
   display:flex;flex-direction:column;gap:10px;
+  padding:14px 12px;
+  background:var(--soft);border-left:1px solid var(--line);
   z-index:40;font-size:13px
 }
 .promo-sidebar-head{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
@@ -261,7 +263,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 /* Give the main wrap breathing room on the right so the 200-px promo
    bar doesn't feel glued to the content. */
 @media (min-width:1280px){
-  .wrap{padding-right:232px}
+  .wrap{padding-right:224px}
 }
 @media (max-width:1279px){
   .promo-sidebar{display:none}
