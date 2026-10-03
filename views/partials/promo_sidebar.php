@@ -55,12 +55,21 @@ $__promos = [
       <button class="promo-sidebar-close" type="submit" title="Fuer diese Sitzung ausblenden" aria-label="Fuer diese Sitzung ausblenden">&times;</button>
     </form>
   </div>
-  <?php foreach ($__promos as $p): ?>
-    <a class="promo-banner" href="<?= h($p['href']) ?>" target="_blank" rel="noopener" data-slug="<?= h($p['slug']) ?>">
-      <strong><?= h($p['title']) ?></strong>
-      <p><?= h($p['body']) ?></p>
-      <span class="promo-banner-cta"><?= h($p['cta']) ?> &nearr;</span>
-    </a>
-  <?php endforeach; ?>
+  <div class="promo-carousel" data-promo-interval="6000">
+    <?php foreach ($__promos as $__i => $p): ?>
+      <a class="promo-banner<?= $__i === 0 ? ' is-active' : '' ?>" href="<?= h($p['href']) ?>" target="_blank" rel="noopener" data-slug="<?= h($p['slug']) ?>">
+        <strong><?= h($p['title']) ?></strong>
+        <p><?= h($p['body']) ?></p>
+        <span class="promo-banner-cta"><?= h($p['cta']) ?> &nearr;</span>
+      </a>
+    <?php endforeach; ?>
+  </div>
+  <?php if (count($__promos) > 1): ?>
+    <div class="promo-dots" role="tablist" aria-label="Banner wechseln">
+      <?php foreach ($__promos as $__i => $p): ?>
+        <button type="button" class="promo-dot<?= $__i === 0 ? ' is-active' : '' ?>" data-promo-dot="<?= (int) $__i ?>" aria-label="Banner <?= (int) $__i + 1 ?>"></button>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
   <p class="promo-sidebar-foot muted">Powered by<br>felixschaller.com</p>
 </aside>
