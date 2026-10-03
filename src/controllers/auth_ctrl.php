@@ -52,3 +52,18 @@ function ctrl_logout(): void
     Auth::logout();
     redirect_route('login');
 }
+
+/**
+ * Hide the right-side promo sidebar for this browser session. Any logged-in
+ * user may dismiss their own view; the next login shows it again. There is
+ * no server-side persistence beyond `$_SESSION` because the whole slot is
+ * cheap and can be hidden by the operator via `promo_sidebar_enabled` in
+ * config.php when a stricter opt-out is needed.
+ */
+function ctrl_promo_dismiss(): void
+{
+    require_login();
+    csrf_check();
+    $_SESSION['promo_sidebar_dismissed'] = true;
+    redirect(referrer_or_default(route('dashboard')));
+}

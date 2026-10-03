@@ -38,6 +38,8 @@
   <?= $__content ?>
 </main>
 
+<?php require __DIR__ . '/partials/promo_sidebar.php'; ?>
+
 <footer class="foot">
   <?= h(cfg('app_name', 'Timeminator')) ?> Community v<?= h(app_version()) ?>
   &middot; <a href="https://felixschaller.com" target="_blank" rel="noopener">made by FelixSchallerCOM</a>

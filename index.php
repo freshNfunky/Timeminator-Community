@@ -68,6 +68,7 @@ $routes = [
     'update_apply'   => 'ctrl_update_apply',
     'update_dismiss' => 'ctrl_update_dismiss',
     'update_skip'    => 'ctrl_update_skip',
+    'promo_dismiss'  => 'ctrl_promo_dismiss',
     'update_clear_skipped' => 'ctrl_update_clear_skipped',
     'registration_save' => 'ctrl_registration_save',
     'endpoints_save'    => 'ctrl_endpoints_save',

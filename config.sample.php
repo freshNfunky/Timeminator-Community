@@ -58,4 +58,11 @@ return [
     // Endpoint the OPTIONAL, opt-in installation registration is sent to.
     // This is the lead-generator (Issue #2c): only email/domain/version, off by default.
     'registration_endpoint' => 'https://license.felixschaller.com/timeminator-registry/register.php',
+
+    // --- Promo sidebar (Community edition only) ---
+    // Thin right-side column with links back to felixschaller.com services
+    // (AI Assessment, Digital Twin, …). Pays for the Community edition. Set
+    // to false to hide the whole slot; individual users may also dismiss it
+    // per browser session via the X button.
+    'promo_sidebar_enabled' => true,
 ];
