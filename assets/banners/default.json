@@ -16,22 +16,22 @@
       "image": "banners/felixschaller-deeptech.svg"
     },
     {
-      "id": "default-xixum-maturity",
-      "title": "XIXUM - know your AI maturity. Assess, benchmark and advance.",
-      "cta": "Jetzt bewerten",
+      "id": "default-xixum-hallucination",
+      "title": "XIXUM - hallucination-free AI by design.",
+      "cta": "Learn more",
       "href": "https://xixum.ai",
-      "image": "banners/xixum-maturity.svg"
+      "image": "banners/xixum-hallucination.svg"
     },
     {
       "id": "default-af-ax",
-      "title": "AF-AX - the wing that never stalls. Bird-feather surface, no stall to ~50 degrees angle of attack.",
+      "title": "AF-AX - the wing that doesn't stall. Bird-feather surface, no stall to ~50 degrees angle of attack.",
       "cta": "See the simulation",
       "href": "https://af-ax.com",
       "image": "banners/af-ax.svg"
     },
     {
       "id": "default-af-ax-vtol",
-      "title": "AF-AX - the wing that never stalls. eVTOL with bird-feather wings, no stall to ~50 degrees angle of attack.",
+      "title": "AF-AX - the wing that doesn't stall. eVTOL with bird-feather wings, no stall to ~50 degrees angle of attack.",
       "cta": "See the simulation",
       "href": "https://af-ax.com",
       "image": "banners/af-ax-vtol.svg"
