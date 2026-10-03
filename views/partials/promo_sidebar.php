@@ -25,31 +25,47 @@ if (!empty($_SESSION['promo_sidebar_dismissed'])) {
 // each entry is {slug, title, body, href, cta}.
 $__promos = [
     [
-        'slug'  => 'ai-assessment',
-        'title' => 'AI Assessment',
-        'body'  => 'Wo lohnt sich KI in deinem Workflow — und wo nicht?',
-        'href'  => 'https://felixschaller.com/ai-assessment',
+        'slug'  => 'ai-transformation',
+        'title' => 'AI Transformation',
+        'body'  => 'Von ungesteuerter KI zu einem Stack, den du steuern, auditieren und skalieren kannst.',
+        'href'  => 'https://felixschaller.com/services/ai-transformation',
+        'cta'   => 'Mehr',
+    ],
+    [
+        'slug'  => 'autonomy-risk',
+        'title' => 'Autonomy Risk Evaluation',
+        'body'  => 'Strukturelles Risiko in der Architektur — nicht erst im Backlog.',
+        'href'  => 'https://felixschaller.com/services/autonomy-risk-evaluation',
+        'cta'   => 'Mehr',
+    ],
+    [
+        'slug'  => 'technical-dd',
+        'title' => 'Technical Due Diligence',
+        'body'  => 'Autonomy &amp; AI — fuer Investoren, die Claims verifizieren statt wiederholen.',
+        'href'  => 'https://felixschaller.com/services/technical-dd',
+        'cta'   => 'Mehr',
+    ],
+    [
+        'slug'  => 'fractional',
+        'title' => 'Fractional Technical Leadership',
+        'body'  => 'Engineering-Ownership ohne feste Headcount-Stelle.',
+        'href'  => 'https://felixschaller.com/services/fractional',
         'cta'   => 'Mehr',
     ],
     [
         'slug'  => 'digital-twin',
-        'title' => 'Digital Twin',
+        'title' => 'Digital Twin Perception',
         'body'  => 'Prozesse simulieren bevor du sie umbaust.',
         'href'  => 'https://felixschaller.com/tools/digital-twin-perception',
         'cta'   => 'Mehr',
-    ],
-    [
-        'slug'  => 'services',
-        'title' => 'Felixschaller.com',
-        'body'  => 'Beratung, Tools, Prototypen.',
-        'href'  => 'https://felixschaller.com',
-        'cta'   => 'Besuchen',
     ],
 ];
 ?>
 <aside class="promo-sidebar" role="complementary" aria-label="Services">
   <div class="promo-sidebar-head">
-    <span class="promo-sidebar-brand">FSC</span>
+    <a href="https://felixschaller.com" target="_blank" rel="noopener" class="promo-sidebar-brand" aria-label="felixschaller.com">
+      <img src="<?= h(asset('fsc-logo.svg')) ?>" alt="FelixSchallerCOM" width="160" height="16">
+    </a>
     <form method="post" action="<?= h(route('promo_dismiss')) ?>" class="inline">
       <?= csrf_field() ?>
       <button class="promo-sidebar-close" type="submit" title="Fuer diese Sitzung ausblenden" aria-label="Fuer diese Sitzung ausblenden">&times;</button>

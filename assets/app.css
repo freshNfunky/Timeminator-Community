@@ -230,8 +230,15 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
   background:var(--soft);border-left:1px solid var(--line);
   z-index:40;font-size:13px
 }
-.promo-sidebar-head{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
-.promo-sidebar-brand{font-weight:700}
+.promo-sidebar-head{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--muted)}
+.promo-sidebar-brand{display:inline-flex;align-items:center;line-height:0}
+.promo-sidebar-brand img{display:block;height:16px;width:auto;max-width:160px}
+/* The LogoDesign01.svg paths are black; invert them in dark mode so the
+   wordmark stays readable against the dark --soft background. */
+:root[data-theme="dark"] .promo-sidebar-brand img{filter:invert(1)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .promo-sidebar-brand img{filter:invert(1)}
+}
 .promo-sidebar-close{background:transparent;border:0;color:var(--muted);font-size:16px;line-height:1;padding:0 2px;cursor:pointer}
 .promo-sidebar-close:hover{color:var(--ink)}
 .promo-sidebar-foot{text-align:center;font-size:10px;margin:0;line-height:1.3}
