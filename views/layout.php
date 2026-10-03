@@ -1,5 +1,5 @@
 <?php /** @var string $__content @var string $__title */ ?>
-<?php $__nonce = csp_nonce(); $__colors = collect_theme_colors(); $__banner = Banners::isVisible(); ?>
+<?php $__nonce = csp_nonce(); $__colors = collect_theme_colors(); ?>
 <!doctype html>
 <html lang="de">
 <head>
@@ -30,7 +30,6 @@
 
 <?php require __DIR__ . '/partials/update_banner.php'; ?>
 
-<div class="shell<?= $__banner ? ' has-banner' : '' ?>">
 <main class="wrap">
   <?php foreach (flash_take() as $f): ?>
     <div class="flash flash-<?= h($f['type']) ?>"><?= h($f['msg']) ?></div>
@@ -38,16 +37,8 @@
   <h1 class="page-title"><?= h($__title) ?></h1>
   <?= $__content ?>
 </main>
-<?php if ($__banner): ?>
-<aside class="bannerbar" id="bannerbar" aria-label="Anzeige">
-  <div class="bannerbar-head">
-    <span class="bannerbar-label">Anzeige</span>
-    <button type="button" class="bannerbar-toggle" id="bannerbarToggle" aria-expanded="true" aria-controls="bannerCarousel" title="Werbung ein-/ausklappen">–</button>
-  </div>
-  <div class="banner-carousel" id="bannerCarousel" data-endpoint="<?= h(route('banners')) ?>" data-interval="7000"></div>
-</aside>
-<?php endif; ?>
-</div>
+
+<?php require __DIR__ . '/partials/promo_sidebar.php'; ?>
 
 <footer class="foot">
   <?= h(cfg('app_name', 'Timeminator')) ?> Community v<?= h(app_version()) ?>
