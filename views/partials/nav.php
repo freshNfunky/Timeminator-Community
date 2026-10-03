@@ -12,6 +12,7 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
 <?php if (Auth::can('structure.manage')): ?>
   <a href="<?= h(route('clients')) ?>"<?= $active(['clients']) ?>>Kunden</a>
   <a href="<?= h(route('projects')) ?>"<?= $active(['projects']) ?>>Projekte</a>
+  <a href="<?= h(route('workpackages')) ?>"<?= $active(['workpackages']) ?>>Arbeitspakete</a>
   <a href="<?= h(route('tasks')) ?>"<?= $active(['tasks']) ?>>Aufgaben</a>
 <?php endif; ?>
 <?php if (Auth::can('scopes.manage')): ?>

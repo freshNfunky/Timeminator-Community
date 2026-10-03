@@ -90,6 +90,45 @@ function ctrl_project_save(): void
     redirect_route('projects');
 }
 
+// ---------- Work packages (Arbeitspakete) ----------
+
+function ctrl_workpackages_index(): void
+{
+    require_perm('structure.manage');
+    $editId = (int) get('edit', 0);
+    view('structure/workpackages', [
+        'work_packages' => Repo::workPackages(),
+        'projects'      => Repo::projects(),
+        'edit'          => $editId ? Repo::workPackage($editId) : null,
+    ], 'Arbeitspakete');
+}
+
+function ctrl_workpackage_save(): void
+{
+    require_perm('structure.manage');
+    csrf_check();
+    $id = post_int('id');
+    $name = trim((string) post('name'));
+    $projectId = post_int('project_id');
+    if ($name === '' || !$projectId) {
+        flash('Projekt und Name sind erforderlich.', 'err');
+        redirect_route('workpackages');
+    }
+    $d = [
+        'project_id' => $projectId,
+        'code'       => trim((string) post('code')) ?: slugify($name),
+        'name'       => $name,
+        'active'     => post('active') ? 1 : 0,
+    ];
+    try {
+        Repo::saveWorkPackage($d, $id ?: null);
+        flash('Arbeitspaket gespeichert.');
+    } catch (PDOException $e) {
+        flash('Konnte nicht speichern (Kennung evtl. schon vergeben).', 'err');
+    }
+    redirect_route('workpackages');
+}
+
 // ---------- Tasks ----------
 
 function ctrl_tasks_index(): void
@@ -97,9 +136,10 @@ function ctrl_tasks_index(): void
     require_perm('structure.manage');
     $editId = (int) get('edit', 0);
     view('structure/tasks', [
-        'tasks'    => Repo::tasks(),
-        'projects' => Repo::projects(),
-        'edit'     => $editId ? Repo::task($editId) : null,
+        'tasks'         => Repo::tasks(),
+        'projects'      => Repo::projects(),
+        'work_packages' => Repo::workPackages(),
+        'edit'          => $editId ? Repo::task($editId) : null,
     ], 'Aufgaben');
 }
 
@@ -115,10 +155,11 @@ function ctrl_task_save(): void
         redirect_route('tasks');
     }
     $d = [
-        'project_id' => $projectId,
-        'name'       => $name,
-        'kind'       => trim((string) post('kind')) ?: null,
-        'active'     => post('active') ? 1 : 0,
+        'project_id'      => $projectId,
+        'work_package_id' => post_int('work_package_id') ?: null,
+        'name'            => $name,
+        'kind'            => trim((string) post('kind')) ?: null,
+        'active'          => post('active') ? 1 : 0,
     ];
     Repo::saveTask($d, $id ?: null);
     flash('Aufgabe gespeichert.');

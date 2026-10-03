@@ -51,6 +51,8 @@ $routes = [
     'client_save'  => 'ctrl_client_save',
     'projects'     => 'ctrl_projects_index',
     'project_save' => 'ctrl_project_save',
+    'workpackages'     => 'ctrl_workpackages_index',
+    'workpackage_save' => 'ctrl_workpackage_save',
     'tasks'        => 'ctrl_tasks_index',
     'task_save'    => 'ctrl_task_save',
 
