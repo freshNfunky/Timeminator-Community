@@ -20,6 +20,31 @@ version heading when a release is cut.
 
 ## [Unreleased]
 
+### Added
+- **Arbeitspaket (Workpackage) layer** between projects and tasks
+  (fixes #65). Hierarchy becomes **Kunde → Projekt → Arbeitspaket →
+  Aufgabe**, matching Pro so CSV exports/imports stay portable between
+  editions.
+  - New `work_packages` table (SQLite + MySQL) + nullable
+    `work_package_id` FKs on `tasks` and `time_entries` (denormalized
+    for the same reason as `project_id`/`client_id`).
+  - Idempotent migration (`schema/migrations/2026-10-04-01-work-
+    packages.php`): CREATE TABLE IF NOT EXISTS, column-exists guards
+    around ALTER TABLE for upgrading installs, and a transactional
+    backfill that seeds a default "Allgemein" work package per project
+    and remaps every existing task + time entry to it. Zero-touch for
+    live installations.
+  - New admin nav entry **Arbeitspakete** between Projekte and
+    Aufgaben; CRUD view at `?r=workpackages` under
+    `structure.manage`.
+  - Task form grows an "Arbeitspaket" select; the entries form
+    option-groups tasks by *Kunde / Projekt / Arbeitspaket* so the
+    hierarchy is visible when picking.
+  - CSV export adds `work_package_code` and `work_package_name`
+    columns. CSV import still accepts files without these columns —
+    tasks land in the project's default "Allgemein" WP (backwards
+    compat for existing exports and third-party CSVs).
+
 ### Changed
 - **LoginThrottle now escalates the lockout window for repeat offenders**
   in a 24 h horizon: 15 min → 1 h → 4 h → 24 h. The first lockout stays
