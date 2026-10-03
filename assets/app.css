@@ -217,54 +217,62 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .update-banner-close:hover{color:var(--ink)}
 .update-banner-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 
-/* Right-side promo sidebar — pays for the Community edition. Fixed so it
-   never scrolls out of view; 200 px wide, 1000 px tall on big displays,
-   capped to the viewport on smaller ones. Shows one banner at a time
-   as a carousel (see .promo-carousel below). Hidden below 1280 px so
-   the main content never has to compete with it for space. */
-.promo-sidebar{
-  position:fixed;top:80px;right:16px;width:200px;
-  height:1000px;max-height:calc(100vh - 96px);
+/* Community banner carousel (Issue #22). The `.shell` wrapper is just the
+   natural flow container when banners are off; `.has-banner` means a
+   Community install with the slot visible, where the bannerbar is
+   position:fixed to the entire right edge (user spec: 200x1000+,
+   standing, not scrolling with the page). On narrow viewports (< 1280
+   px) the bannerbar collapses out and the main wrap goes back to full
+   width. The creatives themselves are fetched client-side from
+   ?r=banners which Banners.php backs with assets/banners/default.json
+   on any network failure, so the slot is never empty. */
+.shell{display:block}
+.shell.has-banner .wrap{max-width:1120px}
+@media (min-width:1280px){
+  .shell.has-banner .wrap{padding-right:224px}
+}
+.bannerbar{
+  position:fixed;top:72px;right:0;bottom:0;width:200px;
   display:flex;flex-direction:column;gap:10px;
+  padding:14px 12px;
+  background:var(--soft);border-left:1px solid var(--line);
   z-index:40;font-size:13px
 }
-.promo-sidebar-head{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
-.promo-sidebar-brand{font-weight:700}
-.promo-sidebar-close{background:transparent;border:0;color:var(--muted);font-size:16px;line-height:1;padding:0 2px;cursor:pointer}
-.promo-sidebar-close:hover{color:var(--ink)}
-.promo-sidebar-foot{text-align:center;font-size:10px;margin:0;line-height:1.3}
+.bannerbar.collapsed{bottom:auto;height:auto;width:auto;padding:6px 10px}
+.bannerbar.collapsed .banner-carousel{display:none}
+.bannerbar-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.bannerbar-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.bannerbar-toggle{border:1px solid var(--line);background:var(--panel);color:var(--muted);
+  width:22px;height:22px;line-height:1;border-radius:6px;cursor:pointer;font-size:14px;padding:0}
+.bannerbar-toggle:hover{background:var(--panel);color:var(--ink)}
 
-/* Carousel body — fills the remaining vertical space between head and
-   dots/foot. Each .promo-banner stacks on top of the next; only the one
-   with .is-active is visible. */
-.promo-carousel{position:relative;flex:1 1 auto;min-height:0}
-.promo-banner{
+/* Carousel surface. Cards stack with position:absolute; only the
+   non-.hidden one is visible, cross-faded via opacity. */
+.banner-carousel{position:relative;flex:1 1 auto;min-height:0}
+.banner-card{
   position:absolute;inset:0;
-  display:flex;flex-direction:column;justify-content:space-between;
-  background:var(--panel);border:1px solid var(--line);border-radius:12px;
-  padding:16px 14px;color:var(--ink);text-decoration:none;
-  opacity:0;pointer-events:none;transition:opacity .4s ease
+  display:flex;flex-direction:column;justify-content:space-between;gap:10px;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px;color:var(--ink);text-decoration:none;
+  transition:opacity .4s ease
 }
-.promo-banner.is-active{opacity:1;pointer-events:auto}
-.promo-banner:hover{text-decoration:none;border-color:var(--brand)}
-.promo-banner strong{display:block;font-size:17px;line-height:1.2;margin-bottom:10px;color:var(--brand)}
-.promo-banner p{margin:0 0 12px;font-size:14px;line-height:1.4;color:var(--ink);flex:1 1 auto}
-.promo-banner-cta{font-size:13px;color:var(--muted);font-weight:500}
+.banner-card.hidden{opacity:0;pointer-events:none}
+.banner-card:hover{text-decoration:none;border-color:var(--brand)}
+.banner-card.is-image{padding:0;border:0;background:transparent}
+.banner-card.is-image img{width:100%;height:100%;object-fit:cover;border-radius:var(--radius);display:block}
+.banner-card.is-image:hover{opacity:.94}
+.banner-title{font-weight:700;font-size:15px;line-height:1.25}
+.banner-text{font-size:13px;color:var(--muted);line-height:1.45;flex:1 1 auto}
+.banner-cta{margin-top:2px;font-size:13px;font-weight:600;color:var(--brand)}
+.banner-cta::after{content:" \2197"}
 
-/* Carousel dots below the banner. Clickable, so the user can jump to a
-   specific slide instead of waiting for the rotation. */
-.promo-dots{display:flex;justify-content:center;gap:8px;margin:0}
-.promo-dot{width:7px;height:7px;border-radius:50%;background:var(--line);border:0;padding:0;cursor:pointer;transition:background .15s ease}
-.promo-dot:hover{background:var(--muted)}
-.promo-dot.is-active{background:var(--brand)}
+/* Dots at the bottom of the carousel. */
+.banner-dots{position:absolute;left:0;right:0;bottom:-18px;display:flex;gap:6px;justify-content:center}
+.banner-dot{width:7px;height:7px;border-radius:50%;background:var(--line);border:0;padding:0;cursor:pointer}
+.banner-dot.active{background:var(--brand)}
 
-/* Give the main wrap breathing room on the right so the 200-px promo
-   bar doesn't feel glued to the content. */
-@media (min-width:1280px){
-  .wrap{padding-right:232px}
-}
 @media (max-width:1279px){
-  .promo-sidebar{display:none}
+  .bannerbar{display:none}
 }
 
 /* --- Collapsible nav groups (Kaufmaennisch, Systemverwaltung) --- */
@@ -431,4 +439,40 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 @media(max-width:1023px){
   .pro-teaser{grid-template-columns:1fr}
   .pro-upsell{position:static;order:-1}
+}
+
+/* Community banner column (Issue #22) */
+.shell{display:block}
+.shell.has-banner{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:26px;
+  max-width:1460px;margin:0 auto;align-items:start}
+.shell.has-banner .wrap{max-width:none;margin:0}
+.bannerbar{padding:22px 20px 0 0;position:sticky;top:18px}
+.bannerbar.collapsed .banner-carousel{display:none}
+.bannerbar-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.bannerbar-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.bannerbar-toggle{border:1px solid var(--line);background:var(--panel);color:var(--muted);
+  width:22px;height:22px;line-height:1;border-radius:6px;cursor:pointer;font-size:14px;padding:0}
+.bannerbar-toggle:hover{background:var(--soft);color:var(--ink)}
+.banner-carousel{position:relative;min-height:220px}
+.banner-card{display:flex;flex-direction:column;gap:10px;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-card);
+  color:var(--ink)}
+.banner-card:hover{text-decoration:none;border-color:var(--brand)}
+.banner-card img{width:100%;height:auto;border-radius:9px;display:block;background:var(--soft)}
+/* Image-dominant creative: the portrait SVG is the whole ad, no card chrome. */
+.banner-card.is-image{padding:0;border:0;background:transparent;box-shadow:none}
+.banner-card.is-image img{border-radius:var(--radius)}
+.banner-card.is-image:hover{opacity:.94}
+.banner-card .banner-title{font-weight:700;font-size:15px}
+.banner-card .banner-text{font-size:13px;color:var(--muted);line-height:1.45}
+.banner-card .banner-cta{margin-top:2px;font-size:13px;font-weight:600;color:var(--brand)}
+.banner-card .banner-cta::after{content:" \2197"}
+.banner-dots{display:flex;gap:6px;justify-content:center;margin-top:12px}
+.banner-dot{width:7px;height:7px;border-radius:50%;background:var(--line);border:0;padding:0;cursor:pointer}
+.banner-dot.active{background:var(--brand)}
+
+@media(max-width:1080px){
+  .shell.has-banner{grid-template-columns:1fr}
+  .bannerbar{position:static;padding:0;margin-top:8px;border-top:1px solid var(--line);padding-top:16px}
+  .banner-carousel{min-height:0}
 }
