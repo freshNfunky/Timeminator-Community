@@ -22,10 +22,19 @@ ihn gegen Timeminator Pro ab.
   gefuehrtes Einspielen.
 - **Lead-Generator (opt-in Registrierung).** Optionale, standardmaessig
   deaktivierte Registrierung der Installation (nur E-Mail, Domain, Version)
-  an einen konfigurierbaren Endpoint. Jederzeit abschaltbar. Das ist der
-  einzige "Werbe"-Mechanismus der Community Edition, zusaetzlich zu einem
-  kleinen, nicht entfernbaren Hinweis im Footer/Nav auf FelixSchallerCOM und
-  Timeminator Pro. Keine Drittanbieter-Werbung, kein Tracking.
+  an einen konfigurierbaren Endpoint. Jederzeit abschaltbar. Zusaetzlich ein
+  kleiner, nicht entfernbarer Hinweis im Footer/Nav auf FelixSchallerCOM und
+  Timeminator Pro.
+- **Community-Banner-Karussell + Telemetrie.** Schlanke Banner-Spalte rechts im
+  Layout, die durch Angebote, Tools und News von FelixSchallerCOM rotiert. Die
+  Motive werden serverseitig von einer konfigurierbaren Subdomain geladen; bei
+  fehlendem Netz greift der mitgelieferte Standard-Satz
+  (`assets/banners/default.json`). So finanziert sich die kostenlose Community
+  Edition. Mit jedem Abruf wird ein anonymisiertes Nutzungssignal gesendet
+  (App-Version, zufaellige Installations-ID, Hash davon, gekuerzte IP) -
+  niemals Zeiterfassungsdaten. Pro Feld, per Admin-Schalter und per
+  `config.php` vollstaendig abschaltbar; in Pro komplett entfernt. Keine
+  Drittanbieter-Werbenetzwerke. Details: `docs/BANNERS.md`.
 
 ## Nicht enthalten (Teil von Timeminator Pro, separates privates Repo)
 

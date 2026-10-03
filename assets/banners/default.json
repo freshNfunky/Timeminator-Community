@@ -1,0 +1,27 @@
+{
+  "_comment": "Bundled default banner set. Shipped with every Community release so the carousel always has content when the banner subdomain is unreachable (isolated server, blocked outbound, CSP block, timeout). The live feed on the banner subdomain uses the same shape and overrides this set when reachable.",
+  "items": [
+    {
+      "id": "default-pro",
+      "title": "Timeminator Pro",
+      "text": "Planung, Budget, Live-Report, Angebote und Rechnungen - alles in einem Tool.",
+      "cta": "Pro entdecken",
+      "href": "https://timeminator.felixschaller.com",
+      "image": "banners/felixschaller.svg"
+    },
+    {
+      "id": "default-services",
+      "title": "Built by FelixSchallerCOM",
+      "text": "Software, Automatisierung und Web, massgeschneidert fuer dein Projekt.",
+      "cta": "Services ansehen",
+      "href": "https://felixschaller.com"
+    },
+    {
+      "id": "default-tools",
+      "title": "Tools & Vorlagen",
+      "text": "Kostenlose und kommerzielle Helfer rund um Zeiterfassung und Projekte.",
+      "cta": "Zu den Tools",
+      "href": "https://felixschaller.com"
+    }
+  ]
+}
