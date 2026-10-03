@@ -251,26 +251,35 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
   display:flex;flex-direction:column;justify-content:space-between;
   background:var(--panel);border:1px solid var(--line);border-radius:12px;
   padding:16px 14px;color:var(--ink);text-decoration:none;
-  opacity:0;pointer-events:none;transition:opacity .4s ease
+  overflow:hidden;
+  opacity:0;pointer-events:none;visibility:hidden;
+  transition:opacity .35s ease, visibility 0s linear .35s
 }
-.promo-banner.is-active{opacity:1;pointer-events:auto}
+.promo-banner.is-active{opacity:1;pointer-events:auto;visibility:visible;transition-delay:0s}
 .promo-banner:hover{text-decoration:none;border-color:var(--brand)}
 .promo-banner strong{display:block;font-size:17px;line-height:1.2;margin-bottom:10px;color:var(--brand)}
 .promo-banner p{margin:0 0 12px;font-size:14px;line-height:1.4;color:var(--ink);flex:1 1 auto}
 .promo-banner-cta{font-size:13px;color:var(--muted);font-weight:500}
 
-/* iframe/svg-url creatives from banner.felixschaller.com fill the whole
-   slot. The outer <a> catches the click so the CTA still works even
-   though the iframe swallows pointer events on its own. */
+/* iframe/svg-url creatives from banner.felixschaller.com. Each one fills
+   the fixed-size slot without distorting it: iframe gets a hard 100%
+   width/height box, images use object-fit:contain. The outer <a>
+   catches the click because the iframe swallows pointer events on its
+   own (`.promo-iframe-click` is a transparent overlay for that). */
 .promo-banner-html,
 .promo-banner-svg{padding:0;border-radius:12px;overflow:hidden}
-.promo-iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;display:block}
-/* Transparent overlay above the iframe that catches clicks so the
-   wrapping <a> still navigates. Required because iframes capture
-   pointer events by default. */
+.promo-iframe{
+  position:absolute;inset:0;
+  width:100%;height:100%;border:0;background:transparent;
+  display:block;color-scheme:dark
+}
 .promo-iframe-click{position:absolute;inset:0;z-index:2;cursor:pointer}
-.promo-svg-img,.promo-svg-wrap{display:block;width:100%;height:100%;object-fit:contain}
-.promo-svg-wrap svg{width:100%;height:100%}
+.promo-svg-img{
+  position:absolute;inset:0;
+  width:100%;height:100%;object-fit:contain;display:block
+}
+.promo-svg-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:12px}
+.promo-svg-wrap svg{max-width:100%;max-height:100%;width:auto;height:auto}
 
 /* Carousel dots below the banner. Clickable, so the user can jump to a
    specific slide instead of waiting for the rotation. */
