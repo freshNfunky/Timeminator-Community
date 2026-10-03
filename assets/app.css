@@ -348,3 +348,42 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
   .cal-day{min-width:120px}
   .external-cal-items{grid-template-columns:1fr}
 }
+
+/* Small gold "Pro" pill rendered inline inside a nav link. Keeps the
+   nav label legible while flagging that the link opens a teaser. */
+.nav-pill{font-size:9px;padding:1px 5px;margin-left:4px;vertical-align:1px}
+
+/* Pro-feature teaser pages (Rechnungen / Angebote / Budget / Rollen Pro).
+   Two-column layout: dimmed mockup on the left, upsell banner glued to
+   the right edge of the main content column so the CTA stays visible
+   even on long tables. Below 1024 px the upsell stacks on top. */
+.pro-teaser{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:20px;align-items:start}
+.pro-teaser-mock{min-width:0;opacity:.55;filter:grayscale(.3);pointer-events:none;user-select:none}
+.pro-teaser-mock .btn{cursor:not-allowed}
+.pro-teaser-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.pro-teaser-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px}
+.pro-teaser-form label{display:block;font-size:12px;color:var(--muted)}
+.pro-teaser-form input{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px;color:var(--ink)}
+
+.pro-upsell{
+  position:sticky;top:84px;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:16px;display:flex;flex-direction:column;gap:10px
+}
+.pro-upsell h2{margin:4px 0 0;font-size:18px}
+.pro-upsell .pro-upsell-list{margin:0;padding-left:18px;color:var(--ink);font-size:13px;line-height:1.45}
+.pro-upsell .pro-upsell-list li{margin-bottom:4px}
+.pro-upsell-cta{align-self:stretch;text-align:center;margin-top:4px}
+.pro-upsell-foot{font-size:11px;margin:0}
+
+/* Budget progress bar — three buckets. */
+.pro-budget-track{display:inline-block;width:140px;height:8px;background:var(--line);border-radius:4px;overflow:hidden;vertical-align:middle;margin-right:8px}
+.pro-budget-bar{display:block;height:100%;background:var(--brand);border-radius:4px}
+.pro-budget-ok{background:#16a34a}
+.pro-budget-warn{background:#eab308}
+.pro-budget-over{background:#dc2626}
+
+@media(max-width:1023px){
+  .pro-teaser{grid-template-columns:1fr}
+  .pro-upsell{position:static;order:-1}
+}

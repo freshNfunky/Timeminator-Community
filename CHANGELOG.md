@@ -33,6 +33,14 @@ version heading when a release is cut.
   checks and retry scripts (fixes #37).
 
 ### Added
+- **Pro-feature teaser pages.** Four new nav entries — Rechnungen,
+  Angebote, Budget, Rollen Pro — open dimmed read-only mockups of the
+  features that only exist in Timeminator Pro. Each page carries a
+  sticky upsell banner on the right edge linking to `pro_url`. No data
+  is written, nothing is sent; the mockups are seeded from the user's
+  real clients / projects where available so the preview looks
+  plausible. All inline positioning (budget progress bars) is emitted
+  into nonce-authorized `<style>` blocks so the strict CSP stays strict.
 - `LoginThrottle::retryAfterSeconds($username, $ip)` — precise upper
   bound in seconds until whichever locked bucket clears first; used to
   fill the `Retry-After` header.
