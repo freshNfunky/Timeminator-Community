@@ -16,7 +16,7 @@ turn every part of it off.
    (`index.php?r=banners`) for the carousel — never a third party directly. The
    request is asynchronous and never blocks page rendering.
 2. That route fetches the creatives **server-side** from a configurable banner
-   subdomain (default `https://banners.felixschaller.com/feed.json`) so creatives
+   subdomain (default `https://banner.felixschaller.com/feed.json`) so creatives
    can be rotated without shipping a new Timeminator release, and caches them for
    `cache_ttl` seconds.
 3. On **any** failure — isolated server, blocked outbound traffic, CSP block,
@@ -38,7 +38,7 @@ Content-Security-Policy (`connect-src 'self'`) needs no exception.
       "text": "One or two sentences.",
       "cta": "Call to action",
       "href": "https://felixschaller.com/landing",
-      "image": "https://banners.felixschaller.com/spring.svg"
+      "image": "https://banner.felixschaller.com/spring.svg"
     }
   ]
 }
@@ -46,12 +46,23 @@ Content-Security-Policy (`connect-src 'self'`) needs no exception.
 
 Every creative is sanitized before it is shown:
 
-- `href` is accepted **only** if it is `https://` on `felixschaller.com` or a
-  subdomain — the remote feed can never point the slot at an arbitrary site.
-- `image` is accepted only as a same-origin relative asset or an `https` image on
-  `felixschaller.com`. Note the default CSP sets `img-src 'self' data:`; to show
-  remote images, extend `img-src` via the `csp` key in `config.php`.
+- `href` is accepted **only** if it is `https://` on one of the first-party hosts
+  in `banners.allowed_hosts` (default `felixschaller.com`, `xixum.ai`,
+  `af-ax.com`; subdomains included) — the remote feed can never point the slot at
+  an arbitrary site.
+- `image` is accepted as a same-origin relative asset, an inline `data:image/*`
+  URI, or an `https` image on an allowed host. The default CSP sets
+  `img-src 'self' data:`, so same-origin and `data:` creatives render with no
+  change; to show `https` images from the banner subdomain instead, extend
+  `img-src` via the `csp` key in `config.php`. The bundled uploader embeds
+  creatives as `data:` URIs by default, so this is not usually needed.
 - Links open in a new tab with `rel="noopener noreferrer"`.
+
+The bundled default set covers the brand portfolio (FelixSchallerCOM AI
+Transformation and Deep-Tech, the XIXUM AI-maturity assessment, AF-AX, and
+Timeminator Pro) as portrait 300×600 SVG creatives with the brand logos
+embedded. They are the offline fallback; the live feed on the subdomain overrides
+them.
 
 ## Telemetry (Community only)
 

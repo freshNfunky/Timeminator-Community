@@ -84,20 +84,28 @@ final class BannersTest extends TestCase
 
     // ---------- Link + image allow-list ----------
 
-    public function testHrefAllowsOnlyHttpsFelixschaller(): void
+    public function testHrefAllowsHttpsFirstPartyBrandsOnly(): void
     {
         self::assertTrue(Banners::isAllowedHref('https://felixschaller.com'));
         self::assertTrue(Banners::isAllowedHref('https://timeminator.felixschaller.com/x'));
+        self::assertTrue(Banners::isAllowedHref('https://xixum.ai'));              // XIXUM product
+        self::assertTrue(Banners::isAllowedHref('https://app.xixum.ai/assess'));   // subdomain
+        self::assertTrue(Banners::isAllowedHref('https://af-ax.com'));             // AF-AX
         self::assertFalse(Banners::isAllowedHref('http://felixschaller.com'));       // not https
         self::assertFalse(Banners::isAllowedHref('https://evil.example.com'));        // wrong host
         self::assertFalse(Banners::isAllowedHref('https://felixschaller.com.evil.com')); // suffix trick
+        self::assertFalse(Banners::isAllowedHref('https://notxixum.ai'));             // not a subdomain
         self::assertFalse(Banners::isAllowedHref('javascript:alert(1)'));
     }
 
-    public function testImageAllowsRelativeAndHttpsFirstPartyOnly(): void
+    public function testImageAllowsRelativeDataUriAndHttpsFirstParty(): void
     {
-        self::assertTrue(Banners::isAllowedImage('banners/felixschaller.svg'));
+        self::assertTrue(Banners::isAllowedImage('banners/xixum-maturity.svg'));
         self::assertTrue(Banners::isAllowedImage('https://cdn.felixschaller.com/a.png'));
+        self::assertTrue(Banners::isAllowedImage('https://banner.felixschaller.com/c/x.svg'));
+        self::assertTrue(Banners::isAllowedImage('data:image/svg+xml;base64,PHN2Zz48L3N2Zz4='));
+        self::assertTrue(Banners::isAllowedImage('data:image/png;base64,iVBORw0KGgo='));
+        self::assertFalse(Banners::isAllowedImage('data:text/html;base64,PHNjcmlwdD4=')); // non-image data
         self::assertFalse(Banners::isAllowedImage('//evil.example.com/a.png'));  // protocol-relative
         self::assertFalse(Banners::isAllowedImage('http://felixschaller.com/a.png'));
         self::assertFalse(Banners::isAllowedImage('../../etc/passwd'));          // traversal

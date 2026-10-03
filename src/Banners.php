@@ -321,34 +321,67 @@ final class Banners
         ];
     }
 
-    /** Only https links to felixschaller.com (and subdomains) are accepted. */
+    /**
+     * First-party hosts whose https links/images the feed may use. Defaults to
+     * the FelixSchallerCOM brand portfolio; override with `banners.allowed_hosts`
+     * in config.php. Subdomains of each listed host are always included.
+     *
+     * @return array<int,string>
+     */
+    public static function allowedHosts(): array
+    {
+        $hosts = self::conf()['allowed_hosts'] ?? ['felixschaller.com', 'xixum.ai', 'af-ax.com'];
+        $out = [];
+        foreach ((array) $hosts as $h) {
+            $h = strtolower(trim((string) $h));
+            if ($h !== '') {
+                $out[] = $h;
+            }
+        }
+        return $out ?: ['felixschaller.com', 'xixum.ai', 'af-ax.com'];
+    }
+
+    private static function hostAllowed(string $host): bool
+    {
+        $host = strtolower($host);
+        foreach (self::allowedHosts() as $h) {
+            if ($host === $h || str_ends_with($host, '.' . $h)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Only https links to an allowed first-party host are accepted. */
     public static function isAllowedHref(string $href): bool
     {
         $p = parse_url($href);
         if (!$p || ($p['scheme'] ?? '') !== 'https' || ($p['host'] ?? '') === '') {
             return false;
         }
-        $host = strtolower($p['host']);
-        return $host === 'felixschaller.com' || str_ends_with($host, '.felixschaller.com');
+        return self::hostAllowed($p['host']);
     }
 
     /**
-     * Accept a same-origin relative asset (rendered under img-src 'self') or an
-     * https image on felixschaller.com. Protocol-relative and other schemes are
-     * rejected.
+     * Accept a same-origin relative asset (rendered under img-src 'self'), an
+     * inline `data:image/*` URI (allowed by the default `img-src ... data:`), or
+     * an https image on an allowed first-party host. Protocol-relative and other
+     * schemes are rejected.
      */
     public static function isAllowedImage(string $image): bool
     {
         if (str_starts_with($image, '//')) {
             return false;
         }
+        if (preg_match('~^data:image/(?:svg\+xml|png|jpeg|jpg|gif|webp)[;,]~i', $image)) {
+            return true;
+        }
         if (preg_match('~^https?://~i', $image)) {
             $p = parse_url($image);
             if (!$p || ($p['scheme'] ?? '') !== 'https') {
                 return false;
             }
-            $host = strtolower($p['host'] ?? '');
-            return $host === 'felixschaller.com' || str_ends_with($host, '.felixschaller.com');
+            return self::hostAllowed($p['host'] ?? '');
         }
         // Relative path: letters, digits and simple path chars only, no traversal.
         return (bool) preg_match('~^[A-Za-z0-9][A-Za-z0-9/_\-.]*$~', $image) && !str_contains($image, '..');

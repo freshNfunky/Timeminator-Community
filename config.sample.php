@@ -78,7 +78,12 @@ return [
         // Subdomain that serves the carousel feed as JSON: { "items": [ ... ] }.
         // The app fetches it server-side, so a strict CSP (connect-src 'self')
         // is enough — the browser only ever talks to this installation.
-        'endpoint' => 'https://banners.felixschaller.com/feed.json',
+        'endpoint' => 'https://banner.felixschaller.com/feed.json',
+
+        // First-party hosts whose https links/images the feed may reference.
+        // Subdomains are always included. Anything else in the feed is stripped,
+        // so a compromised feed can never point the slot at a foreign site.
+        'allowed_hosts' => ['felixschaller.com', 'xixum.ai', 'af-ax.com'],
 
         // How long a fetched feed is cached (seconds) before the next refresh.
         // Also bounds how often telemetry is sent (once per refresh, not per view).

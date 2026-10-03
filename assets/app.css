@@ -228,6 +228,10 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
   color:var(--ink)}
 .banner-card:hover{text-decoration:none;border-color:var(--brand)}
 .banner-card img{width:100%;height:auto;border-radius:9px;display:block;background:var(--soft)}
+/* Image-dominant creative: the portrait SVG is the whole ad, no card chrome. */
+.banner-card.is-image{padding:0;border:0;background:transparent;box-shadow:none}
+.banner-card.is-image img{border-radius:var(--radius)}
+.banner-card.is-image:hover{opacity:.94}
 .banner-card .banner-title{font-weight:700;font-size:15px}
 .banner-card .banner-text{font-size:13px;color:var(--muted);line-height:1.45}
 .banner-card .banner-cta{margin-top:2px;font-size:13px;font-weight:600;color:var(--brand)}

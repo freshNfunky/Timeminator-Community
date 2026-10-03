@@ -48,6 +48,18 @@ version heading when a release is cut.
   - Set `banners['enabled'] => false` in `config.php` to remove the whole
     feature and its telemetry (the Pro edition ships it off).
   - Documented in `docs/BANNERS.md`.
+  - Creatives are portrait "skyscraper" (300x600) SVGs with the real brand
+    logos embedded. Bundled set covers the FelixSchallerCOM brand portfolio:
+    AI Transformation ("AI Maturity Made Right"), Fractional & Interim
+    Deep-Tech, the XIXUM AI-maturity assessment (xixum.ai), AF-AX
+    ("the wing that never stalls", af-ax.com, logo + eVTOL-photo variant), and
+    Timeminator Pro.
+  - The feed link/image allow-list is configurable via `banners.allowed_hosts`
+    (default `felixschaller.com`, `xixum.ai`, `af-ax.com`; subdomains included);
+    foreign links/images are stripped. Images may be a same-origin asset, an
+    `https` first-party URL, or an inline `data:image/*` URI, so remote
+    creatives render under the strict default CSP without changes.
+  - Default feed endpoint is `https://banner.felixschaller.com/feed.json`.
 
 ### Changed
 - `.gitignore` now excludes runtime artifacts under `data/` (`settings.json`,

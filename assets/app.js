@@ -168,13 +168,19 @@
       card.rel = 'noopener noreferrer';
     }
 
+    // Image-dominant creative (portrait skyscraper SVG): the image IS the ad.
+    // The copy is baked into the creative, so we only render the image, with the
+    // title as its accessible label. Otherwise fall back to a text card.
     if (it.image) {
+      card.classList.add('is-image');
       var img = document.createElement('img');
       img.src = it.image;
-      img.alt = it.title || '';
+      img.alt = it.title || it.cta || 'Anzeige';
       img.loading = 'lazy';
       card.appendChild(img);
+      return card;
     }
+
     if (it.title) {
       var t = document.createElement('span');
       t.className = 'banner-title';
