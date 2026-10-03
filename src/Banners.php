@@ -302,23 +302,57 @@ final class Banners
             return null;
         }
 
-        $href  = $str('href');
-        $image = $str('image');
+        $href   = $str('href');
+        $image  = $str('image');
+        $iframe = $str('iframe');
         if ($href !== '' && !self::isAllowedHref($href)) {
             $href = '';
         }
         if ($image !== '' && !self::isAllowedImage($image)) {
             $image = '';
         }
+        if ($iframe !== '' && !self::isAllowedIframe($iframe)) {
+            $iframe = '';
+        }
 
         return [
-            'id'    => $str('id') !== '' ? $str('id') : substr(hash('sha256', $title . $text . $href), 0, 12),
-            'title' => $title,
-            'text'  => $text,
-            'cta'   => $str('cta'),
-            'href'  => $href,
-            'image' => $image,
+            'id'     => $str('id') !== '' ? $str('id') : substr(hash('sha256', $title . $text . $href), 0, 12),
+            'title'  => $title,
+            'text'   => $text,
+            'cta'    => $str('cta'),
+            'href'   => $href,
+            'image'  => $image,
+            'iframe' => $iframe,
         ];
+    }
+
+    /**
+     * A banner HTML page to embed as an iframe: only https on an allowed
+     * first-party host (same rule as links/images). The page is served from the
+     * banner subdomain; the browser needs it in the CSP `frame-src` (see
+     * Banners::frameSrc() / send_security_headers()).
+     */
+    public static function isAllowedIframe(string $url): bool
+    {
+        $p = parse_url($url);
+        if (!$p || ($p['scheme'] ?? '') !== 'https' || ($p['host'] ?? '') === '') {
+            return false;
+        }
+        return self::hostAllowed($p['host']);
+    }
+
+    /**
+     * CSP source list for `frame-src`/`child-src`: every allowed first-party host
+     * and its subdomains over https. Used so HTML banner iframes can load.
+     */
+    public static function frameSrc(): string
+    {
+        $out = [];
+        foreach (self::allowedHosts() as $h) {
+            $out[] = 'https://' . $h;
+            $out[] = 'https://*.' . $h;
+        }
+        return implode(' ', $out);
     }
 
     /**

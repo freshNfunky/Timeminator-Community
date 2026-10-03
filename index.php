@@ -70,7 +70,7 @@ $routes = [
     'update_apply' => 'ctrl_update_apply',
     'registration_save' => 'ctrl_registration_save',
     'endpoints_save'    => 'ctrl_endpoints_save',
-    'banners'           => 'ctrl_banners_feed',
+    'sidepanel'          => 'ctrl_banners_feed',
     'banners_save'      => 'ctrl_banners_save',
 
     'imports'         => 'ctrl_imports_index',
