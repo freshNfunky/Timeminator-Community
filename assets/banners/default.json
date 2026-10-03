@@ -1,0 +1,47 @@
+{
+  "_comment": "Bundled default banner set (portrait / skyscraper, 300x600). Shipped with every Community release so the carousel always has content when the banner subdomain is unreachable (isolated server, blocked outbound, CSP block, timeout). The live feed on banner.felixschaller.com uses the same shape and overrides this set when reachable. Creatives are self-contained SVGs in this folder (brand logos embedded); links must stay on an allowed first-party host (felixschaller.com, xixum.ai, af-ax.com) or they are stripped.",
+  "items": [
+    {
+      "id": "default-fsc-ai-transformation",
+      "title": "AI Maturity Made Right - don't harness the horse by its tail. AI Transformation von FelixSchallerCOM.",
+      "cta": "Mehr erfahren",
+      "href": "https://felixschaller.com/services/ai-transformation",
+      "image": "banners/felixschaller-ai-transformation.svg"
+    },
+    {
+      "id": "default-fsc-deeptech",
+      "title": "FelixSchallerCOM - Fractional & Interim Deep-Tech: Autonomy, SLAM, Perception, AI Readiness, Governance & Assurance.",
+      "cta": "Gespräch anfragen",
+      "href": "https://felixschaller.com",
+      "image": "banners/felixschaller-deeptech.svg"
+    },
+    {
+      "id": "default-xixum-maturity",
+      "title": "XIXUM - know your AI maturity. Assess, benchmark and advance.",
+      "cta": "Jetzt bewerten",
+      "href": "https://xixum.ai",
+      "image": "banners/xixum-maturity.svg"
+    },
+    {
+      "id": "default-af-ax",
+      "title": "AF-AX - the wing that never stalls. Bird-feather surface, no stall to ~50 degrees angle of attack.",
+      "cta": "See the simulation",
+      "href": "https://af-ax.com",
+      "image": "banners/af-ax.svg"
+    },
+    {
+      "id": "default-af-ax-vtol",
+      "title": "AF-AX - the wing that never stalls. eVTOL with bird-feather wings, no stall to ~50 degrees angle of attack.",
+      "cta": "See the simulation",
+      "href": "https://af-ax.com",
+      "image": "banners/af-ax-vtol.svg"
+    },
+    {
+      "id": "default-timeminator-pro",
+      "title": "Timeminator Pro - Planung, Budget, Live-Report, Angebote und Rechnungen in einem Tool.",
+      "cta": "Pro entdecken",
+      "href": "https://timeminator.felixschaller.com",
+      "image": "banners/timeminator-pro.svg"
+    }
+  ]
+}

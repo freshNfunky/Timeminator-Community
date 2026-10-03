@@ -11,6 +11,13 @@
  * @var string $manifest_default
  * @var string $manifest_override
  * @var bool   $update_disabled
+ * @var bool   $banner_config_off
+ * @var bool   $banner_visible
+ * @var bool   $banner_telemetry
+ * @var string $banner_endpoint
+ * @var string $banner_endpoint_default
+ * @var string $banner_endpoint_override
+ * @var string $install_id
  */
 ?>
 <div class="cols">
@@ -53,6 +60,32 @@
       <form method="post" action="<?= h(route('admin_system')) ?>" class="inline">
         <?= csrf_field() ?><input type="hidden" name="action" value="sync_perms">
         <button class="btn" type="submit">Rechte synchronisieren</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Community-Banner &amp; Telemetrie</h2>
+      <?php if ($banner_config_off): ?>
+        <p class="muted">Das Banner ist in <code>config.php</code> fest deaktiviert (<code>banners.enabled =&gt; false</code>, z. B. Pro-Edition). Die folgenden Schalter haben dann keine Wirkung.</p>
+      <?php else: ?>
+        <p class="muted">Die Community-Edition finanziert sich ueber eine schlanke Banner-Spalte mit Angeboten und Neuigkeiten von FelixSchallerCOM. Die Motive werden von einer konfigurierbaren Subdomain geladen; ist sie nicht erreichbar, zeigt die App den mitgelieferten Standard-Satz. Mit dem Abruf wird ein anonymisiertes Nutzungssignal gesendet (App-Version, zufaellige Installations-ID, ein Hash davon, und die gekuerzte IP) &ndash; niemals Zeiterfassungsdaten. Details und Abschaltung siehe <code>docs/BANNERS.md</code>.</p>
+      <?php endif; ?>
+      <form method="post" action="<?= h(route('banners_save')) ?>">
+        <?= csrf_field() ?>
+        <label class="check">
+          <input type="checkbox" name="banner_visible" value="1" <?= $banner_visible ? 'checked' : '' ?> <?= $banner_config_off ? 'disabled' : '' ?>>
+          Banner-Spalte anzeigen
+        </label>
+        <label class="check">
+          <input type="checkbox" name="banner_telemetry" value="1" <?= $banner_telemetry ? 'checked' : '' ?> <?= $banner_config_off ? 'disabled' : '' ?>>
+          Anonymisiertes Nutzungssignal senden (Telemetrie)
+        </label>
+        <label>Banner-Endpoint
+          <input type="url" name="banner_endpoint_override" value="<?= h($banner_endpoint_override) ?>" placeholder="<?= h($banner_endpoint_default ?: 'https://banners.felixschaller.com/feed.json') ?>" <?= $banner_config_off ? 'disabled' : '' ?>>
+        </label>
+        <p class="muted">Aktiver Endpoint: <code><?= h($banner_endpoint ?: '—') ?></code></p>
+        <p class="muted">Installations-ID: <code><?= h($install_id) ?></code></p>
+        <div class="form-actions"><button class="btn btn-primary" type="submit" <?= $banner_config_off ? 'disabled' : '' ?>>Speichern</button></div>
       </form>
     </div>
 

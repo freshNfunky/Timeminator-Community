@@ -14,6 +14,7 @@ require __DIR__ . '/src/Stats.php';
 require __DIR__ . '/src/Settings.php';
 require __DIR__ . '/src/Updater.php';
 require __DIR__ . '/src/Registration.php';
+require __DIR__ . '/src/Banners.php';
 require __DIR__ . '/src/seed.php';
 require __DIR__ . '/src/Migrator.php';
 
@@ -28,6 +29,7 @@ require __DIR__ . '/src/controllers/structure_ctrl.php';
 require __DIR__ . '/src/controllers/stats_ctrl.php';
 require __DIR__ . '/src/controllers/admin_ctrl.php';
 require __DIR__ . '/src/controllers/imports_ctrl.php';
+require __DIR__ . '/src/controllers/banners_ctrl.php';
 
 $r = (string) get('r', Auth::check() ? 'dashboard' : 'login');
 
@@ -68,6 +70,8 @@ $routes = [
     'update_apply' => 'ctrl_update_apply',
     'registration_save' => 'ctrl_registration_save',
     'endpoints_save'    => 'ctrl_endpoints_save',
+    'banners'           => 'ctrl_banners_feed',
+    'banners_save'      => 'ctrl_banners_save',
 
     'imports'         => 'ctrl_imports_index',
     'imports_upload'  => 'ctrl_imports_upload',

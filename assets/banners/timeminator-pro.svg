@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 600" role="img" aria-label="Timeminator Pro - mehr als Zeiterfassung: Planung, Budget und Live-Report">
+  <defs>
+    <linearGradient id="bg3" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#1e1b4b"/>
+    </linearGradient>
+    <radialGradient id="gl3" cx="0.8" cy="0.08" r="0.9">
+      <stop offset="0" stop-color="#a5b4fc" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#a5b4fc" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="300" height="600" rx="20" fill="url(#bg3)"/>
+  <rect width="300" height="600" rx="20" fill="url(#gl3)"/>
+
+  <!-- stopwatch mark -->
+  <g transform="translate(40,52)" fill="none" stroke="#c7d2fe" stroke-width="2.4">
+    <circle r="12"/>
+    <rect x="-5" y="-18" width="10" height="6" rx="1.5" fill="#c7d2fe" stroke="none"/>
+    <path d="M0 0 V-7" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
+  </g>
+  <text x="62" y="58" font-family="-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="20" font-weight="800" letter-spacing="1.5" fill="#ffffff">Timeminator</text>
+  <text x="28" y="88" font-family="-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="10.5" letter-spacing="2.6" fill="#fcd34d">PRO EDITION</text>
+
+  <g font-family="-apple-system,Segoe UI,Roboto,Arial,sans-serif" fill="#ffffff" font-weight="800" font-size="31">
+    <text x="28" y="150">Mehr als</text>
+    <text x="28" y="186">Zeit-</text>
+    <text x="28" y="222">erfassung.</text>
+  </g>
+  <text x="28" y="256" font-family="-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="13.5" fill="#c7d2fe">Planung · Budget · Live-Report</text>
+
+  <line x1="28" y1="278" x2="272" y2="278" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1"/>
+
+  <g font-family="-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="13" fill="#ffffff">
+    <g>
+      <rect x="28" y="298" width="100" height="30" rx="15" fill="#ffffff" fill-opacity="0.13"/>
+      <text x="44" y="318">Angebote</text>
+    </g>
+    <g>
+      <rect x="136" y="298" width="108" height="30" rx="15" fill="#ffffff" fill-opacity="0.13"/>
+      <text x="152" y="318">Rechnungen</text>
+    </g>
+    <g>
+      <rect x="28" y="336" width="120" height="30" rx="15" fill="#ffffff" fill-opacity="0.13"/>
+      <text x="44" y="356">Buchhaltung</text>
+    </g>
+    <g>
+      <rect x="28" y="374" width="112" height="30" rx="15" fill="#ffffff" fill-opacity="0.13"/>
+      <text x="44" y="394">PMV-Report</text>
+    </g>
+  </g>
+
+  <rect x="28" y="428" width="244" height="34" rx="9" fill="none" stroke="#ffffff" stroke-opacity="0.35"/>
+  <text x="150" y="450" text-anchor="middle" font-family="-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="12" fill="#e0e7ff">Ist · Soll · Budget · Fortschritt</text>
+
+  <rect x="28" y="492" width="244" height="46" rx="23" fill="#ffffff"/>
+  <text x="150" y="521" text-anchor="middle" font-family="-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="15" font-weight="700" fill="#4338ca">Pro entdecken  ›</text>
+
+  <text x="150" y="572" text-anchor="middle" font-family="-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="10.5" letter-spacing="0.5" fill="#a5b4fc">timeminator.felixschaller.com</text>
+</svg>

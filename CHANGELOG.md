@@ -20,6 +20,58 @@ version heading when a release is cut.
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-10-02
+
+### Added
+- Community banner carousel with server-side feed loading, offline fallback and
+  opt-outable telemetry (fixes #22). A slim, collapsible banner column on the
+  right of the main layout rotates through FelixSchallerCOM services, tools and
+  news:
+  - Creatives are loaded **server-side** from a configurable subdomain
+    (`banners.endpoint`, default `https://banners.felixschaller.com/feed.json`)
+    through a first-party route (`index.php?r=banners`), so the strict default
+    CSP (`connect-src 'self'`) needs no exception. The fetch is async and never
+    blocks page rendering, and results are cached for `banners.cache_ttl`.
+  - On any network failure the app falls back to the **bundled default set** in
+    `assets/banners/default.json`, so the slot is never empty or broken on an
+    isolated server.
+  - Every creative is sanitized: links are accepted only as `https`
+    `felixschaller.com` URLs and open with `rel="noopener noreferrer"`; images
+    only as same-origin assets or `https` `felixschaller.com` URLs.
+  - A small anonymized usage signal rides along with each feed refresh (app
+    version, a random installation id stored in `data/settings.json`, a salted
+    hash of it, and a truncated request IP). **No time-tracking data is ever
+    sent.** Each field is switchable under `banners.telemetry` in `config.php`.
+  - **Admin → System → Community-Banner & Telemetrie** adds runtime toggles:
+    show/hide the column (`banner_visible`, default on), a master telemetry
+    opt-out (`banner_telemetry`), and an endpoint override.
+  - Set `banners['enabled'] => false` in `config.php` to remove the whole
+    feature and its telemetry (the Pro edition ships it off).
+  - Documented in `docs/BANNERS.md`.
+  - Creatives are portrait "skyscraper" (300x600) SVGs with the real brand
+    logos embedded. Bundled set covers the FelixSchallerCOM brand portfolio:
+    AI Transformation ("AI Maturity Made Right"), Fractional & Interim
+    Deep-Tech, the XIXUM AI-maturity assessment (xixum.ai), AF-AX
+    ("the wing that never stalls", af-ax.com, logo + eVTOL-photo variant), and
+    Timeminator Pro.
+  - The feed link/image allow-list is configurable via `banners.allowed_hosts`
+    (default `felixschaller.com`, `xixum.ai`, `af-ax.com`; subdomains included);
+    foreign links/images are stripped. Images may be a same-origin asset, an
+    `https` first-party URL, or an inline `data:image/*` URI, so remote
+    creatives render under the strict default CSP without changes.
+  - Default feed endpoint is `https://banner.felixschaller.com/feed.json`.
+
+### Changed
+- `.gitignore` now excludes runtime artifacts under `data/` (`settings.json`,
+  `*.json`, `*.log`) so per-install state and logs stay out of the repo.
+- `docs/ISSUES.md` and the README privacy section describe the banner carousel
+  and its telemetry.
+
+### Config
+- New `banners` block in `config.sample.php` (`enabled`, `endpoint`,
+  `cache_ttl`, `telemetry.*`, `hash_salt`). Pre-1.0: this is an additive,
+  optional block; existing installs keep working with the Community defaults.
+
 ## [0.5.0] — 2026-09-29
 
 Big rollup. All the work under `[Unreleased]` since 0.2.0 lands here in one
