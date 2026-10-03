@@ -17,6 +17,12 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
 <?php if (Auth::can('scopes.manage')): ?>
   <a href="<?= h(route('scopes')) ?>"<?= $active(['scopes']) ?>>Sichten</a>
 <?php endif; ?>
+<?php if (Auth::check()): ?>
+  <span class="nav-sep"></span>
+  <a href="<?= h(route('pro_invoices')) ?>"<?= $active(['pro_invoices']) ?> title="Pro-Feature">Rechnungen <span class="pill pill-pro nav-pill">Pro</span></a>
+  <a href="<?= h(route('pro_offers')) ?>"<?= $active(['pro_offers']) ?> title="Pro-Feature">Angebote <span class="pill pill-pro nav-pill">Pro</span></a>
+  <a href="<?= h(route('pro_budget')) ?>"<?= $active(['pro_budget']) ?> title="Pro-Feature">Budget <span class="pill pill-pro nav-pill">Pro</span></a>
+<?php endif; ?>
 <?php if (Auth::can('admin.users') || Auth::can('admin.roles') || Auth::can('admin.system') || Auth::can('admin.imports')): ?>
   <span class="nav-sep"></span>
   <?php if (Auth::can('admin.users')): ?>
@@ -24,6 +30,7 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
   <?php endif; ?>
   <?php if (Auth::can('admin.roles')): ?>
     <a href="<?= h(route('admin_roles')) ?>"<?= $active(['admin_roles']) ?>>Rollen</a>
+    <a href="<?= h(route('pro_roles')) ?>"<?= $active(['pro_roles']) ?> title="Pro-Feature">Rollen Pro <span class="pill pill-pro nav-pill">Pro</span></a>
   <?php endif; ?>
   <?php if (Auth::can('admin.imports')): ?>
     <a href="<?= h(route('imports')) ?>"<?= $active(['imports']) ?>>Import</a>

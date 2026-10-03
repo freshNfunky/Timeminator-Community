@@ -28,6 +28,7 @@ require __DIR__ . '/src/controllers/structure_ctrl.php';
 require __DIR__ . '/src/controllers/stats_ctrl.php';
 require __DIR__ . '/src/controllers/admin_ctrl.php';
 require __DIR__ . '/src/controllers/imports_ctrl.php';
+require __DIR__ . '/src/controllers/pro_teaser_ctrl.php';
 
 $r = (string) get('r', Auth::check() ? 'dashboard' : 'login');
 
@@ -78,6 +79,13 @@ $routes = [
     'imports_confirm' => 'ctrl_imports_confirm',
     'imports_discard' => 'ctrl_imports_discard',
     'imports_delete'  => 'ctrl_imports_delete',
+
+    // Pro-only feature teasers (Community edition). Each one renders a
+    // dimmed read-only mockup + right-edge upsell banner.
+    'pro_invoices' => 'ctrl_pro_invoices',
+    'pro_offers'   => 'ctrl_pro_offers',
+    'pro_budget'   => 'ctrl_pro_budget',
+    'pro_roles'    => 'ctrl_pro_roles',
 ];
 
 $handler = $routes[$r] ?? null;
