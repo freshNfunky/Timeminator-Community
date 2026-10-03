@@ -181,6 +181,12 @@
   }
 
   function buildCard(it) {
+    // One flexible card layout for every creative: top 2/3 is the hero
+    // image (object-fit:cover, so a 9:16 or 3:4 asset fills the slot
+    // without letterboxing), bottom 1/3 is title + body + CTA. The split
+    // is CSS so the ~200x1000 column reflows gracefully when the
+    // viewport changes. If the item has no image, the text block
+    // expands to fill the whole card.
     var card = document.createElement('a');
     card.className = 'banner-card';
     if (it.href) {
@@ -189,36 +195,51 @@
       card.rel = 'noopener noreferrer';
     }
 
-    // Image-dominant creative (portrait skyscraper SVG): the image IS the ad.
-    // The copy is baked into the creative, so we only render the image, with the
-    // title as its accessible label. Otherwise fall back to a text card.
     if (it.image) {
-      card.classList.add('is-image');
+      var hero = document.createElement('div');
+      hero.className = 'banner-hero';
       var img = document.createElement('img');
       img.src = it.image;
       img.alt = it.title || it.cta || 'Anzeige';
       img.loading = 'lazy';
-      card.appendChild(img);
-      return card;
+      hero.appendChild(img);
+      // Gradient scrim that fades from the hero into the body panel,
+      // so the title doesn't have to live on a hard image/text seam.
+      var scrim = document.createElement('div');
+      scrim.className = 'banner-scrim';
+      hero.appendChild(scrim);
+      card.appendChild(hero);
+    } else {
+      card.classList.add('is-textonly');
     }
 
+    var body = document.createElement('div');
+    body.className = 'banner-body';
     if (it.title) {
       var t = document.createElement('span');
       t.className = 'banner-title';
       t.textContent = it.title;
-      card.appendChild(t);
+      body.appendChild(t);
     }
     if (it.text) {
       var p = document.createElement('span');
       p.className = 'banner-text';
       p.textContent = it.text;
-      card.appendChild(p);
+      body.appendChild(p);
     }
     if (it.cta && it.href) {
       var cta = document.createElement('span');
       cta.className = 'banner-cta';
       cta.textContent = it.cta;
-      card.appendChild(cta);
+      body.appendChild(cta);
+    }
+    // No body copy at all? Treat the card as a full-image creative
+    // (baked SVG / artwork): let the hero fill the whole slot and
+    // skip the empty text region.
+    if (body.children.length === 0) {
+      card.classList.add('is-full-image');
+    } else {
+      card.appendChild(body);
     }
     return card;
   }

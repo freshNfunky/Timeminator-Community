@@ -1,47 +1,45 @@
 {
-  "_comment": "Bundled default banner set (portrait / skyscraper, 300x600). Shipped with every Community release so the carousel always has content when the banner subdomain is unreachable (isolated server, blocked outbound, CSP block, timeout). The live feed on banner.felixschaller.com uses the same shape and overrides this set when reachable. Creatives are self-contained SVGs in this folder (brand logos embedded); links must stay on an allowed first-party host (felixschaller.com, xixum.ai, af-ax.com) or they are stripped.",
+  "_comment": "Bundled default banner set. Shipped with every Community release so the carousel is populated when the banner subdomain is unreachable (isolated server, blocked outbound, CSP block, timeout, 404). The live feed at banner.felixschaller.com uses the same shape and overrides this set when reachable. Each item renders as an HTML+CSS card: top ~2/3 is the hero image (object-fit:cover), bottom ~1/3 is title + body + CTA, so content adapts to the ~200x1000 column instead of being baked into a fixed-aspect SVG. Links must stay on an allowed first-party host (felixschaller.com, xixum.ai, af-ax.com) or they are stripped.",
   "items": [
     {
       "id": "default-fsc-ai-transformation",
-      "title": "AI Maturity Made Right - don't harness the horse by its tail. AI Transformation von FelixSchallerCOM.",
+      "image": "banners/logos/horse.jpg",
+      "title": "AI Maturity Made Right",
+      "text": "Don't harness the horse by its tail. AI Transformation von FelixSchallerCOM.",
       "cta": "Mehr erfahren",
-      "href": "https://felixschaller.com/services/ai-transformation",
-      "image": "banners/felixschaller-ai-transformation.svg"
+      "href": "https://felixschaller.com/services/ai-transformation"
     },
     {
       "id": "default-fsc-deeptech",
-      "title": "FelixSchallerCOM - Fractional & Interim Deep-Tech: Autonomy, SLAM, Perception, AI Readiness, Governance & Assurance.",
-      "cta": "Gespräch anfragen",
-      "href": "https://felixschaller.com",
-      "image": "banners/felixschaller-deeptech.svg"
+      "image": "banners/logos/felixschaller.svg",
+      "title": "Deep-Tech Leadership",
+      "text": "Fractional & Interim: Autonomy, SLAM, Perception, AI Readiness, Governance & Assurance.",
+      "cta": "Gespraech anfragen",
+      "href": "https://felixschaller.com"
     },
     {
-      "id": "default-xixum-hallucination",
-      "title": "XIXUM - hallucination-free AI by design.",
-      "cta": "Learn more",
-      "href": "https://xixum.ai",
-      "image": "banners/xixum-hallucination.svg"
+      "id": "default-xixum-maturity",
+      "image": "banners/logos/xixum-hero.jpg",
+      "title": "XIXUM AI Maturity",
+      "text": "Know your AI maturity. Assess, benchmark and advance.",
+      "cta": "Jetzt bewerten",
+      "href": "https://xixum.ai"
     },
     {
       "id": "default-af-ax",
-      "title": "AF-AX - the wing that doesn't stall. Bird-feather surface, no stall to ~50 degrees angle of attack.",
+      "image": "banners/logos/af-ax-vtol.jpg",
+      "title": "AF-AX — the wing that never stalls",
+      "text": "Bird-feather surface, no stall to ~50 degrees angle of attack. eVTOL variant.",
       "cta": "See the simulation",
-      "href": "https://af-ax.com",
-      "image": "banners/af-ax.svg"
-    },
-    {
-      "id": "default-af-ax-vtol",
-      "title": "AF-AX - the wing that doesn't stall. eVTOL with bird-feather wings, no stall to ~50 degrees angle of attack.",
-      "cta": "See the simulation",
-      "href": "https://af-ax.com",
-      "image": "banners/af-ax-vtol.svg"
+      "href": "https://af-ax.com"
     },
     {
       "id": "default-timeminator-pro",
-      "title": "Timeminator Pro - Planung, Budget, Live-Report, Angebote und Rechnungen in einem Tool.",
+      "image": "banners/logos/timeminator-hero.jpg",
+      "title": "Timeminator Pro",
+      "text": "Planung, Budget, Live-Report, Angebote und Rechnungen in einem Tool.",
       "cta": "Pro entdecken",
-      "href": "https://timeminator.felixschaller.com",
-      "image": "banners/timeminator-pro.svg"
+      "href": "https://timeminator.felixschaller.com"
     }
   ]
 }
