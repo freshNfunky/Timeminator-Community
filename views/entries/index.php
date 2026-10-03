@@ -39,8 +39,8 @@ if ($__isCalendar) {
   </label>
   <button class="btn" type="submit">Filtern</button>
   <span class="view-toggle">
-    <a class="btn btn-sm <?= !$__isCalendar ? 'btn-primary' : '' ?>" href="<?= h(route('entries', $__filterQp)) ?>">Liste</a>
-    <a class="btn btn-sm <?= $__isCalendar ? 'btn-primary' : '' ?>" href="<?= h(route('entries', $__filterQp + ['view' => 'calendar'])) ?>">Kalender</a>
+    <a class="btn btn-sm <?= $__isCalendar ? 'btn-primary' : '' ?>" href="<?= h(route('entries', $__filterQp)) ?>">Kalender</a>
+    <a class="btn btn-sm <?= !$__isCalendar ? 'btn-primary' : '' ?>" href="<?= h(route('entries', $__filterQp + ['view' => 'list'])) ?>">Liste</a>
   </span>
   <?php if (!$__isCalendar): ?>
     <a class="btn" href="<?= h(route('entries_export', $__filterQp + ['format' => 'csv'])) ?>">CSV</a>

@@ -17,7 +17,8 @@ function parse_dtlocal(?string $v): ?string
 function ctrl_entries_index(): void
 {
     require_perm('entries.manage');
-    $view = get('view') === 'calendar' ? 'calendar' : 'list';
+    // Calendar is the default; the flat list is an opt-in via ?view=list.
+    $view = get('view') === 'list' ? 'list' : 'calendar';
     $f    = entries_filter_from_request();
 
     if ($view === 'calendar') {
