@@ -59,49 +59,10 @@ return [
     // This is the lead-generator (Issue #2c): only email/domain/version, off by default.
     'registration_endpoint' => 'https://license.felixschaller.com/timeminator-registry/register.php',
 
-    // --- Community banner carousel + telemetry (Issue #22) ---
-    // The Community edition carries a slim banner column that rotates through
-    // FelixSchallerCOM services, tools and news. Creatives are loaded from a
-    // dedicated subdomain so they can be rotated without shipping a release; on
-    // any network failure the app falls back to the bundled default set in
-    // assets/banners/default.json, so the slot is never empty or broken.
-    //
-    // This is how the free Community edition is funded. In the Pro edition the
-    // whole block is removed (or set 'enabled' => false to strip it here).
-    // Full detail: docs/BANNERS.md.
-    'banners' => [
-        // Master switch. true/false forces the feature on/off (Pro ships false);
-        // leave it unset to use the Community default (on, with an admin toggle
-        // under Admin -> System).
-        'enabled' => true,
-
-        // Subdomain that serves the carousel feed as JSON: { "items": [ ... ] }.
-        // The app fetches it server-side, so a strict CSP (connect-src 'self')
-        // is enough — the browser only ever talks to this installation.
-        'endpoint' => 'https://banner.felixschaller.com/feed.json',
-
-        // First-party hosts whose https links/images the feed may reference.
-        // Subdomains are always included. Anything else in the feed is stripped,
-        // so a compromised feed can never point the slot at a foreign site.
-        'allowed_hosts' => ['felixschaller.com', 'xixum.ai', 'af-ax.com'],
-
-        // How long a fetched feed is cached (seconds) before the next refresh.
-        // Also bounds how often telemetry is sent (once per refresh, not per view).
-        'cache_ttl' => 3600,
-
-        // Anonymized usage signal sent with each feed refresh so the operator can
-        // see roughly how many Community instances are live. NEVER any
-        // time-tracking data. Each field can be disabled individually; the admin
-        // also has a single master opt-out under Admin -> System.
-        'telemetry' => [
-            'version'    => true, // app version, e.g. "0.6.0"
-            'install_id' => true, // random UUID, generated once and stored in data/
-            'hashed_id'  => true, // sha256(install_id | host | hash_salt) — stable across IP changes
-            'ip'         => true, // request IP, truncated (last octet / IPv6 /48 zeroed)
-        ],
-
-        // Salt mixed into the hashed identifier. Set a long random string per
-        // installation if you want the hash to be unlinkable to the raw UUID.
-        'hash_salt' => '',
-    ],
+    // --- Promo sidebar (Community edition only) ---
+    // Thin right-side column with links back to felixschaller.com services
+    // (AI Assessment, Digital Twin, …). Pays for the Community edition. Set
+    // to false to hide the whole slot; individual users may also dismiss it
+    // per browser session via the X button.
+    'promo_sidebar_enabled' => true,
 ];

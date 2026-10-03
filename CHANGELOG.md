@@ -20,30 +20,6 @@ version heading when a release is cut.
 
 ## [Unreleased]
 
-### Added
-- **Back-merge of v0.6.0 banner infrastructure.** `src/Banners.php` with
-  server-side feed proxy + offline fallback, `assets/banners/*` with the
-  bundled default banner set, `?r=banners` first-party JSON endpoint and
-  the admin controls under **Admin → System → Community-Banner &
-  Telemetrie** are now on `develop`. See the dedicated 0.6.0 section
-  below. Default feed endpoint is
-  `https://banner.felixschaller.com/feed.json`; on any failure the
-  bundled `assets/banners/default.json` is served instead so the slot
-  never 404s.
-- **Nav dropdowns.** Rechnungen / Angebote / Budget collapse into a
-  "Kaufmaennisch" group (Pro-pill on the parent); Benutzer / Rollen /
-  Rollen Pro / Import / System collapse into a "Systemverwaltung"
-  group. Built on native `<details>`/`<summary>` so toggling is JS-free
-  and keyboard-accessible; auto-open when a child route is active.
-- **`asset()` cache-busting.** `assets/app.css` and `assets/app.js` URLs
-  carry `?v=<filemtime>` so a redeployed stylesheet or script lands on
-  the next request without the user hard-reloading.
-
-### Removed
-- The provisional `views/partials/promo_sidebar.php` and
-  `ctrl_promo_dismiss` are gone — the 0.6.0 `.bannerbar` carousel from
-  main supersedes them with proper feed + fallback.
-
 ### Changed
 - **LoginThrottle now escalates the lockout window for repeat offenders**
   in a 24 h horizon: 15 min → 1 h → 4 h → 24 h. The first lockout stays
@@ -103,47 +79,6 @@ version heading when a release is cut.
 - **`referrer_or_default()` helper.** Same-origin-only redirect helper
   for the new dismiss/skip flow — keeps the admin on whatever page they
   were on instead of jumping to the dashboard.
-
-## [0.6.0] — 2026-10-02
-
-### Added
-- Community banner carousel with server-side feed loading, offline fallback and
-  opt-outable telemetry (fixes #22). A slim, collapsible banner column on the
-  right of the main layout rotates through FelixSchallerCOM services, tools and
-  news:
-  - Creatives are loaded **server-side** from a configurable subdomain
-    (`banners.endpoint`, default `https://banner.felixschaller.com/feed.json`)
-    through a first-party route (`index.php?r=banners`), so the strict default
-    CSP (`connect-src 'self'`) needs no exception. The fetch is async and never
-    blocks page rendering, and results are cached for `banners.cache_ttl`.
-  - On any network failure the app falls back to the **bundled default set** in
-    `assets/banners/default.json`, so the slot is never empty or broken on an
-    isolated server.
-  - Every creative is sanitized: links are accepted only on allow-listed hosts
-    (default `felixschaller.com`, `xixum.ai`, `af-ax.com`; subdomains included)
-    and open with `rel="noopener noreferrer"`; images only as same-origin assets
-    or `https` first-party URLs.
-  - A small anonymized usage signal rides along with each feed refresh (app
-    version, a random installation id stored in `data/settings.json`, a salted
-    hash of it, and a truncated request IP). **No time-tracking data is ever
-    sent.** Each field is switchable under `banners.telemetry` in `config.php`.
-  - **Admin → System → Community-Banner & Telemetrie** adds runtime toggles:
-    show/hide the column (`banner_visible`, default on), a master telemetry
-    opt-out (`banner_telemetry`), and an endpoint override.
-  - Set `banners['enabled'] => false` in `config.php` to remove the whole
-    feature and its telemetry (the Pro edition ships it off).
-  - Documented in `docs/BANNERS.md`.
-
-### Changed
-- `.gitignore` now excludes runtime artifacts under `data/` (`settings.json`,
-  `*.json`, `*.log`) so per-install state and logs stay out of the repo.
-- `docs/ISSUES.md` and the README privacy section describe the banner carousel
-  and its telemetry.
-
-### Config
-- New `banners` block in `config.sample.php` (`enabled`, `endpoint`,
-  `cache_ttl`, `telemetry.*`, `hash_salt`). Pre-1.0: this is an additive,
-  optional block; existing installs keep working with the Community defaults.
 
 ## [0.5.0] — 2026-09-29
 
