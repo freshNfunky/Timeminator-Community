@@ -35,7 +35,7 @@ $__promos = [
         'slug'  => 'digital-twin',
         'title' => 'Digital Twin',
         'body'  => 'Prozesse simulieren bevor du sie umbaust.',
-        'href'  => 'https://felixschaller.com/digital-twin',
+        'href'  => 'https://felixschaller.com/tools/digital-twin-perception',
         'cta'   => 'Mehr',
     ],
     [
