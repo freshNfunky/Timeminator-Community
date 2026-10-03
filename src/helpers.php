@@ -229,6 +229,19 @@ function send_security_headers(): void
     $csp = cfg('csp', null);
     if ($csp === null) {
         $nonce = csp_nonce();
+        // Allow HTML banner iframes from the first-party banner host(s). Derived
+        // from banners.allowed_hosts so a custom banner subdomain works too.
+        $bcfg = cfg('banners', []);
+        $bhosts = is_array($bcfg) && !empty($bcfg['allowed_hosts'])
+            ? (array) $bcfg['allowed_hosts']
+            : ['felixschaller.com', 'xixum.ai', 'af-ax.com'];
+        $frame = "'self'";
+        foreach ($bhosts as $bh) {
+            $bh = preg_replace('/[^a-z0-9.\-]/i', '', (string) $bh);
+            if ($bh !== '') {
+                $frame .= " https://$bh https://*.$bh";
+            }
+        }
         $csp = "default-src 'self'; "
              . "script-src 'self'; "
              . "style-src 'self' 'nonce-" . $nonce . "'; "
@@ -236,6 +249,8 @@ function send_security_headers(): void
              . "img-src 'self' data:; "
              . "font-src 'self'; "
              . "connect-src 'self'; "
+             . "frame-src " . $frame . "; "
+             . "child-src " . $frame . "; "
              . "object-src 'none'; "
              . "base-uri 'self'; "
              . "frame-ancestors 'none'; "

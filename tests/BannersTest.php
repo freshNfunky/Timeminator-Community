@@ -155,4 +155,31 @@ final class BannersTest extends TestCase
             }
         }
     }
+
+    // ---------- HTML banner iframe ----------
+
+    public function testIframeAllowsHttpsFirstPartyOnly(): void
+    {
+        self::assertTrue(Banners::isAllowedIframe('https://banner.felixschaller.com/media/x/index.html'));
+        self::assertTrue(Banners::isAllowedIframe('https://cdn.xixum.ai/b/index.html'));
+        self::assertFalse(Banners::isAllowedIframe('http://banner.felixschaller.com/x.html')); // not https
+        self::assertFalse(Banners::isAllowedIframe('https://evil.example.com/x.html'));         // wrong host
+        self::assertFalse(Banners::isAllowedIframe('https://felixschaller.com.evil.com/x.html'));
+    }
+
+    public function testSanitizeItemKeepsFirstPartyIframeDropsForeign(): void
+    {
+        $ok = Banners::sanitizeItem(['title' => 'H', 'iframe' => 'https://banner.felixschaller.com/media/x/index.html']);
+        self::assertSame('https://banner.felixschaller.com/media/x/index.html', $ok['iframe']);
+        $bad = Banners::sanitizeItem(['title' => 'H', 'iframe' => 'https://evil.example.com/x.html']);
+        self::assertSame('', $bad['iframe']);
+    }
+
+    public function testFrameSrcListsFirstPartyHostsAndWildcards(): void
+    {
+        $fs = Banners::frameSrc();
+        self::assertStringContainsString('https://felixschaller.com', $fs);
+        self::assertStringContainsString('https://*.felixschaller.com', $fs);
+        self::assertStringContainsString('https://*.xixum.ai', $fs);
+    }
 }
