@@ -48,7 +48,9 @@ $__banner    = Banners::isVisible();
   <?= $__content ?>
 </main>
 <?php if ($__banner): ?>
-<aside class="sidepanel" id="sidepanel" aria-label="Anzeige">
+<aside class="sidepanel" id="sidepanel">
+  <a class="sp-brand" href="https://felixschaller.com" target="_blank" rel="noopener"
+     aria-label="FelixSchallerCOM"></a>
   <div class="sp-rotator" id="spRotator" data-endpoint="<?= h(route('sidepanel')) ?>" data-interval="7000"></div>
 </aside>
 <?php endif; ?>
