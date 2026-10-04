@@ -24,6 +24,13 @@ final class Banners
     private const INSTALL_KEY = 'install_id';
     private const DEFAULT_TTL = 3600;
 
+    // Baseline endpoint used when the operator has not set `banners.endpoint`
+    // in config.php. Keeps the Community edition working out of the box after
+    // a fresh install - without this, a config missing the banners block would
+    // silently fall back to the bundled offline SVG set forever. Served from
+    // an ad-blocker-neutral subdomain (not `banner.*`).
+    private const DEFAULT_ENDPOINT = 'https://assets.felixschaller.com/feed.json';
+
     // ---------- Visibility / configuration ----------
 
     /** Raw 'banners' config block from config.php (always an array). */
@@ -58,14 +65,14 @@ final class Banners
     /** Config default endpoint, before any admin override. */
     public static function endpointDefault(): string
     {
-        return (string) (self::conf()['endpoint'] ?? '');
+        return (string) (self::conf()['endpoint'] ?? self::DEFAULT_ENDPOINT);
     }
 
     /** Feed endpoint: admin override wins over the config default. */
     public static function endpoint(): string
     {
         $override = (string) Settings::get('banner_endpoint_override', '');
-        return $override !== '' ? $override : (string) (self::conf()['endpoint'] ?? '');
+        return $override !== '' ? $override : self::endpointDefault();
     }
 
     public static function cacheTtl(): int

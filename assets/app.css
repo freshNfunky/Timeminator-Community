@@ -224,20 +224,23 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
    "banner" — so that content-blocking filter lists don't disappear
    the whole column. */
 .shell{display:block}
-.shell.has-aside{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:26px;
-  max-width:1460px;margin:0 auto;align-items:start}
-.shell.has-aside .wrap{max-width:none;margin:0}
-.sidepanel{padding:22px 20px 0 0;position:sticky;top:18px}
-.sidepanel.collapsed .sp-rotator{display:none}
-.sp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.sp-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.sp-toggle{border:1px solid var(--line);background:var(--panel);color:var(--muted);
-  width:22px;height:22px;line-height:1;border-radius:6px;cursor:pointer;font-size:14px;padding:0}
-.sp-toggle:hover{background:var(--soft);color:var(--ink)}
+.shell.has-aside{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:26px;
+  max-width:none;margin:0;align-items:start}
+.shell.has-aside .wrap{max-width:1120px;margin:0 auto}
+.sidepanel{padding:22px 0 0 0;position:sticky;top:18px}
+.sp-brand{display:block;width:220px;height:22px;margin:0 0 14px;
+  background-color:var(--ink);
+  -webkit-mask-image:url(banners/logos/felixschaller.svg);
+          mask-image:url(banners/logos/felixschaller.svg);
+  -webkit-mask-size:contain;mask-size:contain;
+  -webkit-mask-position:left center;mask-position:left center;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  opacity:.85;transition:opacity .15s}
+.sp-brand:hover{opacity:1}
 .sp-rotator{position:relative;min-height:220px}
 .sp-item{display:flex;flex-direction:column;gap:10px;background:var(--panel);
   border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-card);
-  color:var(--ink);text-decoration:none;position:absolute;inset:0}
+  color:var(--ink);text-decoration:none}
 .sp-item:hover{text-decoration:none;border-color:var(--brand)}
 .sp-item img{width:100%;height:auto;border-radius:9px;display:block;background:var(--soft)}
 .sp-item.hidden{display:none}
@@ -256,6 +259,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 @media (max-width:1023px){
   .shell.has-aside{grid-template-columns:1fr}
   .sidepanel{position:static;padding:0;margin-top:8px;border-top:1px solid var(--line);padding-top:16px}
+  .sp-brand{margin:0 0 10px}
   .sp-rotator{min-height:0}
 }
 
@@ -432,35 +436,3 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
   .pro-upsell{position:static;order:-1}
 }
 
-/* Community banner column (Issue #22) */
-.shell{display:block}
-.shell.has-aside{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:26px;
-  max-width:1460px;margin:0 auto;align-items:start}
-.shell.has-aside .wrap{max-width:none;margin:0}
-.sidepanel{padding:22px 20px 0 0;position:sticky;top:18px}
-.sp-rotator{position:relative;min-height:220px}
-.sp-item{display:flex;flex-direction:column;gap:10px;background:var(--panel);
-  border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-card);
-  color:var(--ink)}
-.sp-item:hover{text-decoration:none;border-color:var(--brand)}
-.sp-item img{width:100%;height:auto;border-radius:9px;display:block;background:var(--soft)}
-/* Image-dominant creative: the portrait SVG is the whole ad, no card chrome. */
-.sp-item.is-image{padding:0;border:0;background:transparent;box-shadow:none}
-.sp-item.is-image img{border-radius:var(--radius)}
-.sp-item.is-image:hover{opacity:.94}
-/* HTML banner iframe: fills the column width, fluid height via aspect-ratio */
-.sp-item.is-iframe{padding:0;border:0;background:transparent;box-shadow:none;overflow:hidden;border-radius:var(--radius)}
-.sp-item.is-iframe iframe{display:block;width:100%;aspect-ratio:1/2;border:0;border-radius:var(--radius);background:var(--panel)}
-.sp-item .sp-title{font-weight:700;font-size:15px}
-.sp-item .sp-text{font-size:13px;color:var(--muted);line-height:1.45}
-.sp-item .sp-cta{margin-top:2px;font-size:13px;font-weight:600;color:var(--brand)}
-.sp-item .sp-cta::after{content:" \2197"}
-.sp-dots{display:flex;gap:6px;justify-content:center;margin-top:12px}
-.sp-dot{width:7px;height:7px;border-radius:50%;background:var(--line);border:0;padding:0;cursor:pointer}
-.sp-dot.active{background:var(--brand)}
-
-@media(max-width:1080px){
-  .shell.has-aside{grid-template-columns:1fr}
-  .sidepanel{position:static;padding:0;margin-top:8px;border-top:1px solid var(--line);padding-top:16px}
-  .sp-rotator{min-height:0}
-}

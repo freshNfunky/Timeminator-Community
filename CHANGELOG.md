@@ -18,6 +18,28 @@ version heading when a release is cut.
 > updating. The initial commit was mislabelled "v1.0.0"; the `VERSION`
 > file is authoritative.
 
+## [Unreleased]
+
+### Added
+- **Side-panel brand mark**: the FelixSchallerCOM wordmark now sits above the
+  rotating carousel, color-inverting with the theme (dark in light mode, light
+  in dark mode via `mask-image` + `var(--ink)` — no second asset needed and no
+  inline styles that would trip the strict CSP).
+
+### Changed
+- **Side-panel feed endpoint has a sensible default** so a fresh install serves
+  HTML creatives out of the box, without needing a `banners` block in
+  `config.php`. `Banners::endpoint()` now falls back to
+  `https://assets.felixschaller.com/feed.json` (ad-blocker-neutral host) when
+  the operator has not configured one; previously it fell back to an empty
+  string, which silently kept the carousel on the bundled offline SVG set.
+- **Side-panel bleeds flush to the right viewport edge** (240 px wide, no
+  right padding, no shell `max-width` cap), so the slot sits in the periphery
+  rather than inside the content column. Dead `.sp-head`/`.sp-label`/
+  `.sp-toggle` CSS from the retired collapsible header is gone, along with a
+  duplicated `.shell.has-aside`/`.sp-*` block left behind by the back-merge in
+  #77.
+
 ## [0.6.0] — 2026-10-04
 
 ### Added
