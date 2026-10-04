@@ -11,6 +11,7 @@
  * @var string $manifest_default
  * @var string $manifest_override
  * @var bool   $update_disabled
+ * @var string $theme_preference
  */
 ?>
 <div class="cols">
@@ -53,6 +54,27 @@
       <form method="post" action="<?= h(route('admin_system')) ?>" class="inline">
         <?= csrf_field() ?><input type="hidden" name="action" value="sync_perms">
         <button class="btn" type="submit">Rechte synchronisieren</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Darstellung</h2>
+      <p class="muted">Hell / Dunkel-Modus fuer die gesamte Instanz. <strong>System</strong> uebernimmt die OS-Einstellung des jeweiligen Browsers (<code>prefers-color-scheme</code>) &mdash; Standard. Hell oder Dunkel erzwingen eine feste Darstellung fuer alle Benutzer; nuetzlich z.&nbsp;B. fuer Screenshots.</p>
+      <form method="post" action="<?= h(route('theme_save')) ?>">
+        <?= csrf_field() ?>
+        <label class="check">
+          <input type="radio" name="theme_preference" value="system" <?= $theme_preference === 'system' ? 'checked' : '' ?>>
+          System (OS-Einstellung)
+        </label>
+        <label class="check">
+          <input type="radio" name="theme_preference" value="light" <?= $theme_preference === 'light' ? 'checked' : '' ?>>
+          Hell
+        </label>
+        <label class="check">
+          <input type="radio" name="theme_preference" value="dark" <?= $theme_preference === 'dark' ? 'checked' : '' ?>>
+          Dunkel
+        </label>
+        <div class="form-actions"><button class="btn btn-primary" type="submit">Speichern</button></div>
       </form>
     </div>
 
