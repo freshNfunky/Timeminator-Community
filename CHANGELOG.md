@@ -20,6 +20,19 @@ version heading when a release is cut.
 
 ## [Unreleased]
 
+### Changed
+- **Task picker is now cascading: Kunde → Projekt → Arbeitspaket → Aufgabe.**
+  The single flat `<select name="task_id">` that crammed the whole hierarchy
+  into `<optgroup>` labels (one gigantic list of every task with a prefix like
+  "Kunde A / Projekt B / Arbeitspaket C") is replaced by four side-by-side
+  selects that filter each other client-side. Changing a parent narrows the
+  child options and clears a stale child selection. The last select is still
+  the real form field (`name="task_id"`), so controllers and the submit flow
+  don't change. Used on the dashboard quick-timer form and the manual-entry
+  form (new + edit). Lives in `views/partials/task_picker.php` + a small
+  `initTaskPickers` IIFE in `assets/app.js` (no inline JS — strict CSP stays
+  strict).
+
 ### Added
 - **Side-panel brand mark**: the FelixSchallerCOM wordmark sits above the
   rotating carousel, implemented as a `mask-image` so it renders light on

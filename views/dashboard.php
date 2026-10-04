@@ -25,23 +25,11 @@
   <?php else: ?>
     <form method="post" action="<?= h(route('timer_start')) ?>" class="timer-start">
       <?= csrf_field() ?>
-      <label class="grow">Aufgabe
-        <select name="task_id" required>
-          <option value="">Aufgabe waehlen …</option>
-          <?php
-          $currentProj = null;
-          foreach ($tasks as $t):
-              $label = $t['client_name'] . ' / ' . $t['project_name'];
-              if ($label !== $currentProj) {
-                  if ($currentProj !== null) echo '</optgroup>';
-                  echo '<optgroup label="' . h($label) . '">';
-                  $currentProj = $label;
-              }
-          ?>
-            <option value="<?= (int) $t['id'] ?>"><?= h($t['name']) ?></option>
-          <?php endforeach; if ($currentProj !== null) echo '</optgroup>'; ?>
-        </select>
-      </label>
+      <?php
+      $selectedTaskId = 0;
+      $wrapClass = 'tp-stack grow';
+      require __DIR__ . '/partials/task_picker.php';
+      ?>
       <label class="grow">Notiz (optional)
         <input type="text" name="note" placeholder="Woran arbeitest du?">
       </label>
