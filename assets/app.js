@@ -333,3 +333,102 @@
     return card;
   }
 })();
+
+// Cascading task picker: Kunde -> Projekt -> Arbeitspaket -> Aufgabe.
+// Each parent select narrows the children to options whose data-* chain
+// matches the current filter. Changing a parent after a child is already
+// chosen clears the child if it no longer fits. Hidden options are
+// disabled too, so keyboard arrow-nav skips them. No server round-trip.
+(function () {
+  var pickers = document.querySelectorAll('.task-picker');
+  if (!pickers.length) { return; }
+  pickers.forEach(initPicker);
+
+  function initPicker(root) {
+    var client  = root.querySelector('.tp-client');
+    var project = root.querySelector('.tp-project');
+    var wp      = root.querySelector('.tp-wp');
+    var task    = root.querySelector('.tp-task');
+    if (!client || !project || !wp || !task) { return; }
+
+    // Edit mode: a task is pre-selected. Fill parent selects from its
+    // data-* attributes so the filter chain matches what's visible.
+    var preselect = parseInt(root.getAttribute('data-selected-task'), 10) || 0;
+    if (preselect) {
+      var opt = task.querySelector('option[value="' + preselect + '"]');
+      if (opt) {
+        client.value  = opt.getAttribute('data-client')  || '';
+        project.value = opt.getAttribute('data-project') || '';
+        wp.value      = opt.getAttribute('data-wp')      || '';
+      }
+    }
+
+    applyFilters();
+    client.addEventListener('change', function ()  { onClientChange();  applyFilters(); });
+    project.addEventListener('change', function () { onProjectChange(); applyFilters(); });
+    wp.addEventListener('change', function ()      { onWpChange();      applyFilters(); });
+
+    // Clearing a parent cascades: child selects whose current value no
+    // longer belongs to the new parent chain get reset to "".
+    function onClientChange() {
+      var cid = client.value;
+      if (cid !== '') {
+        var p = project.selectedOptions[0];
+        if (p && p.getAttribute('data-client') !== cid) { project.value = ''; }
+      }
+      onProjectChange();
+    }
+    function onProjectChange() {
+      var pid = project.value;
+      if (pid !== '') {
+        var w = wp.selectedOptions[0];
+        if (w && w.getAttribute('data-project') !== pid) { wp.value = ''; }
+      }
+      onWpChange();
+    }
+    function onWpChange() {
+      var wid = wp.value;
+      var pid = project.value;
+      var cid = client.value;
+      var t = task.selectedOptions[0];
+      if (!t || t.value === '') { return; }
+      if (cid !== '' && t.getAttribute('data-client')  !== cid) { task.value = ''; return; }
+      if (pid !== '' && t.getAttribute('data-project') !== pid) { task.value = ''; return; }
+      if (wid !== '' && t.getAttribute('data-wp')      !== wid) { task.value = ''; return; }
+    }
+
+    function applyFilters() {
+      var cid = client.value;
+      var pid = project.value;
+      var wid = wp.value;
+
+      // Projekt-Optionen: nach Client filtern
+      filterOptions(project, function (o) {
+        return cid === '' || o.getAttribute('data-client') === cid;
+      });
+      // Arbeitspaket-Optionen: nach Client UND Projekt filtern
+      filterOptions(wp, function (o) {
+        if (cid !== '' && o.getAttribute('data-client')  !== cid) { return false; }
+        if (pid !== '' && o.getAttribute('data-project') !== pid) { return false; }
+        return true;
+      });
+      // Aufgaben: ganze Chain
+      filterOptions(task, function (o) {
+        if (cid !== '' && o.getAttribute('data-client')  !== cid) { return false; }
+        if (pid !== '' && o.getAttribute('data-project') !== pid) { return false; }
+        if (wid !== '' && o.getAttribute('data-wp')      !== wid) { return false; }
+        return true;
+      });
+    }
+
+    function filterOptions(select, keep) {
+      var opts = select.querySelectorAll('option');
+      opts.forEach(function (o) {
+        if (o.value === '') { return; } // leave placeholder alone
+        var ok = keep(o);
+        o.hidden = !ok;
+        o.disabled = !ok;
+      });
+    }
+  }
+})();

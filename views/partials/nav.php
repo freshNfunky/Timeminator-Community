@@ -9,6 +9,9 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
 <?php if (Auth::can('stats.view')): ?>
   <a href="<?= h(route('stats')) ?>"<?= $active(['stats']) ?>>Statistik</a>
 <?php endif; ?>
+<?php if (Auth::can('sentiment.record')): ?>
+  <a href="<?= h(route('sentiment')) ?>"<?= $active(['sentiment']) ?>>Stimmung</a>
+<?php endif; ?>
 <?php if (Auth::can('structure.manage')): ?>
   <a href="<?= h(route('clients')) ?>"<?= $active(['clients']) ?>>Kunden</a>
   <a href="<?= h(route('projects')) ?>"<?= $active(['projects']) ?>>Projekte</a>

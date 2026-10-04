@@ -37,6 +37,28 @@ licensed codebase built on the same data model, so you are never locked in.
 
 Issues and pull requests on this Community Edition are welcome.
 
+## Screenshots
+
+A quick tour of the app (anonymized demo data).
+
+**Dashboard** — live timer, today / week / month totals and your latest bookings
+![Dashboard](Media/screenshots/01-dashboard.png)
+
+**Statistics** — hours per project, weekly trend and a two-group comparison
+![Statistics](Media/screenshots/03-statistik.png)
+
+**Time entries** — a filterable list with durations and running totals
+![Time entries](Media/screenshots/02-zeiteintraege.png)
+
+**Projects** — per-client projects with codes and colors
+![Projects](Media/screenshots/05-projekte.png)
+
+**Tasks** — typed activities per project and work package
+![Tasks](Media/screenshots/07-aufgaben.png)
+
+**Audit views** — generic, rule-based filtering of entries (optional cutover date)
+![Audit views](Media/screenshots/08-sichten.png)
+
 ## Requirements
 
 - PHP 8.1 or newer with PDO.

@@ -18,6 +18,72 @@ version heading when a release is cut.
 > updating. The initial commit was mislabelled "v1.0.0"; the `VERSION`
 > file is authoritative.
 
+## [Unreleased]
+
+## [0.8.0] — 2026-10-04
+
+### Added
+- **Team-Sentiment-Tracking** (fixes #92) — makes the landing-page promise
+  ("team sentiment tracking") good instead of overclaim. Each user records a
+  daily mood on a five-smiley scale (ganz schlecht … sehr gut) with an optional
+  short note. Upserts per `(user_id, as_of)` so a repeated save on the same day
+  updates rather than duplicates. The dedicated **Stimmung** page shows:
+  - the recorder (pre-filled when today already has an entry),
+  - a 60-day personal history as a colored sparkline + full list,
+  - a team summary (window: 30 days) with average score, response count and
+    distinct contributor count — no individual rows, no names, so a single
+    response in a window is personal, not "team".
+
+  Backing table `sentiment_entries` (new in `schema/{sqlite,mysql}.sql`;
+  idempotent migration `2026-10-04-02-sentiment-entries.sql` for upgrades) with
+  `UNIQUE (user_id, as_of)`, FK → `users` ON DELETE CASCADE, note capped at
+  500 chars. New permissions `sentiment.record` (default: everyone) and
+  `sentiment.view_team` (default: admin only), auto-granted via the data
+  migration `2026-10-04-03-sentiment-permissions.php`. 8 tests cover score
+  normalization, UPSERT, per-user history windowing, team aggregates and
+  contributor counting.
+- **Side-panel brand mark**: the FelixSchallerCOM wordmark sits above the
+  rotating carousel, implemented as a `mask-image` so it renders light on
+  the dark side-panel background without a second asset and without inline
+  styles that would trip the strict CSP.
+
+### Changed
+- **Task picker is now cascading: Kunde → Projekt → Arbeitspaket → Aufgabe.**
+  The single flat `<select name="task_id">` that crammed the whole hierarchy
+  into `<optgroup>` labels (one gigantic list of every task with a prefix like
+  "Kunde A / Projekt B / Arbeitspaket C") is replaced by four side-by-side
+  selects that filter each other client-side. Changing a parent narrows the
+  child options and clears a stale child selection. The last select is still
+  the real form field (`name="task_id"`), so controllers and the submit flow
+  don't change. Used on the dashboard quick-timer form and the manual-entry
+  form (new + edit). Lives in `views/partials/task_picker.php` + a small
+  `initTaskPickers` IIFE in `assets/app.js` (no inline JS — strict CSP stays
+  strict).
+- **Side-panel feed endpoint has a sensible default** so a fresh install serves
+  HTML creatives out of the box, without needing a `banners` block in
+  `config.php`. `Banners::endpoint()` now falls back to
+  `https://assets.felixschaller.com/feed.json` (ad-blocker-neutral host) when
+  the operator has not configured one; previously it fell back to an empty
+  string, which silently kept the carousel on the bundled offline SVG set.
+- **Side-panel is a full-height, 200 px fixed rail on the right viewport
+  edge**: the main content column reserves the 200 px via `padding-right`
+  instead of a grid column, and the aside itself is `position: fixed` from
+  below the topbar to the viewport bottom. The visible creative stretches to
+  fill the whole slot (no more fixed 1:2 aspect-ratio inside a short card),
+  dots are overlaid at the bottom edge. Dead `.sp-head`/`.sp-label`/
+  `.sp-toggle` CSS from the retired collapsible header is gone, along with a
+  duplicated `.shell.has-aside`/`.sp-*` block left behind by the back-merge in
+  #77.
+- **Side-panel carousel rotates every 14 s** instead of 7 s so the reader
+  actually finishes a creative's headline + CTA before it flips.
+
+### Fixed
+- **Reverts #87 ("restore static Anzeige label"): the FelixSchallerCOM
+  wordmark brand mark from #84 is the ad disclosure now.** #87 landed only on
+  main (not develop) and would have reintroduced the `.sp-head` label the
+  wordmark was designed to replace. The release merge keeps the develop-side
+  design.
+
 ## [0.6.0] — 2026-10-04
 
 ### Added
@@ -316,7 +382,8 @@ control, PHPUnit suite, repo-hygiene docs.
   0.x. This is a cosmetic mislabel; the on-disk `VERSION` file is the
   source of truth.
 
-[Unreleased]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.6.0...v0.8.0
 [0.6.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.2.0...v0.5.0
 [0.2.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.1.0...v0.2.0
