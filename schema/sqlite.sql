@@ -145,6 +145,19 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 CREATE INDEX IF NOT EXISTS idx_login_attempts_user ON login_attempts (username, attempted_at);
 CREATE INDEX IF NOT EXISTS idx_login_attempts_ip   ON login_attempts (ip_address, attempted_at);
 
+CREATE TABLE IF NOT EXISTS sentiment_entries (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    INTEGER NOT NULL,
+  as_of      TEXT    NOT NULL,
+  score      INTEGER NOT NULL,
+  note       TEXT    NULL,
+  created_at TEXT    NOT NULL,
+  updated_at TEXT    NULL,
+  UNIQUE (user_id, as_of),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_sentiment_as_of ON sentiment_entries (as_of);
+
 CREATE TABLE IF NOT EXISTS schema_migrations (
   version    TEXT PRIMARY KEY,
   applied_at TEXT NOT NULL

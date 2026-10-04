@@ -28,5 +28,6 @@ require APP_ROOT . '/src/Stats.php';
 require APP_ROOT . '/src/Repo.php';
 require APP_ROOT . '/src/Updater.php';
 require APP_ROOT . '/src/Banners.php';
+require APP_ROOT . '/src/Sentiment.php';
 
 require __DIR__ . '/TestSupport.php';

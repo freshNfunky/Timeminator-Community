@@ -7,6 +7,8 @@ function permission_catalog(): array
     return [
         'entries.manage'   => ['Zeiteintraege buchen und bearbeiten', 'Zeiterfassung'],
         'stats.view'       => ['Statistik und Auswertungen ansehen',   'Zeiterfassung'],
+        'sentiment.record' => ['Eigene Stimmung erfassen und ansehen', 'Zeiterfassung'],
+        'sentiment.view_team' => ['Team-Stimmung aggregiert ansehen', 'Zeiterfassung'],
         'structure.manage' => ['Kunden, Projekte und Aufgaben verwalten', 'Struktur'],
         'scopes.manage'    => ['Nachweis-Sichten verwalten',           'Struktur'],
         'admin.users'      => ['Benutzer verwalten',                    'Administration'],
@@ -54,8 +56,8 @@ function seed_roles(): void
                                                : 'ON CONFLICT DO NOTHING'),
             [$adminId, (int) $p['id']]);
     }
-    // Default user role: book time + view stats.
-    foreach (['entries.manage', 'stats.view'] as $code) {
+    // Default user role: book time + view stats + record own sentiment.
+    foreach (['entries.manage', 'stats.view', 'sentiment.record'] as $code) {
         $pid = (int) DB::scalar('SELECT id FROM permissions WHERE code = ?', [$code]);
         if ($pid) {
             DB::run('INSERT INTO role_permissions (role_id, permission_id) VALUES (?,?)

@@ -133,6 +133,39 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .form-actions{display:flex;gap:10px;align-items:center;margin-top:6px}
 
 /* Tables */
+/* Team-Sentiment-Tracking (#92).
+   `.sentiment-scale` is the five-smiley radio row. Each `<label>` wraps a
+   hidden radio + the emoji + a text label; the selected one lights up via
+   `:has(:checked)` so no JS is needed to track selection. `.sentiment-sparkline`
+   is the 60-day history strip (one bar per day, color by score). */
+.sentiment-scale{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+.sentiment-pick{display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:12px 10px;min-width:92px;border:1px solid var(--line);border-radius:12px;
+  cursor:pointer;background:var(--panel);transition:border-color .12s,transform .08s,background .12s}
+.sentiment-pick:hover{border-color:var(--brand);transform:translateY(-1px)}
+.sentiment-pick input[type=radio]{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
+.sentiment-pick:has(input:checked),.sentiment-pick.is-selected{
+  border-color:var(--brand);background:var(--soft);box-shadow:0 0 0 2px var(--focus-ring)}
+.sentiment-emoji{font-size:28px;line-height:1}
+.sentiment-label{font-size:12px;color:var(--muted);text-align:center}
+.sentiment-note-label{display:block;margin:10px 0}
+.sentiment-saved{margin-left:10px;font-size:12px}
+.sentiment-sparkline{display:flex;gap:2px;align-items:flex-end;margin:4px 0 14px;
+  height:34px;padding:4px 0;overflow-x:auto}
+.sentiment-tick{display:inline-block;flex:0 0 8px;height:100%;border-radius:3px;background:var(--line)}
+.sentiment-tick.is-empty{background:var(--line);opacity:.3}
+.sentiment-tick.is-s1{background:#ef4444;height:30%}
+.sentiment-tick.is-s2{background:#f97316;height:50%}
+.sentiment-tick.is-s3{background:#eab308;height:70%}
+.sentiment-tick.is-s4{background:#84cc16;height:85%}
+.sentiment-tick.is-s5{background:#22c55e;height:100%}
+.sentiment-team-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:10px 0 16px;text-align:center}
+.sentiment-team-metric{font-size:22px;line-height:1.2;margin-bottom:2px}
+.sentiment-team-metric strong{font-weight:700}
+@media (max-width:620px){
+  .sentiment-team-summary{grid-template-columns:1fr}
+}
+
 .table{width:100%;border-collapse:collapse;font-size:14px}
 .table th,.table td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
 .table th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
