@@ -76,6 +76,7 @@ $routes = [
     'update_clear_skipped' => 'ctrl_update_clear_skipped',
     'registration_save' => 'ctrl_registration_save',
     'endpoints_save'    => 'ctrl_endpoints_save',
+    'theme_save'        => 'ctrl_theme_save',
 
     'imports'         => 'ctrl_imports_index',
     'imports_upload'  => 'ctrl_imports_upload',

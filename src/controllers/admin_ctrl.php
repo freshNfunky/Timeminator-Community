@@ -161,7 +161,28 @@ function ctrl_system_index(): void
         'manifest_default' => (string) cfg('update_manifest_url', ''),
         'manifest_override' => (string) Settings::get('update_manifest_url_override', ''),
         'update_disabled' => Updater::isDisabled(),
+        'theme_preference' => (string) Settings::get('theme_preference', 'system'),
     ], 'System');
+}
+
+/**
+ * Admin -> System -> Darstellung. Persists a single global theme preference
+ * (`system` | `light` | `dark`) that the layout emits as `data-theme` on
+ * `<html>`. Community is single-tenant, so one setting for the whole install
+ * is enough; a per-user override can come later if a multi-user install
+ * actually needs it.
+ */
+function ctrl_theme_save(): void
+{
+    require_perm('admin.system');
+    csrf_check();
+    $pref = (string) post('theme_preference');
+    if (!in_array($pref, ['system', 'light', 'dark'], true)) {
+        $pref = 'system';
+    }
+    Settings::set('theme_preference', $pref);
+    flash('Darstellung gespeichert.');
+    redirect_route('admin_system');
 }
 
 function ctrl_update_check(): void
