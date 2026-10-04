@@ -76,15 +76,15 @@
   initBannerCarousel();
 
   function initBannerCarousel() {
-    var mount = document.getElementById('bannerCarousel');
-    var bar = document.getElementById('bannerbar');
+    var mount = document.getElementById('spRotator');
+    var bar = document.getElementById('sidepanel');
     if (!mount || !bar) {
       return;
     }
 
     // Collapse toggle, remembered per browser.
-    var toggle = document.getElementById('bannerbarToggle');
-    var STORE_KEY = 'tm_banner_collapsed';
+    var toggle = document.getElementById('spToggle');
+    var STORE_KEY = 'tm_sp_collapsed';
     try {
       if (window.localStorage && localStorage.getItem(STORE_KEY) === '1') {
         bar.classList.add('collapsed');
@@ -128,11 +128,11 @@
     if (cards.length < 2) { return; }
 
     var dots = document.createElement('div');
-    dots.className = 'banner-dots';
+    dots.className = 'sp-dots';
     var dotEls = cards.map(function (_, i) {
       var b = document.createElement('button');
       b.type = 'button';
-      b.className = 'banner-dot' + (i === 0 ? ' active' : '');
+      b.className = 'sp-dot' + (i === 0 ? ' active' : '');
       b.setAttribute('aria-label', 'Banner ' + (i + 1));
       b.addEventListener('click', function () { show(i); restart(); });
       dots.appendChild(b);
@@ -160,8 +160,25 @@
   }
 
   function buildCard(it) {
+    // HTML banner: embed as a sandboxed iframe (fluid, its own clickable links).
+    // Not wrapped in <a> — the creative carries its own CTA link. The sandbox
+    // allows scripts and link-clicks opening a new tab, but not same-origin
+    // access to this page nor top-level navigation.
+    if (it.iframe) {
+      var box = document.createElement('div');
+      box.className = 'sp-item is-iframe';
+      var frame = document.createElement('iframe');
+      frame.src = it.iframe;
+      frame.title = it.title || 'Anzeige';
+      frame.loading = 'lazy';
+      frame.setAttribute('sandbox', 'allow-scripts allow-popups allow-popups-to-escape-sandbox');
+      frame.setAttribute('referrerpolicy', 'no-referrer');
+      box.appendChild(frame);
+      return box;
+    }
+
     var card = document.createElement('a');
-    card.className = 'banner-card';
+    card.className = 'sp-item';
     if (it.href) {
       card.href = it.href;
       card.target = '_blank';
@@ -183,19 +200,19 @@
 
     if (it.title) {
       var t = document.createElement('span');
-      t.className = 'banner-title';
+      t.className = 'sp-title';
       t.textContent = it.title;
       card.appendChild(t);
     }
     if (it.text) {
       var p = document.createElement('span');
-      p.className = 'banner-text';
+      p.className = 'sp-text';
       p.textContent = it.text;
       card.appendChild(p);
     }
     if (it.cta && it.href) {
       var cta = document.createElement('span');
-      cta.className = 'banner-cta';
+      cta.className = 'sp-cta';
       cta.textContent = it.cta;
       card.appendChild(cta);
     }

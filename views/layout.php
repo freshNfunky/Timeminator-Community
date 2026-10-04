@@ -28,7 +28,7 @@
   </div>
 </header>
 
-<div class="shell<?= $__banner ? ' has-banner' : '' ?>">
+<div class="shell<?= $__banner ? ' has-aside' : '' ?>">
 <main class="wrap">
   <?php foreach (flash_take() as $f): ?>
     <div class="flash flash-<?= h($f['type']) ?>"><?= h($f['msg']) ?></div>
@@ -37,12 +37,12 @@
   <?= $__content ?>
 </main>
 <?php if ($__banner): ?>
-<aside class="bannerbar" id="bannerbar" aria-label="Anzeige">
-  <div class="bannerbar-head">
-    <span class="bannerbar-label">Anzeige</span>
-    <button type="button" class="bannerbar-toggle" id="bannerbarToggle" aria-expanded="true" aria-controls="bannerCarousel" title="Werbung ein-/ausklappen">–</button>
+<aside class="sidepanel" id="sidepanel" aria-label="Anzeige">
+  <div class="sp-head">
+    <span class="sp-label">Anzeige</span>
+    <button type="button" class="sp-toggle" id="spToggle" aria-expanded="true" aria-controls="spRotator" title="Werbung ein-/ausklappen">–</button>
   </div>
-  <div class="banner-carousel" id="bannerCarousel" data-endpoint="<?= h(route('banners')) ?>" data-interval="7000"></div>
+  <div class="sp-rotator" id="spRotator" data-endpoint="<?= h(route('sidepanel')) ?>" data-interval="7000"></div>
 </aside>
 <?php endif; ?>
 </div>

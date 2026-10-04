@@ -20,6 +20,20 @@ version heading when a release is cut.
 
 ## [Unreleased]
 
+### Added
+- Banner slot now also renders **HTML banners as sandboxed `<iframe>`s** (in
+  addition to image/SVG), so creatives can be fluid (adapt to the slot) and carry
+  their own clickable links. A feed item may have an `image` or an `iframe` URL;
+  `iframe` URLs are validated against the same first-party allow-list, and the
+  CSP gains `frame-src`/`child-src` for the banner host(s) (derived from
+  `banners.allowed_hosts`, so HTML banners load without further config).
+
+### Changed
+- Banner DOM names and the feed route were made ad-blocker-neutral (no "banner"
+  in element classes/ids or the fetch URL): the slot is `#sidepanel` with the
+  `sp-*` classes, and the feed route is `?r=sidepanel`. The visible "Anzeige"
+  label stays (honest ad disclosure). Server-side config keys are unchanged.
+
 ## [0.6.0] — 2026-10-02
 
 ### Added
