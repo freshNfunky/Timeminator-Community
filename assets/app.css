@@ -167,6 +167,18 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .timer-start{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
 .timer-start .grow{flex:1;margin-bottom:0}
 
+/* Cascading task picker: Kunde -> Projekt -> Arbeitspaket -> Aufgabe.
+   Four selects next to each other on wide screens, stacked on narrow.
+   `.tp-stack` is the inline-form variant that behaves like a single
+   labeled field (one row below the previous labeled field). */
+.task-picker{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.task-picker label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);margin:0}
+.task-picker select{width:100%}
+.timer-start .task-picker{flex:1 1 100%;margin-bottom:0}
+@media (max-width:820px){
+  .task-picker{grid-template-columns:1fr}
+}
+
 /* Charts */
 .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .chart-wide{grid-column:1 / -1}

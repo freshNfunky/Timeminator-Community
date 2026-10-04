@@ -8,24 +8,11 @@ $selTask = $entry['task_id'] ?? 0;
     <?= csrf_field() ?>
     <?php if ($entry): ?><input type="hidden" name="id" value="<?= (int) $entry['id'] ?>"><?php endif; ?>
 
-    <label>Aufgabe
-      <select name="task_id" required>
-        <option value="">Aufgabe waehlen …</option>
-        <?php
-        // Group by "Kunde / Projekt / Arbeitspaket" so the hierarchy is
-        // visible when picking. Tasks without a WP fall under a
-        // "(ohne Arbeitspaket)" bucket per project.
-        $cur = null;
-        foreach ($tasks as $t):
-            $wp = $t['work_package_name'] ?? '';
-            $wpLabel = $wp !== '' ? $wp : '(ohne Arbeitspaket)';
-            $g = $t['client_name'] . ' / ' . $t['project_name'] . ' / ' . $wpLabel;
-            if ($g !== $cur) { if ($cur !== null) echo '</optgroup>'; echo '<optgroup label="' . h($g) . '">'; $cur = $g; }
-        ?>
-          <option value="<?= (int) $t['id'] ?>" <?= $selTask == $t['id'] ? 'selected' : '' ?>><?= h($t['name']) ?></option>
-        <?php endforeach; if ($cur !== null) echo '</optgroup>'; ?>
-      </select>
-    </label>
+    <?php
+    $selectedTaskId = $selTask;
+    $wrapClass = 'tp-stack';
+    require __DIR__ . '/../partials/task_picker.php';
+    ?>
 
     <div class="row">
       <label class="grow">Start
