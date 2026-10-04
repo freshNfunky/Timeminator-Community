@@ -16,7 +16,7 @@ turn every part of it off.
    (`index.php?r=banners`) for the carousel — never a third party directly. The
    request is asynchronous and never blocks page rendering.
 2. That route fetches the creatives **server-side** from a configurable banner
-   subdomain (default `https://banner.felixschaller.com/feed.json`) so creatives
+   subdomain (default `https://assets.felixschaller.com/feed.json`) so creatives
    can be rotated without shipping a new Timeminator release, and caches them for
    `cache_ttl` seconds.
 3. On **any** failure — isolated server, blocked outbound traffic, CSP block,
@@ -38,7 +38,7 @@ Content-Security-Policy (`connect-src 'self'`) needs no exception.
       "text": "One or two sentences.",
       "cta": "Call to action",
       "href": "https://felixschaller.com/landing",
-      "image": "https://banner.felixschaller.com/spring.svg"
+      "image": "https://assets.felixschaller.com/spring.svg"
     }
   ]
 }

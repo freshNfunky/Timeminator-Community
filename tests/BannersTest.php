@@ -102,7 +102,7 @@ final class BannersTest extends TestCase
     {
         self::assertTrue(Banners::isAllowedImage('banners/xixum-maturity.svg'));
         self::assertTrue(Banners::isAllowedImage('https://cdn.felixschaller.com/a.png'));
-        self::assertTrue(Banners::isAllowedImage('https://banner.felixschaller.com/c/x.svg'));
+        self::assertTrue(Banners::isAllowedImage('https://assets.felixschaller.com/c/x.svg'));
         self::assertTrue(Banners::isAllowedImage('data:image/svg+xml;base64,PHN2Zz48L3N2Zz4='));
         self::assertTrue(Banners::isAllowedImage('data:image/png;base64,iVBORw0KGgo='));
         self::assertFalse(Banners::isAllowedImage('data:text/html;base64,PHNjcmlwdD4=')); // non-image data
@@ -160,17 +160,17 @@ final class BannersTest extends TestCase
 
     public function testIframeAllowsHttpsFirstPartyOnly(): void
     {
-        self::assertTrue(Banners::isAllowedIframe('https://banner.felixschaller.com/media/x/index.html'));
+        self::assertTrue(Banners::isAllowedIframe('https://assets.felixschaller.com/media/x/index.html'));
         self::assertTrue(Banners::isAllowedIframe('https://cdn.xixum.ai/b/index.html'));
-        self::assertFalse(Banners::isAllowedIframe('http://banner.felixschaller.com/x.html')); // not https
+        self::assertFalse(Banners::isAllowedIframe('http://assets.felixschaller.com/x.html')); // not https
         self::assertFalse(Banners::isAllowedIframe('https://evil.example.com/x.html'));         // wrong host
         self::assertFalse(Banners::isAllowedIframe('https://felixschaller.com.evil.com/x.html'));
     }
 
     public function testSanitizeItemKeepsFirstPartyIframeDropsForeign(): void
     {
-        $ok = Banners::sanitizeItem(['title' => 'H', 'iframe' => 'https://banner.felixschaller.com/media/x/index.html']);
-        self::assertSame('https://banner.felixschaller.com/media/x/index.html', $ok['iframe']);
+        $ok = Banners::sanitizeItem(['title' => 'H', 'iframe' => 'https://assets.felixschaller.com/media/x/index.html']);
+        self::assertSame('https://assets.felixschaller.com/media/x/index.html', $ok['iframe']);
         $bad = Banners::sanitizeItem(['title' => 'H', 'iframe' => 'https://evil.example.com/x.html']);
         self::assertSame('', $bad['iframe']);
     }
