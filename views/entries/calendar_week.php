@@ -132,9 +132,9 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
     </div>
     <div class="cal-days">
       <?php foreach ($__days as $__i => $__day): ?>
-        <div class="cal-day<?= $__day['isToday'] ? ' cal-day-today' : '' ?>">
+        <div class="cal-day<?= $__day['isToday'] ? ' cal-day-today' : '' ?>" data-day="<?= h($__day['ymd']) ?>">
           <div class="cal-day-head"><?= h($__day['label']) ?></div>
-          <div class="cal-day-grid">
+          <div class="cal-day-grid" data-day="<?= h($__day['ymd']) ?>">
             <?php for ($h = 1; $h < 24; $h++): ?>
               <div class="cal-day-line"></div>
             <?php endfor; ?>

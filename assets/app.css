@@ -352,8 +352,15 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
   border-bottom:1px solid var(--line);text-align:center}
 .cal-day-today .cal-day-head{color:var(--brand)}
 .cal-day-grid{position:relative;flex:1;background:var(--soft);
-  height:calc(56px * 24)}
+  height:calc(56px * 24);cursor:crosshair;user-select:none}
 .cal-day-today .cal-day-grid{background:var(--panel)}
+/* Click-drag placeholder for new entries (fixes #64). JS updates
+   --draft-top / --draft-height via setProperty on the element so the
+   stylesheet does all the actual positioning. */
+.cal-event-draft{position:absolute;left:2px;right:2px;
+  top:var(--draft-top,0);height:var(--draft-height,0);
+  background:rgba(37,99,235,.35);border:1px dashed var(--brand);
+  border-radius:4px;pointer-events:none;z-index:3}
 .cal-day-line{position:absolute;left:0;right:0;height:1px;background:var(--line);opacity:.6}
 .cal-day-line:nth-child(1){top:calc(56px * 1)}
 .cal-day-line:nth-child(2){top:calc(56px * 2)}

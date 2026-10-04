@@ -161,12 +161,44 @@ function ctrl_entry_form(): void
     if ($entry && (int) $entry['user_id'] !== Auth::id() && !Auth::isAdmin()) {
         redirect_route('entries');
     }
+    // For brand-new entries the week calendar can pre-fill start/end via
+    // ?start_ts=…&end_ts=… (both as 'Y-m-d\TH:i' or 'Y-m-d H:i:s'). Values
+    // are parsed through DateTimeImmutable so an invalid format just drops
+    // the pre-fill rather than crashing.
+    if (!$entry) {
+        $prefill = entry_form_prefill_from_request();
+        if ($prefill !== null) {
+            $entry = $prefill;
+        }
+    }
     view('entries/form', [
         'entry'    => $entry,
         'clients'  => Repo::clients(true),
         'projects' => Repo::projects(true),
         'tasks'    => Repo::tasks(true),
-    ], $entry ? 'Eintrag bearbeiten' : 'Neuer Eintrag');
+    ], $entry && !empty($entry['id']) ? 'Eintrag bearbeiten' : 'Neuer Eintrag');
+}
+
+function entry_form_prefill_from_request(): ?array
+{
+    $start = (string) get('start_ts', '');
+    $end   = (string) get('end_ts', '');
+    if ($start === '' && $end === '') {
+        return null;
+    }
+    $norm = static function (string $v): ?string {
+        $v = trim(str_replace('T', ' ', $v));
+        if ($v === '') return null;
+        try {
+            return (new DateTimeImmutable($v))->format('Y-m-d H:i:s');
+        } catch (Throwable) {
+            return null;
+        }
+    };
+    return [
+        'start_ts' => $norm($start),
+        'end_ts'   => $norm($end),
+    ];
 }
 
 function ctrl_entry_save(): void
