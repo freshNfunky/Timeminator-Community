@@ -42,6 +42,13 @@ version heading when a release is cut.
   contributor counting.
 
 ### Changed
+- **README rewritten as a landing document** (#24): a one-paragraph pitch, a
+  "who is it for" section, a grouped feature tour with fresh demo screenshots
+  (now including the week calendar), an honest Community-vs-Pro comparison table,
+  and the mascot in the header. Quick start moved up; the reference sections
+  (requirements, install, updating, security, privacy, data model, tech) kept and
+  condensed. Corrects the stale "no CSV import UI yet" claim — CSV import with
+  per-batch rollback now ships. README art moved under `docs/images/`.
 - **Task picker is now cascading: Kunde → Projekt → Arbeitspaket → Aufgabe.**
   The single flat `<select name="task_id">` that crammed the whole hierarchy
   into `<optgroup>` labels (one gigantic list of every task with a prefix like
