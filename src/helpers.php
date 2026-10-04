@@ -35,10 +35,24 @@ function route(string $r = 'dashboard', array $params = []): string
     return $url;
 }
 
-/** URL to a bundled asset. */
+/**
+ * URL to a static file in assets/, with a cache-busting ?v=<mtime> query string
+ * so browsers pick up a changed file immediately - including a one-off hotfix
+ * deployed straight via scp, not just a version bump/release. Without this,
+ * a stale cached copy (mobile Safari in particular) can keep serving old JS/CSS
+ * indefinitely after a fix has already shipped - e.g. a change in charts.js was
+ * only visible after a hard reload.
+ *
+ * Falls back to app_version() if the file is not found on disk (practically
+ * never for bundled assets; guards against a filemtime() on a missing path).
+ */
 function asset(string $path): string
 {
-    return base_path() . '/assets/' . ltrim($path, '/');
+    $rel = ltrim($path, '/');
+    $url = base_path() . '/assets/' . $rel;
+    $file = APP_ROOT . '/assets/' . $rel;
+    $v = is_file($file) ? (string) filemtime($file) : app_version();
+    return $url . '?v=' . $v;
 }
 
 function redirect(string $url): never
