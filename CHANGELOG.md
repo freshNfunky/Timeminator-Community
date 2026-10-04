@@ -73,7 +73,7 @@ version heading when a release is cut.
     foreign links/images are stripped. Images may be a same-origin asset, an
     `https` first-party URL, or an inline `data:image/*` URI, so remote
     creatives render under the strict default CSP without changes.
-  - Default feed endpoint is `https://banner.felixschaller.com/feed.json`.
+  - Default feed endpoint is `https://assets.felixschaller.com/feed.json`.
 
 ### Changed
 - `.gitignore` now excludes runtime artifacts under `data/` (`settings.json`,
