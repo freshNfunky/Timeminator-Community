@@ -51,7 +51,7 @@ $__banner    = Banners::isVisible();
 <aside class="sidepanel" id="sidepanel">
   <a class="sp-brand" href="https://felixschaller.com" target="_blank" rel="noopener"
      aria-label="FelixSchallerCOM"></a>
-  <div class="sp-rotator" id="spRotator" data-endpoint="<?= h(route('sidepanel')) ?>" data-interval="7000"></div>
+  <div class="sp-rotator" id="spRotator" data-endpoint="<?= h(route('sidepanel')) ?>" data-interval="14000"></div>
 </aside>
 <?php endif; ?>
 </div>
