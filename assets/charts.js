@@ -25,9 +25,19 @@ window.TmCharts = (function () {
   }
 
   function setup(canvas){
+    // Size from the (stable) parent container, never from the canvas itself:
+    // canvas.width/height are BITMAP attributes that also drive the element's
+    // own rendered box size unless canvas.style.width/height pin it down. Read
+    // canvas.clientWidth back here instead and each re-render (filter change,
+    // resize, orientation change) would multiply it by dpr again, doubling the
+    // on-screen size every time - which is exactly the runaway-growth bug this
+    // replaces (canvas balloons 300 -> 600 -> 1200px... on repeated renders).
     var dpr = window.devicePixelRatio || 1;
-    var w = canvas.clientWidth || canvas.parentNode.clientWidth || 400;
-    var h = canvas.clientHeight || 300;
+    var box = canvas.parentNode;
+    var w = (box && box.clientWidth) || 400;
+    var h = (box && box.clientHeight) || 300;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
     var ctx = canvas.getContext('2d');
