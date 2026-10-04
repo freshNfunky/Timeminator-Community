@@ -9,7 +9,7 @@
 /data/*.sqlite.bak*
 /data/*.bak*
 
-# Runtime state (settings, feed caches, logs)
+# Runtime state written under data/ (settings, feed caches, logs)
 /data/*.json
 /data/*.log
 

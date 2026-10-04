@@ -273,19 +273,28 @@ function send_security_headers(): void
     $csp = cfg('csp', null);
     if ($csp === null) {
         $nonce = csp_nonce();
-        // Allow iframes and images from the promo feed host (banner.felixschaller.com by
-        // default) so promo-sidebar HTML snippets served as cross-origin iframes and
-        // first-party SVG creatives render under the strict default policy.
-        $promoHost = (string) parse_url((string) cfg('promo_feed_url', 'https://banner.felixschaller.com/feed.json'), PHP_URL_HOST);
-        $promoOrigin = $promoHost !== '' ? ' https://' . $promoHost : '';
+        // Allow HTML banner iframes from the first-party banner host(s). Derived
+        // from banners.allowed_hosts so a custom banner subdomain works too.
+        $bcfg = cfg('banners', []);
+        $bhosts = is_array($bcfg) && !empty($bcfg['allowed_hosts'])
+            ? (array) $bcfg['allowed_hosts']
+            : ['felixschaller.com', 'xixum.ai', 'af-ax.com'];
+        $frame = "'self'";
+        foreach ($bhosts as $bh) {
+            $bh = preg_replace('/[^a-z0-9.\-]/i', '', (string) $bh);
+            if ($bh !== '') {
+                $frame .= " https://$bh https://*.$bh";
+            }
+        }
         $csp = "default-src 'self'; "
              . "script-src 'self'; "
              . "style-src 'self' 'nonce-" . $nonce . "'; "
              . "style-src-attr 'none'; "
-             . "img-src 'self' data:" . $promoOrigin . "; "
+             . "img-src 'self' data:; "
              . "font-src 'self'; "
              . "connect-src 'self'; "
-             . "frame-src 'self'" . $promoOrigin . "; "
+             . "frame-src " . $frame . "; "
+             . "child-src " . $frame . "; "
              . "object-src 'none'; "
              . "base-uri 'self'; "
              . "frame-ancestors 'none'; "

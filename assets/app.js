@@ -139,34 +139,6 @@
     });
   });
 
-  // Promo-sidebar carousel. Rotates through .promo-banner children of a
-  // .promo-carousel container every data-promo-interval ms (default 6s).
-  // Dots are clickable and reset the timer. CSP-strict: only classList
-  // mutations, no inline style assignments.
-  var promoCarousel = document.querySelector('.promo-carousel');
-  if (promoCarousel) {
-    var banners = promoCarousel.querySelectorAll('.promo-banner');
-    var dots    = document.querySelectorAll('.promo-dot');
-    if (banners.length > 1) {
-      var promoIdx   = 0;
-      var promoInt   = parseInt(promoCarousel.getAttribute('data-promo-interval'), 10) || 6000;
-      var promoTimer = null;
-      var showPromo  = function (i) {
-        promoIdx = ((i % banners.length) + banners.length) % banners.length;
-        banners.forEach(function (b, j) { b.classList.toggle('is-active', j === promoIdx); });
-        dots.forEach(function (d, j)    { d.classList.toggle('is-active', j === promoIdx); });
-      };
-      var armPromo = function () {
-        if (promoTimer) { clearInterval(promoTimer); }
-        promoTimer = setInterval(function () { showPromo(promoIdx + 1); }, promoInt);
-      };
-      dots.forEach(function (d, j) {
-        d.addEventListener('click', function () { showPromo(j); armPromo(); });
-      });
-      armPromo();
-    }
-  }
-
   // Collapsible nav groups: close an open .nav-group when clicking outside
   // of it. The native <details> element handles open/close on the summary
   // itself; this just dismisses stale dropdowns.
@@ -197,4 +169,154 @@
       if (t) { t.classList.add('hidden'); }
     });
   });
+
+  // Community banner carousel (Issue #22). Loads creatives from a first-party
+  // route (which server-side proxies the banner subdomain and falls back to a
+  // bundled default set), then rotates through them. Fully non-blocking: the
+  // main page never waits on this, and any failure just hides the slot.
+  initBannerCarousel();
+
+  function initBannerCarousel() {
+    var mount = document.getElementById('spRotator');
+    var bar = document.getElementById('sidepanel');
+    if (!mount || !bar) {
+      return;
+    }
+
+    // Collapse toggle, remembered per browser.
+    var toggle = document.getElementById('spToggle');
+    var STORE_KEY = 'tm_sp_collapsed';
+    try {
+      if (window.localStorage && localStorage.getItem(STORE_KEY) === '1') {
+        bar.classList.add('collapsed');
+        if (toggle) { toggle.setAttribute('aria-expanded', 'false'); toggle.textContent = '+'; }
+      }
+    } catch (e) { /* storage blocked — default to expanded */ }
+
+    if (toggle) {
+      toggle.addEventListener('click', function () {
+        var collapsed = bar.classList.toggle('collapsed');
+        toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        toggle.textContent = collapsed ? '+' : '–';
+        try { if (window.localStorage) { localStorage.setItem(STORE_KEY, collapsed ? '1' : '0'); } } catch (e) {}
+      });
+    }
+
+    var endpoint = mount.getAttribute('data-endpoint');
+    if (!endpoint) { return; }
+    var interval = parseInt(mount.getAttribute('data-interval'), 10) || 7000;
+
+    fetch(endpoint, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data || !data.enabled || !Array.isArray(data.items) || data.items.length === 0) {
+          bar.remove();
+          return;
+        }
+        renderCarousel(mount, data.items, interval);
+      })
+      .catch(function () { bar.remove(); });
+  }
+
+  function renderCarousel(mount, items, interval) {
+    mount.textContent = '';
+    var cards = items.map(function (it) { return buildCard(it); });
+    cards.forEach(function (c, i) {
+      if (i > 0) { c.classList.add('hidden'); }
+      mount.appendChild(c);
+    });
+
+    if (cards.length < 2) { return; }
+
+    var dots = document.createElement('div');
+    dots.className = 'sp-dots';
+    var dotEls = cards.map(function (_, i) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'sp-dot' + (i === 0 ? ' active' : '');
+      b.setAttribute('aria-label', 'Banner ' + (i + 1));
+      b.addEventListener('click', function () { show(i); restart(); });
+      dots.appendChild(b);
+      return b;
+    });
+    mount.appendChild(dots);
+
+    var current = 0;
+    var timer = null;
+
+    function show(i) {
+      cards[current].classList.add('hidden');
+      dotEls[current].classList.remove('active');
+      current = (i + cards.length) % cards.length;
+      cards[current].classList.remove('hidden');
+      dotEls[current].classList.add('active');
+    }
+    function tick() { show(current + 1); }
+    function start() { timer = window.setInterval(tick, interval); }
+    function restart() { if (timer) { window.clearInterval(timer); } start(); }
+
+    mount.addEventListener('mouseenter', function () { if (timer) { window.clearInterval(timer); timer = null; } });
+    mount.addEventListener('mouseleave', function () { if (!timer) { start(); } });
+    start();
+  }
+
+  function buildCard(it) {
+    // HTML banner: embed as a sandboxed iframe (fluid, its own clickable links).
+    // Not wrapped in <a> — the creative carries its own CTA link. The sandbox
+    // allows scripts and link-clicks opening a new tab, but not same-origin
+    // access to this page nor top-level navigation.
+    if (it.iframe) {
+      var box = document.createElement('div');
+      box.className = 'sp-item is-iframe';
+      var frame = document.createElement('iframe');
+      frame.src = it.iframe;
+      frame.title = it.title || 'Anzeige';
+      frame.loading = 'lazy';
+      frame.setAttribute('sandbox', 'allow-scripts allow-popups allow-popups-to-escape-sandbox');
+      frame.setAttribute('referrerpolicy', 'no-referrer');
+      box.appendChild(frame);
+      return box;
+    }
+
+    var card = document.createElement('a');
+    card.className = 'sp-item';
+    if (it.href) {
+      card.href = it.href;
+      card.target = '_blank';
+      card.rel = 'noopener noreferrer';
+    }
+
+    // Image-dominant creative (portrait skyscraper SVG): the image IS the ad.
+    // The copy is baked into the creative, so we only render the image, with the
+    // title as its accessible label. Otherwise fall back to a text card.
+    if (it.image) {
+      card.classList.add('is-image');
+      var img = document.createElement('img');
+      img.src = it.image;
+      img.alt = it.title || it.cta || 'Anzeige';
+      img.loading = 'lazy';
+      card.appendChild(img);
+      return card;
+    }
+
+    if (it.title) {
+      var t = document.createElement('span');
+      t.className = 'sp-title';
+      t.textContent = it.title;
+      card.appendChild(t);
+    }
+    if (it.text) {
+      var p = document.createElement('span');
+      p.className = 'sp-text';
+      p.textContent = it.text;
+      card.appendChild(p);
+    }
+    if (it.cta && it.href) {
+      var cta = document.createElement('span');
+      cta.className = 'sp-cta';
+      cta.textContent = it.cta;
+      card.appendChild(cta);
+    }
+    return card;
+  }
 })();

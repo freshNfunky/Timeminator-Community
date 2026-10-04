@@ -5,8 +5,9 @@ $__colors = collect_theme_colors();
 // Admin -> System -> Darstellung. "system" (default) follows the browser's
 // prefers-color-scheme; "light" / "dark" force the respective palette via
 // the `data-theme` attribute the stylesheet already reads.
-$__theme  = (string) Settings::get('theme_preference', 'system');
+$__theme     = (string) Settings::get('theme_preference', 'system');
 $__themeAttr = in_array($__theme, ['light', 'dark'], true) ? ' data-theme="' . $__theme . '"' : '';
+$__banner    = Banners::isVisible();
 ?>
 <!doctype html>
 <html lang="de"<?= $__themeAttr ?>>
@@ -38,6 +39,7 @@ $__themeAttr = in_array($__theme, ['light', 'dark'], true) ? ' data-theme="' . $
 
 <?php require __DIR__ . '/partials/update_banner.php'; ?>
 
+<div class="shell<?= $__banner ? ' has-aside' : '' ?>">
 <main class="wrap">
   <?php foreach (flash_take() as $f): ?>
     <div class="flash flash-<?= h($f['type']) ?>"><?= h($f['msg']) ?></div>
@@ -45,8 +47,16 @@ $__themeAttr = in_array($__theme, ['light', 'dark'], true) ? ' data-theme="' . $
   <h1 class="page-title"><?= h($__title) ?></h1>
   <?= $__content ?>
 </main>
-
-<?php require __DIR__ . '/partials/promo_sidebar.php'; ?>
+<?php if ($__banner): ?>
+<aside class="sidepanel" id="sidepanel" aria-label="Anzeige">
+  <div class="sp-head">
+    <span class="sp-label">Anzeige</span>
+    <button type="button" class="sp-toggle" id="spToggle" aria-expanded="true" aria-controls="spRotator" title="Werbung ein-/ausklappen">–</button>
+  </div>
+  <div class="sp-rotator" id="spRotator" data-endpoint="<?= h(route('sidepanel')) ?>" data-interval="7000"></div>
+</aside>
+<?php endif; ?>
+</div>
 
 <footer class="foot">
   <?= h(cfg('app_name', 'Timeminator')) ?> Community v<?= h(app_version()) ?>
