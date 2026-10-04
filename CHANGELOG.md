@@ -21,10 +21,10 @@ version heading when a release is cut.
 ## [Unreleased]
 
 ### Added
-- **Side-panel brand mark**: the FelixSchallerCOM wordmark now sits above the
-  rotating carousel, color-inverting with the theme (dark in light mode, light
-  in dark mode via `mask-image` + `var(--ink)` — no second asset needed and no
-  inline styles that would trip the strict CSP).
+- **Side-panel brand mark**: the FelixSchallerCOM wordmark sits above the
+  rotating carousel, implemented as a `mask-image` so it renders light on
+  the dark side-panel background without a second asset and without inline
+  styles that would trip the strict CSP.
 
 ### Changed
 - **Side-panel feed endpoint has a sensible default** so a fresh install serves
@@ -33,9 +33,12 @@ version heading when a release is cut.
   `https://assets.felixschaller.com/feed.json` (ad-blocker-neutral host) when
   the operator has not configured one; previously it fell back to an empty
   string, which silently kept the carousel on the bundled offline SVG set.
-- **Side-panel bleeds flush to the right viewport edge** (240 px wide, no
-  right padding, no shell `max-width` cap), so the slot sits in the periphery
-  rather than inside the content column. Dead `.sp-head`/`.sp-label`/
+- **Side-panel is a full-height, 200 px fixed rail on the right viewport
+  edge**: the main content column reserves the 200 px via `padding-right`
+  instead of a grid column, and the aside itself is `position: fixed` from
+  below the topbar to the viewport bottom. The visible creative stretches to
+  fill the whole slot (no more fixed 1:2 aspect-ratio inside a short card),
+  dots are overlaid at the bottom edge. Dead `.sp-head`/`.sp-label`/
   `.sp-toggle` CSS from the retired collapsible header is gone, along with a
   duplicated `.shell.has-aside`/`.sp-*` block left behind by the back-merge in
   #77.
