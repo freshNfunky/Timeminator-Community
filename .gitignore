@@ -6,6 +6,8 @@
 /data/*.sqlite-journal
 /data/*.sqlite-wal
 /data/*.sqlite-shm
+/data/*.sqlite.bak*
+/data/*.bak*
 
 # Runtime state (settings, feed caches, logs)
 /data/*.json
