@@ -189,14 +189,25 @@ There is no `.htaccess` on Nginx. Add location blocks that deny access to
 requests to `index.php`. A sample is in `docs/nginx.conf.sample` (if present),
 otherwise adapt the rules from `.htaccess`.
 
-## Privacy (registration and lead generation)
+## Privacy (registration, banners and lead generation)
 
 Timeminator can, on an opt-in basis, register an installation (contact email,
 site domain, and version) with the maintainer so you can be told about updates
 and security notices. This is off by default, it is asked for explicitly during
 setup, and it can be turned off at any time in the admin area. The endpoint it
 talks to is configurable, so you can point it at your own service or disable it
-entirely. No time-tracking data ever leaves your server.
+entirely.
+
+The Community edition also shows a slim **banner column** of FelixSchallerCOM
+services and news, loaded server-side from a configurable subdomain with a
+bundled offline fallback. With each feed refresh it sends a small anonymized
+usage signal (app version, a random installation id, a hash of it, and a
+truncated IP) so the operator can see roughly how many instances are live. It is
+on by default in Community, every field is individually switchable, there is a
+single master opt-out under **Admin → System**, and the whole feature is removed
+in the Pro edition. See [`docs/BANNERS.md`](docs/BANNERS.md) for the full detail.
+
+**No time-tracking data ever leaves your server** through either mechanism.
 
 ## Data model
 

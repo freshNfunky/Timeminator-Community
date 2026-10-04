@@ -27,6 +27,6 @@ require APP_ROOT . '/src/LoginThrottle.php';
 require APP_ROOT . '/src/Stats.php';
 require APP_ROOT . '/src/Repo.php';
 require APP_ROOT . '/src/Updater.php';
-require APP_ROOT . '/src/PromoFeed.php';
+require APP_ROOT . '/src/Banners.php';
 
 require __DIR__ . '/TestSupport.php';

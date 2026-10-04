@@ -217,75 +217,46 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .update-banner-close:hover{color:var(--ink)}
 .update-banner-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 
-/* Right-side promo sidebar — pays for the Community edition. Fixed so it
-   never scrolls out of view; 200 px wide, 1000 px tall on big displays,
-   capped to the viewport on smaller ones. Shows one banner at a time
-   as a carousel (see .promo-carousel below). Hidden below 1280 px so
-   the main content never has to compete with it for space. */
-.promo-sidebar{
-  position:fixed;top:80px;right:16px;width:200px;
-  height:1000px;max-height:calc(100vh - 96px);
-  display:flex;flex-direction:column;gap:10px;
-  z-index:40;font-size:13px
-}
-.promo-sidebar-head{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--muted)}
-.promo-sidebar-brand{display:inline-flex;align-items:center;line-height:0}
-.promo-sidebar-brand img{display:block;height:16px;width:auto;max-width:160px}
-/* LogoDesign01.svg paints its paths black; keep it black in light mode
-   and flip it to white in dark mode via CSS filter so the wordmark
-   stays readable against --soft on both themes. */
-:root[data-theme="dark"] .promo-sidebar-brand img{filter:invert(1)}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]) .promo-sidebar-brand img{filter:invert(1)}
-}
-.promo-sidebar-close{background:transparent;border:0;color:var(--muted);font-size:16px;line-height:1;padding:0 2px;cursor:pointer}
-.promo-sidebar-close:hover{color:var(--ink)}
-.promo-sidebar-foot{text-align:center;font-size:10px;margin:0;line-height:1.3}
-
-/* Carousel body — fills the remaining vertical space between head and
-   dots/foot. Each .promo-banner stacks on top of the next; only the one
-   with .is-active is visible. */
-.promo-carousel{position:relative;flex:1 1 auto;min-height:0}
-.promo-banner{
-  position:absolute;inset:0;
-  display:flex;flex-direction:column;justify-content:space-between;
-  background:var(--panel);border:1px solid var(--line);border-radius:12px;
-  padding:16px 14px;color:var(--ink);text-decoration:none;
-  opacity:0;pointer-events:none;transition:opacity .4s ease
-}
-.promo-banner.is-active{opacity:1;pointer-events:auto}
-.promo-banner:hover{text-decoration:none;border-color:var(--brand)}
-.promo-banner strong{display:block;font-size:17px;line-height:1.2;margin-bottom:10px;color:var(--brand)}
-.promo-banner p{margin:0 0 12px;font-size:14px;line-height:1.4;color:var(--ink);flex:1 1 auto}
-.promo-banner-cta{font-size:13px;color:var(--muted);font-weight:500}
-
-/* iframe/svg-url creatives from banner.felixschaller.com fill the whole
-   slot. The outer <a> catches the click so the CTA still works even
-   though the iframe swallows pointer events on its own. */
-.promo-banner-html,
-.promo-banner-svg{padding:0;border-radius:12px;overflow:hidden}
-.promo-iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;display:block}
-/* Transparent overlay above the iframe that catches clicks so the
-   wrapping <a> still navigates. Required because iframes capture
-   pointer events by default. */
-.promo-iframe-click{position:absolute;inset:0;z-index:2;cursor:pointer}
-.promo-svg-img,.promo-svg-wrap{display:block;width:100%;height:100%;object-fit:contain}
-.promo-svg-wrap svg{width:100%;height:100%}
-
-/* Carousel dots below the banner. Clickable, so the user can jump to a
-   specific slide instead of waiting for the rotation. */
-.promo-dots{display:flex;justify-content:center;gap:8px;margin:0}
-.promo-dot{width:7px;height:7px;border-radius:50%;background:var(--line);border:0;padding:0;cursor:pointer;transition:background .15s ease}
-.promo-dot:hover{background:var(--muted)}
-.promo-dot.is-active{background:var(--brand)}
-
-/* Give the main wrap breathing room on the right so the 200-px promo
-   bar doesn't feel glued to the content. */
-@media (min-width:1280px){
-  .wrap{padding-right:232px}
-}
-@media (max-width:1279px){
-  .promo-sidebar{display:none}
+/* Community side-panel (ad slot). Markup is `.shell.has-aside` as a
+   two-column grid (main content + 300 px right rail); JS fetches the
+   feed from ?r=sidepanel and renders .sp-item cards into #spRotator.
+   Deliberately generic class names (sidepanel/sp) — not literally
+   "banner" — so that content-blocking filter lists don't disappear
+   the whole column. */
+.shell{display:block}
+.shell.has-aside{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:26px;
+  max-width:1460px;margin:0 auto;align-items:start}
+.shell.has-aside .wrap{max-width:none;margin:0}
+.sidepanel{padding:22px 20px 0 0;position:sticky;top:18px}
+.sidepanel.collapsed .sp-rotator{display:none}
+.sp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sp-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.sp-toggle{border:1px solid var(--line);background:var(--panel);color:var(--muted);
+  width:22px;height:22px;line-height:1;border-radius:6px;cursor:pointer;font-size:14px;padding:0}
+.sp-toggle:hover{background:var(--soft);color:var(--ink)}
+.sp-rotator{position:relative;min-height:220px}
+.sp-item{display:flex;flex-direction:column;gap:10px;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-card);
+  color:var(--ink);text-decoration:none;position:absolute;inset:0}
+.sp-item:hover{text-decoration:none;border-color:var(--brand)}
+.sp-item img{width:100%;height:auto;border-radius:9px;display:block;background:var(--soft)}
+.sp-item.hidden{display:none}
+.sp-item.is-image{padding:0;border:0;background:transparent;box-shadow:none}
+.sp-item.is-image img{border-radius:var(--radius)}
+.sp-item.is-image:hover{opacity:.94}
+.sp-item.is-iframe{padding:0;border:0;background:transparent;box-shadow:none;overflow:hidden;border-radius:var(--radius)}
+.sp-item.is-iframe iframe{display:block;width:100%;aspect-ratio:1/2;border:0;border-radius:var(--radius);background:var(--panel)}
+.sp-item .sp-title{font-weight:700;font-size:15px}
+.sp-item .sp-text{font-size:13px;color:var(--muted);line-height:1.45}
+.sp-item .sp-cta{margin-top:2px;font-size:13px;font-weight:600;color:var(--brand)}
+.sp-item .sp-cta::after{content:" \2197"}
+.sp-dots{display:flex;gap:6px;justify-content:center;margin-top:12px}
+.sp-dot{width:7px;height:7px;border-radius:50%;background:var(--line);border:0;padding:0;cursor:pointer}
+.sp-dot.active{background:var(--brand)}
+@media (max-width:1023px){
+  .shell.has-aside{grid-template-columns:1fr}
+  .sidepanel{position:static;padding:0;margin-top:8px;border-top:1px solid var(--line);padding-top:16px}
+  .sp-rotator{min-height:0}
 }
 
 /* --- Collapsible nav groups (Kaufmaennisch, Systemverwaltung) --- */
@@ -459,4 +430,43 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 @media(max-width:1023px){
   .pro-teaser{grid-template-columns:1fr}
   .pro-upsell{position:static;order:-1}
+}
+
+/* Community banner column (Issue #22) */
+.shell{display:block}
+.shell.has-aside{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:26px;
+  max-width:1460px;margin:0 auto;align-items:start}
+.shell.has-aside .wrap{max-width:none;margin:0}
+.sidepanel{padding:22px 20px 0 0;position:sticky;top:18px}
+.sidepanel.collapsed .sp-rotator{display:none}
+.sp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sp-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.sp-toggle{border:1px solid var(--line);background:var(--panel);color:var(--muted);
+  width:22px;height:22px;line-height:1;border-radius:6px;cursor:pointer;font-size:14px;padding:0}
+.sp-toggle:hover{background:var(--soft);color:var(--ink)}
+.sp-rotator{position:relative;min-height:220px}
+.sp-item{display:flex;flex-direction:column;gap:10px;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-card);
+  color:var(--ink)}
+.sp-item:hover{text-decoration:none;border-color:var(--brand)}
+.sp-item img{width:100%;height:auto;border-radius:9px;display:block;background:var(--soft)}
+/* Image-dominant creative: the portrait SVG is the whole ad, no card chrome. */
+.sp-item.is-image{padding:0;border:0;background:transparent;box-shadow:none}
+.sp-item.is-image img{border-radius:var(--radius)}
+.sp-item.is-image:hover{opacity:.94}
+/* HTML banner iframe: fills the column width, fluid height via aspect-ratio */
+.sp-item.is-iframe{padding:0;border:0;background:transparent;box-shadow:none;overflow:hidden;border-radius:var(--radius)}
+.sp-item.is-iframe iframe{display:block;width:100%;aspect-ratio:1/2;border:0;border-radius:var(--radius);background:var(--panel)}
+.sp-item .sp-title{font-weight:700;font-size:15px}
+.sp-item .sp-text{font-size:13px;color:var(--muted);line-height:1.45}
+.sp-item .sp-cta{margin-top:2px;font-size:13px;font-weight:600;color:var(--brand)}
+.sp-item .sp-cta::after{content:" \2197"}
+.sp-dots{display:flex;gap:6px;justify-content:center;margin-top:12px}
+.sp-dot{width:7px;height:7px;border-radius:50%;background:var(--line);border:0;padding:0;cursor:pointer}
+.sp-dot.active{background:var(--brand)}
+
+@media(max-width:1080px){
+  .shell.has-aside{grid-template-columns:1fr}
+  .sidepanel{position:static;padding:0;margin-top:8px;border-top:1px solid var(--line);padding-top:16px}
+  .sp-rotator{min-height:0}
 }
