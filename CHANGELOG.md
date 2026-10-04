@@ -20,6 +20,8 @@ version heading when a release is cut.
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-10-04
+
 ### Added
 - **Team-Sentiment-Tracking** (fixes #92) — makes the landing-page promise
   ("team sentiment tracking") good instead of overclaim. Each user records a
@@ -40,6 +42,10 @@ version heading when a release is cut.
   migration `2026-10-04-03-sentiment-permissions.php`. 8 tests cover score
   normalization, UPSERT, per-user history windowing, team aggregates and
   contributor counting.
+- **Side-panel brand mark**: the FelixSchallerCOM wordmark sits above the
+  rotating carousel, implemented as a `mask-image` so it renders light on
+  the dark side-panel background without a second asset and without inline
+  styles that would trip the strict CSP.
 
 ### Changed
 - **Task picker is now cascading: Kunde → Projekt → Arbeitspaket → Aufgabe.**
@@ -53,14 +59,6 @@ version heading when a release is cut.
   form (new + edit). Lives in `views/partials/task_picker.php` + a small
   `initTaskPickers` IIFE in `assets/app.js` (no inline JS — strict CSP stays
   strict).
-
-### Added
-- **Side-panel brand mark**: the FelixSchallerCOM wordmark sits above the
-  rotating carousel, implemented as a `mask-image` so it renders light on
-  the dark side-panel background without a second asset and without inline
-  styles that would trip the strict CSP.
-
-### Changed
 - **Side-panel feed endpoint has a sensible default** so a fresh install serves
   HTML creatives out of the box, without needing a `banners` block in
   `config.php`. `Banners::endpoint()` now falls back to
@@ -76,6 +74,15 @@ version heading when a release is cut.
   `.sp-toggle` CSS from the retired collapsible header is gone, along with a
   duplicated `.shell.has-aside`/`.sp-*` block left behind by the back-merge in
   #77.
+- **Side-panel carousel rotates every 14 s** instead of 7 s so the reader
+  actually finishes a creative's headline + CTA before it flips.
+
+### Fixed
+- **Reverts #87 ("restore static Anzeige label"): the FelixSchallerCOM
+  wordmark brand mark from #84 is the ad disclosure now.** #87 landed only on
+  main (not develop) and would have reintroduced the `.sp-head` label the
+  wordmark was designed to replace. The release merge keeps the develop-side
+  design.
 
 ## [0.6.0] — 2026-10-04
 
@@ -375,7 +382,8 @@ control, PHPUnit suite, repo-hygiene docs.
   0.x. This is a cosmetic mislabel; the on-disk `VERSION` file is the
   source of truth.
 
-[Unreleased]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.6.0...v0.8.0
 [0.6.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.2.0...v0.5.0
 [0.2.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.1.0...v0.2.0
