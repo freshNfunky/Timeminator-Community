@@ -38,10 +38,6 @@
 </main>
 <?php if ($__banner): ?>
 <aside class="sidepanel" id="sidepanel" aria-label="Anzeige">
-  <div class="sp-head">
-    <span class="sp-label">Anzeige</span>
-    <button type="button" class="sp-toggle" id="spToggle" aria-expanded="true" aria-controls="spRotator" title="Werbung ein-/ausklappen">–</button>
-  </div>
   <div class="sp-rotator" id="spRotator" data-endpoint="<?= h(route('sidepanel')) ?>" data-interval="7000"></div>
 </aside>
 <?php endif; ?>

@@ -216,12 +216,6 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
   max-width:1460px;margin:0 auto;align-items:start}
 .shell.has-aside .wrap{max-width:none;margin:0}
 .sidepanel{padding:22px 20px 0 0;position:sticky;top:18px}
-.sidepanel.collapsed .sp-rotator{display:none}
-.sp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.sp-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.sp-toggle{border:1px solid var(--line);background:var(--panel);color:var(--muted);
-  width:22px;height:22px;line-height:1;border-radius:6px;cursor:pointer;font-size:14px;padding:0}
-.sp-toggle:hover{background:var(--soft);color:var(--ink)}
 .sp-rotator{position:relative;min-height:220px}
 .sp-item{display:flex;flex-direction:column;gap:10px;background:var(--panel);
   border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-card);
