@@ -183,25 +183,6 @@
       return;
     }
 
-    // Collapse toggle, remembered per browser.
-    var toggle = document.getElementById('spToggle');
-    var STORE_KEY = 'tm_sp_collapsed';
-    try {
-      if (window.localStorage && localStorage.getItem(STORE_KEY) === '1') {
-        bar.classList.add('collapsed');
-        if (toggle) { toggle.setAttribute('aria-expanded', 'false'); toggle.textContent = '+'; }
-      }
-    } catch (e) { /* storage blocked — default to expanded */ }
-
-    if (toggle) {
-      toggle.addEventListener('click', function () {
-        var collapsed = bar.classList.toggle('collapsed');
-        toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-        toggle.textContent = collapsed ? '+' : '–';
-        try { if (window.localStorage) { localStorage.setItem(STORE_KEY, collapsed ? '1' : '0'); } } catch (e) {}
-      });
-    }
-
     var endpoint = mount.getAttribute('data-endpoint');
     if (!endpoint) { return; }
     var interval = parseInt(mount.getAttribute('data-interval'), 10) || 7000;
@@ -213,20 +194,20 @@
           bar.remove();
           return;
         }
-        renderCarousel(mount, data.items, interval);
+        try { renderCarousel(mount, bar, data.items, interval); }
+        catch (e) { bar.remove(); }
       })
       .catch(function () { bar.remove(); });
   }
 
-  function renderCarousel(mount, items, interval) {
+  function renderCarousel(mount, bar, items, interval) {
     mount.textContent = '';
     var cards = items.map(function (it) { return buildCard(it); });
+    var broken = [];
     cards.forEach(function (c, i) {
       if (i > 0) { c.classList.add('hidden'); }
       mount.appendChild(c);
     });
-
-    if (cards.length < 2) { return; }
 
     var dots = document.createElement('div');
     dots.className = 'sp-dots';
@@ -244,18 +225,50 @@
     var current = 0;
     var timer = null;
 
-    function show(i) {
-      cards[current].classList.add('hidden');
-      dotEls[current].classList.remove('active');
-      current = (i + cards.length) % cards.length;
-      cards[current].classList.remove('hidden');
-      dotEls[current].classList.add('active');
+    function aliveCount() {
+      var n = 0;
+      for (var i = 0; i < cards.length; i++) { if (!broken[i]) { n++; } }
+      return n;
     }
-    function tick() { show(current + 1); }
-    function start() { timer = window.setInterval(tick, interval); }
-    function restart() { if (timer) { window.clearInterval(timer); } start(); }
+    function nextAlive(from) {
+      for (var step = 1; step <= cards.length; step++) {
+        var i = (from + step) % cards.length;
+        if (!broken[i]) { return i; }
+      }
+      return -1;
+    }
+    function show(i) {
+      i = ((i % cards.length) + cards.length) % cards.length;
+      if (broken[i]) { i = nextAlive(i - 1); if (i < 0) { return; } }
+      cards[current].classList.add('hidden');
+      if (dotEls[current]) { dotEls[current].classList.remove('active'); }
+      current = i;
+      cards[current].classList.remove('hidden');
+      if (dotEls[current]) { dotEls[current].classList.add('active'); }
+    }
+    function tick() { var n = nextAlive(current); if (n >= 0) { show(n); } }
+    function start() { if (aliveCount() > 1) { timer = window.setInterval(tick, interval); } }
+    function stop() { if (timer) { window.clearInterval(timer); timer = null; } }
+    function restart() { stop(); start(); }
 
-    mount.addEventListener('mouseenter', function () { if (timer) { window.clearInterval(timer); timer = null; } });
+    // A broken image creative must never break the whole slot: hide that card
+    // (and its dot) and move on; if nothing renderable remains, drop the slot.
+    cards.forEach(function (c, i) {
+      var img = c.querySelector('img');
+      if (!img) { return; }
+      img.addEventListener('error', function () {
+        broken[i] = true;
+        c.classList.add('hidden');
+        if (dotEls[i]) { dotEls[i].style.display = 'none'; }
+        if (aliveCount() === 0) { stop(); bar.remove(); return; }
+        if (current === i) { var n = nextAlive(i); if (n >= 0) { show(n); } }
+        if (aliveCount() < 2) { stop(); }
+      });
+    });
+
+    if (cards.length < 2) { dots.remove(); }
+
+    mount.addEventListener('mouseenter', stop);
     mount.addEventListener('mouseleave', function () { if (!timer) { start(); } });
     start();
   }
