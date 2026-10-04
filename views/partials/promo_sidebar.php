@@ -68,7 +68,8 @@ $__wrapHtml = static function (string $html): string {
         $__kind = isset($p['html_url']) ? 'html'
                 : (isset($p['html'])     ? 'html'
                 : (isset($p['svg_url']) ? 'svg'
-                : (isset($p['svg'])     ? 'svg' : 'text')));
+                : (isset($p['svg'])     ? 'svg'
+                : (isset($p['image'])   ? 'image' : 'text'))));
       ?>
       <a class="promo-banner<?= $__i === 0 ? ' is-active' : '' ?> promo-banner-<?= h($__kind) ?>"
          href="<?= h($__href) ?>" target="_blank" rel="noopener" data-slug="<?= h($__slug) ?>">
@@ -88,6 +89,8 @@ $__wrapHtml = static function (string $html): string {
           <img class="promo-svg-img" src="<?= h((string) $p['svg_url']) ?>" alt="<?= h($p['title'] ?? 'Anzeige') ?>" loading="lazy">
         <?php elseif (isset($p['svg'])): ?>
           <span class="promo-svg-wrap"><?= $p['svg'] /* already sanitized by PromoFeed */ ?></span>
+        <?php elseif (isset($p['image'])): ?>
+          <img class="promo-img" src="<?= h((string) $p['image']) ?>" alt="<?= h($p['title'] ?? 'Anzeige') ?>" loading="lazy">
         <?php else: ?>
           <strong><?= h($p['title'] ?? '') ?></strong>
           <p><?= h($p['body'] ?? '') ?></p>

@@ -214,14 +214,29 @@ final class PromoFeed
             if ($svg !== '' && !self::looksDangerous($svg)) {
                 $clean['svg'] = $svg;
             }
+            // Self-contained image creative: a `data:image/*;base64,` URI (SVG
+            // loaded as <img> cannot run script) or an https image on the feed
+            // host. This is the shape the live feed uses.
+            $image = isset($it['image']) ? trim((string) $it['image']) : '';
+            if ($image !== '' && (
+                    preg_match('~^data:image/(png|jpe?g|gif|webp|svg\+xml);base64,[A-Za-z0-9+/=]+$~i', $image)
+                    || self::feedAssetUrlAllowed($image)
+                )) {
+                $clean['image'] = $image;
+            }
             foreach (['title', 'body', 'cta'] as $key) {
                 if (isset($it[$key]) && is_string($it[$key])) {
                     $clean[$key] = trim($it[$key]);
                 }
             }
+            // `text` is the feed's name for the body copy.
+            if (!isset($clean['body']) && isset($it['text']) && is_string($it['text'])) {
+                $clean['body'] = trim($it['text']);
+            }
             // Need at least one renderable payload.
             if (!isset($clean['html_url']) && !isset($clean['svg_url'])
                 && !isset($clean['html']) && !isset($clean['svg'])
+                && !isset($clean['image'])
                 && !isset($clean['title']) && !isset($clean['body'])) {
                 continue;
             }
