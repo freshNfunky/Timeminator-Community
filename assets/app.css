@@ -203,11 +203,233 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .update-box{margin-top:14px;padding:12px;border-radius:9px;background:var(--soft);border:1px solid var(--line)}
 .update-box.update-avail{background:var(--update-bg);border-color:var(--update-border)}
 
+/* "Update available" banner shown below the topbar on admin sessions. */
+.update-banner{position:fixed;top:56px;right:16px;width:280px;z-index:50;
+  background:var(--update-bg);border:1px solid var(--update-border);
+  border-radius:var(--radius);padding:12px 14px;
+  box-shadow:0 4px 16px rgba(0,0,0,.12);font-size:13px}
+.update-banner-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px}
+.update-banner-head strong{font-size:14px}
+.update-banner-current{margin:2px 0 6px;font-size:12px}
+.update-banner p{margin:4px 0}
+.update-banner-close{background:transparent;border:0;color:var(--muted);
+  font-size:20px;line-height:1;padding:0 4px;cursor:pointer}
+.update-banner-close:hover{color:var(--ink)}
+.update-banner-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+
+/* Community side-panel (ad slot). Markup is `.shell.has-aside` as a
+   two-column grid (main content + 300 px right rail); JS fetches the
+   feed from ?r=sidepanel and renders .sp-item cards into #spRotator.
+   Deliberately generic class names (sidepanel/sp) — not literally
+   "banner" — so that content-blocking filter lists don't disappear
+   the whole column. */
+.shell{display:block}
+.shell.has-aside{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:26px;
+  max-width:1460px;margin:0 auto;align-items:start}
+.shell.has-aside .wrap{max-width:none;margin:0}
+.sidepanel{padding:22px 20px 0 0;position:sticky;top:18px}
+.sidepanel.collapsed .sp-rotator{display:none}
+.sp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sp-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.sp-toggle{border:1px solid var(--line);background:var(--panel);color:var(--muted);
+  width:22px;height:22px;line-height:1;border-radius:6px;cursor:pointer;font-size:14px;padding:0}
+.sp-toggle:hover{background:var(--soft);color:var(--ink)}
+.sp-rotator{position:relative;min-height:220px}
+.sp-item{display:flex;flex-direction:column;gap:10px;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-card);
+  color:var(--ink);text-decoration:none;position:absolute;inset:0}
+.sp-item:hover{text-decoration:none;border-color:var(--brand)}
+.sp-item img{width:100%;height:auto;border-radius:9px;display:block;background:var(--soft)}
+.sp-item.hidden{display:none}
+.sp-item.is-image{padding:0;border:0;background:transparent;box-shadow:none}
+.sp-item.is-image img{border-radius:var(--radius)}
+.sp-item.is-image:hover{opacity:.94}
+.sp-item.is-iframe{padding:0;border:0;background:transparent;box-shadow:none;overflow:hidden;border-radius:var(--radius)}
+.sp-item.is-iframe iframe{display:block;width:100%;aspect-ratio:1/2;border:0;border-radius:var(--radius);background:var(--panel)}
+.sp-item .sp-title{font-weight:700;font-size:15px}
+.sp-item .sp-text{font-size:13px;color:var(--muted);line-height:1.45}
+.sp-item .sp-cta{margin-top:2px;font-size:13px;font-weight:600;color:var(--brand)}
+.sp-item .sp-cta::after{content:" \2197"}
+.sp-dots{display:flex;gap:6px;justify-content:center;margin-top:12px}
+.sp-dot{width:7px;height:7px;border-radius:50%;background:var(--line);border:0;padding:0;cursor:pointer}
+.sp-dot.active{background:var(--brand)}
+@media (max-width:1023px){
+  .shell.has-aside{grid-template-columns:1fr}
+  .sidepanel{position:static;padding:0;margin-top:8px;border-top:1px solid var(--line);padding-top:16px}
+  .sp-rotator{min-height:0}
+}
+
+/* --- Collapsible nav groups (Kaufmaennisch, Systemverwaltung) --- */
+/* <details class="nav-group"> uses the browser's native expander; CSS
+   just styles the summary like a regular nav link and positions the
+   open panel below it. No JS required for toggling, keyboard works. */
+.nav-group{position:relative;display:inline-block}
+.nav-group-toggle{
+  list-style:none;cursor:pointer;color:var(--nav-text);
+  padding:6px 10px;border-radius:8px;font-size:14px;
+  display:inline-flex;align-items:center;gap:4px
+}
+.nav-group-toggle::-webkit-details-marker{display:none}
+.nav-group-toggle::after{content:"\25BE";font-size:9px;opacity:.7;margin-left:2px}
+.nav-group-toggle:hover{background:var(--nav-hover);color:#fff}
+.nav-group-toggle.active{background:var(--brand);color:#fff}
+.nav-group[open] > .nav-group-toggle{background:var(--nav-hover);color:#fff}
+.nav-group-items{
+  position:absolute;top:calc(100% + 4px);left:0;z-index:50;
+  min-width:200px;background:var(--panel);
+  border:1px solid var(--line);border-radius:10px;padding:6px;
+  display:flex;flex-direction:column;gap:2px;
+  box-shadow:0 8px 24px rgba(0,0,0,.18)
+}
+.nav-group-items a{
+  color:var(--ink);padding:6px 10px;border-radius:6px;
+  font-size:14px;white-space:nowrap;display:flex;align-items:center;gap:6px
+}
+.nav-group-items a:hover{background:var(--nav-hover);color:#fff;text-decoration:none}
+.nav-group-items a.active{background:var(--brand);color:#fff}
+
+/* Endpoints form: show the currently-active URL as monospace below each input,
+   and let the input take full card width so long URLs aren't cut off. */
+.endpoint-form label{display:block;margin-bottom:14px}
+.endpoint-form input[type=url]{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+.endpoint-form small{display:block;margin-top:4px;font-size:12px;word-break:break-all}
+.endpoint-form small code{background:transparent;padding:0;font-size:12px}
+
+/* Gold Pro badge used in nav + feature cards. */
+.pill-pro{background:#fde68a;color:#92400e;font-weight:600;letter-spacing:.02em}
+:root[data-theme="dark"] .pill-pro{background:#78350f;color:#fde68a}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .pill-pro{background:#78350f;color:#fde68a}
+}
+
+/* Entries: Liste/Kalender toggle in the filter bar. */
+.view-toggle{display:inline-flex;gap:4px;padding:2px;border:1px solid var(--line);border-radius:9px}
+.view-toggle .btn-sm{padding:5px 10px}
+
+/* Week calendar grid.
+   Hour row = 56 px, 24 hours = 1344 px total. The outer container caps
+   that at 70vh with overflow-y so a typical screen scrolls to the busy
+   hours instead of showing all 24. */
+.cal-week{display:grid;grid-template-columns:52px 1fr;gap:0;
+  max-height:70vh;overflow-y:auto;border:1px solid var(--line);border-radius:9px;
+  scroll-padding-top:0}
+.cal-week .cal-hours{display:grid;grid-template-rows:repeat(24,56px);border-right:1px solid var(--line);background:var(--panel)}
+.cal-hour-label{font-size:11px;color:var(--muted);padding:2px 6px;text-align:right}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);min-width:0}
+.cal-day{display:flex;flex-direction:column;min-width:0;border-right:1px solid var(--line)}
+.cal-day:last-child{border-right:0}
+.cal-day-head{position:sticky;top:0;z-index:2;background:var(--panel);
+  padding:6px 8px;font-size:12px;font-weight:600;color:var(--ink);
+  border-bottom:1px solid var(--line);text-align:center}
+.cal-day-today .cal-day-head{color:var(--brand)}
+.cal-day-grid{position:relative;flex:1;background:var(--soft);
+  height:calc(56px * 24);cursor:crosshair;user-select:none}
+.cal-day-today .cal-day-grid{background:var(--panel)}
+/* Click-drag placeholder for new entries (fixes #64). JS updates
+   --draft-top / --draft-height via setProperty on the element so the
+   stylesheet does all the actual positioning. */
+.cal-event-draft{position:absolute;left:2px;right:2px;
+  top:var(--draft-top,0);height:var(--draft-height,0);
+  background:rgba(37,99,235,.35);border:1px dashed var(--brand);
+  border-radius:4px;pointer-events:none;z-index:3}
+.cal-day-line{position:absolute;left:0;right:0;height:1px;background:var(--line);opacity:.6}
+.cal-day-line:nth-child(1){top:calc(56px * 1)}
+.cal-day-line:nth-child(2){top:calc(56px * 2)}
+.cal-day-line:nth-child(3){top:calc(56px * 3)}
+.cal-day-line:nth-child(4){top:calc(56px * 4)}
+.cal-day-line:nth-child(5){top:calc(56px * 5)}
+.cal-day-line:nth-child(6){top:calc(56px * 6)}
+.cal-day-line:nth-child(7){top:calc(56px * 7)}
+.cal-day-line:nth-child(8){top:calc(56px * 8)}
+.cal-day-line:nth-child(9){top:calc(56px * 9)}
+.cal-day-line:nth-child(10){top:calc(56px * 10)}
+.cal-day-line:nth-child(11){top:calc(56px * 11)}
+.cal-day-line:nth-child(12){top:calc(56px * 12)}
+.cal-day-line:nth-child(13){top:calc(56px * 13)}
+.cal-day-line:nth-child(14){top:calc(56px * 14)}
+.cal-day-line:nth-child(15){top:calc(56px * 15)}
+.cal-day-line:nth-child(16){top:calc(56px * 16)}
+.cal-day-line:nth-child(17){top:calc(56px * 17)}
+.cal-day-line:nth-child(18){top:calc(56px * 18)}
+.cal-day-line:nth-child(19){top:calc(56px * 19)}
+.cal-day-line:nth-child(20){top:calc(56px * 20)}
+.cal-day-line:nth-child(21){top:calc(56px * 21)}
+.cal-day-line:nth-child(22){top:calc(56px * 22)}
+.cal-day-line:nth-child(23){top:calc(56px * 23)}
+
+/* Booking blocks inside a day column. Each event's top/height is set in
+   a nonce-authorized <style> block emitted by the view (per-event). */
+.cal-event{position:absolute;left:2px;right:2px;overflow:hidden;
+  background:var(--brand);color:#fff;border-radius:4px;padding:3px 5px;
+  font-size:11px;line-height:1.25;text-decoration:none;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.15);
+  display:flex;flex-direction:column;gap:1px}
+.cal-event:hover{filter:brightness(1.07);text-decoration:none}
+.cal-event-time{opacity:.9;font-size:10px;font-variant-numeric:tabular-nums}
+.cal-event-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.cal-event-running{outline:2px solid var(--ok);outline-offset:-2px}
+
+.cal-nav{display:flex;gap:6px}
+
+/* External-calendar teaser card (Pro-only). */
+.external-cal-teaser{border:1px dashed var(--line)}
+.external-cal-items{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+.external-cal-item{display:block;background:var(--soft);border:1px solid var(--line);
+  border-radius:9px;padding:12px;color:var(--ink);text-decoration:none;position:relative;
+  transition:transform .12s ease, box-shadow .12s ease}
+.external-cal-item:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,.08);text-decoration:none}
+.external-cal-item strong{display:block;margin-bottom:4px}
+.external-cal-item .muted{display:block;font-size:12px;margin-bottom:28px}
+.external-cal-item .pill-pro{position:absolute;right:10px;bottom:10px}
+
 @media(max-width:820px){
   .cols{grid-template-columns:1fr}
   .chart-grid{grid-template-columns:1fr}
   .grid-tiles{grid-template-columns:1fr}
   .ref{columns:1}
+  .update-banner{position:static;width:auto;margin:12px 0 0}
+  .cal-days{overflow-x:auto}
+  .cal-day{min-width:120px}
+  .external-cal-items{grid-template-columns:1fr}
+}
+
+/* Small gold "Pro" pill rendered inline inside a nav link. Keeps the
+   nav label legible while flagging that the link opens a teaser. */
+.nav-pill{font-size:9px;padding:1px 5px;margin-left:4px;vertical-align:1px}
+
+/* Pro-feature teaser pages (Rechnungen / Angebote / Budget / Rollen Pro).
+   Two-column layout: dimmed mockup on the left, upsell banner glued to
+   the right edge of the main content column so the CTA stays visible
+   even on long tables. Below 1024 px the upsell stacks on top. */
+.pro-teaser{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:20px;align-items:start}
+.pro-teaser-mock{min-width:0;opacity:.55;filter:grayscale(.3);pointer-events:none;user-select:none}
+.pro-teaser-mock .btn{cursor:not-allowed}
+.pro-teaser-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.pro-teaser-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px}
+.pro-teaser-form label{display:block;font-size:12px;color:var(--muted)}
+.pro-teaser-form input{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px;color:var(--ink)}
+
+.pro-upsell{
+  position:sticky;top:84px;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:16px;display:flex;flex-direction:column;gap:10px
+}
+.pro-upsell h2{margin:4px 0 0;font-size:18px}
+.pro-upsell .pro-upsell-list{margin:0;padding-left:18px;color:var(--ink);font-size:13px;line-height:1.45}
+.pro-upsell .pro-upsell-list li{margin-bottom:4px}
+.pro-upsell-cta{align-self:stretch;text-align:center;margin-top:4px}
+.pro-upsell-foot{font-size:11px;margin:0}
+
+/* Budget progress bar — three buckets. */
+.pro-budget-track{display:inline-block;width:140px;height:8px;background:var(--line);border-radius:4px;overflow:hidden;vertical-align:middle;margin-right:8px}
+.pro-budget-bar{display:block;height:100%;background:var(--brand);border-radius:4px}
+.pro-budget-ok{background:#16a34a}
+.pro-budget-warn{background:#eab308}
+.pro-budget-over{background:#dc2626}
+
+@media(max-width:1023px){
+  .pro-teaser{grid-template-columns:1fr}
+  .pro-upsell{position:static;order:-1}
 }
 
 /* Community banner column (Issue #22) */

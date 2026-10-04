@@ -18,25 +18,84 @@ version heading when a release is cut.
 > updating. The initial commit was mislabelled "v1.0.0"; the `VERSION`
 > file is authoritative.
 
-## [Unreleased]
+## [0.6.0] — 2026-10-04
 
 ### Added
-- Banner slot now also renders **HTML banners as sandboxed `<iframe>`s** (in
+- Side-panel now also renders **HTML banners as sandboxed `<iframe>`s** (in
   addition to image/SVG), so creatives can be fluid (adapt to the slot) and carry
   their own clickable links. A feed item may have an `image` or an `iframe` URL;
   `iframe` URLs are validated against the same first-party allow-list, and the
   CSP gains `frame-src`/`child-src` for the banner host(s) (derived from
   `banners.allowed_hosts`, so HTML banners load without further config).
-
-### Changed
-- Banner DOM names and the feed route were made ad-blocker-neutral (no "banner"
-  in element classes/ids or the fetch URL): the slot is `#sidepanel` with the
-  `sp-*` classes, and the feed route is `?r=sidepanel`. The visible "Anzeige"
-  label stays (honest ad disclosure). Server-side config keys are unchanged.
-
-## [0.6.0] — 2026-10-02
-
-### Added
+- **Arbeitspaket (Workpackage) layer** between projects and tasks
+  (fixes #65). Hierarchy becomes **Kunde → Projekt → Arbeitspaket →
+  Aufgabe**, matching Pro so CSV exports/imports stay portable between
+  editions.
+  - New `work_packages` table (SQLite + MySQL) + nullable
+    `work_package_id` FKs on `tasks` and `time_entries` (denormalized
+    for the same reason as `project_id`/`client_id`).
+  - Idempotent migration (`schema/migrations/2026-10-04-01-work-
+    packages.php`): CREATE TABLE IF NOT EXISTS, column-exists guards
+    around ALTER TABLE for upgrading installs, and a transactional
+    backfill that seeds a default "Allgemein" work package per project
+    and remaps every existing task + time entry to it. Zero-touch for
+    live installations.
+  - New admin nav entry **Arbeitspakete** between Projekte and
+    Aufgaben; CRUD view at `?r=workpackages` under
+    `structure.manage`.
+  - Task form grows an "Arbeitspaket" select; the entries form
+    option-groups tasks by *Kunde / Projekt / Arbeitspaket* so the
+    hierarchy is visible when picking.
+  - CSV export adds `work_package_code` and `work_package_name`
+    columns. CSV import still accepts files without these columns —
+    tasks land in the project's default "Allgemein" WP (backwards
+    compat for existing exports and third-party CSVs).
+- **Pro-feature teaser pages.** Four new nav entries — Rechnungen,
+  Angebote, Budget, Rollen Pro — open dimmed read-only mockups of the
+  features that only exist in Timeminator Pro. Each page carries a
+  sticky upsell banner on the right edge linking to `pro_url`. No data
+  is written, nothing is sent; the mockups are seeded from the user's
+  real clients / projects where available so the preview looks
+  plausible. All inline positioning (budget progress bars) is emitted
+  into nonce-authorized `<style>` blocks so the strict CSP stays strict.
+- `LoginThrottle::retryAfterSeconds($username, $ip)` — precise upper
+  bound in seconds until whichever locked bucket clears first; used to
+  fill the `Retry-After` header.
+- **Dockerfile + docker-compose.yml** for zero-infrastructure local
+  evaluation and self-hosting. Image is `php:8.3-apache` with PDO
+  (MySQL and SQLite), zip for the in-app updater and mod_rewrite
+  enabled — the same shape as a typical PHP shared host. Two Compose
+  profiles: `sqlite` (single service) and `mysql` (app + MariaDB).
+  `data/` is persisted on a named volume. The project remains
+  Composer-free at install time: `composer.json` and `vendor/` are
+  excluded from the build context via `.dockerignore`. README gains a
+  "Run it in Docker" section (fixes #19).
+- **Update banner.** Admins see a small "new version available" panel
+  under the top bar when the release manifest reports a newer version.
+  Three actions: **Ignorieren** (dismiss for this session — comes back
+  next login), **Ueberspringen** (skip this specific version until a
+  newer one appears; persisted globally), **Update** (jump to
+  Admin → System to apply). All buttons are forms with CSRF tokens; no
+  inline JS. The banner respects `Updater::isDisabled()` and stays
+  hidden for non-admins.
+- **Opportunistic update check.** The layout partial triggers
+  `Updater::opportunisticCheck()` once every 24 h per install (throttled
+  by the cache timestamp). Silent on failure — a page never breaks
+  because the release manifest is unreachable.
+- **`.php` data migrations.** `Updater::runMigrations()` now picks up
+  both `.sql` and `.php` files from `schema/migrations/<driver>/`. PHP
+  migrations are `require`d in an isolated closure and receive access
+  to `DB` and `Settings` — for backfills that cannot be expressed as
+  one SQL statement. Applied migrations are tracked by basename in
+  `Settings['applied_migrations']` as before, so an existing install is
+  unaffected.
+- **`docs/schema-migrations.md`.** Documents the migration naming
+  convention (`YYYY-MM-DD-NN-slug.<ext>`), the additive-by-default
+  policy, the `.php` migration flow and the pre-1.0 compatibility
+  contract.
+- **`referrer_or_default()` helper.** Same-origin-only redirect helper
+  for the new dismiss/skip flow — keeps the admin on whatever page they
+  were on instead of jumping to the dashboard.
 - Community banner carousel with server-side feed loading, offline fallback and
   opt-outable telemetry (fixes #22). A slim, collapsible banner column on the
   right of the main layout rotates through FelixSchallerCOM services, tools and
@@ -76,6 +135,33 @@ version heading when a release is cut.
   - Default feed endpoint is `https://assets.felixschaller.com/feed.json`.
 
 ### Changed
+- **Banner slot renamed to a side-panel** (ad-blocker-neutral: no "banner"
+  anywhere in element classes, ids, or the fetch URL). Element ids /
+  classes are now `#sidepanel` / `.sp-*`, the first-party fetch route is
+  `?r=sidepanel`, and the live feed subdomain migrated from
+  `banner.felixschaller.com` to `assets.felixschaller.com` so content-
+  blocking filter lists stop disappearing the whole column. Config keys
+  (`banners.*`) and the admin UI label ("Anzeige") are unchanged.
+- **PromoFeed system retired.** The provisional `src/PromoFeed.php` +
+  `views/partials/promo_sidebar.php` + `assets/promo-fallback.json`
+  wiring (branch-only) is superseded by the `Banners` + `#sidepanel`
+  carousel which supports both `image` creatives and sandboxed HTML
+  `iframe` banners.
+- **LoginThrottle now escalates the lockout window for repeat offenders**
+  in a 24 h horizon: 15 min → 1 h → 4 h → 24 h. The first lockout stays
+  at the baseline 15 min; every subsequent lockout inside the horizon
+  climbs one rung. Message copy reflects the actual wait ("… in 1 Stunde
+  erneut versuchen") (fixes #38).
+- `ctrl_login` now returns **HTTP 429 Too Many Requests** with a
+  `Retry-After: <seconds>` header when `LoginThrottle` refuses a login.
+  The German error string in the page body stays unchanged, so the
+  human path is identical; the change is for monitoring probes, health
+  checks and retry scripts (fixes #37).
+- `asset()` now appends a cache-busting `?v=<filemtime>` query string to
+  every `assets/*` URL (CSS/JS/images) so browsers pick up a changed file
+  immediately after a deploy — including a one-off hotfix via `scp`, not
+  just a version bump. Falls back to `app_version()` when the file is not
+  found on disk (#78).
 - `.gitignore` now excludes runtime artifacts under `data/` (`settings.json`,
   `*.json`, `*.log`) so per-install state and logs stay out of the repo.
 - `docs/ISSUES.md` and the README privacy section describe the banner carousel
@@ -230,7 +316,8 @@ control, PHPUnit suite, repo-hygiene docs.
   0.x. This is a cosmetic mislabel; the on-disk `VERSION` file is the
   source of truth.
 
-[Unreleased]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.2.0...v0.5.0
 [0.2.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/freshNfunky/Timeminator-Community/releases/tag/v0.1.0

@@ -57,7 +57,7 @@ return [
     'update_manifest_url' => 'https://api.github.com/repos/freshNfunky/Timeminator-Community/releases/latest',
     // Endpoint the OPTIONAL, opt-in installation registration is sent to.
     // This is the lead-generator (Issue #2c): only email/domain/version, off by default.
-    'registration_endpoint' => 'https://public.felixschaller.com/timeminator-registry/register.php',
+    'registration_endpoint' => 'https://license.felixschaller.com/timeminator-registry/register.php',
 
     // --- Community banner carousel + telemetry (Issue #22) ---
     // The Community edition carries a slim banner column that rotates through

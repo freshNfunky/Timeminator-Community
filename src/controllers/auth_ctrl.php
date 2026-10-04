@@ -16,6 +16,11 @@ function ctrl_login(): void
         $lock = LoginThrottle::lockoutReason($username, $ip);
         if ($lock !== null) {
             LoginThrottle::record($username !== '' ? $username : null, null, $ip, false);
+            $retry = LoginThrottle::retryAfterSeconds($username, $ip);
+            http_response_code(429);
+            if (!headers_sent()) {
+                header('Retry-After: ' . $retry);
+            }
             $error = $lock;
         } elseif (Auth::attempt($username, $password)) {
             $uid = Auth::id();

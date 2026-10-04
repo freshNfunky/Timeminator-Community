@@ -60,14 +60,30 @@ CREATE TABLE IF NOT EXISTS projects (
   FOREIGN KEY (client_id) REFERENCES clients(id)
 );
 
-CREATE TABLE IF NOT EXISTS tasks (
+CREATE TABLE IF NOT EXISTS work_packages (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   project_id    INTEGER NOT NULL,
-  name          TEXT NOT NULL,
-  kind          TEXT NULL,
+  code          TEXT    NOT NULL,
+  name          TEXT    NOT NULL,
   active        INTEGER NOT NULL DEFAULT 1,
-  created_at    TEXT NOT NULL,
-  FOREIGN KEY (project_id) REFERENCES projects(id)
+  created_at    TEXT    NOT NULL,
+  FOREIGN KEY (project_id) REFERENCES projects(id),
+  UNIQUE (project_id, code)
+);
+
+CREATE INDEX IF NOT EXISTS idx_work_packages_project_active
+  ON work_packages (project_id, active);
+
+CREATE TABLE IF NOT EXISTS tasks (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id      INTEGER NOT NULL,
+  work_package_id INTEGER NULL,
+  name            TEXT    NOT NULL,
+  kind            TEXT    NULL,
+  active          INTEGER NOT NULL DEFAULT 1,
+  created_at      TEXT    NOT NULL,
+  FOREIGN KEY (project_id)      REFERENCES projects(id),
+  FOREIGN KEY (work_package_id) REFERENCES work_packages(id)
 );
 
 CREATE TABLE IF NOT EXISTS import_batches (
@@ -79,25 +95,27 @@ CREATE TABLE IF NOT EXISTS import_batches (
 );
 
 CREATE TABLE IF NOT EXISTS time_entries (
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id       INTEGER NOT NULL,
-  task_id       INTEGER NOT NULL,
-  project_id    INTEGER NOT NULL,
-  client_id     INTEGER NOT NULL,
-  start_ts      TEXT NOT NULL,
-  end_ts        TEXT NULL,
-  duration_min  INTEGER NULL,
-  note          TEXT NOT NULL DEFAULT '',
-  source        TEXT NOT NULL DEFAULT 'manual',
-  evidence      TEXT NULL,
-  batch_id      INTEGER NULL,
-  created_at    TEXT NOT NULL,
-  updated_at    TEXT NOT NULL,
-  FOREIGN KEY (user_id)    REFERENCES users(id),
-  FOREIGN KEY (task_id)    REFERENCES tasks(id),
-  FOREIGN KEY (project_id) REFERENCES projects(id),
-  FOREIGN KEY (client_id)  REFERENCES clients(id),
-  FOREIGN KEY (batch_id)   REFERENCES import_batches(id) ON DELETE SET NULL
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id         INTEGER NOT NULL,
+  task_id         INTEGER NOT NULL,
+  work_package_id INTEGER NULL,
+  project_id      INTEGER NOT NULL,
+  client_id       INTEGER NOT NULL,
+  start_ts        TEXT NOT NULL,
+  end_ts          TEXT NULL,
+  duration_min    INTEGER NULL,
+  note            TEXT NOT NULL DEFAULT '',
+  source          TEXT NOT NULL DEFAULT 'manual',
+  evidence        TEXT NULL,
+  batch_id        INTEGER NULL,
+  created_at      TEXT NOT NULL,
+  updated_at      TEXT NOT NULL,
+  FOREIGN KEY (user_id)         REFERENCES users(id),
+  FOREIGN KEY (task_id)         REFERENCES tasks(id),
+  FOREIGN KEY (work_package_id) REFERENCES work_packages(id),
+  FOREIGN KEY (project_id)      REFERENCES projects(id),
+  FOREIGN KEY (client_id)       REFERENCES clients(id),
+  FOREIGN KEY (batch_id)        REFERENCES import_batches(id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_entries_user    ON time_entries (user_id);

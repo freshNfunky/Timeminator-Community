@@ -1,7 +1,16 @@
 <?php /** @var string $__content @var string $__title */ ?>
-<?php $__nonce = csp_nonce(); $__colors = collect_theme_colors(); $__banner = Banners::isVisible(); ?>
+<?php
+$__nonce  = csp_nonce();
+$__colors = collect_theme_colors();
+// Admin -> System -> Darstellung. "system" (default) follows the browser's
+// prefers-color-scheme; "light" / "dark" force the respective palette via
+// the `data-theme` attribute the stylesheet already reads.
+$__theme     = (string) Settings::get('theme_preference', 'system');
+$__themeAttr = in_array($__theme, ['light', 'dark'], true) ? ' data-theme="' . $__theme . '"' : '';
+$__banner    = Banners::isVisible();
+?>
 <!doctype html>
-<html lang="de">
+<html lang="de"<?= $__themeAttr ?>>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -27,6 +36,8 @@
     <a class="btn btn-ghost" href="<?= h(route('logout')) ?>">Abmelden</a>
   </div>
 </header>
+
+<?php require __DIR__ . '/partials/update_banner.php'; ?>
 
 <div class="shell<?= $__banner ? ' has-aside' : '' ?>">
 <main class="wrap">

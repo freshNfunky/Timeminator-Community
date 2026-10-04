@@ -17,15 +17,53 @@ function parse_dtlocal(?string $v): ?string
 function ctrl_entries_index(): void
 {
     require_perm('entries.manage');
-    $f = entries_filter_from_request();
+    // Calendar is the default; the flat list is an opt-in via ?view=list.
+    $view = get('view') === 'list' ? 'list' : 'calendar';
+    $f    = entries_filter_from_request();
+
+    if ($view === 'calendar') {
+        $weekStart = entries_week_start_from_request();
+        $weekEnd   = $weekStart->modify('+6 days');
+        // In the calendar view the from/to filter follows the visible week.
+        $f['from'] = $weekStart->format('Y-m-d');
+        $f['to']   = $weekEnd->format('Y-m-d');
+    }
+
     $entries = Repo::entries($f);
     view('entries/index', [
-        'entries'  => $entries,
-        'clients'  => Repo::clients(),
-        'projects' => Repo::projects(),
-        'filter'   => $f,
-        'total'    => Stats::totalMinutes($entries),
+        'entries'     => $entries,
+        'clients'     => Repo::clients(),
+        'projects'    => Repo::projects(),
+        'filter'      => $f,
+        'total'       => Stats::totalMinutes($entries),
+        'view'        => $view,
+        'pro_url'     => (string) cfg('pro_url', 'https://timeminator.felixschaller.com'),
+        'week_start'  => $view === 'calendar' ? ($weekStart ?? null) : null,
     ], 'Zeiteintraege');
+}
+
+/**
+ * Parse the ?week=YYYY-Www parameter into the Monday of that ISO week, or
+ * fall back to the Monday of the current week. Clamped to a 10-year window
+ * around today so a malicious value can never produce an absurd range.
+ */
+function entries_week_start_from_request(): DateTimeImmutable
+{
+    $raw = (string) get('week', '');
+    if ($raw !== '' && preg_match('/^(\d{4})-W(\d{1,2})$/', $raw, $m)) {
+        try {
+            $wk = (new DateTimeImmutable('today'))->setISODate((int) $m[1], (int) $m[2], 1);
+            $now = new DateTimeImmutable('today');
+            if (abs($wk->getTimestamp() - $now->getTimestamp()) < 10 * 365 * 86400) {
+                return $wk;
+            }
+        } catch (Throwable) {
+            // fall through to default
+        }
+    }
+    $today = new DateTimeImmutable('today');
+    $dow   = (int) $today->format('N'); // Monday = 1 … Sunday = 7
+    return $today->modify('-' . ($dow - 1) . ' days');
 }
 
 /**
@@ -73,7 +111,9 @@ function ctrl_entries_export(): void
     $out = fopen('php://output', 'w');
     fputcsv($out, [
         'start_ts', 'end_ts', 'duration_min', 'client_code', 'client_name',
-        'project_code', 'project_name', 'task_name', 'user_id', 'note',
+        'project_code', 'project_name',
+        'work_package_code', 'work_package_name',
+        'task_name', 'user_id', 'note',
         'source', 'evidence', 'batch_id',
     ], ',', '"', '\\');
     foreach ($rows as $r) {
@@ -82,6 +122,7 @@ function ctrl_entries_export(): void
             $exp['start_ts'], $exp['end_ts'], $exp['duration_min'],
             $exp['client_code'] ?? '', $exp['client_name'],
             $exp['project_code'] ?? '', $exp['project_name'],
+            $exp['work_package_code'] ?? '', $exp['work_package_name'] ?? '',
             $exp['task_name'], $exp['user_id'], $exp['note'],
             $exp['source'], $exp['evidence'] ?? '', $exp['batch_id'] ?? '',
         ], ',', '"', '\\');
@@ -97,10 +138,12 @@ function entries_export_row(array $r): array
         'start_ts'     => $r['start_ts'],
         'end_ts'       => $r['end_ts'],
         'duration_min' => (int) $r['duration_min'],
-        'client_code'  => $r['client_code'] ?? null,
-        'client_name'  => $r['client_name'],
-        'project_code' => $r['project_code'] ?? null,
-        'project_name' => $r['project_name'],
+        'client_code'       => $r['client_code'] ?? null,
+        'client_name'       => $r['client_name'],
+        'project_code'      => $r['project_code'] ?? null,
+        'project_name'      => $r['project_name'],
+        'work_package_code' => $r['work_package_code'] ?? null,
+        'work_package_name' => $r['work_package_name'] ?? null,
         'task_name'    => $r['task_name'],
         'user_id'      => (int) $r['user_id'],
         'note'         => (string) $r['note'],
@@ -118,12 +161,44 @@ function ctrl_entry_form(): void
     if ($entry && (int) $entry['user_id'] !== Auth::id() && !Auth::isAdmin()) {
         redirect_route('entries');
     }
+    // For brand-new entries the week calendar can pre-fill start/end via
+    // ?start_ts=…&end_ts=… (both as 'Y-m-d\TH:i' or 'Y-m-d H:i:s'). Values
+    // are parsed through DateTimeImmutable so an invalid format just drops
+    // the pre-fill rather than crashing.
+    if (!$entry) {
+        $prefill = entry_form_prefill_from_request();
+        if ($prefill !== null) {
+            $entry = $prefill;
+        }
+    }
     view('entries/form', [
         'entry'    => $entry,
         'clients'  => Repo::clients(true),
         'projects' => Repo::projects(true),
         'tasks'    => Repo::tasks(true),
-    ], $entry ? 'Eintrag bearbeiten' : 'Neuer Eintrag');
+    ], $entry && !empty($entry['id']) ? 'Eintrag bearbeiten' : 'Neuer Eintrag');
+}
+
+function entry_form_prefill_from_request(): ?array
+{
+    $start = (string) get('start_ts', '');
+    $end   = (string) get('end_ts', '');
+    if ($start === '' && $end === '') {
+        return null;
+    }
+    $norm = static function (string $v): ?string {
+        $v = trim(str_replace('T', ' ', $v));
+        if ($v === '') return null;
+        try {
+            return (new DateTimeImmutable($v))->format('Y-m-d H:i:s');
+        } catch (Throwable) {
+            return null;
+        }
+    };
+    return [
+        'start_ts' => $norm($start),
+        'end_ts'   => $norm($end),
+    ];
 }
 
 function ctrl_entry_save(): void

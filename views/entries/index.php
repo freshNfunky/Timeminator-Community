@@ -1,10 +1,26 @@
 <?php
-/** @var array $entries @var array $clients @var array $projects @var array $filter @var int $total */
+/**
+ * @var array $entries @var array $clients @var array $projects
+ * @var array $filter  @var int   $total
+ * @var string $view        'list' or 'calendar'
+ * @var string $pro_url
+ * @var ?DateTimeImmutable $week_start
+ */
+$__isCalendar = ($view ?? 'list') === 'calendar';
+$__filterQp = array_filter($filter, static fn($v) => $v !== '' && $v !== 0 && $v !== null);
+if ($__isCalendar) {
+    // Navigation controls the from/to in calendar mode — don't leak the
+    // computed week bounds into the toggle links.
+    unset($__filterQp['from'], $__filterQp['to']);
+}
 ?>
 <form method="get" class="card filter-bar">
   <input type="hidden" name="r" value="entries">
-  <label>Von <input type="date" name="from" value="<?= h($filter['from']) ?>"></label>
-  <label>Bis <input type="date" name="to" value="<?= h($filter['to']) ?>"></label>
+  <?php if ($__isCalendar): ?><input type="hidden" name="view" value="calendar"><?php endif; ?>
+  <?php if (!$__isCalendar): ?>
+    <label>Von <input type="date" name="from" value="<?= h($filter['from']) ?>"></label>
+    <label>Bis <input type="date" name="to" value="<?= h($filter['to']) ?>"></label>
+  <?php endif; ?>
   <label>Kunde
     <select name="client_id">
       <option value="0">alle</option>
@@ -22,11 +38,20 @@
     </select>
   </label>
   <button class="btn" type="submit">Filtern</button>
-  <a class="btn" href="<?= h(route('entries_export', array_filter($filter, static fn($v) => $v !== '' && $v !== 0 && $v !== null) + ['format' => 'csv'])) ?>">CSV</a>
-  <a class="btn" href="<?= h(route('entries_export', array_filter($filter, static fn($v) => $v !== '' && $v !== 0 && $v !== null) + ['format' => 'json'])) ?>">JSON</a>
+  <span class="view-toggle">
+    <a class="btn btn-sm <?= $__isCalendar ? 'btn-primary' : '' ?>" href="<?= h(route('entries', $__filterQp)) ?>">Kalender</a>
+    <a class="btn btn-sm <?= !$__isCalendar ? 'btn-primary' : '' ?>" href="<?= h(route('entries', $__filterQp + ['view' => 'list'])) ?>">Liste</a>
+  </span>
+  <?php if (!$__isCalendar): ?>
+    <a class="btn" href="<?= h(route('entries_export', $__filterQp + ['format' => 'csv'])) ?>">CSV</a>
+    <a class="btn" href="<?= h(route('entries_export', $__filterQp + ['format' => 'json'])) ?>">JSON</a>
+  <?php endif; ?>
   <a class="btn btn-primary" href="<?= h(route('entry_form')) ?>">+ Eintrag</a>
 </form>
 
+<?php if ($__isCalendar): ?>
+  <?php require __DIR__ . '/calendar_week.php'; ?>
+<?php else: ?>
 <div class="card">
   <div class="card-head">
     <h2><?= count($entries) ?> Eintraege</h2>
@@ -58,3 +83,4 @@
   </table>
   <?php endif; ?>
 </div>
+<?php endif; ?>

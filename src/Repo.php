@@ -73,18 +73,63 @@ final class Repo
         );
     }
 
+    // ---------- Work packages (Arbeitspakete) ----------
+
+    public static function workPackages(bool $activeOnly = false): array
+    {
+        $sql = 'SELECT w.*, p.name AS project_name, p.client_id, c.name AS client_name
+                  FROM work_packages w
+                  JOIN projects p ON p.id = w.project_id
+                  JOIN clients  c ON c.id = p.client_id';
+        if ($activeOnly) {
+            $sql .= ' WHERE w.active = 1';
+        }
+        return DB::all($sql . ' ORDER BY c.name, p.name, w.name');
+    }
+
+    public static function workPackagesByProject(int $projectId, bool $activeOnly = false): array
+    {
+        $sql = 'SELECT * FROM work_packages WHERE project_id = ?';
+        if ($activeOnly) {
+            $sql .= ' AND active = 1';
+        }
+        return DB::all($sql . ' ORDER BY name', [$projectId]);
+    }
+
+    public static function workPackage(int $id): ?array
+    {
+        return DB::one('SELECT * FROM work_packages WHERE id = ?', [$id]);
+    }
+
+    public static function saveWorkPackage(array $d, ?int $id = null): int
+    {
+        if ($id) {
+            DB::run(
+                'UPDATE work_packages SET project_id=?, code=?, name=?, active=? WHERE id=?',
+                [$d['project_id'], $d['code'], $d['name'], $d['active'], $id]
+            );
+            return $id;
+        }
+        return DB::insert(
+            'INSERT INTO work_packages (project_id, code, name, active, created_at) VALUES (?,?,?,?,?)',
+            [$d['project_id'], $d['code'], $d['name'], $d['active'], now()]
+        );
+    }
+
     // ---------- Tasks ----------
 
     public static function tasks(bool $activeOnly = false): array
     {
-        $sql = 'SELECT t.*, p.name AS project_name, p.client_id, c.name AS client_name
+        $sql = 'SELECT t.*, p.name AS project_name, p.client_id, c.name AS client_name,
+                       w.name AS work_package_name, w.code AS work_package_code
                   FROM tasks t
                   JOIN projects p ON p.id = t.project_id
-                  JOIN clients  c ON c.id = p.client_id';
+                  JOIN clients  c ON c.id = p.client_id
+             LEFT JOIN work_packages w ON w.id = t.work_package_id';
         if ($activeOnly) {
             $sql .= ' WHERE t.active = 1';
         }
-        return DB::all($sql . ' ORDER BY c.name, p.name, t.name');
+        return DB::all($sql . ' ORDER BY c.name, p.name, w.name, t.name');
     }
 
     public static function tasksByProject(int $projectId): array
@@ -92,13 +137,24 @@ final class Repo
         return DB::all('SELECT * FROM tasks WHERE project_id = ? ORDER BY name', [$projectId]);
     }
 
+    public static function tasksByWorkPackage(int $workPackageId, bool $activeOnly = false): array
+    {
+        $sql = 'SELECT * FROM tasks WHERE work_package_id = ?';
+        if ($activeOnly) {
+            $sql .= ' AND active = 1';
+        }
+        return DB::all($sql . ' ORDER BY name', [$workPackageId]);
+    }
+
     public static function task(int $id): ?array
     {
         return DB::one(
-            'SELECT t.*, p.client_id, p.name AS project_name, c.name AS client_name
+            'SELECT t.*, p.client_id, p.name AS project_name, c.name AS client_name,
+                    w.name AS work_package_name, w.code AS work_package_code
                FROM tasks t
                JOIN projects p ON p.id = t.project_id
                JOIN clients  c ON c.id = p.client_id
+          LEFT JOIN work_packages w ON w.id = t.work_package_id
               WHERE t.id = ?',
             [$id]
         );
@@ -106,26 +162,29 @@ final class Repo
 
     public static function saveTask(array $d, ?int $id = null): int
     {
+        $wpId = isset($d['work_package_id']) && (int) $d['work_package_id'] > 0
+            ? (int) $d['work_package_id']
+            : null;
         if ($id) {
             DB::run(
-                'UPDATE tasks SET project_id=?, name=?, kind=?, active=? WHERE id=?',
-                [$d['project_id'], $d['name'], $d['kind'], $d['active'], $id]
+                'UPDATE tasks SET project_id=?, work_package_id=?, name=?, kind=?, active=? WHERE id=?',
+                [$d['project_id'], $wpId, $d['name'], $d['kind'], $d['active'], $id]
             );
             return $id;
         }
         return DB::insert(
-            'INSERT INTO tasks (project_id, name, kind, active, created_at) VALUES (?,?,?,?,?)',
-            [$d['project_id'], $d['name'], $d['kind'], $d['active'], now()]
+            'INSERT INTO tasks (project_id, work_package_id, name, kind, active, created_at) VALUES (?,?,?,?,?,?)',
+            [$d['project_id'], $wpId, $d['name'], $d['kind'], $d['active'], now()]
         );
     }
 
     // ---------- Time entries ----------
 
-    /** Resolve the denormalized project/client ids for a task. */
+    /** Resolve the denormalized workpackage/project/client ids for a task. */
     private static function taskContext(int $taskId): array
     {
         $t = DB::one(
-            'SELECT t.id, t.project_id, p.client_id
+            'SELECT t.id, t.project_id, t.work_package_id, p.client_id
                FROM tasks t JOIN projects p ON p.id = t.project_id
               WHERE t.id = ?',
             [$taskId]
@@ -143,9 +202,9 @@ final class Repo
         $ts = now();
         return DB::insert(
             'INSERT INTO time_entries
-               (user_id, task_id, project_id, client_id, start_ts, end_ts, duration_min, note, source, created_at, updated_at)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?)',
-            [$userId, $taskId, $ctx['project_id'], $ctx['client_id'], $start, $end, $dur, $note, $source, $ts, $ts]
+               (user_id, task_id, work_package_id, project_id, client_id, start_ts, end_ts, duration_min, note, source, created_at, updated_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+            [$userId, $taskId, $ctx['work_package_id'], $ctx['project_id'], $ctx['client_id'], $start, $end, $dur, $note, $source, $ts, $ts]
         );
     }
 
@@ -155,9 +214,9 @@ final class Repo
         $dur = $end ? self::minutesBetween($start, $end) : null;
         DB::run(
             'UPDATE time_entries
-                SET task_id=?, project_id=?, client_id=?, start_ts=?, end_ts=?, duration_min=?, note=?, updated_at=?
+                SET task_id=?, work_package_id=?, project_id=?, client_id=?, start_ts=?, end_ts=?, duration_min=?, note=?, updated_at=?
               WHERE id=?',
-            [$taskId, $ctx['project_id'], $ctx['client_id'], $start, $end, $dur, $note, now(), $id]
+            [$taskId, $ctx['work_package_id'], $ctx['project_id'], $ctx['client_id'], $start, $end, $dur, $note, now(), $id]
         );
     }
 
@@ -173,11 +232,13 @@ final class Repo
     public static function entry(int $id): ?array
     {
         return DB::one(
-            'SELECT e.*, t.name AS task_name, p.name AS project_name, c.name AS client_name
+            'SELECT e.*, t.name AS task_name, p.name AS project_name, c.name AS client_name,
+                    w.name AS work_package_name, w.code AS work_package_code
                FROM time_entries e
                JOIN tasks t    ON t.id = e.task_id
                JOIN projects p ON p.id = e.project_id
                JOIN clients  c ON c.id = e.client_id
+          LEFT JOIN work_packages w ON w.id = e.work_package_id
               WHERE e.id = ?',
             [$id]
         );
@@ -187,11 +248,13 @@ final class Repo
     public static function running(int $userId): ?array
     {
         return DB::one(
-            'SELECT e.*, t.name AS task_name, p.name AS project_name, c.name AS client_name
+            'SELECT e.*, t.name AS task_name, p.name AS project_name, c.name AS client_name,
+                    w.name AS work_package_name
                FROM time_entries e
                JOIN tasks t    ON t.id = e.task_id
                JOIN projects p ON p.id = e.project_id
                JOIN clients  c ON c.id = e.client_id
+          LEFT JOIN work_packages w ON w.id = e.work_package_id
               WHERE e.user_id = ? AND e.end_ts IS NULL
               ORDER BY e.start_ts DESC LIMIT 1',
             [$userId]
@@ -205,9 +268,9 @@ final class Repo
         $ts = now();
         return DB::insert(
             'INSERT INTO time_entries
-               (user_id, task_id, project_id, client_id, start_ts, end_ts, duration_min, note, source, created_at, updated_at)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?)',
-            [$userId, $taskId, $ctx['project_id'], $ctx['client_id'], $ts, null, null, $note, 'timer', $ts, $ts]
+               (user_id, task_id, work_package_id, project_id, client_id, start_ts, end_ts, duration_min, note, source, created_at, updated_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+            [$userId, $taskId, $ctx['work_package_id'], $ctx['project_id'], $ctx['client_id'], $ts, null, null, $note, 'timer', $ts, $ts]
         );
     }
 
@@ -228,26 +291,29 @@ final class Repo
 
     /**
      * List entries with optional filters.
-     * @param array{from?:string,to?:string,client_id?:int,project_id?:int,user_id?:int,limit?:int} $f
+     * @param array{from?:string,to?:string,client_id?:int,project_id?:int,work_package_id?:int,user_id?:int,limit?:int} $f
      */
     public static function entries(array $f = []): array
     {
         $where = ['e.end_ts IS NOT NULL'];
         $args = [];
-        if (!empty($f['from']))       { $where[] = 'e.start_ts >= ?'; $args[] = $f['from'] . ' 00:00:00'; }
-        if (!empty($f['to']))         { $where[] = 'e.start_ts <= ?'; $args[] = $f['to'] . ' 23:59:59'; }
-        if (!empty($f['client_id']))  { $where[] = 'e.client_id = ?'; $args[] = (int) $f['client_id']; }
-        if (!empty($f['project_id'])) { $where[] = 'e.project_id = ?'; $args[] = (int) $f['project_id']; }
-        if (!empty($f['user_id']))    { $where[] = 'e.user_id = ?'; $args[] = (int) $f['user_id']; }
+        if (!empty($f['from']))             { $where[] = 'e.start_ts >= ?';        $args[] = $f['from'] . ' 00:00:00'; }
+        if (!empty($f['to']))               { $where[] = 'e.start_ts <= ?';        $args[] = $f['to'] . ' 23:59:59'; }
+        if (!empty($f['client_id']))        { $where[] = 'e.client_id = ?';        $args[] = (int) $f['client_id']; }
+        if (!empty($f['project_id']))       { $where[] = 'e.project_id = ?';       $args[] = (int) $f['project_id']; }
+        if (!empty($f['work_package_id']))  { $where[] = 'e.work_package_id = ?';  $args[] = (int) $f['work_package_id']; }
+        if (!empty($f['user_id']))          { $where[] = 'e.user_id = ?';          $args[] = (int) $f['user_id']; }
         $sql = 'SELECT e.*, t.name AS task_name,
                        p.name AS project_name, p.code AS project_code,
                        c.name AS client_name,  c.code AS client_code,
                        c.color AS client_color, p.color AS project_color,
-                       p.track AS project_track, c.track AS client_track
+                       p.track AS project_track, c.track AS client_track,
+                       w.name AS work_package_name, w.code AS work_package_code
                   FROM time_entries e
                   JOIN tasks t    ON t.id = e.task_id
                   JOIN projects p ON p.id = e.project_id
                   JOIN clients  c ON c.id = e.client_id
+             LEFT JOIN work_packages w ON w.id = e.work_package_id
                  WHERE ' . implode(' AND ', $where) . '
                  ORDER BY e.start_ts DESC';
         if (!empty($f['limit'])) {

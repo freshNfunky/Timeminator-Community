@@ -66,14 +66,29 @@ CREATE TABLE IF NOT EXISTS projects (
   FOREIGN KEY (client_id) REFERENCES clients(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IF NOT EXISTS tasks (
-  id            INT AUTO_INCREMENT PRIMARY KEY,
-  project_id    INT NOT NULL,
+CREATE TABLE IF NOT EXISTS work_packages (
+  id            INT          AUTO_INCREMENT PRIMARY KEY,
+  project_id    INT          NOT NULL,
+  code          VARCHAR(64)  NOT NULL,
   name          VARCHAR(191) NOT NULL,
-  kind          VARCHAR(64)  NULL,                  -- e.g. 'dev', 'edit'
   active        TINYINT(1)   NOT NULL DEFAULT 1,
   created_at    DATETIME     NOT NULL,
+  UNIQUE KEY uq_wp_project_code (project_id, code),
+  KEY idx_wp_project_active (project_id, active),
   FOREIGN KEY (project_id) REFERENCES projects(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS tasks (
+  id              INT AUTO_INCREMENT PRIMARY KEY,
+  project_id      INT NOT NULL,
+  work_package_id INT NULL,
+  name            VARCHAR(191) NOT NULL,
+  kind            VARCHAR(64)  NULL,                  -- e.g. 'dev', 'edit'
+  active          TINYINT(1)   NOT NULL DEFAULT 1,
+  created_at      DATETIME     NOT NULL,
+  KEY idx_tasks_work_package (work_package_id),
+  FOREIGN KEY (project_id)      REFERENCES projects(id),
+  FOREIGN KEY (work_package_id) REFERENCES work_packages(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS import_batches (
@@ -85,25 +100,28 @@ CREATE TABLE IF NOT EXISTS import_batches (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS time_entries (
-  id            INT AUTO_INCREMENT PRIMARY KEY,
-  user_id       INT NOT NULL,
-  task_id       INT NOT NULL,
-  project_id    INT NOT NULL,                       -- denormalized for stable history + fast stats
-  client_id     INT NOT NULL,                       -- denormalized
-  start_ts      DATETIME     NOT NULL,
-  end_ts        DATETIME     NULL,                  -- NULL while a timer is running
-  duration_min  INT          NULL,                  -- NULL while running; else minutes
-  note          VARCHAR(500) NOT NULL DEFAULT '',
-  source        VARCHAR(32)  NOT NULL DEFAULT 'manual', -- manual | timer | import
-  evidence      TEXT NULL,                          -- provenance for imported entries
-  batch_id      INT NULL,                           -- for whole-import rollback
-  created_at    DATETIME     NOT NULL,
-  updated_at    DATETIME     NOT NULL,
-  FOREIGN KEY (user_id)    REFERENCES users(id),
-  FOREIGN KEY (task_id)    REFERENCES tasks(id),
-  FOREIGN KEY (project_id) REFERENCES projects(id),
-  FOREIGN KEY (client_id)  REFERENCES clients(id),
-  FOREIGN KEY (batch_id)   REFERENCES import_batches(id) ON DELETE SET NULL
+  id              INT AUTO_INCREMENT PRIMARY KEY,
+  user_id         INT NOT NULL,
+  task_id         INT NOT NULL,
+  work_package_id INT NULL,
+  project_id      INT NOT NULL,                       -- denormalized for stable history + fast stats
+  client_id       INT NOT NULL,                       -- denormalized
+  start_ts        DATETIME     NOT NULL,
+  end_ts          DATETIME     NULL,                  -- NULL while a timer is running
+  duration_min    INT          NULL,                  -- NULL while running; else minutes
+  note            VARCHAR(500) NOT NULL DEFAULT '',
+  source          VARCHAR(32)  NOT NULL DEFAULT 'manual', -- manual | timer | import
+  evidence        TEXT NULL,                          -- provenance for imported entries
+  batch_id        INT NULL,                           -- for whole-import rollback
+  created_at      DATETIME     NOT NULL,
+  updated_at      DATETIME     NOT NULL,
+  KEY idx_time_entries_work_package (work_package_id),
+  FOREIGN KEY (user_id)         REFERENCES users(id),
+  FOREIGN KEY (task_id)         REFERENCES tasks(id),
+  FOREIGN KEY (work_package_id) REFERENCES work_packages(id),
+  FOREIGN KEY (project_id)      REFERENCES projects(id),
+  FOREIGN KEY (client_id)       REFERENCES clients(id),
+  FOREIGN KEY (batch_id)        REFERENCES import_batches(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE INDEX idx_entries_user    ON time_entries (user_id);

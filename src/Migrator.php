@@ -7,16 +7,26 @@ declare(strict_types=1);
  * idempotent (guarded by column checks and CREATE TABLE IF NOT EXISTS), so a
  * fresh install whose base schema already has everything just records them.
  *
- * Community Edition: schema/mysql.sql and schema/sqlite.sql already contain the
- * full current schema, so there are no pending migrations here. Timeminator Pro
- * (Planung/Report, Angebote, Rechnungen) ships its own migrations on top.
+ * Delegates the file-walking work to `Updater::runMigrations()`, which already
+ * knows how to iterate `schema/migrations/<driver>/YYYY-MM-DD-NN-slug.{sql,php}`
+ * and track which basenames are applied. Doing it here on every request means
+ * self-hosted installs pick up a new release's data migrations the moment they
+ * replace the files on disk, without having to run the in-app updater first.
  */
 final class Migrator
 {
     public static function run(): void
     {
         self::ensureRegistry();
-        // No migrations in the Community Edition yet - reserved for future use.
+        // Delegate to the Updater's migration walker. Swallow errors so a
+        // broken migration can't take the whole app down — the exception
+        // (and its stack) still shows up in the PHP error log for the
+        // operator to see.
+        try {
+            Updater::runMigrations();
+        } catch (Throwable $e) {
+            error_log('[Migrator] runMigrations failed: ' . $e->getMessage());
+        }
     }
 
     private static function ensureRegistry(): void

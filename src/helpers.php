@@ -35,10 +35,24 @@ function route(string $r = 'dashboard', array $params = []): string
     return $url;
 }
 
-/** URL to a bundled asset. */
+/**
+ * URL to a static file in assets/, with a cache-busting ?v=<mtime> query string
+ * so browsers pick up a changed file immediately - including a one-off hotfix
+ * deployed straight via scp, not just a version bump/release. Without this,
+ * a stale cached copy (mobile Safari in particular) can keep serving old JS/CSS
+ * indefinitely after a fix has already shipped - e.g. a change in charts.js was
+ * only visible after a hard reload.
+ *
+ * Falls back to app_version() if the file is not found on disk (practically
+ * never for bundled assets; guards against a filemtime() on a missing path).
+ */
 function asset(string $path): string
 {
-    return base_path() . '/assets/' . ltrim($path, '/');
+    $rel = ltrim($path, '/');
+    $url = base_path() . '/assets/' . $rel;
+    $file = APP_ROOT . '/assets/' . $rel;
+    $v = is_file($file) ? (string) filemtime($file) : app_version();
+    return $url . '?v=' . $v;
 }
 
 function redirect(string $url): never
@@ -50,6 +64,36 @@ function redirect(string $url): never
 function redirect_route(string $r = 'dashboard', array $params = []): never
 {
     redirect(route($r, $params));
+}
+
+/**
+ * Return the HTTP Referer only when it points back into this same app; else
+ * $default. Used by side-effect POST handlers (dismiss / skip) so the admin
+ * lands back on the page they were on, without letting an attacker POST from
+ * elsewhere and pick the redirect target.
+ */
+function referrer_or_default(string $default): string
+{
+    $ref = (string) ($_SERVER['HTTP_REFERER'] ?? '');
+    if ($ref === '') {
+        return $default;
+    }
+    $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+    $scheme = ((($_SERVER['HTTPS'] ?? '') === 'on') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https'))
+        ? 'https' : 'http';
+    $parts = parse_url($ref);
+    if (!is_array($parts) || empty($parts['host'])) {
+        return $default;
+    }
+    if ($host !== '' && strcasecmp((string) $parts['host'], $host) !== 0) {
+        return $default;
+    }
+    $path = (string) ($parts['path'] ?? '');
+    $base = base_path();
+    if ($base !== '' && !str_starts_with($path, $base . '/')) {
+        return $default;
+    }
+    return $scheme . '://' . $host . $path . (isset($parts['query']) ? '?' . $parts['query'] : '');
 }
 
 function is_post(): bool

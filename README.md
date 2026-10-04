@@ -122,6 +122,36 @@ php -S localhost:8000
 Open `http://localhost:8000/`, finish the short setup, and you are tracking
 time. The database is a single file under `data/`.
 
+## Run it in Docker
+
+A `Dockerfile` and `docker-compose.yml` ship with the repo. The image is
+`php:8.3-apache` with PDO (MySQL and SQLite), zip for the in-app updater and
+mod_rewrite enabled — the same shape as a typical PHP shared host, so what
+runs in the container also runs on your hosting plan.
+
+```bash
+# SQLite — single service, no DB server
+docker compose --profile sqlite up --build
+
+# or: MySQL — app + MariaDB in one shot
+docker compose --profile mysql up --build
+```
+
+Then open `http://localhost:8080/` and click through the installer. Your
+`data/` directory (SQLite file, settings, update cache) is kept on the
+named volume `tm_data` and survives `docker compose down`. The MySQL
+profile also persists its DB on `tm_db`. `docker compose down -v` wipes
+both.
+
+By default the installer-generated `config.php` lives inside the
+container, so a `docker compose down` without `-v` keeps it, a
+destructive `rm` does not. If you want it on the host so it survives
+container recreation, bind-mount a host file — see the commented line in
+`docker-compose.yml`.
+
+The image does not include Composer at runtime; the project is still
+"unzip and go". The in-app updater will also work inside the container.
+
 ## Updating
 
 Timeminator can keep itself current.

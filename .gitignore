@@ -6,9 +6,10 @@
 /data/*.sqlite-journal
 /data/*.sqlite-wal
 /data/*.sqlite-shm
+/data/*.sqlite.bak*
+/data/*.bak*
 
-# Runtime state written under data/ (per-install, not source)
-/data/settings.json
+# Runtime state written under data/ (settings, feed caches, logs)
 /data/*.json
 /data/*.log
 
@@ -22,3 +23,5 @@ Thumbs.db
 /.phpunit.cache/
 /.phpunit.result.cache
 /phpunit.xml
+/vendor/
+/composer.lock

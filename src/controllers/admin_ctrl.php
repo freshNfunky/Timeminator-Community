@@ -161,6 +161,7 @@ function ctrl_system_index(): void
         'manifest_default' => (string) cfg('update_manifest_url', ''),
         'manifest_override' => (string) Settings::get('update_manifest_url_override', ''),
         'update_disabled' => Updater::isDisabled(),
+        'theme_preference'         => (string) Settings::get('theme_preference', 'system'),
         'banner_config_off'        => Banners::isConfigDisabled(),
         'banner_visible'           => (bool) Settings::get('banner_visible', true),
         'banner_telemetry'         => Banners::telemetryEnabled(),
@@ -169,6 +170,26 @@ function ctrl_system_index(): void
         'banner_endpoint_override' => (string) Settings::get('banner_endpoint_override', ''),
         'install_id'               => Banners::installId(),
     ], 'System');
+}
+
+/**
+ * Admin -> System -> Darstellung. Persists a single global theme preference
+ * (`system` | `light` | `dark`) that the layout emits as `data-theme` on
+ * `<html>`. Community is single-tenant, so one setting for the whole install
+ * is enough; a per-user override can come later if a multi-user install
+ * actually needs it.
+ */
+function ctrl_theme_save(): void
+{
+    require_perm('admin.system');
+    csrf_check();
+    $pref = (string) post('theme_preference');
+    if (!in_array($pref, ['system', 'light', 'dark'], true)) {
+        $pref = 'system';
+    }
+    Settings::set('theme_preference', $pref);
+    flash('Darstellung gespeichert.');
+    redirect_route('admin_system');
 }
 
 function ctrl_update_check(): void
@@ -192,6 +213,50 @@ function ctrl_update_apply(): void
     csrf_check();
     [$ok, $msg] = Updater::apply();
     flash($msg, $ok ? 'ok' : 'err');
+    redirect_route('admin_system');
+}
+
+/**
+ * Dismiss the update banner for this session. The next login (or a fresh
+ * session cookie) will show it again — this is the "Ignorieren" button.
+ */
+function ctrl_update_dismiss(): void
+{
+    require_perm('admin.system');
+    csrf_check();
+    $version = trim((string) post('version'));
+    if ($version !== '') {
+        Updater::dismissForSession($version);
+    }
+    redirect(referrer_or_default(route('dashboard')));
+}
+
+/**
+ * Skip a specific released version. The banner comes back only when a newer
+ * one appears — this is the "Ueberspringen" button.
+ */
+function ctrl_update_skip(): void
+{
+    require_perm('admin.system');
+    csrf_check();
+    $version = trim((string) post('version'));
+    if ($version === '') {
+        redirect_route('admin_system');
+    }
+    Updater::skipVersion($version);
+    flash('Version ' . $version . ' wird uebersprungen.');
+    redirect(referrer_or_default(route('dashboard')));
+}
+
+/**
+ * Forget every skipped version so all offers are shown again.
+ */
+function ctrl_update_clear_skipped(): void
+{
+    require_perm('admin.system');
+    csrf_check();
+    Updater::clearSkippedVersions();
+    flash('Uebersprungene Versionen zurueckgesetzt.');
     redirect_route('admin_system');
 }
 
