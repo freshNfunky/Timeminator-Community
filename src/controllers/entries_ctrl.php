@@ -111,7 +111,9 @@ function ctrl_entries_export(): void
     $out = fopen('php://output', 'w');
     fputcsv($out, [
         'start_ts', 'end_ts', 'duration_min', 'client_code', 'client_name',
-        'project_code', 'project_name', 'task_name', 'user_id', 'note',
+        'project_code', 'project_name',
+        'work_package_code', 'work_package_name',
+        'task_name', 'user_id', 'note',
         'source', 'evidence', 'batch_id',
     ], ',', '"', '\\');
     foreach ($rows as $r) {
@@ -120,6 +122,7 @@ function ctrl_entries_export(): void
             $exp['start_ts'], $exp['end_ts'], $exp['duration_min'],
             $exp['client_code'] ?? '', $exp['client_name'],
             $exp['project_code'] ?? '', $exp['project_name'],
+            $exp['work_package_code'] ?? '', $exp['work_package_name'] ?? '',
             $exp['task_name'], $exp['user_id'], $exp['note'],
             $exp['source'], $exp['evidence'] ?? '', $exp['batch_id'] ?? '',
         ], ',', '"', '\\');
@@ -135,10 +138,12 @@ function entries_export_row(array $r): array
         'start_ts'     => $r['start_ts'],
         'end_ts'       => $r['end_ts'],
         'duration_min' => (int) $r['duration_min'],
-        'client_code'  => $r['client_code'] ?? null,
-        'client_name'  => $r['client_name'],
-        'project_code' => $r['project_code'] ?? null,
-        'project_name' => $r['project_name'],
+        'client_code'       => $r['client_code'] ?? null,
+        'client_name'       => $r['client_name'],
+        'project_code'      => $r['project_code'] ?? null,
+        'project_name'      => $r['project_name'],
+        'work_package_code' => $r['work_package_code'] ?? null,
+        'work_package_name' => $r['work_package_name'] ?? null,
         'task_name'    => $r['task_name'],
         'user_id'      => (int) $r['user_id'],
         'note'         => (string) $r['note'],
