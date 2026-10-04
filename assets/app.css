@@ -217,50 +217,57 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .update-banner-close:hover{color:var(--ink)}
 .update-banner-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 
-/* Community side-panel (ad slot). Markup is `.shell.has-aside` as a
-   two-column grid (main content + 300 px right rail); JS fetches the
-   feed from ?r=sidepanel and renders .sp-item cards into #spRotator.
-   Deliberately generic class names (sidepanel/sp) — not literally
-   "banner" — so that content-blocking filter lists don't disappear
-   the whole column. */
+/* Community side-panel (ad slot). 200 px wide, flush against the right
+   viewport edge, running the full available height below the topbar.
+   `.shell.has-aside` reserves the right 200 px via `padding-right` so
+   the main content never slides under the panel; the aside itself is
+   `position: fixed`. The FelixSchallerCOM wordmark sits at the top
+   (color-inverted via `mask-image` so it tracks the theme); the
+   #spRotator fills the remaining height and the single visible card
+   stretches to fill the whole slot. Deliberately generic class names
+   (sidepanel/sp) — not literally "banner" — so content-blocking filter
+   lists don't disappear the whole column. */
 .shell{display:block}
-.shell.has-aside{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:26px;
-  max-width:none;margin:0;align-items:start}
+.shell.has-aside{display:block;max-width:none;margin:0;padding-right:200px}
 .shell.has-aside .wrap{max-width:1120px;margin:0 auto}
-.sidepanel{padding:22px 0 0 0;position:sticky;top:18px}
-.sp-brand{display:block;width:220px;height:22px;margin:0 0 14px;
-  background-color:var(--ink);
+.sidepanel{position:fixed;top:56px;right:0;bottom:0;width:200px;
+  padding:14px 10px;display:flex;flex-direction:column;gap:10px;
+  background:var(--bg);z-index:5}
+.sp-brand{display:block;flex:0 0 auto;width:160px;height:20px;margin:0 auto 2px;
+  background-color:#e2e8f0;
   -webkit-mask-image:url(banners/logos/felixschaller.svg);
           mask-image:url(banners/logos/felixschaller.svg);
   -webkit-mask-size:contain;mask-size:contain;
-  -webkit-mask-position:left center;mask-position:left center;
+  -webkit-mask-position:center;mask-position:center;
   -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
-  opacity:.85;transition:opacity .15s}
+  opacity:.9;transition:opacity .15s}
 .sp-brand:hover{opacity:1}
-.sp-rotator{position:relative;min-height:220px}
-.sp-item{display:flex;flex-direction:column;gap:10px;background:var(--panel);
-  border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-card);
-  color:var(--ink);text-decoration:none}
+.sp-rotator{position:relative;flex:1 1 auto;min-height:0}
+.sp-item{position:absolute;inset:0 0 22px 0;display:flex;flex-direction:column;gap:10px;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px;box-shadow:var(--shadow-card);color:var(--ink);text-decoration:none}
 .sp-item:hover{text-decoration:none;border-color:var(--brand)}
 .sp-item img{width:100%;height:auto;border-radius:9px;display:block;background:var(--soft)}
 .sp-item.hidden{display:none}
-.sp-item.is-image{padding:0;border:0;background:transparent;box-shadow:none}
-.sp-item.is-image img{border-radius:var(--radius)}
+.sp-item.is-image{padding:0;border:0;background:transparent;box-shadow:none;overflow:hidden;border-radius:var(--radius)}
+.sp-item.is-image img{width:100%;height:100%;object-fit:cover;border-radius:var(--radius)}
 .sp-item.is-image:hover{opacity:.94}
 .sp-item.is-iframe{padding:0;border:0;background:transparent;box-shadow:none;overflow:hidden;border-radius:var(--radius)}
-.sp-item.is-iframe iframe{display:block;width:100%;aspect-ratio:1/2;border:0;border-radius:var(--radius);background:var(--panel)}
+.sp-item.is-iframe iframe{display:block;width:100%;height:100%;border:0;border-radius:var(--radius);background:var(--panel)}
 .sp-item .sp-title{font-weight:700;font-size:15px}
 .sp-item .sp-text{font-size:13px;color:var(--muted);line-height:1.45}
 .sp-item .sp-cta{margin-top:2px;font-size:13px;font-weight:600;color:var(--brand)}
 .sp-item .sp-cta::after{content:" \2197"}
-.sp-dots{display:flex;gap:6px;justify-content:center;margin-top:12px}
-.sp-dot{width:7px;height:7px;border-radius:50%;background:var(--line);border:0;padding:0;cursor:pointer}
-.sp-dot.active{background:var(--brand)}
+.sp-dots{position:absolute;left:0;right:0;bottom:4px;display:flex;gap:6px;justify-content:center;height:14px;align-items:center}
+.sp-dot{width:7px;height:7px;border-radius:50%;
+  background:rgba(255,255,255,.35);border:0;padding:0;cursor:pointer}
+.sp-dot.active{background:#fff}
 @media (max-width:1023px){
-  .shell.has-aside{grid-template-columns:1fr}
-  .sidepanel{position:static;padding:0;margin-top:8px;border-top:1px solid var(--line);padding-top:16px}
+  .shell.has-aside{padding-right:0}
+  .sidepanel{position:static;width:auto;height:auto;padding:16px 0 0;
+    margin-top:8px;border-top:1px solid var(--line);background:transparent;z-index:auto}
   .sp-brand{margin:0 0 10px}
-  .sp-rotator{min-height:0}
+  .sp-rotator{flex:0 0 auto;min-height:420px;height:60vw;max-height:600px}
 }
 
 /* --- Collapsible nav groups (Kaufmaennisch, Systemverwaltung) --- */
