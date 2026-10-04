@@ -31,6 +31,8 @@ require __DIR__ . '/src/controllers/admin_ctrl.php';
 require __DIR__ . '/src/controllers/imports_ctrl.php';
 require __DIR__ . '/src/controllers/pro_teaser_ctrl.php';
 require __DIR__ . '/src/controllers/banners_ctrl.php';
+require __DIR__ . '/src/Sentiment.php';
+require __DIR__ . '/src/controllers/sentiment_ctrl.php';
 
 $r = (string) get('r', Auth::check() ? 'dashboard' : 'login');
 
@@ -59,6 +61,8 @@ $routes = [
 
     'stats'        => 'ctrl_stats_index',
     'stats_data'   => 'ctrl_stats_data',
+    'sentiment'      => 'ctrl_sentiment_index',
+    'sentiment_save' => 'ctrl_sentiment_save',
     'scopes'       => 'ctrl_scopes_index',
     'scope_save'   => 'ctrl_scope_save',
     'scope_delete' => 'ctrl_scope_delete',

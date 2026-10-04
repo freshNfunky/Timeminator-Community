@@ -20,6 +20,27 @@ version heading when a release is cut.
 
 ## [Unreleased]
 
+### Added
+- **Team-Sentiment-Tracking** (fixes #92) — makes the landing-page promise
+  ("team sentiment tracking") good instead of overclaim. Each user records a
+  daily mood on a five-smiley scale (ganz schlecht … sehr gut) with an optional
+  short note. Upserts per `(user_id, as_of)` so a repeated save on the same day
+  updates rather than duplicates. The dedicated **Stimmung** page shows:
+  - the recorder (pre-filled when today already has an entry),
+  - a 60-day personal history as a colored sparkline + full list,
+  - a team summary (window: 30 days) with average score, response count and
+    distinct contributor count — no individual rows, no names, so a single
+    response in a window is personal, not "team".
+
+  Backing table `sentiment_entries` (new in `schema/{sqlite,mysql}.sql`;
+  idempotent migration `2026-10-04-02-sentiment-entries.sql` for upgrades) with
+  `UNIQUE (user_id, as_of)`, FK → `users` ON DELETE CASCADE, note capped at
+  500 chars. New permissions `sentiment.record` (default: everyone) and
+  `sentiment.view_team` (default: admin only), auto-granted via the data
+  migration `2026-10-04-03-sentiment-permissions.php`. 8 tests cover score
+  normalization, UPSERT, per-user history windowing, team aggregates and
+  contributor counting.
+
 ### Changed
 - **Task picker is now cascading: Kunde → Projekt → Arbeitspaket → Aufgabe.**
   The single flat `<select name="task_id">` that crammed the whole hierarchy
