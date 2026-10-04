@@ -18,21 +18,7 @@ version heading when a release is cut.
 > updating. The initial commit was mislabelled "v1.0.0"; the `VERSION`
 > file is authoritative.
 
-## [Unreleased]
-
-### Changed
-- **Banner slot renamed to a side-panel** (ad-blocker-neutral: no "banner"
-  anywhere in element classes, ids, or the fetch URL). Element ids /
-  classes are now `#sidepanel` / `.sp-*`, the first-party fetch route is
-  `?r=sidepanel`, and the live feed subdomain migrated from
-  `banner.felixschaller.com` to `assets.felixschaller.com` so content-
-  blocking filter lists stop disappearing the whole column. Config keys
-  (`banners.*`) and the admin UI label ("Anzeige") are unchanged.
-- **PromoFeed system retired.** The provisional `src/PromoFeed.php` +
-  `views/partials/promo_sidebar.php` + `assets/promo-fallback.json`
-  wiring (branch-only) is superseded by main's `Banners` + `#sidepanel`
-  carousel which supports both `image` creatives and sandboxed HTML
-  `iframe` banners.
+## [0.6.0] — 2026-10-04
 
 ### Added
 - Side-panel now also renders **HTML banners as sandboxed `<iframe>`s** (in
@@ -64,20 +50,6 @@ version heading when a release is cut.
     columns. CSV import still accepts files without these columns —
     tasks land in the project's default "Allgemein" WP (backwards
     compat for existing exports and third-party CSVs).
-
-### Changed
-- **LoginThrottle now escalates the lockout window for repeat offenders**
-  in a 24 h horizon: 15 min → 1 h → 4 h → 24 h. The first lockout stays
-  at the baseline 15 min; every subsequent lockout inside the horizon
-  climbs one rung. Message copy reflects the actual wait ("… in 1 Stunde
-  erneut versuchen") (fixes #38).
-- `ctrl_login` now returns **HTTP 429 Too Many Requests** with a
-  `Retry-After: <seconds>` header when `LoginThrottle` refuses a login.
-  The German error string in the page body stays unchanged, so the
-  human path is identical; the change is for monitoring probes, health
-  checks and retry scripts (fixes #37).
-
-### Added
 - **Pro-feature teaser pages.** Four new nav entries — Rechnungen,
   Angebote, Budget, Rollen Pro — open dimmed read-only mockups of the
   features that only exist in Timeminator Pro. Each page carries a
@@ -124,10 +96,6 @@ version heading when a release is cut.
 - **`referrer_or_default()` helper.** Same-origin-only redirect helper
   for the new dismiss/skip flow — keeps the admin on whatever page they
   were on instead of jumping to the dashboard.
-
-## [0.6.0] — 2026-10-02
-
-### Added
 - Community banner carousel with server-side feed loading, offline fallback and
   opt-outable telemetry (fixes #22). A slim, collapsible banner column on the
   right of the main layout rotates through FelixSchallerCOM services, tools and
@@ -167,6 +135,33 @@ version heading when a release is cut.
   - Default feed endpoint is `https://assets.felixschaller.com/feed.json`.
 
 ### Changed
+- **Banner slot renamed to a side-panel** (ad-blocker-neutral: no "banner"
+  anywhere in element classes, ids, or the fetch URL). Element ids /
+  classes are now `#sidepanel` / `.sp-*`, the first-party fetch route is
+  `?r=sidepanel`, and the live feed subdomain migrated from
+  `banner.felixschaller.com` to `assets.felixschaller.com` so content-
+  blocking filter lists stop disappearing the whole column. Config keys
+  (`banners.*`) and the admin UI label ("Anzeige") are unchanged.
+- **PromoFeed system retired.** The provisional `src/PromoFeed.php` +
+  `views/partials/promo_sidebar.php` + `assets/promo-fallback.json`
+  wiring (branch-only) is superseded by the `Banners` + `#sidepanel`
+  carousel which supports both `image` creatives and sandboxed HTML
+  `iframe` banners.
+- **LoginThrottle now escalates the lockout window for repeat offenders**
+  in a 24 h horizon: 15 min → 1 h → 4 h → 24 h. The first lockout stays
+  at the baseline 15 min; every subsequent lockout inside the horizon
+  climbs one rung. Message copy reflects the actual wait ("… in 1 Stunde
+  erneut versuchen") (fixes #38).
+- `ctrl_login` now returns **HTTP 429 Too Many Requests** with a
+  `Retry-After: <seconds>` header when `LoginThrottle` refuses a login.
+  The German error string in the page body stays unchanged, so the
+  human path is identical; the change is for monitoring probes, health
+  checks and retry scripts (fixes #37).
+- `asset()` now appends a cache-busting `?v=<filemtime>` query string to
+  every `assets/*` URL (CSS/JS/images) so browsers pick up a changed file
+  immediately after a deploy — including a one-off hotfix via `scp`, not
+  just a version bump. Falls back to `app_version()` when the file is not
+  found on disk (#78).
 - `.gitignore` now excludes runtime artifacts under `data/` (`settings.json`,
   `*.json`, `*.log`) so per-install state and logs stay out of the repo.
 - `docs/ISSUES.md` and the README privacy section describe the banner carousel
@@ -321,7 +316,8 @@ control, PHPUnit suite, repo-hygiene docs.
   0.x. This is a cosmetic mislabel; the on-disk `VERSION` file is the
   source of truth.
 
-[Unreleased]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.2.0...v0.5.0
 [0.2.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/freshNfunky/Timeminator-Community/releases/tag/v0.1.0
