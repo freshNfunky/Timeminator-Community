@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/mascot.png" alt="Timeminator mascot — a clock-faced cyborg" width="200">
+  <img src="docs/images/hero.jpg" alt="Timeminator" width="240">
 </p>
 
 <h1 align="center">Timeminator Community</h1>
