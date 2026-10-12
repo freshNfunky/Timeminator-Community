@@ -21,6 +21,17 @@ version heading when a release is cut.
 ## [Unreleased]
 
 ### Added
+- **i18n scaffolding + English UI** (partial fix for #95) — the German-only UI
+  is now a two-language setup (German default, English available). A small
+  `I18n` class in `src/I18n.php` resolves the request's locale from (in order)
+  `?lang=` query → session preference → `Accept-Language` → config default,
+  reads catalogs from `lang/<code>.php` (`de` + `en`, 102 keys each, in
+  lockstep), and exposes a terse `t('key', $default)` helper. Admin → System
+  gets a locale toggle; login + installer get a small switcher at the bottom
+  so first-time visitors can flip without logging in. Fully covered: layout
+  (nav + topbar + footer + sidepanel aria), login, dashboard, installer. The
+  remaining views (entries, structure, admin, stats, pro teasers) still
+  render hardcoded German and are tracked as follow-up work on #95.
 - **Team-Sentiment-Tracking** (fixes #92) — makes the landing-page promise
   ("team sentiment tracking") good instead of overclaim. Each user records a
   daily mood on a five-smiley scale (ganz schlecht … sehr gut) with an optional

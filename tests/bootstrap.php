@@ -29,5 +29,10 @@ require APP_ROOT . '/src/Repo.php';
 require APP_ROOT . '/src/Updater.php';
 require APP_ROOT . '/src/Banners.php';
 require APP_ROOT . '/src/Sentiment.php';
+require APP_ROOT . '/src/I18n.php';
+
+// Tests access session superglobals without a real session; initialize empty
+// so a direct $_SESSION read doesn't warn.
+if (!isset($_SESSION)) { $_SESSION = []; }
 
 require __DIR__ . '/TestSupport.php';

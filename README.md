@@ -45,6 +45,12 @@ It runs on **ordinary PHP shared hosting** (Apache + MySQL/MariaDB) and also run
 **locally on SQLite** with zero setup — one code base, no Composer, no build step,
 no Docker required.
 
+**UI languages:** German (default) and English — switchable per session in
+*Administration → System → Language*, or on any URL via `?lang=en` /
+`?lang=de`. The app also follows the browser's `Accept-Language` for first-time
+visitors. More languages drop in by adding a `lang/<code>.php` file; see #95
+for the open follow-ups.
+
 ## Who is it for?
 
 Freelancers, small agencies and teams who want their time data **on their own
