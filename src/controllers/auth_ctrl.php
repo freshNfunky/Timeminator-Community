@@ -28,7 +28,7 @@ function ctrl_login(): void
                 LoginThrottle::clearForUser($uid);
             }
             LoginThrottle::record($username, $uid, $ip, true);
-            flash('Willkommen zurueck, ' . (Auth::user()['display_name'] ?: $username) . '.');
+            flash(sprintf(t('login.welcome_back'), Auth::user()['display_name'] ?: $username));
             redirect_route('dashboard');
         } else {
             $existing = $username !== ''
@@ -37,13 +37,13 @@ function ctrl_login(): void
             $uid = $existing ? (int) $existing['id'] : null;
             LoginThrottle::record($username !== '' ? $username : null, $uid, $ip, false);
             usleep(LoginThrottle::backoffMicroseconds($username));
-            $error = 'Benutzername oder Passwort falsch.';
+            $error = t('login.err_bad_credentials');
         }
         if (random_int(0, 25) === 0) {
             LoginThrottle::prune();
         }
     }
-    view_bare('login', ['error' => $error], 'Anmelden');
+    view_bare('login', ['error' => $error], t('login.title'));
 }
 
 function ctrl_logout(): void

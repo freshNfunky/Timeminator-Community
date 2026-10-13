@@ -192,6 +192,21 @@ function ctrl_theme_save(): void
     redirect_route('admin_system');
 }
 
+/**
+ * Set the UI language for the current session (fixes #95). The chosen code is
+ * clamped to I18n::SUPPORTED; anything else is ignored silently rather than
+ * flashing an error, since the UI only ever offers the valid options itself.
+ */
+function ctrl_language_save(): void
+{
+    require_login();
+    csrf_check();
+    if (I18n::setSession((string) post('locale', ''))) {
+        flash(t('admin.language_saved'));
+    }
+    redirect(referrer_or_default(route('admin_system')));
+}
+
 function ctrl_update_check(): void
 {
     require_perm('admin.system');

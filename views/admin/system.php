@@ -86,6 +86,21 @@
     </div>
 
     <div class="card">
+      <h2><?= h(t('admin.language_section', 'Sprache')) ?></h2>
+      <p class="muted"><?= h(t('admin.language_hint')) ?></p>
+      <form method="post" action="<?= h(route('language_save')) ?>">
+        <?= csrf_field() ?>
+        <?php foreach (I18n::available() as $__loc): ?>
+          <label class="check">
+            <input type="radio" name="locale" value="<?= h($__loc['code']) ?>" <?= I18n::current() === $__loc['code'] ? 'checked' : '' ?>>
+            <?= h($__loc['native']) ?> <span class="muted">(<?= h($__loc['label']) ?>)</span>
+          </label>
+        <?php endforeach; ?>
+        <div class="form-actions"><button class="btn btn-primary" type="submit"><?= h(t('common.save')) ?></button></div>
+      </form>
+    </div>
+
+    <div class="card">
       <h2>Community-Banner &amp; Telemetrie</h2>
       <?php if ($banner_config_off): ?>
         <p class="muted">Das Banner ist in <code>config.php</code> fest deaktiviert (<code>banners.enabled =&gt; false</code>, z. B. Pro-Edition). Die folgenden Schalter haben dann keine Wirkung.</p>

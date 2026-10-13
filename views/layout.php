@@ -10,7 +10,7 @@ $__themeAttr = in_array($__theme, ['light', 'dark'], true) ? ' data-theme="' . $
 $__banner    = Banners::isVisible();
 ?>
 <!doctype html>
-<html lang="de"<?= $__themeAttr ?>>
+<html lang="<?= h(I18n::current()) ?>"<?= $__themeAttr ?>>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -33,7 +33,7 @@ $__banner    = Banners::isVisible();
   <div class="userbox">
     <span class="who"><?= h(Auth::user()['display_name'] ?: Auth::user()['username']) ?>
       <em><?= h(Auth::user()['role_label'] ?? '') ?></em></span>
-    <a class="btn btn-ghost" href="<?= h(route('logout')) ?>">Abmelden</a>
+    <a class="btn btn-ghost" href="<?= h(route('logout')) ?>"><?= h(t('nav.logout')) ?></a>
   </div>
 </header>
 
@@ -50,16 +50,16 @@ $__banner    = Banners::isVisible();
 <?php if ($__banner): ?>
 <aside class="sidepanel" id="sidepanel">
   <a class="sp-brand" href="https://felixschaller.com" target="_blank" rel="noopener"
-     aria-label="FelixSchallerCOM"></a>
+     aria-label="<?= h(t('sidepanel.brand_aria')) ?>"></a>
   <div class="sp-rotator" id="spRotator" data-endpoint="<?= h(route('sidepanel')) ?>" data-interval="14000"></div>
 </aside>
 <?php endif; ?>
 </div>
 
 <footer class="foot">
-  <?= h(cfg('app_name', 'Timeminator')) ?> Community v<?= h(app_version()) ?>
-  &middot; <a href="https://felixschaller.com" target="_blank" rel="noopener">made by FelixSchallerCOM</a>
-  &middot; <a href="<?= h(cfg('pro_url', 'https://timeminator.felixschaller.com')) ?>" target="_blank" rel="noopener">mehr Funktionen mit Timeminator Pro</a>
+  <?= h(cfg('app_name', 'Timeminator')) ?> <?= h(sprintf(t('footer.community_suffix'), app_version())) ?>
+  &middot; <a href="https://felixschaller.com" target="_blank" rel="noopener"><?= h(t('footer.made_by')) ?></a>
+  &middot; <a href="<?= h(cfg('pro_url', 'https://timeminator.felixschaller.com')) ?>" target="_blank" rel="noopener"><?= h(t('footer.more_features')) ?></a>
 </footer>
 <script src="<?= h(asset('app.js')) ?>"></script>
 </body>

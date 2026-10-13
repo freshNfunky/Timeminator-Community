@@ -14,6 +14,7 @@ require __DIR__ . '/src/db.php';
 require __DIR__ . '/src/seed.php';
 require __DIR__ . '/src/Settings.php';
 require __DIR__ . '/src/Registration.php';
+require __DIR__ . '/src/I18n.php';
 
 // Minimal config so cfg()/helpers work during install.
 $GLOBALS['APP_CONFIG'] = ['app_name' => 'Timeminator'];
@@ -23,6 +24,9 @@ send_security_headers();
 
 session_name('timeminator_install');
 session_start();
+
+// Pick an installer locale (query param wins, else Accept-Language, else de).
+I18n::boot();
 
 // Already installed -> hand off to the app.
 if (is_file(APP_ROOT . '/config.php')) {

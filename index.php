@@ -81,6 +81,7 @@ $routes = [
     'registration_save' => 'ctrl_registration_save',
     'endpoints_save'    => 'ctrl_endpoints_save',
     'theme_save'        => 'ctrl_theme_save',
+    'language_save'     => 'ctrl_language_save',
     'sidepanel'         => 'ctrl_banners_feed',
     'banners_save'      => 'ctrl_banners_save',
 

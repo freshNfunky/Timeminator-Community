@@ -241,6 +241,11 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .install-card{background:var(--panel);border-radius:16px;padding:32px;width:100%;max-width:620px;box-shadow:var(--shadow-modal);margin:20px auto}
 .auth-brand{font-size:24px;font-weight:700;text-align:center}
 .auth-sub{text-align:center;color:var(--muted);margin:4px 0 22px}
+.lang-switcher{text-align:center;color:var(--muted);font-size:12px;margin:18px 0 0}
+.lang-switcher a{color:var(--muted)}
+.lang-switcher a:hover{color:var(--ink)}
+.lang-switcher .lang-sep{margin:0 6px;opacity:.5}
+.lang-switcher strong{color:var(--ink)}
 .auth-form label,.install-form label{color:var(--ink)}
 .ok-mark{color:var(--ok);font-weight:600}
 .bad-mark{color:var(--err);font-weight:600}
