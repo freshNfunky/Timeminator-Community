@@ -23,7 +23,7 @@ function ctrl_imports_index(): void
     view('imports/index', [
         'batches' => $batches,
         'preview' => $_SESSION['import_preview'] ?? null,
-    ], 'CSV-Import');
+    ], t('imports.title'));
 }
 
 function ctrl_imports_upload(): void

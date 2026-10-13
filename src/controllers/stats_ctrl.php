@@ -81,7 +81,7 @@ function ctrl_scopes_index(): void
         'clients'  => Repo::clients(),
         'projects' => Repo::projects(),
         'tracks'   => Repo::distinctTracks(),
-    ], 'Nachweis-Sichten');
+    ], t('nav.scopes'));
 }
 
 function ctrl_scope_save(): void

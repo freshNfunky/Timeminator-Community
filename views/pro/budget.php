@@ -26,8 +26,8 @@ $__bullets = '<li>' . h(t('pro.bud.b1', 'Soll-Stunden und -Budget pro Projekt'))
   <div class="pro-teaser-mock" aria-hidden="true">
     <div class="card">
       <div class="card-head">
-        <h2>Projektbudgets</h2>
-        <span class="pill pill-pro">Pro</span>
+        <h2><?= h(t('pro.bud.projects_h2', 'Projektbudgets')) ?></h2>
+        <span class="pill pill-pro"><?= h(t('nav.pro_pill')) ?></span>
       </div>
       <table class="table">
         <thead><tr>
