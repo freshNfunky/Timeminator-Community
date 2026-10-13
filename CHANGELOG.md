@@ -20,6 +20,17 @@ version heading when a release is cut.
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-10-13
+
+> This release's headline is **full English UI support** (closes #95) — the
+> German-only Community edition is now bilingual, user-switchable in session.
+> It also folds in the post-v0.8.0 content whose entries lived under
+> `Unreleased` and didn't make the v0.8.0 CHANGELOG cut: the landing-document
+> README rewrite + hero art, light-mode screenshots, the Team-Sentiment
+> page, the cascading task picker, and the four side-panel improvements
+> (brand mark, default remote feed endpoint, 200 px full-height rail,
+> 14 s rotation).
+
 ### Changed
 - **i18n coverage: final wave of #95.** The remaining German-only screens
   are now bilingual too:
@@ -450,7 +461,9 @@ control, PHPUnit suite, repo-hygiene docs.
   0.x. This is a cosmetic mislabel; the on-disk `VERSION` file is the
   source of truth.
 
-[Unreleased]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.8.0...v0.9.0
+[0.8.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.6.0...v0.8.0
 [0.6.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.2.0...v0.5.0
 [0.2.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.1.0...v0.2.0
