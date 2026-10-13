@@ -18,8 +18,8 @@ $__bullets = '<li>' . h(t('pro.roles.b1', 'Beliebig viele eigene Rollen (statt z
   <div class="pro-teaser-mock" aria-hidden="true">
     <div class="card">
       <div class="card-head">
-        <h2>Rollen</h2>
-        <span class="pill pill-pro">Pro</span>
+        <h2><?= h(t('nav.roles')) ?></h2>
+        <span class="pill pill-pro"><?= h(t('nav.pro_pill')) ?></span>
       </div>
       <div class="pro-teaser-toolbar">
         <button class="btn btn-primary" type="button" disabled>+ Neue Rolle</button>
@@ -29,7 +29,7 @@ $__bullets = '<li>' . h(t('pro.roles.b1', 'Beliebig viele eigene Rollen (statt z
       <table class="table matrix">
         <thead>
           <tr>
-            <th>Berechtigung</th>
+            <th><?= h(t('roles.permissions')) ?></th>
             <th>Admin</th><th>Projektleitung</th><th>Buchhaltung</th><th>Freelancer</th><th>Readonly</th>
           </tr>
         </thead>

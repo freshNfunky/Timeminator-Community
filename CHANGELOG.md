@@ -21,6 +21,37 @@ version heading when a release is cut.
 ## [Unreleased]
 
 ### Changed
+- **i18n coverage: final wave of #95.** The remaining German-only screens
+  are now bilingual too:
+  - **Admin → System** page body (Version & Updates / Permission catalog /
+    Appearance / Community banner & telemetry / Endpoints / Notifications):
+    all `<h2>` headings, every button, every checkbox + radio label, every
+    form field label.
+  - **CSV import** (`imports/index.php`): title, preview card header +
+    stats pill + delimiter copy + full column headers + OK/skip markers +
+    "first 200 rows" hint + confirm/discard buttons + upload form + past-
+    imports list + per-row delete.
+  - **Statistics** (`stats/index.php` + `stats/scopes.php`): filter bar
+    (Group by, Series, Scope, all users, Run) + three summary tiles +
+    chart card headings; proof-views editor + saved-views list + reference
+    IDs disclosure.
+  - **Pro-teaser cards** — the four `<h2>` headings and the `Pro` pill
+    label (card body mock data stays as-is: `pointer-events: none;
+    opacity: .55; aria-hidden`).
+  - **Controller titles** for `imports` and `scopes` finally pass the
+    locale-aware `t()` key so `<title>` + `<h1>` stop reading
+    "CSV-Import" / "Nachweis-Sichten" in English mode.
+- `lang/{de,en}.php` grew from 286 → **356 keys**, parity still enforced
+  at commit time.
+
+With this, every nav route in the Community edition — `dashboard`,
+`entries` (list + form + week calendar), `clients`, `projects`,
+`workpackages`, `tasks`, `scopes`, `stats`, `sentiment`, `admin_users`,
+`admin_roles`, `admin_system`, `imports`, and the four `pro_*` teasers —
+renders completely in German or English based on the per-session locale.
+#95 is now fully covered on the UI surface.
+
+### Changed
 - **i18n coverage expanded (waves 2–5 of #95).** Follow-up to #100 — the user-first
   views (layout, nav, login, installer, dashboard) were already bilingual;
   this round converts the rest of the day-to-day flows: entries list + form

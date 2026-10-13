@@ -10,53 +10,53 @@ $example = [
 ?>
 <div class="cols">
   <div class="card col-form">
-    <h2><?= $edit ? 'Sicht bearbeiten' : 'Neue Nachweis-Sicht' ?></h2>
-    <p class="muted">Eine Nachweis-Sicht filtert und ordnet Eintraege generisch - ohne feste Projekte. Optionales Cutover-Datum ordnet Eintraege ab einem Stichtag einem anderen Kunden zu.</p>
+    <h2><?= h($edit ? t('scopes.edit', 'Sicht bearbeiten') : t('scopes.new', 'Neue Nachweis-Sicht')) ?></h2>
+    <p class="muted"><?= h(t('scopes.intro', 'Eine Nachweis-Sicht filtert und ordnet Eintraege generisch - ohne feste Projekte. Optionales Cutover-Datum ordnet Eintraege ab einem Stichtag einem anderen Kunden zu.')) ?></p>
     <form method="post" action="<?= h(route('scope_save')) ?>">
       <?= csrf_field() ?>
       <?php if ($edit): ?><input type="hidden" name="id" value="<?= (int) $edit['id'] ?>"><?php endif; ?>
-      <label>Name <input type="text" name="name" value="<?= h($edit['name'] ?? '') ?>" required></label>
-      <label>Beschreibung <input type="text" name="description" value="<?= h($edit['description'] ?? '') ?>"></label>
-      <label>Konfiguration (JSON)
+      <label><?= h(t('struct.name')) ?> <input type="text" name="name" value="<?= h($edit['name'] ?? '') ?>" required></label>
+      <label><?= h(t('scopes.description', 'Beschreibung')) ?> <input type="text" name="description" value="<?= h($edit['description'] ?? '') ?>"></label>
+      <label><?= h(t('scopes.config_json', 'Konfiguration (JSON)')) ?>
         <textarea name="config" rows="12" spellcheck="false"><?= h($edit['config'] ?? json_encode($example, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) ?></textarea>
       </label>
       <div class="form-actions">
-        <button class="btn btn-primary" type="submit">Speichern</button>
-        <?php if ($edit): ?><a class="btn btn-ghost" href="<?= h(route('scopes')) ?>">Neu</a><?php endif; ?>
+        <button class="btn btn-primary" type="submit"><?= h(t('common.save')) ?></button>
+        <?php if ($edit): ?><a class="btn btn-ghost" href="<?= h(route('scopes')) ?>"><?= h(t('common.new')) ?></a><?php endif; ?>
       </div>
     </form>
   </div>
 
   <div class="card col-list">
-    <h2>Gespeicherte Sichten</h2>
+    <h2><?= h(t('scopes.saved_h2', 'Gespeicherte Sichten')) ?></h2>
     <table class="table">
-      <thead><tr><th>Name</th><th></th></tr></thead>
+      <thead><tr><th><?= h(t('struct.name')) ?></th><th></th></tr></thead>
       <tbody>
       <?php foreach ($scopes as $s): ?>
         <tr>
           <td><strong><?= h($s['name']) ?></strong><?= $s['description'] ? '<br><span class="muted">' . h($s['description']) . '</span>' : '' ?></td>
           <td class="r nowrap">
-            <a class="btn btn-sm" href="<?= h(route('scopes', ['edit' => $s['id']])) ?>">bearb.</a>
-            <form method="post" action="<?= h(route('scope_delete')) ?>" class="inline" data-confirm="Loeschen?">
+            <a class="btn btn-sm" href="<?= h(route('scopes', ['edit' => $s['id']])) ?>"><?= h(t('common.edit_short')) ?></a>
+            <form method="post" action="<?= h(route('scope_delete')) ?>" class="inline" data-confirm="<?= h(t('scopes.delete_confirm', 'Loeschen?')) ?>">
               <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $s['id'] ?>">
               <button class="btn btn-sm btn-danger" type="submit">x</button>
             </form>
           </td>
         </tr>
       <?php endforeach; ?>
-      <?php if (!$scopes): ?><tr><td colspan="2" class="muted">Noch keine Sichten.</td></tr><?php endif; ?>
+      <?php if (!$scopes): ?><tr><td colspan="2" class="muted"><?= h(t('scopes.empty', 'Noch keine Sichten.')) ?></td></tr><?php endif; ?>
       </tbody>
     </table>
 
-    <h3>Referenz-IDs</h3>
-    <details><summary>Kunden</summary>
+    <h3><?= h(t('scopes.ref_ids', 'Referenz-IDs')) ?></h3>
+    <details><summary><?= h(t('nav.clients')) ?></summary>
       <ul class="ref"><?php foreach ($clients as $c): ?><li><code><?= (int) $c['id'] ?></code> <?= h($c['name']) ?></li><?php endforeach; ?></ul>
     </details>
-    <details><summary>Projekte</summary>
+    <details><summary><?= h(t('nav.projects')) ?></summary>
       <ul class="ref"><?php foreach ($projects as $p): ?><li><code><?= (int) $p['id'] ?></code> <?= h($p['client_name'] . ' / ' . $p['name']) ?></li><?php endforeach; ?></ul>
     </details>
     <?php if ($tracks): ?>
-    <details><summary>Gleise</summary>
+    <details><summary><?= h(t('scopes.tracks_summary', 'Gleise')) ?></summary>
       <ul class="ref"><?php foreach ($tracks as $t): ?><li><?= h($t) ?></li><?php endforeach; ?></ul>
     </details>
     <?php endif; ?>
