@@ -278,7 +278,7 @@ function send_security_headers(): void
         $bcfg = cfg('banners', []);
         $bhosts = is_array($bcfg) && !empty($bcfg['allowed_hosts'])
             ? (array) $bcfg['allowed_hosts']
-            : ['felixschaller.com', 'xixum.ai', 'af-ax.com'];
+            : ['felixschaller.com', 'xixum.ai', 'af-ax.com', 'claude.ai'];
         $frame = "'self'";
         foreach ($bhosts as $bh) {
             $bh = preg_replace('/[^a-z0-9.\-]/i', '', (string) $bh);
