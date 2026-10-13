@@ -371,7 +371,7 @@ final class Banners
      */
     public static function allowedHosts(): array
     {
-        $hosts = self::conf()['allowed_hosts'] ?? ['felixschaller.com', 'xixum.ai', 'af-ax.com'];
+        $hosts = self::conf()['allowed_hosts'] ?? ['felixschaller.com', 'xixum.ai', 'af-ax.com', 'claude.ai'];
         $out = [];
         foreach ((array) $hosts as $h) {
             $h = strtolower(trim((string) $h));
@@ -379,7 +379,7 @@ final class Banners
                 $out[] = $h;
             }
         }
-        return $out ?: ['felixschaller.com', 'xixum.ai', 'af-ax.com'];
+        return $out ?: ['felixschaller.com', 'xixum.ai', 'af-ax.com', 'claude.ai'];
     }
 
     private static function hostAllowed(string $host): bool
