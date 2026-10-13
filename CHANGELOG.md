@@ -21,6 +21,19 @@ version heading when a release is cut.
 ## [Unreleased]
 
 ### Added
+- **Admin → Importe-Übersicht** (Pro-Sync A.2, #108). Second position of
+  the Pro → Community feature-sync wave.
+  - `import_batches` now carries a `user_id` (nullable; legacy rows stay
+    unattributed) so the overview can show who imported what and when.
+    `ctrl_imports_confirm` records the current user id on write.
+  - The imports page gains a filter row (user / from / to) and a
+    user column in the history table. A new "Details" button opens a
+    sub-view that lists the time entries created by a given batch
+    before an admin presses "Rückgängig".
+  - New route `imports_show` + view `views/imports/show.php`.
+  - Portable, idempotent PHP migration adds the column on existing
+    installs; fresh installs pick it up from the base schema.
+
 - **Password-Reset-Flow + Admin → Mail (SMTP) settings** (Pro-Sync A.1,
   #107). First position of the Pro → Community feature-sync wave.
   - Public routes `reset_request` + `reset_form`. The request page accepts

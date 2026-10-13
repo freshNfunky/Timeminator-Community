@@ -91,8 +91,11 @@ CREATE TABLE IF NOT EXISTS import_batches (
   label         TEXT NOT NULL,
   source        TEXT NOT NULL DEFAULT 'manual',
   note          TEXT NULL,
-  created_at    TEXT NOT NULL
+  user_id       INTEGER NULL,
+  created_at    TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
+CREATE INDEX IF NOT EXISTS idx_import_batches_user ON import_batches (user_id);
 
 CREATE TABLE IF NOT EXISTS time_entries (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
