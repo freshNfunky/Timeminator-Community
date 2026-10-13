@@ -15,6 +15,8 @@ require __DIR__ . '/src/Settings.php';
 require __DIR__ . '/src/Updater.php';
 require __DIR__ . '/src/Registration.php';
 require __DIR__ . '/src/Banners.php';
+require __DIR__ . '/src/Mail.php';
+require __DIR__ . '/src/PasswordReset.php';
 require __DIR__ . '/src/seed.php';
 require __DIR__ . '/src/Migrator.php';
 
@@ -31,14 +33,17 @@ require __DIR__ . '/src/controllers/admin_ctrl.php';
 require __DIR__ . '/src/controllers/imports_ctrl.php';
 require __DIR__ . '/src/controllers/pro_teaser_ctrl.php';
 require __DIR__ . '/src/controllers/banners_ctrl.php';
+require __DIR__ . '/src/controllers/password_reset_ctrl.php';
 require __DIR__ . '/src/Sentiment.php';
 require __DIR__ . '/src/controllers/sentiment_ctrl.php';
 
 $r = (string) get('r', Auth::check() ? 'dashboard' : 'login');
 
 $routes = [
-    'login'        => 'ctrl_login',
-    'logout'       => 'ctrl_logout',
+    'login'          => 'ctrl_login',
+    'logout'         => 'ctrl_logout',
+    'reset_request'  => 'ctrl_reset_request',
+    'reset_form'     => 'ctrl_reset_form',
     'dashboard'    => 'ctrl_dashboard',
 
     'entries'         => 'ctrl_entries_index',
@@ -80,6 +85,8 @@ $routes = [
     'update_clear_skipped' => 'ctrl_update_clear_skipped',
     'registration_save' => 'ctrl_registration_save',
     'endpoints_save'    => 'ctrl_endpoints_save',
+    'mail_save'         => 'ctrl_mail_save',
+    'mail_test'         => 'ctrl_mail_test',
     'theme_save'        => 'ctrl_theme_save',
     'language_save'     => 'ctrl_language_save',
     'sidepanel'         => 'ctrl_banners_feed',

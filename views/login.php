@@ -24,6 +24,9 @@
     </label>
     <button class="btn btn-primary btn-block" type="submit"><?= h(t('login.submit')) ?></button>
   </form>
+  <p class="muted" style="margin-top:16px;text-align:center">
+    <a href="<?= h(route('reset_request')) ?>"><?= h(t('login.forgot_password', 'Passwort vergessen?')) ?></a>
+  </p>
   <?php require __DIR__ . '/partials/lang_switcher.php'; ?>
 </div>
 </body>

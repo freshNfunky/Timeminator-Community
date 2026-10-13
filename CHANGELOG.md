@@ -20,6 +20,28 @@ version heading when a release is cut.
 
 ## [Unreleased]
 
+### Added
+- **Password-Reset-Flow + Admin → Mail (SMTP) settings** (Pro-Sync A.1,
+  #107). First position of the Pro → Community feature-sync wave.
+  - Public routes `reset_request` + `reset_form`. The request page accepts
+    a username or email, answers identically whether or not the account
+    exists ("if the account exists, mail sent"), and silently caps the
+    per-user rate at three requests per hour.
+  - Tokens live in a new `password_reset_tokens` table; only the SHA-256
+    digest of the token is stored, the plain token is shown once in the
+    mail. Tokens are single-use, expire after one hour, and a successful
+    reset invalidates every other outstanding token for the same user.
+  - Login throttle guards the reset endpoint too, so an attacker cannot
+    just shift probing from `/login` to `/reset_request`.
+  - **Admin → System → Mail (SMTP)** card: configures From + From-Name +
+    optional SMTP host/port/user/password + `none`/`STARTTLS`/`SSL`
+    encryption. A new `Mail` service sends either via PHP `mail()`
+    (sendmail) when no host is set, or via a native SMTP client over
+    `stream_socket_client` with STARTTLS and `AUTH LOGIN`. One-click
+    "Send test email" button in the admin UI.
+  - New permission `admin.system` already covered this surface — no new
+    permission introduced.
+
 ### Changed
 - **i18n coverage: final wave of #95.** The remaining German-only screens
   are now bilingual too:
