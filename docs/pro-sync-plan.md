@@ -96,10 +96,17 @@ Historie:
   Welle**, auf v1.0 vertagt — Spec in [#105](https://github.com/freshNfunky/Timeminator-Community/issues/105).
   In der jetzigen Welle nur ein Teaser-Link im Footer („Bug? → GitHub Issues").
 
+- [x] **Release-Taktung**: **Entschieden 2026-10-13** — die komplette Nachzieh-Welle
+  (Phase A + B) landet unter dem **v0.9.0-Label**. Kein v0.10.0, kein
+  Zwischen-Deploy. Das heißt: der v0.9.0-Tag auf GitHub ist zwar schon gesetzt,
+  aber v0.9.0 wird erst nach Abschluss aller 5 PRs auf die Nutzer-Instanz
+  deployed. Praktisch: beim Release-Finale verschieben wir den v0.9.0-Tag
+  (`git tag -f v0.9.0 && git push --force origin v0.9.0`) oder nummerieren
+  intern als v0.9.0-rc.N — zu entscheiden beim Release-Finale.
+
 Noch offen:
 
-- [ ] **Ist das Set in Phase A + B der richtige Scope?** (jetzt 5 PRs statt 6, da #11 vertagt)
-- [ ] **Soll die Phase A** (Password-Reset + Mail + Admin-Imports) **vor der v0.9.0-Deploy-Freigabe** reinkommen, oder als v0.10.0 nach dem Deploy von v0.9.0?
+- [ ] **Ist das Set in Phase A + B der richtige Scope?** (5 PRs, #11 auf v1.0 vertagt)
 - [ ] **Modul-Ebene (#7 SKIP)**: einverstanden mit Beibehaltung von Community's 3-stufiger Hierarchie (Kunde → Projekt → Arbeitspaket → Aufgabe), oder willst du auf 4 ausbauen (Breaking Change)?
 - [ ] **Admin-Cron (#9 ADMIN-SKIP)**: einverstanden mit Beibehaltung ohne UI, oder soll Community eine schlanke Scheduler-Status-Page bekommen?
 
@@ -107,4 +114,5 @@ Noch offen:
 
 Nach deiner Freigabe pro Zeile öffne ich pro Phase-A-/-B-Position einen Issue
 in Community mit konkreter Spec + geschätztem Scope, und arbeite die dann als
-PRs ab. v0.9.0 bleibt bis dahin un-deployed.
+PRs ab. **v0.9.0 bleibt bis zum Abschluss aller 5 PRs un-deployed**; danach
+geht die komplette Welle als ein v0.9.0-Deploy auf die Nutzer-Instanz.
