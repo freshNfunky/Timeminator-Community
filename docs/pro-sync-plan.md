@@ -51,7 +51,7 @@ Jedes Delta-Feature bekommt eine Einstufung:
 | # | Feature | Vorschlag | Begründung + geplantes Limit |
 |---|---|---|---|
 | 1 | **Password-Reset** | **CORE** | Basic Hygiene. Jedes Login-Produkt braucht das. Keinen Pro-Hebel hier. Umsetzung: SMTP via `mail()` oder `admin_mail`-Settings; Token-Tabelle, 1-Stunden-Gültigkeit, Rate-Limit. |
-| 2 | **Externe Kalender** | **SOFT** | Community: **max. 1 iCal/CalDAV-Quelle** (für den persönlichen Google-/iCloud-Kalender als Overlay). Pro: unbegrenzt + Team-Kalender. Teaser-Text im Formular: "weitere Quellen → Pro". |
+| 2 | **Externe Kalender** | **STATIC** (per Entscheidung 2026-10-13) | Community bekommt **nur Feiertags-Overlay** aus einer eingebauten statischen Liste — zwei Sätze passend zur UI-Sprache: **DACH-Feiertage** (DE/AT/CH) für `de`-Locale, **US-Feiertage** für `en`-Locale. **Keine externen Quellen, kein CalDAV, kein iCal-Import.** Die „CalDAV + iCal-URL"-Teaser im Week-Kalender (schon da) bleiben als Hinweis dass das in Pro geht. |
 | 3 | **Planung** (Planung + Gantt) | **SOFT** | Community: **nur Soll-Stunden pro Projekt (Gesamtzahl)**, ohne Wochen-/Monats-/Person-Breakdown und ohne Gantt. Pro: alles davon + Gantt. Dashboard-Tile "Projekt-Planung" + einfache Soll-Spalte in der Projekt-Liste. |
 | 4 | **Projekt-Report** (Ist vs Plan vs Budget) | **SOFT** | Community: **Ist vs Plan** (sofern Planung gesetzt ist) als simple Tabelle + ein Bar-Chart. **Kein** Budget-Spalte, **kein** Verzögerungs-Report (`delays`), **kein** PDF-Export, **keine** Heatmap. Pro: alles davon. |
 | 5 | **Angebote + Bausteine** | **HARD** | Bleibt dimmed Teaser. Kaufmännisches Herzstück von Pro. |
@@ -60,7 +60,7 @@ Jedes Delta-Feature bekommt eine Einstufung:
 | 8 | **Admin → Mail** | **CORE** | Password-Reset (#1) braucht SMTP-Config. Logische Konsequenz. Settings-Page mit `mail_from`, `smtp_host`, `smtp_port`, `smtp_user`, `smtp_pass`, Test-Mail-Button. |
 | 9 | **Admin → Cron** | **ADMIN-SKIP** | Pro-SaaS-Feature. Community-Nutzer haben eigenen Cron auf dem Shared Hosting. Doku-Hinweis in Admin → System reicht. |
 | 10 | **Admin → Importe (Batches moderieren)** | **CORE** (teils schon da) | Community hat `imports` schon. Nur die Admin-Übersicht aller User-Batches ergänzen (wer hat was wann importiert). Keine Pro-Features. |
-| 11 | **Bug-Reports** (in-app) | **SOFT** | Community: **Nutzer können Meldungen senden** (POST zu GitHub-Issues via API oder E-Mail an Maintainer), aber **keine Mod-UI** — das heißt Meldungen gehen an einen externen Issue-Tracker, keine Datenbank-Speicherung. Pro: eigene Mod-UI + Status-Workflow. |
+| 11 | **Bug-Reports** (in-app) | **SOFT / deferred to v1.0** (per Entscheidung 2026-10-13) | Target = **GitHub-Issues** im Community-Repo. **Bevorzugter Weg**: via License-Server als Moderations-Puffer — Community-App POSTet Meldung an License-Server-Endpoint, der Betreiber moderiert, die GitHub-API-Weiterleitung läuft dann unter dem Maintainer-Token. Direkt-POST zu GitHub ist nicht praktikabel (keine anonyme Issue-Erstellung, Token-Verteilung in MIT-Builds = Secret-Leak). **Nicht in dieser Welle** — als v1.0-Feature in [#105](https://github.com/freshNfunky/Timeminator-Community/issues/105) spezifiziert. Für jetzt: Teaser-Hinweis im Footer „Bug? → GitHub-Repo", Link auf das Issues-Tab. |
 | 12 | **Fine-grained Rollen** (Templates, Audit, Matrix) | **HARD** | Bleibt dimmed Teaser `pro_roles`. Community hat die 2 Basis-Rollen + eigene custom Rollen; die Matrix-Editor-UX bleibt Pro. |
 | 13 | **Rate Cards** (Stundensätze) | **HARD** | Hängt direkt an Rechnungen (#6). Bleibt Pro. |
 | 14 | **PDF-Export** | **HARD** | Pro-only. Statt dessen: Community hat CSV-Export (schon da). |
@@ -74,21 +74,33 @@ Reihenfolge nach Impact und Risiko sortiert, ein PR pro Position:
 2. **Admin → Importe-Übersicht** (CORE #10) — reine Admin-Erweiterung
 
 **Phase B — Soft Upsell (die eigentliche „Nachzieh"-Welle):**
-3. **Externe Kalender (1 Quelle)** (SOFT #2) — Infra für Calendar-Sources + Overlay im Week-Kalender; "+ weitere → Pro"
+3. **Feiertags-Overlay** (STATIC #2) — statische DACH-Liste (für `de`) + US-Liste (für `en`), als dezentes Overlay im Week-Kalender; **keine externen Quellen**, CalDAV bleibt Pro
 4. **Planung (nur Projekt-Soll-Stunden)** (SOFT #3) — neues Feld `projects.target_hours`, Dashboard-Tile, einfache Projekt-Spalte; "Breakdown + Gantt → Pro"
 5. **Projekt-Report (Ist vs Plan)** (SOFT #4) — baut auf Phase B.4; einfache Tabelle + Chart; "Budget + Verzögerungen + PDF + Heatmap → Pro"
-6. **Bug-Reports (Submit-only)** (SOFT #11) — kleines Formular im Footer, POST an externen Endpoint; "Mod-UI + Status-Workflow → Pro"
+6. ~~**Bug-Reports (Submit-only)**~~ — nach v1.0 verschoben, siehe [#105](https://github.com/freshNfunky/Timeminator-Community/issues/105). Für diese Welle: nur Teaser-Link im Footer „Bug? → GitHub Issues".
 
 **Nicht in dieser Welle:**
 - Angebote, Rechnungen, Rate Cards, PDF-Export, Fine-grained Rollen, Modul-Ebene, Cron — bleiben wie heute
 
-## 5. Was ich dich jetzt entscheiden lassen muss
+## 5. Entscheidungen
 
-- [ ] **Ist das Set in Phase A + B der richtige Scope?** (6 PRs, geschätzt 1 pro Tag)
+Historie:
+
+- [x] **SOFT-Hebel** (max. 1 bei #2 war der Ursprung, inzwischen durch STATIC ersetzt;
+  „nur Gesamtzahl, kein Breakdown" bei #3+#4): **Entschieden 2026-10-13** — Aufteilung passt.
+- [x] **Externe Kalender (#2)**: **Entschieden 2026-10-13** — **keine externen Quellen in
+  Community**, nur statisches Feiertags-Overlay (DACH für `de`, US für `en`). CalDAV
+  bleibt vollständig Pro-exklusiv. (Reklassifiziert von SOFT → STATIC in Abschnitt 3.)
+- [x] **Bug-Reports (#11)**: **Entschieden 2026-10-13** — Ziel = GitHub-Issues im
+  Community-Repo, mit License-Server als Moderations-Puffer. **Nicht in dieser
+  Welle**, auf v1.0 vertagt — Spec in [#105](https://github.com/freshNfunky/Timeminator-Community/issues/105).
+  In der jetzigen Welle nur ein Teaser-Link im Footer („Bug? → GitHub Issues").
+
+Noch offen:
+
+- [ ] **Ist das Set in Phase A + B der richtige Scope?** (jetzt 5 PRs statt 6, da #11 vertagt)
 - [ ] **Soll die Phase A** (Password-Reset + Mail + Admin-Imports) **vor der v0.9.0-Deploy-Freigabe** reinkommen, oder als v0.10.0 nach dem Deploy von v0.9.0?
-- [ ] **Für SOFT-Features**: ist das Limit-Konzept „max. 1" (bei #2) bzw. „nur Gesamtzahl, kein Breakdown" (bei #3+#4) OK oder willst du andere Hebel? (Ideen: zeitlich befristete Trial, Feature hinter Config-Flag, max. N Projekte)
-- [ ] **Bug-Reports (#11)**: externes Target = GitHub Issues (dein Repo) oder E-Mail an eine Admin-Adresse? Bei GitHub: braucht einen Server-side-Token (Secret).
-- [ ] **Modul-Ebene (#7 SKIP)**: einverstanden mit Beibehaltung von Community's 3-stufiger Hierarchie, oder willst du auf 4 ausbauen (Breaking Change)?
+- [ ] **Modul-Ebene (#7 SKIP)**: einverstanden mit Beibehaltung von Community's 3-stufiger Hierarchie (Kunde → Projekt → Arbeitspaket → Aufgabe), oder willst du auf 4 ausbauen (Breaking Change)?
 - [ ] **Admin-Cron (#9 ADMIN-SKIP)**: einverstanden mit Beibehaltung ohne UI, oder soll Community eine schlanke Scheduler-Status-Page bekommen?
 
 ## 6. Nächster Schritt
