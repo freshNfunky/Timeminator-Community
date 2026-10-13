@@ -3,54 +3,54 @@ $from = (new DateTimeImmutable('first day of this month'))->format('Y-m-d');
 $to = (new DateTimeImmutable('now'))->format('Y-m-d');
 ?>
 <form id="statsForm" class="card filter-bar" data-endpoint="<?= h(route('stats_data')) ?>">
-  <label>Von <input type="date" name="from" value="<?= h($from) ?>"></label>
-  <label>Bis <input type="date" name="to" value="<?= h($to) ?>"></label>
-  <label>Gruppieren nach
+  <label><?= h(t('entries.from')) ?> <input type="date" name="from" value="<?= h($from) ?>"></label>
+  <label><?= h(t('entries.to')) ?> <input type="date" name="to" value="<?= h($to) ?>"></label>
+  <label><?= h(t('stats.group_by', 'Gruppieren nach')) ?>
     <select name="group">
-      <option value="project">Projekt</option>
-      <option value="client">Kunde</option>
-      <option value="track">Gleis / Gruppe</option>
+      <option value="project"><?= h(t('projects.col_project')) ?></option>
+      <option value="client"><?= h(t('struct.client')) ?></option>
+      <option value="track"><?= h(t('clients.track')) ?></option>
     </select>
   </label>
-  <label>Verlauf
+  <label><?= h(t('stats.series', 'Verlauf')) ?>
     <select name="granularity">
-      <option value="day">Tag</option>
-      <option value="week">Woche</option>
-      <option value="month">Monat</option>
+      <option value="day"><?= h(t('stats.gran.day', 'Tag')) ?></option>
+      <option value="week"><?= h(t('stats.gran.week', 'Woche')) ?></option>
+      <option value="month"><?= h(t('stats.gran.month', 'Monat')) ?></option>
     </select>
   </label>
-  <label>Nachweis-Sicht
+  <label><?= h(t('stats.scope', 'Nachweis-Sicht')) ?>
     <select name="scope_id">
-      <option value="0">— keine —</option>
+      <option value="0"><?= h(t('tasks.wp_none')) ?></option>
       <?php foreach ($scopes as $s): ?>
         <option value="<?= (int) $s['id'] ?>"><?= h($s['name']) ?></option>
       <?php endforeach; ?>
     </select>
   </label>
   <?php if (Auth::isAdmin()): ?>
-    <label class="check"><input type="checkbox" name="all_users" value="1"> alle Benutzer</label>
+    <label class="check"><input type="checkbox" name="all_users" value="1"> <?= h(t('stats.all_users', 'alle Benutzer')) ?></label>
   <?php endif; ?>
-  <button class="btn btn-primary" type="submit">Auswerten</button>
+  <button class="btn btn-primary" type="submit"><?= h(t('stats.run', 'Auswerten')) ?></button>
 </form>
 
 <div class="grid-tiles">
-  <div class="tile"><div class="tile-val" id="totalHours">–</div><div class="tile-lbl">Summe Stunden</div></div>
-  <div class="tile"><div class="tile-val" id="scopeName">Gesamt</div><div class="tile-lbl">Sicht</div></div>
-  <div class="tile"><div class="tile-val" id="rangeLbl">–</div><div class="tile-lbl">Zeitraum</div></div>
+  <div class="tile"><div class="tile-val" id="totalHours">–</div><div class="tile-lbl"><?= h(t('stats.total_hours', 'Summe Stunden')) ?></div></div>
+  <div class="tile"><div class="tile-val" id="scopeName"><?= h(t('stats.scope_all', 'Gesamt')) ?></div><div class="tile-lbl"><?= h(t('stats.scope_tile', 'Sicht')) ?></div></div>
+  <div class="tile"><div class="tile-val" id="rangeLbl">–</div><div class="tile-lbl"><?= h(t('stats.range_tile', 'Zeitraum')) ?></div></div>
 </div>
 
 <div class="chart-grid">
   <div class="card">
-    <h2>Verteilung <span class="muted" id="distGroupLbl"></span></h2>
+    <h2><?= h(t('stats.distribution_h2', 'Verteilung')) ?> <span class="muted" id="distGroupLbl"></span></h2>
     <div class="chart-box"><canvas id="chartDist"></canvas></div>
     <div id="distLegend"></div>
   </div>
   <div class="card">
-    <h2>Zeitverlauf</h2>
+    <h2><?= h(t('stats.series_h2', 'Zeitverlauf')) ?></h2>
     <div class="chart-box"><canvas id="chartSeries"></canvas></div>
   </div>
   <div class="card chart-wide">
-    <h2>Gleis-Vergleich <span class="muted">(Gruppen gegenuebergestellt)</span></h2>
+    <h2><?= h(t('stats.tracks_h2', 'Gleis-Vergleich')) ?> <span class="muted"><?= h(t('stats.tracks_hint', '(Gruppen gegenuebergestellt)')) ?></span></h2>
     <div class="chart-box"><canvas id="chartTracks"></canvas></div>
   </div>
 </div>

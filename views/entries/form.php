@@ -15,21 +15,21 @@ $selTask = $entry['task_id'] ?? 0;
     ?>
 
     <div class="row">
-      <label class="grow">Start
+      <label class="grow"><?= h(t('entries.start', 'Start')) ?>
         <input type="datetime-local" name="start_ts" value="<?= h($val($entry['start_ts'] ?? null)) ?>" required>
       </label>
-      <label class="grow">Ende
+      <label class="grow"><?= h(t('entries.end', 'Ende')) ?>
         <input type="datetime-local" name="end_ts" value="<?= h($val($entry['end_ts'] ?? null)) ?>" required>
       </label>
     </div>
 
-    <label>Notiz
-      <input type="text" name="note" value="<?= h($entry['note'] ?? '') ?>" placeholder="optional">
+    <label><?= h(t('entries.note', 'Notiz')) ?>
+      <input type="text" name="note" value="<?= h($entry['note'] ?? '') ?>" placeholder="<?= h(t('common.optional')) ?>">
     </label>
 
     <div class="form-actions">
-      <button class="btn btn-primary" type="submit">Speichern</button>
-      <a class="btn btn-ghost" href="<?= h(route('entries')) ?>">Abbrechen</a>
+      <button class="btn btn-primary" type="submit"><?= h(t('common.save')) ?></button>
+      <a class="btn btn-ghost" href="<?= h(route('entries')) ?>"><?= h(t('common.cancel')) ?></a>
     </div>
   </form>
 </div>

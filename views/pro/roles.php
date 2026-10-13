@@ -8,18 +8,18 @@
  *
  * @var string $pro_url
  */
-$__feature = 'Rollen Pro';
-$__bullets = '<li>Beliebig viele eigene Rollen (statt zwei)</li>'
-           . '<li>Feingranulare Rechte pro Modul</li>'
-           . '<li>Rollenvorlagen fuer typische Teams</li>'
-           . '<li>Audit-Log fuer Rechteaenderungen</li>';
+$__feature = t('nav.roles_pro');
+$__bullets = '<li>' . h(t('pro.roles.b1', 'Beliebig viele eigene Rollen (statt zwei)')) . '</li>'
+           . '<li>' . h(t('pro.roles.b2', 'Feingranulare Rechte pro Modul')) . '</li>'
+           . '<li>' . h(t('pro.roles.b3', 'Rollenvorlagen fuer typische Teams')) . '</li>'
+           . '<li>' . h(t('pro.roles.b4', 'Audit-Log fuer Rechteaenderungen')) . '</li>';
 ?>
 <div class="pro-teaser">
   <div class="pro-teaser-mock" aria-hidden="true">
     <div class="card">
       <div class="card-head">
-        <h2>Rollen</h2>
-        <span class="pill pill-pro">Pro</span>
+        <h2><?= h(t('nav.roles')) ?></h2>
+        <span class="pill pill-pro"><?= h(t('nav.pro_pill')) ?></span>
       </div>
       <div class="pro-teaser-toolbar">
         <button class="btn btn-primary" type="button" disabled>+ Neue Rolle</button>
@@ -29,7 +29,7 @@ $__bullets = '<li>Beliebig viele eigene Rollen (statt zwei)</li>'
       <table class="table matrix">
         <thead>
           <tr>
-            <th>Berechtigung</th>
+            <th><?= h(t('roles.permissions')) ?></th>
             <th>Admin</th><th>Projektleitung</th><th>Buchhaltung</th><th>Freelancer</th><th>Readonly</th>
           </tr>
         </thead>

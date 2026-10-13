@@ -9,7 +9,7 @@ function ctrl_stats_index(): void
         'projects' => Repo::projects(),
         'scopes'   => Repo::scopes(),
         'tracks'   => Repo::distinctTracks(),
-    ], 'Statistik');
+    ], t('nav.stats'));
 }
 
 function ctrl_stats_data(): void
@@ -81,7 +81,7 @@ function ctrl_scopes_index(): void
         'clients'  => Repo::clients(),
         'projects' => Repo::projects(),
         'tracks'   => Repo::distinctTracks(),
-    ], 'Nachweis-Sichten');
+    ], t('nav.scopes'));
 }
 
 function ctrl_scope_save(): void

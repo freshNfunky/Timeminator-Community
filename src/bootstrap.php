@@ -13,6 +13,7 @@ require __DIR__ . '/helpers.php';
 require __DIR__ . '/db.php';
 require __DIR__ . '/auth.php';
 require __DIR__ . '/LoginThrottle.php';
+require __DIR__ . '/I18n.php';
 
 function config_exists(): bool
 {
@@ -59,4 +60,5 @@ function app_boot(): void
 
     DB::boot($config);
     Auth::boot();
+    I18n::boot();
 }

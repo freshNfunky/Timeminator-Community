@@ -24,7 +24,7 @@
 <div class="cols">
   <div class="col-list">
     <div class="card">
-      <div class="card-head"><h2>Version &amp; Updates</h2><span class="pill">v<?= h($version) ?></span></div>
+      <div class="card-head"><h2><?= h(t('system.updates_h2', 'Version &amp; Updates')) ?></h2><span class="pill">v<?= h($version) ?></span></div>
       <p class="muted">Release-Kanal: <code><?= h($manifest ?: '—') ?></code></p>
 
       <?php if ($update_disabled): ?>
@@ -32,7 +32,7 @@
       <?php else: ?>
         <form method="post" action="<?= h(route('update_check')) ?>" class="inline">
           <?= csrf_field() ?>
-          <button class="btn" type="submit">Auf Updates pruefen</button>
+          <button class="btn" type="submit"><?= h(t('system.check_updates', 'Auf Updates pruefen')) ?></button>
         </form>
       <?php endif; ?>
 
@@ -45,7 +45,7 @@
             <?php if (!$update_disabled): ?>
               <form method="post" action="<?= h(route('update_apply')) ?>" data-confirm="Update jetzt einspielen? config.php und Daten bleiben erhalten.">
                 <?= csrf_field() ?>
-                <button class="btn btn-primary" type="submit">Update einspielen</button>
+                <button class="btn btn-primary" type="submit"><?= h(t('system.apply_update', 'Update einspielen')) ?></button>
               </form>
             <?php endif; ?>
           <?php else: ?>
@@ -56,37 +56,52 @@
     </div>
 
     <div class="card">
-      <h2>Rechte-Katalog</h2>
+      <h2><?= h(t('system.perms_h2', 'Rechte-Katalog')) ?></h2>
       <p class="muted">Nach einem Update neue Berechtigungen in die Datenbank uebernehmen.</p>
       <form method="post" action="<?= h(route('admin_system')) ?>" class="inline">
         <?= csrf_field() ?><input type="hidden" name="action" value="sync_perms">
-        <button class="btn" type="submit">Rechte synchronisieren</button>
+        <button class="btn" type="submit"><?= h(t('system.sync_perms', 'Rechte synchronisieren')) ?></button>
       </form>
     </div>
 
     <div class="card">
-      <h2>Darstellung</h2>
+      <h2><?= h(t('system.theme_h2', 'Darstellung')) ?></h2>
       <p class="muted">Hell / Dunkel-Modus fuer die gesamte Instanz. <strong>System</strong> uebernimmt die OS-Einstellung des jeweiligen Browsers (<code>prefers-color-scheme</code>) &mdash; Standard. Hell oder Dunkel erzwingen eine feste Darstellung fuer alle Benutzer; nuetzlich z.&nbsp;B. fuer Screenshots.</p>
       <form method="post" action="<?= h(route('theme_save')) ?>">
         <?= csrf_field() ?>
         <label class="check">
           <input type="radio" name="theme_preference" value="system" <?= $theme_preference === 'system' ? 'checked' : '' ?>>
-          System (OS-Einstellung)
+          <?= h(t('system.theme_system', 'System (OS-Einstellung)')) ?>
         </label>
         <label class="check">
           <input type="radio" name="theme_preference" value="light" <?= $theme_preference === 'light' ? 'checked' : '' ?>>
-          Hell
+          <?= h(t('system.theme_light', 'Hell')) ?>
         </label>
         <label class="check">
           <input type="radio" name="theme_preference" value="dark" <?= $theme_preference === 'dark' ? 'checked' : '' ?>>
-          Dunkel
+          <?= h(t('system.theme_dark', 'Dunkel')) ?>
         </label>
-        <div class="form-actions"><button class="btn btn-primary" type="submit">Speichern</button></div>
+        <div class="form-actions"><button class="btn btn-primary" type="submit"><?= h(t('common.save')) ?></button></div>
       </form>
     </div>
 
     <div class="card">
-      <h2>Community-Banner &amp; Telemetrie</h2>
+      <h2><?= h(t('admin.language_section', 'Sprache')) ?></h2>
+      <p class="muted"><?= h(t('admin.language_hint')) ?></p>
+      <form method="post" action="<?= h(route('language_save')) ?>">
+        <?= csrf_field() ?>
+        <?php foreach (I18n::available() as $__loc): ?>
+          <label class="check">
+            <input type="radio" name="locale" value="<?= h($__loc['code']) ?>" <?= I18n::current() === $__loc['code'] ? 'checked' : '' ?>>
+            <?= h($__loc['native']) ?> <span class="muted">(<?= h($__loc['label']) ?>)</span>
+          </label>
+        <?php endforeach; ?>
+        <div class="form-actions"><button class="btn btn-primary" type="submit"><?= h(t('common.save')) ?></button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2><?= h(t('system.banner_h2', 'Community-Banner &amp; Telemetrie')) ?></h2>
       <?php if ($banner_config_off): ?>
         <p class="muted">Das Banner ist in <code>config.php</code> fest deaktiviert (<code>banners.enabled =&gt; false</code>, z. B. Pro-Edition). Die folgenden Schalter haben dann keine Wirkung.</p>
       <?php else: ?>
@@ -96,41 +111,41 @@
         <?= csrf_field() ?>
         <label class="check">
           <input type="checkbox" name="banner_visible" value="1" <?= $banner_visible ? 'checked' : '' ?> <?= $banner_config_off ? 'disabled' : '' ?>>
-          Banner-Spalte anzeigen
+          <?= h(t('system.banner_show', 'Banner-Spalte anzeigen')) ?>
         </label>
         <label class="check">
           <input type="checkbox" name="banner_telemetry" value="1" <?= $banner_telemetry ? 'checked' : '' ?> <?= $banner_config_off ? 'disabled' : '' ?>>
-          Anonymisiertes Nutzungssignal senden (Telemetrie)
+          <?= h(t('system.banner_telemetry', 'Anonymisiertes Nutzungssignal senden (Telemetrie)')) ?>
         </label>
-        <label>Banner-Endpoint
+        <label><?= h(t('system.banner_endpoint', 'Banner-Endpoint')) ?>
           <input type="url" name="banner_endpoint_override" value="<?= h($banner_endpoint_override) ?>" placeholder="<?= h($banner_endpoint_default ?: 'https://assets.felixschaller.com/feed.json') ?>" <?= $banner_config_off ? 'disabled' : '' ?>>
         </label>
         <p class="muted">Aktiver Endpoint: <code><?= h($banner_endpoint ?: '—') ?></code></p>
         <p class="muted">Installations-ID: <code><?= h($install_id) ?></code></p>
-        <div class="form-actions"><button class="btn btn-primary" type="submit" <?= $banner_config_off ? 'disabled' : '' ?>>Speichern</button></div>
+        <div class="form-actions"><button class="btn btn-primary" type="submit" <?= $banner_config_off ? 'disabled' : '' ?>><?= h(t('common.save')) ?></button></div>
       </form>
     </div>
 
     <div class="card">
-      <h2>Endpoints</h2>
+      <h2><?= h(t('system.endpoints_h2', 'Endpoints')) ?></h2>
       <p class="muted">Update-Kanal und Registrierungs-Endpoint sind vom Installer vorbelegt. Hier kannst du sie ueberschreiben oder ganz abschalten. Leer lassen = Standard aus <code>config.php</code>.</p>
       <form method="post" action="<?= h(route('endpoints_save')) ?>">
         <?= csrf_field() ?>
-        <label>Update-Manifest-URL
+        <label><?= h(t('install.update_manifest_url')) ?>
           <input type="url" name="manifest_override" value="<?= h($manifest_override) ?>" placeholder="<?= h($manifest_default) ?>">
         </label>
         <label class="check">
           <input type="checkbox" name="update_disabled" value="1" <?= $update_disabled ? 'checked' : '' ?>>
-          Update-Pruefung deaktivieren
+          <?= h(t('install.disable_update_check')) ?>
         </label>
-        <label>Registrierungs-Endpoint
+        <label><?= h(t('install.registration_endpoint')) ?>
           <input type="url" name="registration_override" value="<?= h($reg_endpoint_override) ?>" placeholder="<?= h($reg_endpoint_default) ?>">
         </label>
         <label class="check">
           <input type="checkbox" name="registration_disabled" value="1" <?= $reg_disabled ? 'checked' : '' ?>>
-          Registrierung deaktivieren (sperrt auch neue Opt-ins)
+          <?= h(t('system.disable_registration_optins', 'Registrierung deaktivieren (sperrt auch neue Opt-ins)')) ?>
         </label>
-        <div class="form-actions"><button class="btn btn-primary" type="submit">Speichern</button></div>
+        <div class="form-actions"><button class="btn btn-primary" type="submit"><?= h(t('common.save')) ?></button></div>
       </form>
     </div>
   </div>
@@ -145,28 +160,28 @@
       <?php endif; ?>
       <form method="post" action="<?= h(route('registration_save')) ?>">
         <?= csrf_field() ?>
-        <label>Kontakt-E-Mail
+        <label><?= h(t('system.contact_email', 'Kontakt-E-Mail')) ?>
           <input type="email" name="email" value="<?= h($registration['email'] ?? '') ?>" placeholder="du@example.com">
         </label>
         <label class="check">
           <input type="checkbox" name="opt_in" value="1" <?= !empty($registration['opt_in']) ? 'checked' : '' ?> <?= $reg_disabled ? 'disabled' : '' ?>>
-          Ueber Updates und Sicherheitshinweise informieren (opt-in)
+          <?= h(t('system.notify_opt_in', 'Ueber Updates und Sicherheitshinweise informieren (opt-in)')) ?>
         </label>
         <?php if (!empty($registration['last_sent'])): ?>
           <p class="muted">Zuletzt gesendet: <?= h(fmt_dt($registration['last_sent'])) ?></p>
         <?php endif; ?>
-        <div class="form-actions"><button class="btn btn-primary" type="submit" <?= $reg_disabled ? 'disabled' : '' ?>>Speichern</button></div>
+        <div class="form-actions"><button class="btn btn-primary" type="submit" <?= $reg_disabled ? 'disabled' : '' ?>><?= h(t('common.save')) ?></button></div>
       </form>
     </div>
   </div>
 </div>
 
 <div class="card">
-  <h2>Endpoints</h2>
+  <h2><?= h(t('system.endpoints_h2', 'Endpoints')) ?></h2>
   <p class="muted">Zwei URLs steuert die Community-Edition: wo sie nach neuen Releases schaut (<em>Update-Kanal</em>) und wohin die Opt-in-Benachrichtigungs-Anmeldung geht (<em>Benachrichtigungs-Endpoint</em>). <strong>Kein Lizenzserver</strong> &mdash; die Community-Edition hat keine Lizenz-Mechanik. Felder leer lassen = Standard aus <code>config.php</code>.</p>
   <form method="post" action="<?= h(route('endpoints_save')) ?>" class="endpoint-form">
     <?= csrf_field() ?>
-    <label>Update-Manifest-URL
+    <label><?= h(t('install.update_manifest_url')) ?>
       <input type="url" name="manifest_override"
              value="<?= h($manifest_override) ?>"
              placeholder="<?= h($manifest_default) ?>"
@@ -188,6 +203,6 @@
       <input type="checkbox" name="registration_disabled" value="1" <?= $reg_disabled ? 'checked' : '' ?>>
       Benachrichtigungen deaktivieren (sperrt auch neue Opt-ins)
     </label>
-    <div class="form-actions"><button class="btn btn-primary" type="submit">Speichern</button></div>
+    <div class="form-actions"><button class="btn btn-primary" type="submit"><?= h(t('common.save')) ?></button></div>
   </form>
 </div>

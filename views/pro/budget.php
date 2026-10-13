@@ -11,9 +11,9 @@
  * @var string $pro_url
  * @var array  $rows [{client, project, budget_h, used_h, pct}]
  */
-$__feature = 'Budget / Soll';
-$__bullets = '<li>Soll-Stunden und -Budget pro Projekt</li>'
-           . '<li>Live-Fortschritt gegen Ist-Zeiten</li>'
+$__feature = t('pro.budget.feature', 'Budget / Soll');
+$__bullets = '<li>' . h(t('pro.bud.b1', 'Soll-Stunden und -Budget pro Projekt')) . '</li>'
+           . '<li>' . h(t('pro.bud.b2', 'Live-Fortschritt gegen Ist-Zeiten')) . '</li>'
            . '<li>Warnung ab 80 %, Alarm ab 100 %</li>'
            . '<li>Monatliche Burn-Rate pro Kunde</li>';
 ?>
@@ -26,8 +26,8 @@ $__bullets = '<li>Soll-Stunden und -Budget pro Projekt</li>'
   <div class="pro-teaser-mock" aria-hidden="true">
     <div class="card">
       <div class="card-head">
-        <h2>Projektbudgets</h2>
-        <span class="pill pill-pro">Pro</span>
+        <h2><?= h(t('pro.bud.projects_h2', 'Projektbudgets')) ?></h2>
+        <span class="pill pill-pro"><?= h(t('nav.pro_pill')) ?></span>
       </div>
       <table class="table">
         <thead><tr>

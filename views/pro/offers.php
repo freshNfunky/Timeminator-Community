@@ -7,18 +7,18 @@
  *
  * @var string $pro_url
  */
-$__feature = 'Angebote';
-$__bullets = '<li>Angebote aus Projekt-Vorlagen bauen</li>'
-           . '<li>Positionen mit Stunden- und Pauschalpreisen</li>'
-           . '<li>Status Entwurf, versendet, angenommen, abgelehnt</li>'
-           . '<li>Direkt in eine Rechnung konvertieren</li>';
+$__feature = t('nav.offers');
+$__bullets = '<li>' . h(t('pro.off.b1', 'Angebote aus Projekt-Vorlagen bauen')) . '</li>'
+           . '<li>' . h(t('pro.off.b2', 'Positionen mit Stunden- und Pauschalpreisen')) . '</li>'
+           . '<li>' . h(t('pro.off.b3', 'Status Entwurf, versendet, angenommen, abgelehnt')) . '</li>'
+           . '<li>' . h(t('pro.off.b4', 'Direkt in eine Rechnung konvertieren')) . '</li>';
 ?>
 <div class="pro-teaser">
   <div class="pro-teaser-mock" aria-hidden="true">
     <div class="card">
       <div class="card-head">
-        <h2>Angebote</h2>
-        <span class="pill pill-pro">Pro</span>
+        <h2><?= h(t('nav.offers')) ?></h2>
+        <span class="pill pill-pro"><?= h(t('nav.pro_pill')) ?></span>
       </div>
       <div class="pro-teaser-toolbar">
         <button class="btn btn-primary" type="button" disabled>+ Neues Angebot</button>

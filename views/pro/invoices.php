@@ -10,18 +10,18 @@
  * @var string $pro_url
  * @var array  $groups  [{client, minutes, projects: {name=>true, ...}}]
  */
-$__feature = 'Rechnungen';
-$__bullets = '<li>Rechnungen aus geleisteten Zeiten erzeugen</li>'
-           . '<li>Stundensaetze pro Kunde / Projekt / Rolle</li>'
-           . '<li>PDF-Export mit eigenem Briefpapier</li>'
+$__feature = t('nav.invoices');
+$__bullets = '<li>' . h(t('pro.inv.b1', 'Rechnungen aus geleisteten Zeiten erzeugen')) . '</li>'
+           . '<li>' . h(t('pro.inv.b2', 'Stundensaetze pro Kunde / Projekt / Rolle')) . '</li>'
+           . '<li>' . h(t('pro.inv.b3', 'PDF-Export mit eigenem Briefpapier')) . '</li>'
            . '<li>Status: Entwurf, versendet, bezahlt</li>';
 ?>
 <div class="pro-teaser">
   <div class="pro-teaser-mock" aria-hidden="true">
     <div class="card">
       <div class="card-head">
-        <h2>Offene Rechnungen</h2>
-        <span class="pill pill-pro">Pro</span>
+        <h2><?= h(t('pro.inv.open_h2', 'Offene Rechnungen')) ?></h2>
+        <span class="pill pill-pro"><?= h(t('nav.pro_pill')) ?></span>
       </div>
       <div class="pro-teaser-toolbar">
         <button class="btn btn-primary" type="button" disabled>+ Rechnung aus Zeiten</button>

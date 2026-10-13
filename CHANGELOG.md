@@ -20,9 +20,86 @@ version heading when a release is cut.
 
 ## [Unreleased]
 
-## [0.8.0] — 2026-10-04
+## [0.9.0] — 2026-10-13
+
+> This release's headline is **full English UI support** (closes #95) — the
+> German-only Community edition is now bilingual, user-switchable in session.
+> It also folds in the post-v0.8.0 content whose entries lived under
+> `Unreleased` and didn't make the v0.8.0 CHANGELOG cut: the landing-document
+> README rewrite + hero art, light-mode screenshots, the Team-Sentiment
+> page, the cascading task picker, and the four side-panel improvements
+> (brand mark, default remote feed endpoint, 200 px full-height rail,
+> 14 s rotation).
+
+### Changed
+- **i18n coverage: final wave of #95.** The remaining German-only screens
+  are now bilingual too:
+  - **Admin → System** page body (Version & Updates / Permission catalog /
+    Appearance / Community banner & telemetry / Endpoints / Notifications):
+    all `<h2>` headings, every button, every checkbox + radio label, every
+    form field label.
+  - **CSV import** (`imports/index.php`): title, preview card header +
+    stats pill + delimiter copy + full column headers + OK/skip markers +
+    "first 200 rows" hint + confirm/discard buttons + upload form + past-
+    imports list + per-row delete.
+  - **Statistics** (`stats/index.php` + `stats/scopes.php`): filter bar
+    (Group by, Series, Scope, all users, Run) + three summary tiles +
+    chart card headings; proof-views editor + saved-views list + reference
+    IDs disclosure.
+  - **Pro-teaser cards** — the four `<h2>` headings and the `Pro` pill
+    label (card body mock data stays as-is: `pointer-events: none;
+    opacity: .55; aria-hidden`).
+  - **Controller titles** for `imports` and `scopes` finally pass the
+    locale-aware `t()` key so `<title>` + `<h1>` stop reading
+    "CSV-Import" / "Nachweis-Sichten" in English mode.
+- `lang/{de,en}.php` grew from 286 → **356 keys**, parity still enforced
+  at commit time.
+
+With this, every nav route in the Community edition — `dashboard`,
+`entries` (list + form + week calendar), `clients`, `projects`,
+`workpackages`, `tasks`, `scopes`, `stats`, `sentiment`, `admin_users`,
+`admin_roles`, `admin_system`, `imports`, and the four `pro_*` teasers —
+renders completely in German or English based on the per-session locale.
+#95 is now fully covered on the UI surface.
+
+### Changed
+- **i18n coverage expanded (waves 2–5 of #95).** Follow-up to #100 — the user-first
+  views (layout, nav, login, installer, dashboard) were already bilingual;
+  this round converts the rest of the day-to-day flows: entries list + form
+  + week calendar + delete flow, the full structure CRUD (clients, projects,
+  work packages, tasks), the cascading task picker, the users + roles admin
+  screens, the sentiment page (recorder + personal + team views, incl. the
+  five-smiley score labels resolved against the current locale), the
+  update-available banner, the Pro-teaser upsell banner and the four Pro
+  teasers' names + bullet copy, and the error page.
+- **Controller flashes converted** across `entries`, `structure`, `users`,
+  `roles`, `imports`, `banners`, `sentiment` and `admin/system` — every
+  success / error flash the user can see while booking, editing or
+  administering is now locale-aware.
+- **Page titles converted** on every route handler that passed a hardcoded
+  German label to `view()`.
+- `lang/{de,en}.php` grew from 102 → **286 keys** in lockstep (parity-checked
+  at build time).
+
+Not yet translated and tracked as the last follow-up on #95: the Admin →
+System page body (banner / telemetry / endpoints / updates sub-sections),
+`imports/index.php` (CSV preview + confirm UI), `stats/index.php` +
+`stats/scopes.php`, and the inert mock-content inside the four Pro-teaser
+cards (dimmed, aria-hidden, non-interactive). The infrastructure handles
+them — only the string-swap remains.
 
 ### Added
+- **i18n scaffolding + English UI** (partial fix for #95) — the German-only UI
+  is now a two-language setup (German default, English available). A small
+  `I18n` class in `src/I18n.php` resolves the request's locale from (in order)
+  `?lang=` query → session preference → `Accept-Language` → config default,
+  reads catalogs from `lang/<code>.php` (`de` + `en`, 102 keys each, in
+  lockstep), and exposes a terse `t('key', $default)` helper. Admin → System
+  gets a locale toggle; login + installer get a small switcher at the bottom
+  so first-time visitors can flip without logging in. Fully covered: layout
+  (nav + topbar + footer + sidepanel aria), login, dashboard, installer. The
+  remaining views (entries, structure, admin, stats, pro teasers) still
+  render hardcoded German and are tracked as follow-up work on #95.
 - **Team-Sentiment-Tracking** (fixes #92) — makes the landing-page promise
   ("team sentiment tracking") good instead of overclaim. Each user records a
   daily mood on a five-smiley scale (ganz schlecht … sehr gut) with an optional
@@ -42,12 +119,15 @@ version heading when a release is cut.
   migration `2026-10-04-03-sentiment-permissions.php`. 8 tests cover score
   normalization, UPSERT, per-user history windowing, team aggregates and
   contributor counting.
-- **Side-panel brand mark**: the FelixSchallerCOM wordmark sits above the
-  rotating carousel, implemented as a `mask-image` so it renders light on
-  the dark side-panel background without a second asset and without inline
-  styles that would trip the strict CSP.
 
 ### Changed
+- **README rewritten as a landing document** (#24): a one-paragraph pitch, a
+  "who is it for" section, a grouped feature tour with fresh demo screenshots
+  (now including the week calendar), an honest Community-vs-Pro comparison table,
+  and the mascot in the header. Quick start moved up; the reference sections
+  (requirements, install, updating, security, privacy, data model, tech) kept and
+  condensed. Corrects the stale "no CSV import UI yet" claim — CSV import with
+  per-batch rollback now ships. README art moved under `docs/images/`.
 - **Task picker is now cascading: Kunde → Projekt → Arbeitspaket → Aufgabe.**
   The single flat `<select name="task_id">` that crammed the whole hierarchy
   into `<optgroup>` labels (one gigantic list of every task with a prefix like
@@ -59,6 +139,14 @@ version heading when a release is cut.
   form (new + edit). Lives in `views/partials/task_picker.php` + a small
   `initTaskPickers` IIFE in `assets/app.js` (no inline JS — strict CSP stays
   strict).
+
+### Added
+- **Side-panel brand mark**: the FelixSchallerCOM wordmark sits above the
+  rotating carousel, implemented as a `mask-image` so it renders light on
+  the dark side-panel background without a second asset and without inline
+  styles that would trip the strict CSP.
+
+### Changed
 - **Side-panel feed endpoint has a sensible default** so a fresh install serves
   HTML creatives out of the box, without needing a `banners` block in
   `config.php`. `Banners::endpoint()` now falls back to
@@ -74,15 +162,6 @@ version heading when a release is cut.
   `.sp-toggle` CSS from the retired collapsible header is gone, along with a
   duplicated `.shell.has-aside`/`.sp-*` block left behind by the back-merge in
   #77.
-- **Side-panel carousel rotates every 14 s** instead of 7 s so the reader
-  actually finishes a creative's headline + CTA before it flips.
-
-### Fixed
-- **Reverts #87 ("restore static Anzeige label"): the FelixSchallerCOM
-  wordmark brand mark from #84 is the ad disclosure now.** #87 landed only on
-  main (not develop) and would have reintroduced the `.sp-head` label the
-  wordmark was designed to replace. The release merge keeps the develop-side
-  design.
 
 ## [0.6.0] — 2026-10-04
 
@@ -382,7 +461,8 @@ control, PHPUnit suite, repo-hygiene docs.
   0.x. This is a cosmetic mislabel; the on-disk `VERSION` file is the
   source of truth.
 
-[Unreleased]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.6.0...v0.8.0
 [0.6.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.2.0...v0.5.0

@@ -11,15 +11,15 @@
  * @var string $__bullets   HTML list of 2–4 short selling points
  */
 ?>
-<aside class="pro-upsell" role="complementary" aria-label="Pro-Feature">
-  <span class="pill pill-pro">Pro-Feature</span>
+<aside class="pro-upsell" role="complementary" aria-label="<?= h(t('nav.pro_feature_tooltip')) ?>">
+  <span class="pill pill-pro"><?= h(t('nav.pro_feature_tooltip')) ?></span>
   <h2><?= h($__feature) ?></h2>
-  <p class="muted"><?= h($__feature) ?> gibt es in <strong>Timeminator Pro</strong>. In Community sieht man die Oberflaeche, aber nicht die Daten.</p>
+  <p class="muted"><?= sprintf(t('pro_upsell.intro', '%s gibt es in <strong>Timeminator Pro</strong>. In Community sieht man die Oberflaeche, aber nicht die Daten.'), h($__feature)) /* %s is escaped feature, <strong> stays literal, catalog string is trusted */ ?></p>
   <ul class="pro-upsell-list">
     <?= $__bullets /* already-escaped HTML built by the view */ ?>
   </ul>
   <a class="btn btn-primary pro-upsell-cta" href="<?= h($pro_url) ?>" target="_blank" rel="noopener">
-    Jetzt Pro ansehen &nearr;
+    <?= h(t('pro_upsell.cta', 'Jetzt Pro ansehen ↗')) ?>
   </a>
-  <p class="muted pro-upsell-foot">Deine Community-Daten bleiben lokal. Pro ist eine separate Instanz.</p>
+  <p class="muted pro-upsell-foot"><?= h(t('pro_upsell.foot', 'Deine Community-Daten bleiben lokal. Pro ist eine separate Instanz.')) ?></p>
 </aside>
