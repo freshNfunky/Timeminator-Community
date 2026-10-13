@@ -165,6 +165,20 @@ CREATE TABLE IF NOT EXISTS sentiment_entries (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 CREATE INDEX idx_sentiment_as_of ON sentiment_entries (as_of);
 
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  user_id      INT       NOT NULL,
+  token_hash   CHAR(64)  NOT NULL,
+  expires_at   DATETIME  NOT NULL,
+  used_at      DATETIME  NULL,
+  created_at   DATETIME  NOT NULL,
+  requester_ip VARCHAR(64) NULL,
+  UNIQUE KEY uq_prt_token_hash (token_hash),
+  KEY idx_prt_user    (user_id),
+  KEY idx_prt_expires (expires_at),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS schema_migrations (
   version    VARCHAR(64) PRIMARY KEY,
   applied_at DATETIME NOT NULL

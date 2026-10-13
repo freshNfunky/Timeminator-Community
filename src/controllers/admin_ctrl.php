@@ -149,6 +149,7 @@ function ctrl_system_index(): void
         flash(t('system.flash_perms_synced', 'Rechte-Katalog synchronisiert.'));
         redirect_route('admin_system');
     }
+    $mail = Mail::config();
     view('admin/system', [
         'version'         => app_version(),
         'update'          => Updater::cached(),
@@ -169,6 +170,9 @@ function ctrl_system_index(): void
         'banner_endpoint_default'  => Banners::endpointDefault(),
         'banner_endpoint_override' => (string) Settings::get('banner_endpoint_override', ''),
         'install_id'               => Banners::installId(),
+        'mail'                     => $mail,
+        'mail_has_password'        => $mail['pass'] !== '',
+        'mail_configured'          => Mail::isConfigured(),
     ], t('nav.system'));
 }
 
@@ -305,5 +309,85 @@ function ctrl_endpoints_save(): void
     Settings::set('update_check_disabled', (bool) post('update_disabled'));
     Settings::set('registration_disabled', (bool) post('registration_disabled'));
     flash(t('system.flash_endpoints_saved', 'Endpoints gespeichert.'));
+    redirect_route('admin_system');
+}
+
+/**
+ * Save the mail (SMTP) configuration (#107). Leaving the SMTP host blank
+ * is valid and falls back to PHP's `mail()`; the admin only needs to pick
+ * the host when the sendmail path is unavailable or hands outbound off to
+ * a smarthost.
+ */
+function ctrl_mail_save(): void
+{
+    require_perm('admin.system');
+    csrf_check();
+
+    $from = trim((string) post('mail_from'));
+    if ($from !== '' && !filter_var($from, FILTER_VALIDATE_EMAIL)) {
+        flash(t('mail.err_from_invalid', 'Die From-Adresse ist keine gueltige E-Mail-Adresse.'), 'err');
+        redirect_route('admin_system');
+    }
+    $port = (int) post('mail_port');
+    if ($port < 0 || $port > 65535) {
+        flash(t('mail.err_port_invalid', 'Port muss zwischen 0 und 65535 liegen.'), 'err');
+        redirect_route('admin_system');
+    }
+
+    // An empty password field means "keep current" — don't let a redraw of
+    // the admin form clobber a working credential when the admin only
+    // changed, say, the host.
+    $existing = Mail::config();
+    $pwInput = (string) post('mail_pass');
+    $pass = $pwInput !== '' ? $pwInput : $existing['pass'];
+
+    Mail::save([
+        'from'      => $from,
+        'from_name' => trim((string) post('mail_from_name')),
+        'host'      => trim((string) post('mail_host')),
+        'port'      => $port,
+        'user'      => trim((string) post('mail_user')),
+        'pass'      => $pass,
+        'security'  => (string) post('mail_security', 'none'),
+    ]);
+    flash(t('mail.flash_saved', 'Mail-Einstellungen gespeichert.'));
+    redirect_route('admin_system');
+}
+
+/**
+ * Send a test mail to the admin's own address (or any address the admin
+ * supplied in the form). The result goes straight into the next flash so
+ * the operator can tell at a glance whether the config works.
+ */
+function ctrl_mail_test(): void
+{
+    require_perm('admin.system');
+    csrf_check();
+
+    if (!Mail::isConfigured()) {
+        flash(t('mail.err_not_configured', 'Bitte zuerst die From-Adresse speichern.'), 'err');
+        redirect_route('admin_system');
+    }
+
+    $target = trim((string) post('test_to'));
+    if ($target === '') {
+        $target = (string) (Auth::user()['email'] ?? '');
+    }
+    if (!filter_var($target, FILTER_VALIDATE_EMAIL)) {
+        flash(t('mail.err_test_recipient', 'Keine gueltige Ziel-Adresse fuer die Test-Mail.'), 'err');
+        redirect_route('admin_system');
+    }
+
+    $appName = (string) cfg('app_name', 'Timeminator');
+    [$ok, $err] = Mail::send(
+        $target,
+        sprintf(t('mail.test_subject', 'Test-Mail von %s'), $appName),
+        sprintf(t('mail.test_body', "Dies ist eine Test-Mail aus %s.\nWenn du sie liest, funktioniert die SMTP-Konfiguration."), $appName)
+    );
+    if ($ok) {
+        flash(sprintf(t('mail.flash_test_sent', 'Test-Mail an %s gesendet.'), $target));
+    } else {
+        flash(sprintf(t('mail.flash_test_failed', 'Test-Mail fehlgeschlagen (%s). Details stehen im PHP-Fehlerprotokoll.'), $err ?? 'unknown'), 'err');
+    }
     redirect_route('admin_system');
 }

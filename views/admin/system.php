@@ -206,3 +206,51 @@
     <div class="form-actions"><button class="btn btn-primary" type="submit"><?= h(t('common.save')) ?></button></div>
   </form>
 </div>
+
+<div class="card">
+  <h2><?= h(t('mail.h2', 'Mail (SMTP)')) ?></h2>
+  <p class="muted"><?= h(t('mail.intro', 'Fuer das Zuruecksetzen von Passwoertern und zukuenftige Benachrichtigungen. Lass die SMTP-Felder leer, um die Mails ueber die lokale PHP-mail()-Funktion zu versenden (sendmail), oder konfiguriere einen SMTP-Server.')) ?></p>
+  <?php if (!$mail_configured): ?>
+    <p class="muted"><em><?= h(t('mail.not_configured_hint', 'Noch nicht konfiguriert — Password-Reset-Mails koennen nicht verschickt werden, bis zumindest eine From-Adresse gesetzt ist.')) ?></em></p>
+  <?php endif; ?>
+  <form method="post" action="<?= h(route('mail_save')) ?>" class="endpoint-form">
+    <?= csrf_field() ?>
+    <label><?= h(t('mail.from', 'Absender-Adresse (From)')) ?>
+      <input type="email" name="mail_from" value="<?= h($mail['from']) ?>" placeholder="no-reply@example.com" required>
+    </label>
+    <label><?= h(t('mail.from_name', 'Absender-Name')) ?>
+      <input type="text" name="mail_from_name" value="<?= h($mail['from_name']) ?>" placeholder="<?= h(cfg('app_name', 'Timeminator')) ?>">
+    </label>
+    <label><?= h(t('mail.host', 'SMTP-Host')) ?>
+      <input type="text" name="mail_host" value="<?= h($mail['host']) ?>" placeholder="smtp.example.com">
+      <small class="muted"><?= h(t('mail.host_hint', 'Leer = PHP mail() / lokaler sendmail.')) ?></small>
+    </label>
+    <label><?= h(t('mail.port', 'Port')) ?>
+      <input type="number" name="mail_port" value="<?= h((string) ($mail['port'] ?: '')) ?>" min="0" max="65535" placeholder="587">
+    </label>
+    <label><?= h(t('mail.security', 'Verschluesselung')) ?>
+      <select name="mail_security">
+        <option value="none" <?= $mail['security'] === 'none' ? 'selected' : '' ?>>none</option>
+        <option value="tls"  <?= $mail['security'] === 'tls'  ? 'selected' : '' ?>>STARTTLS</option>
+        <option value="ssl"  <?= $mail['security'] === 'ssl'  ? 'selected' : '' ?>>SSL/TLS</option>
+      </select>
+    </label>
+    <label><?= h(t('mail.user', 'SMTP-Benutzer')) ?>
+      <input type="text" name="mail_user" value="<?= h($mail['user']) ?>" autocomplete="off">
+    </label>
+    <label><?= h(t('mail.pass', 'SMTP-Passwort')) ?>
+      <input type="password" name="mail_pass" value="" autocomplete="new-password" placeholder="<?= $mail_has_password ? h(t('mail.pass_kept', '(gespeichert — leer lassen, um nichts zu aendern)')) : '' ?>">
+    </label>
+    <div class="form-actions"><button class="btn btn-primary" type="submit"><?= h(t('common.save')) ?></button></div>
+  </form>
+  <form method="post" action="<?= h(route('mail_test')) ?>" class="endpoint-form" style="margin-top:12px">
+    <?= csrf_field() ?>
+    <label><?= h(t('mail.test_to', 'Test-Mail an')) ?>
+      <input type="email" name="test_to" value="<?= h((string) (Auth::user()['email'] ?? '')) ?>" placeholder="du@example.com">
+      <small class="muted"><?= h(t('mail.test_hint', 'Leer = eigene E-Mail aus dem Benutzerprofil.')) ?></small>
+    </label>
+    <div class="form-actions">
+      <button class="btn btn-ghost" type="submit" <?= $mail_configured ? '' : 'disabled' ?>><?= h(t('mail.test_submit', 'Test-Mail schicken')) ?></button>
+    </div>
+  </form>
+</div>

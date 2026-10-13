@@ -30,6 +30,8 @@ require APP_ROOT . '/src/Updater.php';
 require APP_ROOT . '/src/Banners.php';
 require APP_ROOT . '/src/Sentiment.php';
 require APP_ROOT . '/src/I18n.php';
+require APP_ROOT . '/src/Mail.php';
+require APP_ROOT . '/src/PasswordReset.php';
 
 // Tests access session superglobals without a real session; initialize empty
 // so a direct $_SESSION read doesn't warn.
