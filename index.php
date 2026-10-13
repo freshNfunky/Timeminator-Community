@@ -18,6 +18,7 @@ require __DIR__ . '/src/Banners.php';
 require __DIR__ . '/src/Mail.php';
 require __DIR__ . '/src/PasswordReset.php';
 require __DIR__ . '/src/Scheduler.php';
+require __DIR__ . '/src/Holidays.php';
 require __DIR__ . '/src/seed.php';
 require __DIR__ . '/src/Migrator.php';
 

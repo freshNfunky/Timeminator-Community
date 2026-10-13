@@ -21,6 +21,24 @@ version heading when a release is cut.
 ## [Unreleased]
 
 ### Added
+- **Static holiday overlay in the week calendar** (Pro-Sync B.1, #110).
+  First position of Phase B (soft upsell).
+  - New `src/Holidays.php` ships two built-in sets: DACH (DE + AT + CH
+    union) for `de`-locale installs, US federal holidays for `en`.
+    Picked by `I18n::current()`; unknown locales fall back to DACH.
+  - The entries week calendar now shows a subtle holiday badge in each
+    day's header column: name + a hover tooltip that spells out the
+    scope (e.g. "AT · DE (regional) · CH (regional)").
+  - Easter-relative holidays (Good Friday, Easter Monday, Ascension,
+    Whit Monday, Corpus Christi) are computed by the anonymous
+    Gregorian algorithm with an `easter_date()` fast path when
+    `ext/calendar` is available. US nth-weekday rules
+    (Thanksgiving, Memorial Day, Labor Day, MLK, Presidents, Columbus)
+    use a shared helper, pinned by regression tests for 2024-2026.
+  - Pure static data — **no external calendar sources**, no CalDAV, no
+    iCal subscriptions. External sources stay a Pro feature; the
+    existing teaser card under the calendar remains unchanged.
+
 - **Admin → Scheduler / Cron (housekeeping jobs)** (Pro-Sync A.3, #109).
   Third position of the Pro → Community feature-sync wave.
   - New `src/Scheduler.php`: register jobs by name + interval + callable,
