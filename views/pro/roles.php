@@ -8,11 +8,11 @@
  *
  * @var string $pro_url
  */
-$__feature = 'Rollen Pro';
-$__bullets = '<li>Beliebig viele eigene Rollen (statt zwei)</li>'
-           . '<li>Feingranulare Rechte pro Modul</li>'
-           . '<li>Rollenvorlagen fuer typische Teams</li>'
-           . '<li>Audit-Log fuer Rechteaenderungen</li>';
+$__feature = t('nav.roles_pro');
+$__bullets = '<li>' . h(t('pro.roles.b1', 'Beliebig viele eigene Rollen (statt zwei)')) . '</li>'
+           . '<li>' . h(t('pro.roles.b2', 'Feingranulare Rechte pro Modul')) . '</li>'
+           . '<li>' . h(t('pro.roles.b3', 'Rollenvorlagen fuer typische Teams')) . '</li>'
+           . '<li>' . h(t('pro.roles.b4', 'Audit-Log fuer Rechteaenderungen')) . '</li>';
 ?>
 <div class="pro-teaser">
   <div class="pro-teaser-mock" aria-hidden="true">

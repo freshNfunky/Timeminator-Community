@@ -18,7 +18,7 @@ function ctrl_clients_index(): void
         'clients' => Repo::clients(),
         'edit'    => $editId ? Repo::client($editId) : null,
         'tracks'  => Repo::distinctTracks(),
-    ], 'Kunden');
+    ], t('nav.clients'));
 }
 
 function ctrl_client_save(): void
@@ -28,7 +28,7 @@ function ctrl_client_save(): void
     $id = post_int('id');
     $name = trim((string) post('name'));
     if ($name === '') {
-        flash('Name ist erforderlich.', 'err');
+        flash(t('struct.err_name_required', 'Name ist erforderlich.'), 'err');
         redirect_route('clients');
     }
     $code = trim((string) post('code')) ?: slugify($name);
@@ -41,9 +41,9 @@ function ctrl_client_save(): void
     ];
     try {
         Repo::saveClient($d, $id ?: null);
-        flash('Kunde gespeichert.');
+        flash(t('clients.flash_saved', 'Kunde gespeichert.'));
     } catch (PDOException $e) {
-        flash('Konnte nicht speichern (Kennung evtl. schon vergeben).', 'err');
+        flash(t('struct.err_duplicate_code', 'Konnte nicht speichern (Kennung evtl. schon vergeben).'), 'err');
     }
     redirect_route('clients');
 }
@@ -59,7 +59,7 @@ function ctrl_projects_index(): void
         'clients'  => Repo::clients(),
         'edit'     => $editId ? Repo::project($editId) : null,
         'tracks'   => Repo::distinctTracks(),
-    ], 'Projekte');
+    ], t('nav.projects'));
 }
 
 function ctrl_project_save(): void
@@ -70,7 +70,7 @@ function ctrl_project_save(): void
     $name = trim((string) post('name'));
     $clientId = post_int('client_id');
     if ($name === '' || !$clientId) {
-        flash('Kunde und Name sind erforderlich.', 'err');
+        flash(t('projects.err_client_name_required', 'Kunde und Name sind erforderlich.'), 'err');
         redirect_route('projects');
     }
     $d = [
@@ -83,9 +83,9 @@ function ctrl_project_save(): void
     ];
     try {
         Repo::saveProject($d, $id ?: null);
-        flash('Projekt gespeichert.');
+        flash(t('projects.flash_saved', 'Projekt gespeichert.'));
     } catch (PDOException $e) {
-        flash('Konnte nicht speichern (Kennung evtl. schon vergeben).', 'err');
+        flash(t('struct.err_duplicate_code', 'Konnte nicht speichern (Kennung evtl. schon vergeben).'), 'err');
     }
     redirect_route('projects');
 }
@@ -100,7 +100,7 @@ function ctrl_workpackages_index(): void
         'work_packages' => Repo::workPackages(),
         'projects'      => Repo::projects(),
         'edit'          => $editId ? Repo::workPackage($editId) : null,
-    ], 'Arbeitspakete');
+    ], t('nav.workpackages'));
 }
 
 function ctrl_workpackage_save(): void
@@ -111,7 +111,7 @@ function ctrl_workpackage_save(): void
     $name = trim((string) post('name'));
     $projectId = post_int('project_id');
     if ($name === '' || !$projectId) {
-        flash('Projekt und Name sind erforderlich.', 'err');
+        flash(t('struct.err_project_name_required', 'Projekt und Name sind erforderlich.'), 'err');
         redirect_route('workpackages');
     }
     $d = [
@@ -122,9 +122,9 @@ function ctrl_workpackage_save(): void
     ];
     try {
         Repo::saveWorkPackage($d, $id ?: null);
-        flash('Arbeitspaket gespeichert.');
+        flash(t('wp.flash_saved', 'Arbeitspaket gespeichert.'));
     } catch (PDOException $e) {
-        flash('Konnte nicht speichern (Kennung evtl. schon vergeben).', 'err');
+        flash(t('struct.err_duplicate_code', 'Konnte nicht speichern (Kennung evtl. schon vergeben).'), 'err');
     }
     redirect_route('workpackages');
 }
@@ -140,7 +140,7 @@ function ctrl_tasks_index(): void
         'projects'      => Repo::projects(),
         'work_packages' => Repo::workPackages(),
         'edit'          => $editId ? Repo::task($editId) : null,
-    ], 'Aufgaben');
+    ], t('nav.tasks'));
 }
 
 function ctrl_task_save(): void
@@ -151,7 +151,7 @@ function ctrl_task_save(): void
     $name = trim((string) post('name'));
     $projectId = post_int('project_id');
     if ($name === '' || !$projectId) {
-        flash('Projekt und Name sind erforderlich.', 'err');
+        flash(t('struct.err_project_name_required', 'Projekt und Name sind erforderlich.'), 'err');
         redirect_route('tasks');
     }
     $d = [
@@ -162,6 +162,6 @@ function ctrl_task_save(): void
         'active'          => post('active') ? 1 : 0,
     ];
     Repo::saveTask($d, $id ?: null);
-    flash('Aufgabe gespeichert.');
+    flash(t('tasks.flash_saved', 'Aufgabe gespeichert.'));
     redirect_route('tasks');
 }

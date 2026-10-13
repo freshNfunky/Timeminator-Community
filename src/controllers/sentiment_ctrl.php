@@ -34,7 +34,7 @@ function ctrl_sentiment_index(): void
         'canTeam'      => $canTeam,
         'teamSummary'  => $teamSummary,
         'teamDaily'    => $teamDaily,
-    ], 'Stimmung');
+    ], t('nav.sentiment'));
 }
 
 function ctrl_sentiment_save(): void
@@ -49,7 +49,7 @@ function ctrl_sentiment_save(): void
 
     $score = Sentiment::normalizeScore(post('score'));
     if ($score === null) {
-        flash('Bitte waehle eine Stimmung aus (1 bis 5).', 'err');
+        flash(t('sentiment.err_pick_score', 'Bitte waehle eine Stimmung aus (1 bis 5).'), 'err');
         redirect_route('sentiment');
     }
     $asOf = Sentiment::normalizeDate((string) post('as_of', ''));

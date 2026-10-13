@@ -39,7 +39,7 @@ function ctrl_entries_index(): void
         'view'        => $view,
         'pro_url'     => (string) cfg('pro_url', 'https://timeminator.felixschaller.com'),
         'week_start'  => $view === 'calendar' ? ($weekStart ?? null) : null,
-    ], 'Zeiteintraege');
+    ], t('nav.entries'));
 }
 
 /**
@@ -212,11 +212,11 @@ function ctrl_entry_save(): void
     $note = trim((string) post('note'));
 
     if (!$taskId || !$start || !$end) {
-        flash('Aufgabe, Start und Ende sind erforderlich.', 'err');
+        flash(t('entries.err_required', 'Aufgabe, Start und Ende sind erforderlich.'), 'err');
         redirect_route('entry_form', $id ? ['id' => $id] : []);
     }
     if ($end <= $start) {
-        flash('Ende muss nach dem Start liegen.', 'err');
+        flash(t('entries.err_end_before_start', 'Ende muss nach dem Start liegen.'), 'err');
         redirect_route('entry_form', $id ? ['id' => $id] : []);
     }
 
@@ -226,10 +226,10 @@ function ctrl_entry_save(): void
             redirect_route('entries');
         }
         Repo::updateEntry($id, $taskId, $start, $end, $note);
-        flash('Eintrag aktualisiert.');
+        flash(t('entries.flash_updated', 'Eintrag aktualisiert.'));
     } else {
         Repo::createEntry(Auth::id(), $taskId, $start, $end, $note, 'manual');
-        flash('Eintrag gespeichert.');
+        flash(t('entries.flash_saved', 'Eintrag gespeichert.'));
     }
     redirect_route('entries');
 }
@@ -241,7 +241,7 @@ function ctrl_entry_delete(): void
     $id = post_int('id');
     if ($id) {
         Repo::deleteEntry($id, Auth::id(), Auth::isAdmin());
-        flash('Eintrag geloescht.');
+        flash(t('entries.flash_deleted', 'Eintrag geloescht.'));
     }
     redirect_route('entries');
 }
@@ -254,11 +254,11 @@ function ctrl_timer_start(): void
     csrf_check();
     $taskId = post_int('task_id');
     if (!$taskId) {
-        flash('Bitte eine Aufgabe waehlen.', 'err');
+        flash(t('entries.err_pick_task', 'Bitte eine Aufgabe waehlen.'), 'err');
         redirect_route('dashboard');
     }
     Repo::startTimer(Auth::id(), $taskId, trim((string) post('note')));
-    flash('Timer gestartet.');
+    flash(t('entries.flash_timer_started', 'Timer gestartet.'));
     redirect_route('dashboard');
 }
 
@@ -267,7 +267,7 @@ function ctrl_timer_stop(): void
     require_perm('entries.manage');
     csrf_check();
     Repo::stopTimer(Auth::id());
-    flash('Timer gestoppt und gebucht.');
+    flash(t('entries.flash_timer_stopped', 'Timer gestoppt und gebucht.'));
     redirect_route('dashboard');
 }
 

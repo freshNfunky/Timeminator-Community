@@ -23,7 +23,15 @@ $__prevWeek = $week_start->modify('-7 days');
 $__nextWeek = $week_start->modify('+7 days');
 $__today    = new DateTimeImmutable('today');
 
-$__dayHeaders = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+$__dayHeaders = [
+    t('cal.day_short.mon', 'Mo'),
+    t('cal.day_short.tue', 'Di'),
+    t('cal.day_short.wed', 'Mi'),
+    t('cal.day_short.thu', 'Do'),
+    t('cal.day_short.fri', 'Fr'),
+    t('cal.day_short.sat', 'Sa'),
+    t('cal.day_short.sun', 'So'),
+];
 $__days = [];
 for ($i = 0; $i < 7; $i++) {
     $d = $week_start->modify('+' . $i . ' days');
@@ -114,13 +122,13 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
 <div class="card">
   <div class="card-head">
     <div>
-      <h2>Woche <?= h($week_start->format('W / o')) ?></h2>
+      <h2><?= h(sprintf(t('cal.week_heading', 'Woche %s'), $week_start->format('W / o'))) ?></h2>
       <p class="muted"><?= h($week_start->format('d.m.')) ?> – <?= h($__weekEnd->format('d.m.Y')) ?></p>
     </div>
     <div class="cal-nav">
-      <a class="btn btn-sm" href="<?= h(route('entries', $__weekQp($__prevWeek))) ?>">&larr; Vorige Woche</a>
-      <a class="btn btn-sm" href="<?= h(route('entries', $__filterQp + ['view' => 'calendar'])) ?>">Heute</a>
-      <a class="btn btn-sm" href="<?= h(route('entries', $__weekQp($__nextWeek))) ?>">Naechste Woche &rarr;</a>
+      <a class="btn btn-sm" href="<?= h(route('entries', $__weekQp($__prevWeek))) ?>"><?= h(t('cal.prev_week', '← Vorige Woche')) ?></a>
+      <a class="btn btn-sm" href="<?= h(route('entries', $__filterQp + ['view' => 'calendar'])) ?>"><?= h(t('dash.today')) ?></a>
+      <a class="btn btn-sm" href="<?= h(route('entries', $__weekQp($__nextWeek))) ?>"><?= h(t('cal.next_week', 'Naechste Woche →')) ?></a>
     </div>
   </div>
 
@@ -155,20 +163,20 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
 
 <div class="card external-cal-teaser">
   <div class="card-head">
-    <h2>Externe Kalender</h2>
-    <span class="pill pill-pro">Pro-Feature</span>
+    <h2><?= h(t('cal.external_title', 'Externe Kalender')) ?></h2>
+    <span class="pill pill-pro"><?= h(t('nav.pro_feature_tooltip')) ?></span>
   </div>
-  <p class="muted">Externe Quellen laufen in <strong>Timeminator Pro</strong>: CalDAV-Konten (iCloud, Google via CalDAV, FastMail&nbsp;&hellip;) und Kalender-Abos per iCal-/Outlook-URL (z.&nbsp;B. Feiertags-Kalender). Read-only Overlays im Grid.</p>
+  <p class="muted"><?= t('cal.external_intro', 'Externe Quellen laufen in <strong>Timeminator Pro</strong>: CalDAV-Konten (iCloud, Google via CalDAV, FastMail&nbsp;&hellip;) und Kalender-Abos per iCal-/Outlook-URL (z.&nbsp;B. Feiertags-Kalender). Read-only Overlays im Grid.') /* contains <strong>, intentional */ ?></p>
   <div class="external-cal-items">
     <a class="external-cal-item" href="<?= h($pro_url) ?>" target="_blank" rel="noopener">
-      <strong>CalDAV-Kalender hinzufuegen</strong>
-      <span class="muted">iCloud, Google (CalDAV), FastMail, Zimbra&nbsp;&hellip;</span>
-      <span class="pill pill-pro">Pro</span>
+      <strong><?= h(t('cal.ext_caldav_title', 'CalDAV-Kalender hinzufuegen')) ?></strong>
+      <span class="muted"><?= h(t('cal.ext_caldav_hint', 'iCloud, Google (CalDAV), FastMail, Zimbra …')) ?></span>
+      <span class="pill pill-pro"><?= h(t('nav.pro_pill')) ?></span>
     </a>
     <a class="external-cal-item" href="<?= h($pro_url) ?>" target="_blank" rel="noopener">
-      <strong>Kalender-Abo (iCal/Outlook-URL)</strong>
-      <span class="muted">z.&nbsp;B. Feiertags-URL als <code>.ics</code>-Abo</span>
-      <span class="pill pill-pro">Pro</span>
+      <strong><?= h(t('cal.ext_ics_title', 'Kalender-Abo (iCal/Outlook-URL)')) ?></strong>
+      <span class="muted"><?= t('cal.ext_ics_hint', 'z.&nbsp;B. Feiertags-URL als <code>.ics</code>-Abo') /* contains <code>, intentional */ ?></span>
+      <span class="pill pill-pro"><?= h(t('nav.pro_pill')) ?></span>
     </a>
   </div>
 </div>

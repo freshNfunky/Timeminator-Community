@@ -20,6 +20,32 @@ version heading when a release is cut.
 
 ## [Unreleased]
 
+### Changed
+- **i18n coverage expanded (waves 2–5 of #95).** Follow-up to #100 — the user-first
+  views (layout, nav, login, installer, dashboard) were already bilingual;
+  this round converts the rest of the day-to-day flows: entries list + form
+  + week calendar + delete flow, the full structure CRUD (clients, projects,
+  work packages, tasks), the cascading task picker, the users + roles admin
+  screens, the sentiment page (recorder + personal + team views, incl. the
+  five-smiley score labels resolved against the current locale), the
+  update-available banner, the Pro-teaser upsell banner and the four Pro
+  teasers' names + bullet copy, and the error page.
+- **Controller flashes converted** across `entries`, `structure`, `users`,
+  `roles`, `imports`, `banners`, `sentiment` and `admin/system` — every
+  success / error flash the user can see while booking, editing or
+  administering is now locale-aware.
+- **Page titles converted** on every route handler that passed a hardcoded
+  German label to `view()`.
+- `lang/{de,en}.php` grew from 102 → **286 keys** in lockstep (parity-checked
+  at build time).
+
+Not yet translated and tracked as the last follow-up on #95: the Admin →
+System page body (banner / telemetry / endpoints / updates sub-sections),
+`imports/index.php` (CSV preview + confirm UI), `stats/index.php` +
+`stats/scopes.php`, and the inert mock-content inside the four Pro-teaser
+cards (dimmed, aria-hidden, non-interactive). The infrastructure handles
+them — only the string-swap remains.
+
 ### Added
 - **i18n scaffolding + English UI** (partial fix for #95) — the German-only UI
   is now a two-language setup (German default, English available). A small

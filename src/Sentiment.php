@@ -174,8 +174,17 @@ final class Sentiment
         };
     }
 
-    /** Human-readable label (German) for a given score. */
+    /** Human-readable label for a given score, resolved against the current locale. */
     public static function label(int $score): string
+    {
+        $key = 'sent.score.' . max(1, min(5, $score));
+        return function_exists('t')
+            ? t($key, self::labelFallback($score))
+            : self::labelFallback($score);
+    }
+
+    /** German fallback copy used before the locale catalog is loaded. */
+    private static function labelFallback(int $score): string
     {
         return match (max(1, min(5, $score))) {
             1 => 'ganz schlecht',
