@@ -47,9 +47,11 @@ Update auf eine Release, die diese Änderung enthält.**
 
 Zwei Wege:
 1. **Release ausliefern**, dann Banner live schalten (sauber, aber mit Vorlauf).
-2. **Sofort für aktuelle Nutzer:** `href` auf einen `felixschaller.com`-Redirect zeigen
-   (z. B. `https://go.felixschaller.com/zeitcheck` → 302 zur Quest-Seite). `felixschaller.com`
-   ist bei allen Instanzen längst erlaubt — kein Release nötig.
+2. **Sofort für aktuelle Nutzer:** `href` auf einen Redirect unter einer bereits erlaubten
+   Domain zeigen — ein **Pfad**, keine neue Subdomain: `https://felixschaller.com/zeitcheck`
+   → 302 zur Quest-Seite. `felixschaller.com` ist bei allen Instanzen längst erlaubt — kein
+   Release nötig. Vorteil: stabile, retargetbare URL (später auf `timeminator.com`
+   umbiegbar, ohne Banner/Print zu ändern).
 
 ## Upload auf assets.felixschaller.com
 

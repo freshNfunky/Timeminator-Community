@@ -56,6 +56,8 @@ DSGVO: keine E-Mails scrapen, nur die LinkedIn-Mechanik nutzen.
 
 ## Quellen-Tracking (optional)
 
-Pro Kanal einen eigenen Shortlink (`go.felixschaller.com/zeitcheck-sn`, `-li`, `-xing`, `-reddit`),
-alle auf die Quest-Seite zeigend → so siehst du, welcher Kanal zieht. Optional eine Frage
-„Wie bist du hergekommen?" im Formular.
+Pro Kanal einen eigenen **Pfad/Query auf einer bestehenden Domain** (keine neue Subdomain):
+`felixschaller.com/zeitcheck?src=sn`, `?src=li`, `?src=xing`, `?src=reddit` — serverseitig
+geloggt und dann zur Quest-Seite weitergeleitet. So siehst du, welcher Kanal zieht (die
+Artifact-URL selbst ignoriert Query-Parameter, dein Redirect sieht sie davor). Optional eine
+Frage „Wie bist du hergekommen?" im Formular.
