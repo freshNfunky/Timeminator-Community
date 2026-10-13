@@ -38,20 +38,18 @@ dass Admins ihre CSP anpassen müssen.
 }
 ```
 
-## ⚠️ Wichtig: Allowlist & Release
+## Allowlist & Release
 
-Der `href` liegt auf `claude.ai`. Jede Community-Instanz säubert den Feed gegen **ihre eigene**
-`banners.allowed_hosts`. `claude.ai` wurde dem Code-Default hinzugefügt (`config.sample.php`,
-`src/Banners.php`, `src/helpers.php`) — **greift bei bestehenden Nutzern aber erst nach einem
-Update auf eine Release, die diese Änderung enthält.**
+Der `href` zeigt **direkt** auf `claude.ai`. Jede Community-Instanz säubert den Feed gegen **ihre
+eigene** `banners.allowed_hosts` — die Allowlist lebt also in jeder laufenden Instanz. `claude.ai`
+wurde dem Code-Default hinzugefügt (`config.sample.php`, `src/Banners.php`, `src/helpers.php`) und
+**greift, sobald die Instanzen auf die Release mit dieser Änderung aktualisiert sind** (steht
+unmittelbar an).
 
-Zwei Wege:
-1. **Release ausliefern**, dann Banner live schalten (sauber, aber mit Vorlauf).
-2. **Sofort für aktuelle Nutzer:** `href` auf einen Redirect unter einer bereits erlaubten
-   Domain zeigen — ein **Pfad**, keine neue Subdomain: `https://felixschaller.com/zeitcheck`
-   → 302 zur Quest-Seite. `felixschaller.com` ist bei allen Instanzen längst erlaubt — kein
-   Release nötig. Vorteil: stabile, retargetbare URL (später auf `timeminator.com`
-   umbiegbar, ohne Banner/Print zu ändern).
+Bis dahin wird der Link auf älteren Instanzen gestrippt (Banner-Bild ohne funktionierenden Link).
+Da die Release unmittelbar ansteht, wird das bewusst in Kauf genommen — ein Zwischen-Redirect
+lohnt den Aufwand nicht. Ein generischer, ID-basierter Shortlink-/Redirect-Dienst (bit.ly-Stil)
+ist als Future Work notiert: Issue #117.
 
 ## Upload auf assets.felixschaller.com
 

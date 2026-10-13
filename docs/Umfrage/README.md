@@ -27,5 +27,5 @@ Feedback-Formular führt. Stand: 2026-10-13 · Timeminator Community v0.9.0.
 
 - [ ] Quest-Seite öffentlich schalten.
 - [ ] In-App-Banner-Creative auf `assets.felixschaller.com` hochladen + Feed-JSON ergänzen (siehe `banner-deploy.md`).
-- [ ] Für bestehende Community-Nutzer: Release ausliefern, damit die erweiterte Allowlist (`claude.ai`) greift — **oder** Banner-`href` auf einen `felixschaller.com`-Redirect zeigen (greift sofort).
+- [ ] Release ausliefern, damit die erweiterte Allowlist (`claude.ai`) bei bestehenden Nutzern greift (steht an; bis dahin wird der Banner-Link auf älteren Instanzen gestrippt — bewusst in Kauf genommen). Generischer Redirect-Dienst als Future Work: Issue #117.
 - [ ] Optional: Kanal-Shortlinks für Quellen-Tracking.
