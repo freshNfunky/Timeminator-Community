@@ -43,7 +43,7 @@ function ctrl_banners_save(): void
 
     $endpoint = trim((string) post('banner_endpoint_override'));
     if ($endpoint !== '' && !preg_match('~^https?://~i', $endpoint)) {
-        flash('Banner-Endpoint muss mit http:// oder https:// beginnen.', 'err');
+        flash(t('system.err_banner_url_proto', 'Banner-Endpoint muss mit http:// oder https:// beginnen.'), 'err');
         redirect_route('admin_system');
     }
 
@@ -51,6 +51,6 @@ function ctrl_banners_save(): void
     Settings::set('banner_telemetry', (bool) post('banner_telemetry'));
     Settings::set('banner_endpoint_override', $endpoint);
 
-    flash('Banner-Einstellungen gespeichert.');
+    flash(t('system.flash_banner_saved', 'Banner-Einstellungen gespeichert.'));
     redirect_route('admin_system');
 }

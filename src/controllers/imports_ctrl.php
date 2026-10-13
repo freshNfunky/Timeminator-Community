@@ -32,15 +32,15 @@ function ctrl_imports_upload(): void
     csrf_check();
     $file = $_FILES['csv'] ?? null;
     if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-        flash('Keine oder fehlerhafte CSV-Datei.', 'err');
+        flash(t('imports.err_bad_csv', 'Keine oder fehlerhafte CSV-Datei.'), 'err');
         redirect_route('imports');
     }
     if (!is_uploaded_file($file['tmp_name'])) {
-        flash('Ungueltiger Upload.', 'err');
+        flash(t('imports.err_bad_upload', 'Ungueltiger Upload.'), 'err');
         redirect_route('imports');
     }
     if ($file['size'] > 5 * 1024 * 1024) {
-        flash('CSV zu gross (max 5 MB).', 'err');
+        flash(t('imports.err_too_big', 'CSV zu gross (max 5 MB).'), 'err');
         redirect_route('imports');
     }
     try {
@@ -60,13 +60,13 @@ function ctrl_imports_confirm(): void
     csrf_check();
     $preview = $_SESSION['import_preview'] ?? null;
     if (!$preview) {
-        flash('Keine Vorschau vorhanden.', 'err');
+        flash(t('imports.err_no_preview', 'Keine Vorschau vorhanden.'), 'err');
         redirect_route('imports');
     }
     unset($_SESSION['import_preview']);
     $valid = array_values(array_filter($preview['rows'], static fn(array $r) => $r['ok']));
     if (!$valid) {
-        flash('Kein gueltiger Datensatz in der CSV.', 'err');
+        flash(t('imports.err_no_valid_row', 'Kein gueltiger Datensatz in der CSV.'), 'err');
         redirect_route('imports');
     }
 
@@ -104,7 +104,7 @@ function ctrl_imports_discard(): void
     require_perm('admin.imports');
     csrf_check();
     unset($_SESSION['import_preview']);
-    flash('Vorschau verworfen.');
+    flash(t('imports.flash_discarded', 'Vorschau verworfen.'));
     redirect_route('imports');
 }
 

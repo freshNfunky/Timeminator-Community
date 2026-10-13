@@ -38,13 +38,13 @@ function ctrl_pro_invoices(): void
     $groups = array_values($groups);
     usort($groups, static fn($a, $b) => $b['minutes'] <=> $a['minutes']);
     $groups = array_slice($groups, 0, 6);
-    view('pro/invoices', $ctx + ['groups' => $groups], 'Rechnungen');
+    view('pro/invoices', $ctx + ['groups' => $groups], t('nav.invoices'));
 }
 
 function ctrl_pro_offers(): void
 {
     require_login();
-    view('pro/offers', pro_teaser_context(), 'Angebote');
+    view('pro/offers', pro_teaser_context(), t('nav.offers'));
 }
 
 function ctrl_pro_budget(): void
@@ -68,11 +68,11 @@ function ctrl_pro_budget(): void
             'pct'      => $budgetH > 0 ? min(100, (int) round($usedH / $budgetH * 100)) : 0,
         ];
     }
-    view('pro/budget', $ctx + ['rows' => $mock], 'Budget / Soll');
+    view('pro/budget', $ctx + ['rows' => $mock], t('pro.budget.feature'));
 }
 
 function ctrl_pro_roles(): void
 {
     require_login();
-    view('pro/roles', pro_teaser_context(), 'Rollen Pro');
+    view('pro/roles', pro_teaser_context(), t('nav.roles_pro'));
 }

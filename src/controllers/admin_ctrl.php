@@ -11,7 +11,7 @@ function ctrl_users_index(): void
         'users' => DB::all('SELECT u.*, r.label AS role_label FROM users u LEFT JOIN roles r ON r.id = u.role_id ORDER BY u.username'),
         'roles' => DB::all('SELECT * FROM roles ORDER BY label'),
         'edit'  => $editId ? DB::one('SELECT * FROM users WHERE id = ?', [$editId]) : null,
-    ], 'Benutzer');
+    ], t('nav.users'));
 }
 
 function ctrl_user_save(): void
@@ -26,7 +26,7 @@ function ctrl_user_save(): void
     $password = (string) post('password');
 
     if ($username === '') {
-        flash('Benutzername ist erforderlich.', 'err');
+        flash(t('users.err_username_required', 'Benutzername ist erforderlich.'), 'err');
         redirect_route('admin_users');
     }
 
@@ -38,18 +38,18 @@ function ctrl_user_save(): void
                 DB::run('UPDATE users SET password_hash=? WHERE id=?',
                     [password_hash($password, PASSWORD_DEFAULT), $id]);
             }
-            flash('Benutzer aktualisiert.');
+            flash(t('users.flash_updated', 'Benutzer aktualisiert.'));
         } else {
             if (strlen($password) < 8) {
-                flash('Passwort muss mindestens 8 Zeichen haben.', 'err');
+                flash(t('users.err_pw_len', 'Passwort muss mindestens 8 Zeichen haben.'), 'err');
                 redirect_route('admin_users');
             }
             DB::insert('INSERT INTO users (username, password_hash, display_name, role_id, active, created_at) VALUES (?,?,?,?,?,?)',
                 [$username, password_hash($password, PASSWORD_DEFAULT), $display, $roleId, $active, now()]);
-            flash('Benutzer angelegt.');
+            flash(t('users.flash_created', 'Benutzer angelegt.'));
         }
     } catch (PDOException $e) {
-        flash('Konnte nicht speichern (Benutzername evtl. vergeben).', 'err');
+        flash(t('users.err_username_taken', 'Konnte nicht speichern (Benutzername evtl. vergeben).'), 'err');
     }
     redirect_route('admin_users');
 }
@@ -71,7 +71,7 @@ function ctrl_roles_index(): void
         'permissions' => DB::all('SELECT * FROM permissions ORDER BY grp, label'),
         'edit'        => $editRole,
         'rolePerms'   => $rolePerms,
-    ], 'Rollen und Rechte');
+    ], t('nav.roles'));
 }
 
 function ctrl_role_save(): void
@@ -84,7 +84,7 @@ function ctrl_role_save(): void
     $perms = array_map('intval', (array) post('perms', []));
 
     if ($label === '') {
-        flash('Bezeichnung ist erforderlich.', 'err');
+        flash(t('roles.err_label_required', 'Bezeichnung ist erforderlich.'), 'err');
         redirect_route('admin_roles');
     }
 
@@ -109,9 +109,9 @@ function ctrl_role_save(): void
         foreach ($perms as $pid) {
             DB::run('INSERT INTO role_permissions (role_id, permission_id) VALUES (?,?)', [$id, $pid]);
         }
-        flash('Rolle gespeichert.');
+        flash(t('roles.flash_saved', 'Rolle gespeichert.'));
     } catch (PDOException $e) {
-        flash('Konnte nicht speichern (Kennung evtl. vergeben).', 'err');
+        flash(t('roles.err_code_taken', 'Konnte nicht speichern (Kennung evtl. vergeben).'), 'err');
     }
     redirect_route('admin_roles');
 }
@@ -126,15 +126,15 @@ function ctrl_role_delete(): void
         redirect_route('admin_roles');
     }
     if ($role['is_system']) {
-        flash('System-Rollen koennen nicht geloescht werden.', 'err');
+        flash(t('roles.err_system_delete', 'System-Rollen koennen nicht geloescht werden.'), 'err');
         redirect_route('admin_roles');
     }
     if ((int) DB::scalar('SELECT COUNT(*) FROM users WHERE role_id = ?', [$id]) > 0) {
-        flash('Rolle ist noch Benutzern zugewiesen.', 'err');
+        flash(t('roles.err_role_assigned', 'Rolle ist noch Benutzern zugewiesen.'), 'err');
         redirect_route('admin_roles');
     }
     DB::run('DELETE FROM roles WHERE id = ?', [$id]);
-    flash('Rolle geloescht.');
+    flash(t('roles.flash_deleted', 'Rolle geloescht.'));
     redirect_route('admin_roles');
 }
 
@@ -146,7 +146,7 @@ function ctrl_system_index(): void
     if (is_post() && post('action') === 'sync_perms') {
         csrf_check();
         sync_permissions();
-        flash('Rechte-Katalog synchronisiert.');
+        flash(t('system.flash_perms_synced', 'Rechte-Katalog synchronisiert.'));
         redirect_route('admin_system');
     }
     view('admin/system', [
@@ -169,7 +169,7 @@ function ctrl_system_index(): void
         'banner_endpoint_default'  => Banners::endpointDefault(),
         'banner_endpoint_override' => (string) Settings::get('banner_endpoint_override', ''),
         'install_id'               => Banners::installId(),
-    ], 'System');
+    ], t('nav.system'));
 }
 
 /**
@@ -188,7 +188,7 @@ function ctrl_theme_save(): void
         $pref = 'system';
     }
     Settings::set('theme_preference', $pref);
-    flash('Darstellung gespeichert.');
+    flash(t('system.flash_theme_saved', 'Darstellung gespeichert.'));
     redirect_route('admin_system');
 }
 
@@ -271,7 +271,7 @@ function ctrl_update_clear_skipped(): void
     require_perm('admin.system');
     csrf_check();
     Updater::clearSkippedVersions();
-    flash('Uebersprungene Versionen zurueckgesetzt.');
+    flash(t('system.flash_unskip', 'Uebersprungene Versionen zurueckgesetzt.'));
     redirect_route('admin_system');
 }
 
@@ -293,17 +293,17 @@ function ctrl_endpoints_save(): void
     $manifest = trim((string) post('manifest_override'));
     $reg = trim((string) post('registration_override'));
     if ($manifest !== '' && !preg_match('~^https?://~i', $manifest)) {
-        flash('Update-URL muss mit http:// oder https:// beginnen.', 'err');
+        flash(t('system.err_update_url_proto', 'Update-URL muss mit http:// oder https:// beginnen.'), 'err');
         redirect_route('admin_system');
     }
     if ($reg !== '' && !preg_match('~^https?://~i', $reg)) {
-        flash('Registration-URL muss mit http:// oder https:// beginnen.', 'err');
+        flash(t('system.err_registry_url_proto', 'Registration-URL muss mit http:// oder https:// beginnen.'), 'err');
         redirect_route('admin_system');
     }
     Settings::set('update_manifest_url_override', $manifest);
     Settings::set('registration_endpoint_override', $reg);
     Settings::set('update_check_disabled', (bool) post('update_disabled'));
     Settings::set('registration_disabled', (bool) post('registration_disabled'));
-    flash('Endpoints gespeichert.');
+    flash(t('system.flash_endpoints_saved', 'Endpoints gespeichert.'));
     redirect_route('admin_system');
 }

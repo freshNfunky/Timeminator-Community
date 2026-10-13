@@ -9,7 +9,7 @@ function ctrl_stats_index(): void
         'projects' => Repo::projects(),
         'scopes'   => Repo::scopes(),
         'tracks'   => Repo::distinctTracks(),
-    ], 'Statistik');
+    ], t('nav.stats'));
 }
 
 function ctrl_stats_data(): void

@@ -51,36 +51,36 @@ foreach ($tasks as $t) {
 }
 ?>
 <div class="task-picker <?= h($wrapClass) ?>" data-selected-task="<?= (int) $selectedTaskId ?>">
-  <label>Kunde
-    <select class="tp-client" aria-label="Kunde filtern">
-      <option value="">Alle Kunden</option>
+  <label><?= h(t('nav.clients')) ?>
+    <select class="tp-client" aria-label="<?= h(t('tp.client_filter', 'Kunde filtern')) ?>">
+      <option value=""><?= h(t('tp.all_clients', 'Alle Kunden')) ?></option>
       <?php foreach ($clients as $cid => $cname): ?>
         <option value="<?= (int) $cid ?>"><?= h($cname) ?></option>
       <?php endforeach; ?>
     </select>
   </label>
-  <label>Projekt
-    <select class="tp-project" aria-label="Projekt filtern">
-      <option value="">Alle Projekte</option>
+  <label><?= h(t('projects.col_project')) ?>
+    <select class="tp-project" aria-label="<?= h(t('tp.project_filter', 'Projekt filtern')) ?>">
+      <option value=""><?= h(t('tp.all_projects', 'Alle Projekte')) ?></option>
       <?php foreach ($projects as $pid => $p): ?>
         <option value="<?= (int) $pid ?>" data-client="<?= (int) $p['client_id'] ?>"><?= h($p['name']) ?></option>
       <?php endforeach; ?>
     </select>
   </label>
-  <label>Arbeitspaket
-    <select class="tp-wp" aria-label="Arbeitspaket filtern">
-      <option value="">Alle Arbeitspakete</option>
+  <label><?= h(t('wp.single', 'Arbeitspaket')) ?>
+    <select class="tp-wp" aria-label="<?= h(t('tp.wp_filter', 'Arbeitspaket filtern')) ?>">
+      <option value=""><?= h(t('tp.all_wp', 'Alle Arbeitspakete')) ?></option>
       <?php foreach ($workpackages as $wid => $w): ?>
         <option value="<?= (int) $wid ?>" data-client="<?= (int) $w['client_id'] ?>" data-project="<?= (int) $w['project_id'] ?>"><?= h($w['name']) ?></option>
       <?php endforeach; ?>
       <?php foreach ($projectsWithLooseTasks as $pid => $cid): ?>
-        <option value="0" data-client="<?= (int) $cid ?>" data-project="<?= (int) $pid ?>">(ohne Arbeitspaket)</option>
+        <option value="0" data-client="<?= (int) $cid ?>" data-project="<?= (int) $pid ?>"><?= h(t('tp.wp_none_inline', '(ohne Arbeitspaket)')) ?></option>
       <?php endforeach; ?>
     </select>
   </label>
-  <label>Aufgabe
-    <select name="task_id" class="tp-task" required aria-label="Aufgabe">
-      <option value="">Aufgabe waehlen …</option>
+  <label><?= h(t('dash.col_task')) ?>
+    <select name="task_id" class="tp-task" required aria-label="<?= h(t('dash.col_task')) ?>">
+      <option value=""><?= h(t('tp.pick_task', 'Aufgabe waehlen …')) ?></option>
       <?php foreach ($tasks as $t): ?>
         <option value="<?= (int) $t['id'] ?>"
           data-client="<?= (int) $t['client_id'] ?>"

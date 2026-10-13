@@ -10,10 +10,10 @@
  * @var string $pro_url
  * @var array  $groups  [{client, minutes, projects: {name=>true, ...}}]
  */
-$__feature = 'Rechnungen';
-$__bullets = '<li>Rechnungen aus geleisteten Zeiten erzeugen</li>'
-           . '<li>Stundensaetze pro Kunde / Projekt / Rolle</li>'
-           . '<li>PDF-Export mit eigenem Briefpapier</li>'
+$__feature = t('nav.invoices');
+$__bullets = '<li>' . h(t('pro.inv.b1', 'Rechnungen aus geleisteten Zeiten erzeugen')) . '</li>'
+           . '<li>' . h(t('pro.inv.b2', 'Stundensaetze pro Kunde / Projekt / Rolle')) . '</li>'
+           . '<li>' . h(t('pro.inv.b3', 'PDF-Export mit eigenem Briefpapier')) . '</li>'
            . '<li>Status: Entwurf, versendet, bezahlt</li>';
 ?>
 <div class="pro-teaser">
