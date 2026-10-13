@@ -15,15 +15,81 @@ declare(strict_types=1);
 function ctrl_imports_index(): void
 {
     require_perm('admin.imports');
-    $batches = DB::all(
-        'SELECT b.*, (SELECT COUNT(*) FROM time_entries e WHERE e.batch_id = b.id) AS entry_count
-           FROM import_batches b
-          ORDER BY b.created_at DESC'
-    );
+
+    $filterUser = (int) get('user_id', 0);
+    $filterFrom = trim((string) get('from', ''));
+    $filterTo   = trim((string) get('to', ''));
+
+    $where = [];
+    $args  = [];
+    if ($filterUser > 0) {
+        $where[] = 'b.user_id = ?';
+        $args[]  = $filterUser;
+    }
+    if ($filterFrom !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $filterFrom)) {
+        $where[] = 'b.created_at >= ?';
+        $args[]  = $filterFrom . ' 00:00:00';
+    }
+    if ($filterTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $filterTo)) {
+        $where[] = 'b.created_at <= ?';
+        $args[]  = $filterTo . ' 23:59:59';
+    }
+    $sql = 'SELECT b.*,
+                   u.username AS user_username, u.display_name AS user_display_name,
+                   (SELECT COUNT(*) FROM time_entries e WHERE e.batch_id = b.id) AS entry_count
+              FROM import_batches b
+              LEFT JOIN users u ON u.id = b.user_id';
+    if ($where) { $sql .= ' WHERE ' . implode(' AND ', $where); }
+    $sql .= ' ORDER BY b.created_at DESC';
+    $batches = DB::all($sql, $args);
+
     view('imports/index', [
-        'batches' => $batches,
-        'preview' => $_SESSION['import_preview'] ?? null,
+        'batches'      => $batches,
+        'preview'      => $_SESSION['import_preview'] ?? null,
+        'all_users'    => DB::all('SELECT id, username, display_name FROM users ORDER BY username'),
+        'filter_user'  => $filterUser,
+        'filter_from'  => $filterFrom,
+        'filter_to'    => $filterTo,
     ], t('imports.title'));
+}
+
+/**
+ * Admin → Importe-Übersicht: Details for one import batch (#108).
+ * Shows which time_entries were created by this batch so an admin can
+ * tell what gets reverted before pressing the destructive button.
+ */
+function ctrl_imports_show(): void
+{
+    require_perm('admin.imports');
+    $id = (int) get('id', 0);
+    $batch = $id ? DB::one(
+        'SELECT b.*,
+                u.username AS user_username, u.display_name AS user_display_name
+           FROM import_batches b
+           LEFT JOIN users u ON u.id = b.user_id
+          WHERE b.id = ?',
+        [$id]
+    ) : null;
+    if (!$batch) {
+        flash(t('imports.err_batch_missing', 'Batch nicht gefunden.'), 'err');
+        redirect_route('imports');
+    }
+    $entries = DB::all(
+        'SELECT e.*, c.name AS client_name, p.name AS project_name,
+                t.name AS task_name, u.username AS user_username
+           FROM time_entries e
+           LEFT JOIN clients c  ON c.id = e.client_id
+           LEFT JOIN projects p ON p.id = e.project_id
+           LEFT JOIN tasks t    ON t.id = e.task_id
+           LEFT JOIN users u    ON u.id = e.user_id
+          WHERE e.batch_id = ?
+          ORDER BY e.start_ts',
+        [$id]
+    );
+    view('imports/show', [
+        'batch'   => $batch,
+        'entries' => $entries,
+    ], sprintf(t('imports.show_title', 'Batch #%d'), $id));
 }
 
 function ctrl_imports_upload(): void
@@ -71,8 +137,8 @@ function ctrl_imports_confirm(): void
     }
 
     $batchId = DB::insert(
-        'INSERT INTO import_batches (label, source, note, created_at) VALUES (?,?,?,?)',
-        [$preview['label'], 'csv', $preview['note'] ?? null, now()]
+        'INSERT INTO import_batches (label, source, note, user_id, created_at) VALUES (?,?,?,?,?)',
+        [$preview['label'], 'csv', $preview['note'] ?? null, Auth::id(), now()]
     );
 
     $inserted = 0;

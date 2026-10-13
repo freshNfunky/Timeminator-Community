@@ -96,7 +96,10 @@ CREATE TABLE IF NOT EXISTS import_batches (
   label         VARCHAR(191) NOT NULL,
   source        VARCHAR(96)  NOT NULL DEFAULT 'manual',
   note          TEXT NULL,
-  created_at    DATETIME     NOT NULL
+  user_id       INT NULL,
+  created_at    DATETIME     NOT NULL,
+  KEY idx_import_batches_user (user_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS time_entries (

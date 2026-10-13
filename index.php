@@ -93,6 +93,7 @@ $routes = [
     'banners_save'      => 'ctrl_banners_save',
 
     'imports'         => 'ctrl_imports_index',
+    'imports_show'    => 'ctrl_imports_show',
     'imports_upload'  => 'ctrl_imports_upload',
     'imports_confirm' => 'ctrl_imports_confirm',
     'imports_discard' => 'ctrl_imports_discard',
