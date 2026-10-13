@@ -175,6 +175,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_prt_token_hash ON password_reset_tokens (to
 CREATE INDEX IF NOT EXISTS idx_prt_user     ON password_reset_tokens (user_id);
 CREATE INDEX IF NOT EXISTS idx_prt_expires  ON password_reset_tokens (expires_at);
 
+CREATE TABLE IF NOT EXISTS scheduler_runs (
+  name              TEXT    PRIMARY KEY,
+  last_run_at       TEXT    NULL,
+  last_result       TEXT    NULL,
+  last_duration_ms  INTEGER NULL,
+  last_error        TEXT    NULL
+);
+
 CREATE TABLE IF NOT EXISTS schema_migrations (
   version    TEXT PRIMARY KEY,
   applied_at TEXT NOT NULL

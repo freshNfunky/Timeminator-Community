@@ -182,6 +182,14 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS scheduler_runs (
+  name              VARCHAR(64)  PRIMARY KEY,
+  last_run_at       DATETIME     NULL,
+  last_result       VARCHAR(32)  NULL,
+  last_duration_ms  INT          NULL,
+  last_error        VARCHAR(512) NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS schema_migrations (
   version    VARCHAR(64) PRIMARY KEY,
   applied_at DATETIME NOT NULL

@@ -17,6 +17,7 @@ require __DIR__ . '/src/Registration.php';
 require __DIR__ . '/src/Banners.php';
 require __DIR__ . '/src/Mail.php';
 require __DIR__ . '/src/PasswordReset.php';
+require __DIR__ . '/src/Scheduler.php';
 require __DIR__ . '/src/seed.php';
 require __DIR__ . '/src/Migrator.php';
 
@@ -34,6 +35,7 @@ require __DIR__ . '/src/controllers/imports_ctrl.php';
 require __DIR__ . '/src/controllers/pro_teaser_ctrl.php';
 require __DIR__ . '/src/controllers/banners_ctrl.php';
 require __DIR__ . '/src/controllers/password_reset_ctrl.php';
+require __DIR__ . '/src/controllers/cron_ctrl.php';
 require __DIR__ . '/src/Sentiment.php';
 require __DIR__ . '/src/controllers/sentiment_ctrl.php';
 
@@ -87,6 +89,10 @@ $routes = [
     'endpoints_save'    => 'ctrl_endpoints_save',
     'mail_save'         => 'ctrl_mail_save',
     'mail_test'         => 'ctrl_mail_test',
+    'admin_cron'        => 'ctrl_cron_index',
+    'cron_run_one'      => 'ctrl_cron_run_one',
+    'cron_regen_token'  => 'ctrl_cron_regen_token',
+    'cron_web_run'      => 'ctrl_cron_web_run',
     'theme_save'        => 'ctrl_theme_save',
     'language_save'     => 'ctrl_language_save',
     'sidepanel'         => 'ctrl_banners_feed',

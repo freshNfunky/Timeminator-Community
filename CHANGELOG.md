@@ -21,6 +21,25 @@ version heading when a release is cut.
 ## [Unreleased]
 
 ### Added
+- **Admin → Scheduler / Cron (housekeeping jobs)** (Pro-Sync A.3, #109).
+  Third position of the Pro → Community feature-sync wave.
+  - New `src/Scheduler.php`: register jobs by name + interval + callable,
+    track last-run / last-result / last-duration / last-error per job in
+    a new `scheduler_runs` table.
+  - Built-in jobs: `prune_expired_reset_tokens` (hourly) wires up
+    A.1's `PasswordReset::prune()`; `prune_rollback_snapshots` (daily)
+    removes the Updater's `data/backup_YYYYMMDD_*` directories older
+    than 7 days.
+  - **Admin → Scheduler** page under `admin.system`: status table with
+    "Jetzt ausführen" per job, plus a web-cron panel showing the
+    tokenized URL to hand to an external cron hitter and a
+    "Regenerate token" button.
+  - Public endpoint `index.php?r=cron_web_run&token=<TOKEN>`: constant-
+    time token verify, runs due jobs, returns a JSON summary of what
+    fired and what was skipped.
+  - README picks up a "Scheduler (housekeeping jobs)" section describing
+    both system-cron and external-service wiring.
+
 - **Admin → Importe-Übersicht** (Pro-Sync A.2, #108). Second position of
   the Pro → Community feature-sync wave.
   - `import_batches` now carries a `user_id` (nullable; legacy rows stay
