@@ -193,6 +193,30 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .tile-val{font-size:26px;font-weight:700;color:var(--brand)}
 .tile-lbl{font-size:12px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
 
+/* Project report — Ist vs Plan (#112, Pro-Sync B.3). */
+.report-filter{margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.report-chart-head{margin-top:16px}
+.report-status-badge{display:inline-block;padding:2px 8px;border-radius:999px;
+  font-size:11px;font-weight:600;letter-spacing:.02em}
+.report-badge-ok{background:rgba(16,185,129,.15);color:#047857}
+.report-badge-warn{background:rgba(245,158,11,.18);color:#92400e}
+.report-badge-over{background:rgba(239,68,68,.18);color:#991b1b}
+:root[data-theme="dark"] .report-badge-ok{color:#6ee7b7}
+:root[data-theme="dark"] .report-badge-warn{color:#fcd34d}
+:root[data-theme="dark"] .report-badge-over{color:#fca5a5}
+.report-chart-wrap{overflow-x:auto;margin-top:8px}
+.report-chart-wrap svg{display:block;max-width:100%}
+.report-chart-soll{fill:var(--muted);opacity:.4}
+.report-chart-ist-ok{fill:var(--brand)}
+.report-chart-ist-warn{fill:#f59e0b}
+.report-chart-ist-over{fill:#ef4444}
+.report-chart-label{font-size:11px;fill:var(--muted)}
+.report-chart-legend{margin-top:4px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.report-chart-legend-swatch{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:middle;margin-right:4px}
+.report-chart-legend-soll{background:var(--muted);opacity:.4}
+.report-chart-legend-ist-ok{background:var(--brand)}
+.report-pro-teaser{margin-top:16px}
+
 /* Planning tile — simple soll-vs-ist bar (#111, Pro-Sync B.2). */
 .planning-bar{background:var(--soft);border:1px solid var(--line);
   border-radius:var(--radius);height:8px;overflow:hidden;min-width:120px}

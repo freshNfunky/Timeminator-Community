@@ -76,7 +76,12 @@
   <div class="card">
     <div class="card-head">
       <h2><?= h(t('planning.dashboard_tile_title', 'Projekt-Planung')) ?></h2>
-      <span class="pill"><?= (int) count($__planningRows) ?></span>
+      <div>
+        <span class="pill"><?= (int) count($__planningRows) ?></span>
+        <?php if (Auth::can('structure.manage')): ?>
+          <a class="btn btn-sm btn-ghost" href="<?= h(route('report_projects')) ?>"><?= h(t('planning.full_report', 'Vollstaendiger Report')) ?></a>
+        <?php endif; ?>
+      </div>
     </div>
     <table class="table">
       <thead>
