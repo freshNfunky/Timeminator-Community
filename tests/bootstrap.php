@@ -33,6 +33,7 @@ require APP_ROOT . '/src/I18n.php';
 require APP_ROOT . '/src/Mail.php';
 require APP_ROOT . '/src/PasswordReset.php';
 require APP_ROOT . '/src/Scheduler.php';
+require APP_ROOT . '/src/Holidays.php';
 
 // Tests access session superglobals without a real session; initialize empty
 // so a direct $_SESSION read doesn't warn.

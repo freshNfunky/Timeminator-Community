@@ -30,6 +30,14 @@ function ctrl_entries_index(): void
     }
 
     $entries = Repo::entries($f);
+    $holidays = [];
+    if ($view === 'calendar' && isset($weekStart, $weekEnd)) {
+        $holidays = Holidays::byDate(
+            $weekStart->format('Y-m-d'),
+            $weekEnd->format('Y-m-d'),
+            I18n::current()
+        );
+    }
     view('entries/index', [
         'entries'     => $entries,
         'clients'     => Repo::clients(),
@@ -39,6 +47,7 @@ function ctrl_entries_index(): void
         'view'        => $view,
         'pro_url'     => (string) cfg('pro_url', 'https://timeminator.felixschaller.com'),
         'week_start'  => $view === 'calendar' ? ($weekStart ?? null) : null,
+        'holidays'    => $holidays,
     ], t('nav.entries'));
 }
 
