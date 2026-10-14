@@ -15,6 +15,11 @@ require __DIR__ . '/src/Settings.php';
 require __DIR__ . '/src/Updater.php';
 require __DIR__ . '/src/Registration.php';
 require __DIR__ . '/src/Banners.php';
+require __DIR__ . '/src/Mail.php';
+require __DIR__ . '/src/PasswordReset.php';
+require __DIR__ . '/src/Scheduler.php';
+require __DIR__ . '/src/Holidays.php';
+require __DIR__ . '/src/ProjectReport.php';
 require __DIR__ . '/src/seed.php';
 require __DIR__ . '/src/Migrator.php';
 
@@ -31,14 +36,19 @@ require __DIR__ . '/src/controllers/admin_ctrl.php';
 require __DIR__ . '/src/controllers/imports_ctrl.php';
 require __DIR__ . '/src/controllers/pro_teaser_ctrl.php';
 require __DIR__ . '/src/controllers/banners_ctrl.php';
+require __DIR__ . '/src/controllers/password_reset_ctrl.php';
+require __DIR__ . '/src/controllers/cron_ctrl.php';
+require __DIR__ . '/src/controllers/report_ctrl.php';
 require __DIR__ . '/src/Sentiment.php';
 require __DIR__ . '/src/controllers/sentiment_ctrl.php';
 
 $r = (string) get('r', Auth::check() ? 'dashboard' : 'login');
 
 $routes = [
-    'login'        => 'ctrl_login',
-    'logout'       => 'ctrl_logout',
+    'login'          => 'ctrl_login',
+    'logout'         => 'ctrl_logout',
+    'reset_request'  => 'ctrl_reset_request',
+    'reset_form'     => 'ctrl_reset_form',
     'dashboard'    => 'ctrl_dashboard',
 
     'entries'         => 'ctrl_entries_index',
@@ -61,6 +71,8 @@ $routes = [
 
     'stats'        => 'ctrl_stats_index',
     'stats_data'   => 'ctrl_stats_data',
+    'report_projects'        => 'ctrl_report_projects',
+    'report_projects_export' => 'ctrl_report_projects_export',
     'sentiment'      => 'ctrl_sentiment_index',
     'sentiment_save' => 'ctrl_sentiment_save',
     'scopes'       => 'ctrl_scopes_index',
@@ -80,12 +92,19 @@ $routes = [
     'update_clear_skipped' => 'ctrl_update_clear_skipped',
     'registration_save' => 'ctrl_registration_save',
     'endpoints_save'    => 'ctrl_endpoints_save',
+    'mail_save'         => 'ctrl_mail_save',
+    'mail_test'         => 'ctrl_mail_test',
+    'admin_cron'        => 'ctrl_cron_index',
+    'cron_run_one'      => 'ctrl_cron_run_one',
+    'cron_regen_token'  => 'ctrl_cron_regen_token',
+    'cron_web_run'      => 'ctrl_cron_web_run',
     'theme_save'        => 'ctrl_theme_save',
     'language_save'     => 'ctrl_language_save',
     'sidepanel'         => 'ctrl_banners_feed',
     'banners_save'      => 'ctrl_banners_save',
 
     'imports'         => 'ctrl_imports_index',
+    'imports_show'    => 'ctrl_imports_show',
     'imports_upload'  => 'ctrl_imports_upload',
     'imports_confirm' => 'ctrl_imports_confirm',
     'imports_discard' => 'ctrl_imports_discard',

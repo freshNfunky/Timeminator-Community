@@ -286,6 +286,27 @@ persists on the named volume `tm_data`; the MySQL profile persists on `tm_db`.
 The current version is stored in [`VERSION`](VERSION); changes are listed in
 [`CHANGELOG.md`](CHANGELOG.md).
 
+## Scheduler (housekeeping jobs)
+
+Timeminator ships a lightweight job scheduler for background housekeeping
+(prune expired password-reset tokens, prune old update-rollback snapshots).
+Pick whichever trigger your host allows:
+
+**Option A — System cron.** On a server with `curl` and a user crontab:
+
+```cron
+*/15 * * * * curl -s "https://<your-host>/index.php?r=cron_web_run&token=<TOKEN>" > /dev/null
+```
+
+**Option B — External web-cron service** (e.g. cron-job.org, EasyCron,
+uptime-monitoring services). Give it the same URL and tell it to hit it
+every 15 minutes.
+
+The exact URL and the current token are shown under **Admin → Scheduler**,
+with a "Regenerate token" button if the token ever leaks. Jobs that haven't
+yet been due are skipped silently; the status page shows last-run and
+last-result per job.
+
 ## Security notes
 
 - Passwords are hashed with PHP `password_hash` (bcrypt).

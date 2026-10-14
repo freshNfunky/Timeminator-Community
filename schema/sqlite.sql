@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS projects (
   track         TEXT NULL,
   color         TEXT NULL,
   active        INTEGER NOT NULL DEFAULT 1,
+  target_hours  REAL NULL,
   created_at    TEXT NOT NULL,
   FOREIGN KEY (client_id) REFERENCES clients(id)
 );
@@ -91,8 +92,11 @@ CREATE TABLE IF NOT EXISTS import_batches (
   label         TEXT NOT NULL,
   source        TEXT NOT NULL DEFAULT 'manual',
   note          TEXT NULL,
-  created_at    TEXT NOT NULL
+  user_id       INTEGER NULL,
+  created_at    TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
+CREATE INDEX IF NOT EXISTS idx_import_batches_user ON import_batches (user_id);
 
 CREATE TABLE IF NOT EXISTS time_entries (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -157,6 +161,28 @@ CREATE TABLE IF NOT EXISTS sentiment_entries (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_sentiment_as_of ON sentiment_entries (as_of);
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id     INTEGER NOT NULL,
+  token_hash  TEXT    NOT NULL,
+  expires_at  TEXT    NOT NULL,
+  used_at     TEXT    NULL,
+  created_at  TEXT    NOT NULL,
+  requester_ip TEXT   NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_prt_token_hash ON password_reset_tokens (token_hash);
+CREATE INDEX IF NOT EXISTS idx_prt_user     ON password_reset_tokens (user_id);
+CREATE INDEX IF NOT EXISTS idx_prt_expires  ON password_reset_tokens (expires_at);
+
+CREATE TABLE IF NOT EXISTS scheduler_runs (
+  name              TEXT    PRIMARY KEY,
+  last_run_at       TEXT    NULL,
+  last_result       TEXT    NULL,
+  last_duration_ms  INTEGER NULL,
+  last_error        TEXT    NULL
+);
 
 CREATE TABLE IF NOT EXISTS schema_migrations (
   version    TEXT PRIMARY KEY,

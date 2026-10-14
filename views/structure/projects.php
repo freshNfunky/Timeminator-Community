@@ -20,6 +20,12 @@
         <datalist id="tracklist"><?php foreach ($tracks as $tr): ?><option value="<?= h($tr) ?>"><?php endforeach; ?></datalist>
       </label>
       <label><?= h(t('clients.color', 'Farbe')) ?> <input type="color" name="color" value="<?= h($edit['color'] ?? '#10b981') ?>"></label>
+      <label><?= h(t('planning.target_hours', 'Soll-Stunden (Gesamt)')) ?>
+        <input type="text" inputmode="decimal" name="target_hours"
+               value="<?= h($edit['target_hours'] !== null ? number_format((float) $edit['target_hours'], 2, '.', '') : '') ?>"
+               placeholder="<?= h(t('planning.target_hours_placeholder', 'z.B. 120.00 — optional')) ?>">
+        <small class="muted"><?= h(t('planning.target_hours_hint', 'Gesamtes Projekt-Soll in Stunden. Woechentlich/monatlich/pro Person: Pro.')) ?></small>
+      </label>
       <label class="check"><input type="checkbox" name="active" value="1" <?= (!$edit || $edit['active']) ? 'checked' : '' ?>> <?= h(t('struct.active')) ?></label>
 
       <p class="muted note-pro"><?= t('projects.budget_note_pro', 'Zeit-/Geldbudget, Planung und Fortschritts-Report sind Teil von <b>Timeminator Pro</b>.') /* contains <b>, intentional */ ?></p>
@@ -34,17 +40,18 @@
   <div class="card col-list">
     <h2><?= h(t('nav.projects')) ?></h2>
     <table class="table">
-      <thead><tr><th><?= h(t('struct.client')) ?></th><th><?= h(t('projects.col_project', 'Projekt')) ?></th><th><?= h(t('clients.track_short')) ?></th><th></th></tr></thead>
+      <thead><tr><th><?= h(t('struct.client')) ?></th><th><?= h(t('projects.col_project', 'Projekt')) ?></th><th><?= h(t('clients.track_short')) ?></th><th class="r"><?= h(t('planning.col_target', 'Soll (h)')) ?></th><th></th></tr></thead>
       <tbody>
       <?php foreach ($projects as $p): ?>
         <tr class="<?= $p['active'] ? '' : 'muted' ?>">
           <td><?= h($p['client_name']) ?></td>
           <td><span class="dot" data-color="<?= h(strtolower((string) ($p['color'] ?: ($p['client_color'] ?: '')))) ?>"></span><?= h($p['name']) ?> <?= $p['active'] ? '' : '<span class="pill">' . h(t('struct.inactive')) . '</span>' ?></td>
           <td><?= h($p['track'] ?: ($p['client_track'] ?? '')) ?></td>
+          <td class="r"><?= $p['target_hours'] !== null ? h(number_format((float) $p['target_hours'], 2, ',', '.') . ' h') : '<span class="muted">—</span>' ?></td>
           <td class="r"><a class="btn btn-sm" href="<?= h(route('projects', ['edit' => $p['id']])) ?>"><?= h(t('common.edit_short')) ?></a></td>
         </tr>
       <?php endforeach; ?>
-      <?php if (!$projects): ?><tr><td colspan="4" class="muted"><?= h(t('projects.empty', 'Noch keine Projekte.')) ?></td></tr><?php endif; ?>
+      <?php if (!$projects): ?><tr><td colspan="5" class="muted"><?= h(t('projects.empty', 'Noch keine Projekte.')) ?></td></tr><?php endif; ?>
       </tbody>
     </table>
   </div>

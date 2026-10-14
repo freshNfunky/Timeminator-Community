@@ -17,7 +17,9 @@
  * @var array             $entries
  * @var DateTimeImmutable $week_start
  * @var string            $pro_url
+ * @var array             $holidays  Keyed by ISO date; from Holidays::byDate()
  */
+$holidays = $holidays ?? [];
 $__weekEnd  = $week_start->modify('+6 days');
 $__prevWeek = $week_start->modify('-7 days');
 $__nextWeek = $week_start->modify('+7 days');
@@ -140,8 +142,15 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
     </div>
     <div class="cal-days">
       <?php foreach ($__days as $__i => $__day): ?>
-        <div class="cal-day<?= $__day['isToday'] ? ' cal-day-today' : '' ?>" data-day="<?= h($__day['ymd']) ?>">
+        <?php $__holiday = $holidays[$__day['ymd']] ?? null; ?>
+        <div class="cal-day<?= $__day['isToday'] ? ' cal-day-today' : '' ?><?= $__holiday ? ' cal-day-holiday' : '' ?>" data-day="<?= h($__day['ymd']) ?>">
           <div class="cal-day-head"><?= h($__day['label']) ?></div>
+          <?php if ($__holiday): ?>
+            <div class="cal-day-holiday-badge" title="<?= h(t($__holiday['key'], $__holiday['key']) . ' — ' . $__holiday['scope']) ?>">
+              <span class="cal-holiday-dot" aria-hidden="true">★</span>
+              <span class="cal-holiday-name"><?= h(t($__holiday['key'], $__holiday['key'])) ?></span>
+            </div>
+          <?php endif; ?>
           <div class="cal-day-grid" data-day="<?= h($__day['ymd']) ?>">
             <?php for ($h = 1; $h < 24; $h++): ?>
               <div class="cal-day-line"></div>

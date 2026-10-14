@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS projects (
   track         VARCHAR(96)  NULL,                  -- overrides client track when set
   color         VARCHAR(16)  NULL,
   active        TINYINT(1)   NOT NULL DEFAULT 1,
+  target_hours  DECIMAL(10,2) NULL,
   created_at    DATETIME     NOT NULL,
   FOREIGN KEY (client_id) REFERENCES clients(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -96,7 +97,10 @@ CREATE TABLE IF NOT EXISTS import_batches (
   label         VARCHAR(191) NOT NULL,
   source        VARCHAR(96)  NOT NULL DEFAULT 'manual',
   note          TEXT NULL,
-  created_at    DATETIME     NOT NULL
+  user_id       INT NULL,
+  created_at    DATETIME     NOT NULL,
+  KEY idx_import_batches_user (user_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS time_entries (
@@ -164,6 +168,28 @@ CREATE TABLE IF NOT EXISTS sentiment_entries (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 CREATE INDEX idx_sentiment_as_of ON sentiment_entries (as_of);
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  user_id      INT       NOT NULL,
+  token_hash   CHAR(64)  NOT NULL,
+  expires_at   DATETIME  NOT NULL,
+  used_at      DATETIME  NULL,
+  created_at   DATETIME  NOT NULL,
+  requester_ip VARCHAR(64) NULL,
+  UNIQUE KEY uq_prt_token_hash (token_hash),
+  KEY idx_prt_user    (user_id),
+  KEY idx_prt_expires (expires_at),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS scheduler_runs (
+  name              VARCHAR(64)  PRIMARY KEY,
+  last_run_at       DATETIME     NULL,
+  last_result       VARCHAR(32)  NULL,
+  last_duration_ms  INT          NULL,
+  last_error        VARCHAR(512) NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS schema_migrations (
   version    VARCHAR(64) PRIMARY KEY,

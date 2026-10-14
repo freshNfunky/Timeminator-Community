@@ -9,11 +9,11 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
 <?php if (Auth::can('stats.view')): ?>
   <a href="<?= h(route('stats')) ?>"<?= $active(['stats']) ?>><?= h(t('nav.stats')) ?></a>
 <?php endif; ?>
-<?php if (Auth::can('sentiment.record')): ?>
-  <a href="<?= h(route('sentiment')) ?>"<?= $active(['sentiment']) ?>><?= h(t('nav.sentiment')) ?></a>
+<?php if (Auth::can('structure.manage')): ?>
+  <a href="<?= h(route('report_projects')) ?>"<?= $active(['report_projects']) ?>><?= h(t('nav.report', 'Report')) ?></a>
 <?php endif; ?>
 <?php if (Auth::can('sentiment.record')): ?>
-  <a href="<?= h(route('sentiment')) ?>"<?= $active(['sentiment']) ?>>Stimmung</a>
+  <a href="<?= h(route('sentiment')) ?>"<?= $active(['sentiment']) ?>><?= h(t('nav.sentiment')) ?></a>
 <?php endif; ?>
 <?php if (Auth::can('structure.manage')): ?>
   <a href="<?= h(route('clients')) ?>"<?= $active(['clients']) ?>><?= h(t('nav.clients')) ?></a>
@@ -46,7 +46,7 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
   // Collapse all admin entries (Users / Roles / Roles Pro / Import /
   // System) into one dropdown so the top bar stays compact at normal
   // viewport widths. Same <details> pattern as the Commercial group above.
-  $__sysRoutes = ['admin_users', 'admin_roles', 'pro_roles', 'imports', 'admin_system'];
+  $__sysRoutes = ['admin_users', 'admin_roles', 'pro_roles', 'imports', 'admin_system', 'admin_cron'];
   $__sysActive = in_array($r, $__sysRoutes, true);
   $__sysAny    = Auth::can('admin.users') || Auth::can('admin.roles')
               || Auth::can('admin.system') || Auth::can('admin.imports');
@@ -68,6 +68,7 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
       <?php endif; ?>
       <?php if (Auth::can('admin.system')): ?>
         <a href="<?= h(route('admin_system')) ?>"<?= $active(['admin_system']) ?>><?= h(t('nav.system')) ?></a>
+        <a href="<?= h(route('admin_cron')) ?>"<?= $active(['admin_cron']) ?>><?= h(t('nav.cron')) ?></a>
       <?php endif; ?>
     </div>
   </details>

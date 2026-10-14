@@ -1,5 +1,12 @@
 <?php
-/** @var array $batches @var ?array $preview */
+/**
+ * @var array $batches
+ * @var ?array $preview
+ * @var array $all_users
+ * @var int $filter_user
+ * @var string $filter_from
+ * @var string $filter_to
+ */
 ?>
 <h1 class="page-title"><?= h(t('imports.title', 'CSV-Import')) ?></h1>
 
@@ -73,6 +80,31 @@
 
 <div class="card">
   <h2><?= h(t('imports.history_h2', 'Vergangene Importe')) ?></h2>
+
+  <form method="get" action="<?= h(route('imports')) ?>" class="inline-filter" style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+    <input type="hidden" name="r" value="imports">
+    <label><?= h(t('imports.filter_user', 'Benutzer')) ?>
+      <select name="user_id">
+        <option value="0"><?= h(t('common.all', 'Alle')) ?></option>
+        <?php foreach ($all_users as $u): ?>
+          <option value="<?= (int) $u['id'] ?>" <?= $filter_user === (int) $u['id'] ? 'selected' : '' ?>>
+            <?= h(($u['display_name'] ?: $u['username']) . ' (' . $u['username'] . ')') ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
+    </label>
+    <label><?= h(t('imports.filter_from', 'Ab')) ?>
+      <input type="date" name="from" value="<?= h($filter_from) ?>">
+    </label>
+    <label><?= h(t('imports.filter_to', 'Bis')) ?>
+      <input type="date" name="to" value="<?= h($filter_to) ?>">
+    </label>
+    <button class="btn btn-sm" type="submit"><?= h(t('common.apply', 'Anwenden')) ?></button>
+    <?php if ($filter_user || $filter_from !== '' || $filter_to !== ''): ?>
+      <a class="btn btn-sm btn-ghost" href="<?= h(route('imports')) ?>"><?= h(t('common.reset', 'Zuruecksetzen')) ?></a>
+    <?php endif; ?>
+  </form>
+
   <?php if (!$batches): ?>
     <p class="muted"><?= h(t('imports.history_empty', 'Noch keine Importe.')) ?></p>
   <?php else: ?>
@@ -81,6 +113,7 @@
       <tr>
         <th><?= h(t('imports.col_id', 'ID')) ?></th>
         <th><?= h(t('imports.label', 'Bezeichnung')) ?></th>
+        <th><?= h(t('imports.col_user', 'Benutzer')) ?></th>
         <th><?= h(t('imports.col_source', 'Quelle')) ?></th>
         <th class="r"><?= h(t('imports.col_entries', 'Buchungen')) ?></th>
         <th><?= h(t('imports.col_created', 'Angelegt')) ?></th>
@@ -92,10 +125,18 @@
         <tr>
           <td>#<?= (int) $b['id'] ?></td>
           <td><?= h($b['label']) ?></td>
+          <td>
+            <?php if (!empty($b['user_username'])): ?>
+              <?= h($b['user_display_name'] ?: $b['user_username']) ?>
+            <?php else: ?>
+              <span class="muted">—</span>
+            <?php endif; ?>
+          </td>
           <td class="muted"><?= h($b['source']) ?></td>
           <td class="r"><?= (int) $b['entry_count'] ?></td>
           <td class="nowrap"><?= h(fmt_dt($b['created_at'])) ?></td>
           <td class="r">
+            <a class="btn btn-sm btn-ghost" href="<?= h(route('imports_show', ['id' => (int) $b['id']])) ?>"><?= h(t('imports.details_btn', 'Details')) ?></a>
             <form method="post" action="<?= h(route('imports_delete')) ?>" class="inline" data-confirm="<?= h(sprintf(t('imports.delete_confirm', 'Batch #%d mit %d Buchungen unwiderruflich loeschen?'), (int) $b['id'], (int) $b['entry_count'])) ?>">
               <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int) $b['id'] ?>">
               <button class="btn btn-sm btn-danger" type="submit"><?= h(t('imports.delete_btn', 'Batch loeschen')) ?></button>

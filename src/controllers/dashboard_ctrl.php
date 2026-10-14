@@ -41,5 +41,6 @@ function ctrl_dashboard(): void
         'minToday'  => $minToday,
         'minWeek'   => $minWeek,
         'minMonth'  => $minMonth,
+        'planning'  => Repo::projectPlanningSnapshot(),
     ], 'Dashboard');
 }

@@ -20,7 +20,258 @@ version heading when a release is cut.
 
 ## [Unreleased]
 
-## [0.9.0] — 2026-10-13
+## [0.9.0] — 2026-10-14
+
+> This release's headline is the **Pro → Community feature-sync wave**:
+> Password-Reset + Admin→Mail (SMTP) · Admin→Importe-Übersicht ·
+> Admin→Scheduler/Cron · static holiday overlay (DACH + US) · simple
+> project planning with Soll-Stunden · Projekt-Report Ist vs Plan.
+> The retagged v0.9.0 also folds in the full English UI support
+> (closes #95) and the post-v0.8.0 content that was already shipped
+> under the earlier v0.9.0 label.
+
+### Added
+- **Projekt-Report: Ist vs Plan** (Pro-Sync B.3, #112). Third and final
+  position of Phase B — with this merged the Pro-Sync-Welle for v0.9.0
+  is complete.
+  - New route `report_projects` + view `views/report/projects.php`.
+    Lists every active project that has a `target_hours` set (from
+    B.2), with the actual recorded time (sum of `duration_min` on
+    `time_entries`), the delta in hours, the completion percentage,
+    and a status badge: **ok** (< 80 %), **warn** (80-100 %),
+    **over** (> 100 %).
+  - Filter row: client dropdown + date range (from / to).
+  - Inline-SVG bar chart below the table — one group per project,
+    two bars (target grey, actual tinted by status). No JS chart
+    library; all geometry computed server-side.
+  - CSV export at `report_projects_export`, same columns as the
+    table.
+  - New nav entry **"Report"**, gated by `structure.manage`.
+  - Dashboard planning tile from B.2 now links to the full report
+    via a "Vollständiger Report" button.
+  - Pro teaser line under the table: budget column in €, delay
+    report, PDF export and heatmap stay in Pro — the line links
+    to the existing `pro_budget` teaser.
+
+- **Projekt-Soll-Stunden (simple project planning)** (Pro-Sync B.2, #111).
+  Second position of Phase B.
+  - New optional `projects.target_hours` column (DECIMAL / REAL,
+    nullable). Set on the project edit form; appears as a "Soll (h)"
+    column in the project list. German-friendly: the input accepts
+    `120,5` as well as `120.5`.
+  - New dashboard card **"Projekt-Planung"** that only renders when at
+    least one active project has `target_hours` set. Shows
+    Soll / Ist / Progress with a tri-color bar
+    (ok < 80 % · warn 80-100 % · over > 100 %).
+  - Pro-upsell line links to the existing `pro_budget` teaser: weekly /
+    monthly / per-person breakdowns, Gantt and budget reports stay Pro.
+  - Portable + idempotent PHP migration adds the column to existing
+    installs; base schema carries it on fresh installs.
+  - CSP stays strict: progress-bar widths are emitted in a single
+    nonce-authorized `<style>` block, no inline `style=""`.
+
+- **Static holiday overlay in the week calendar** (Pro-Sync B.1, #110).
+  First position of Phase B (soft upsell).
+  - New `src/Holidays.php` ships two built-in sets: DACH (DE + AT + CH
+    union) for `de`-locale installs, US federal holidays for `en`.
+    Picked by `I18n::current()`; unknown locales fall back to DACH.
+  - The entries week calendar now shows a subtle holiday badge in each
+    day's header column: name + a hover tooltip that spells out the
+    scope (e.g. "AT · DE (regional) · CH (regional)").
+  - Easter-relative holidays (Good Friday, Easter Monday, Ascension,
+    Whit Monday, Corpus Christi) are computed by the anonymous
+    Gregorian algorithm with an `easter_date()` fast path when
+    `ext/calendar` is available. US nth-weekday rules
+    (Thanksgiving, Memorial Day, Labor Day, MLK, Presidents, Columbus)
+    use a shared helper, pinned by regression tests for 2024-2026.
+  - Pure static data — **no external calendar sources**, no CalDAV, no
+    iCal subscriptions. External sources stay a Pro feature; the
+    existing teaser card under the calendar remains unchanged.
+
+- **Admin → Scheduler / Cron (housekeeping jobs)** (Pro-Sync A.3, #109).
+  Third position of the Pro → Community feature-sync wave.
+  - New `src/Scheduler.php`: register jobs by name + interval + callable,
+    track last-run / last-result / last-duration / last-error per job in
+    a new `scheduler_runs` table.
+  - Built-in jobs: `prune_expired_reset_tokens` (hourly) wires up
+    A.1's `PasswordReset::prune()`; `prune_rollback_snapshots` (daily)
+    removes the Updater's `data/backup_YYYYMMDD_*` directories older
+    than 7 days.
+  - **Admin → Scheduler** page under `admin.system`: status table with
+    "Jetzt ausführen" per job, plus a web-cron panel showing the
+    tokenized URL to hand to an external cron hitter and a
+    "Regenerate token" button.
+  - Public endpoint `index.php?r=cron_web_run&token=<TOKEN>`: constant-
+    time token verify, runs due jobs, returns a JSON summary of what
+    fired and what was skipped.
+  - README picks up a "Scheduler (housekeeping jobs)" section describing
+    both system-cron and external-service wiring.
+
+- **Admin → Importe-Übersicht** (Pro-Sync A.2, #108). Second position of
+  the Pro → Community feature-sync wave.
+  - `import_batches` now carries a `user_id` (nullable; legacy rows stay
+    unattributed) so the overview can show who imported what and when.
+    `ctrl_imports_confirm` records the current user id on write.
+  - The imports page gains a filter row (user / from / to) and a
+    user column in the history table. A new "Details" button opens a
+    sub-view that lists the time entries created by a given batch
+    before an admin presses "Rückgängig".
+  - New route `imports_show` + view `views/imports/show.php`.
+  - Portable, idempotent PHP migration adds the column on existing
+    installs; fresh installs pick it up from the base schema.
+
+- **Password-Reset-Flow + Admin → Mail (SMTP) settings** (Pro-Sync A.1,
+  #107). First position of the Pro → Community feature-sync wave.
+  - Public routes `reset_request` + `reset_form`. The request page accepts
+    a username or email, answers identically whether or not the account
+    exists ("if the account exists, mail sent"), and silently caps the
+    per-user rate at three requests per hour.
+  - Tokens live in a new `password_reset_tokens` table; only the SHA-256
+    digest of the token is stored, the plain token is shown once in the
+    mail. Tokens are single-use, expire after one hour, and a successful
+    reset invalidates every other outstanding token for the same user.
+  - Login throttle guards the reset endpoint too, so an attacker cannot
+    just shift probing from `/login` to `/reset_request`.
+  - **Admin → System → Mail (SMTP)** card: configures From + From-Name +
+    optional SMTP host/port/user/password + `none`/`STARTTLS`/`SSL`
+    encryption. A new `Mail` service sends either via PHP `mail()`
+    (sendmail) when no host is set, or via a native SMTP client over
+    `stream_socket_client` with STARTTLS and `AUTH LOGIN`. One-click
+    "Send test email" button in the admin UI.
+  - New permission `admin.system` already covered this surface — no new
+    permission introduced.
+
+### Changed
+- **i18n coverage: final wave of #95.** The remaining German-only screens
+  are now bilingual too:
+  - **Admin → System** page body (Version & Updates / Permission catalog /
+    Appearance / Community banner & telemetry / Endpoints / Notifications):
+    all `<h2>` headings, every button, every checkbox + radio label, every
+    form field label.
+  - **CSV import** (`imports/index.php`): title, preview card header +
+    stats pill + delimiter copy + full column headers + OK/skip markers +
+    "first 200 rows" hint + confirm/discard buttons + upload form + past-
+    imports list + per-row delete.
+  - **Statistics** (`stats/index.php` + `stats/scopes.php`): filter bar
+    (Group by, Series, Scope, all users, Run) + three summary tiles +
+    chart card headings; proof-views editor + saved-views list + reference
+    IDs disclosure.
+  - **Pro-teaser cards** — the four `<h2>` headings and the `Pro` pill
+    label (card body mock data stays as-is: `pointer-events: none;
+    opacity: .55; aria-hidden`).
+  - **Controller titles** for `imports` and `scopes` finally pass the
+    locale-aware `t()` key so `<title>` + `<h1>` stop reading
+    "CSV-Import" / "Nachweis-Sichten" in English mode.
+- `lang/{de,en}.php` grew from 286 → **356 keys**, parity still enforced
+  at commit time.
+
+With this, every nav route in the Community edition — `dashboard`,
+`entries` (list + form + week calendar), `clients`, `projects`,
+`workpackages`, `tasks`, `scopes`, `stats`, `sentiment`, `admin_users`,
+`admin_roles`, `admin_system`, `imports`, and the four `pro_*` teasers —
+renders completely in German or English based on the per-session locale.
+#95 is now fully covered on the UI surface.
+
+### Changed
+- **i18n coverage expanded (waves 2–5 of #95).** Follow-up to #100 — the user-first
+  views (layout, nav, login, installer, dashboard) were already bilingual;
+  this round converts the rest of the day-to-day flows: entries list + form
+  + week calendar + delete flow, the full structure CRUD (clients, projects,
+  work packages, tasks), the cascading task picker, the users + roles admin
+  screens, the sentiment page (recorder + personal + team views, incl. the
+  five-smiley score labels resolved against the current locale), the
+  update-available banner, the Pro-teaser upsell banner and the four Pro
+  teasers' names + bullet copy, and the error page.
+- **Controller flashes converted** across `entries`, `structure`, `users`,
+  `roles`, `imports`, `banners`, `sentiment` and `admin/system` — every
+  success / error flash the user can see while booking, editing or
+  administering is now locale-aware.
+- **Page titles converted** on every route handler that passed a hardcoded
+  German label to `view()`.
+- `lang/{de,en}.php` grew from 102 → **286 keys** in lockstep (parity-checked
+  at build time).
+
+Not yet translated and tracked as the last follow-up on #95: the Admin →
+System page body (banner / telemetry / endpoints / updates sub-sections),
+`imports/index.php` (CSV preview + confirm UI), `stats/index.php` +
+`stats/scopes.php`, and the inert mock-content inside the four Pro-teaser
+cards (dimmed, aria-hidden, non-interactive). The infrastructure handles
+them — only the string-swap remains.
+
+### Added
+- **i18n scaffolding + English UI** (partial fix for #95) — the German-only UI
+  is now a two-language setup (German default, English available). A small
+  `I18n` class in `src/I18n.php` resolves the request's locale from (in order)
+  `?lang=` query → session preference → `Accept-Language` → config default,
+  reads catalogs from `lang/<code>.php` (`de` + `en`, 102 keys each, in
+  lockstep), and exposes a terse `t('key', $default)` helper. Admin → System
+  gets a locale toggle; login + installer get a small switcher at the bottom
+  so first-time visitors can flip without logging in. Fully covered: layout
+  (nav + topbar + footer + sidepanel aria), login, dashboard, installer. The
+  remaining views (entries, structure, admin, stats, pro teasers) still
+  render hardcoded German and are tracked as follow-up work on #95.
+- **Team-Sentiment-Tracking** (fixes #92) — makes the landing-page promise
+  ("team sentiment tracking") good instead of overclaim. Each user records a
+  daily mood on a five-smiley scale (ganz schlecht … sehr gut) with an optional
+  short note. Upserts per `(user_id, as_of)` so a repeated save on the same day
+  updates rather than duplicates. The dedicated **Stimmung** page shows:
+  - the recorder (pre-filled when today already has an entry),
+  - a 60-day personal history as a colored sparkline + full list,
+  - a team summary (window: 30 days) with average score, response count and
+    distinct contributor count — no individual rows, no names, so a single
+    response in a window is personal, not "team".
+
+  Backing table `sentiment_entries` (new in `schema/{sqlite,mysql}.sql`;
+  idempotent migration `2026-10-04-02-sentiment-entries.sql` for upgrades) with
+  `UNIQUE (user_id, as_of)`, FK → `users` ON DELETE CASCADE, note capped at
+  500 chars. New permissions `sentiment.record` (default: everyone) and
+  `sentiment.view_team` (default: admin only), auto-granted via the data
+  migration `2026-10-04-03-sentiment-permissions.php`. 8 tests cover score
+  normalization, UPSERT, per-user history windowing, team aggregates and
+  contributor counting.
+
+### Changed
+- **README rewritten as a landing document** (#24): a one-paragraph pitch, a
+  "who is it for" section, a grouped feature tour with fresh demo screenshots
+  (now including the week calendar), an honest Community-vs-Pro comparison table,
+  and the mascot in the header. Quick start moved up; the reference sections
+  (requirements, install, updating, security, privacy, data model, tech) kept and
+  condensed. Corrects the stale "no CSV import UI yet" claim — CSV import with
+  per-batch rollback now ships. README art moved under `docs/images/`.
+- **Task picker is now cascading: Kunde → Projekt → Arbeitspaket → Aufgabe.**
+  The single flat `<select name="task_id">` that crammed the whole hierarchy
+  into `<optgroup>` labels (one gigantic list of every task with a prefix like
+  "Kunde A / Projekt B / Arbeitspaket C") is replaced by four side-by-side
+  selects that filter each other client-side. Changing a parent narrows the
+  child options and clears a stale child selection. The last select is still
+  the real form field (`name="task_id"`), so controllers and the submit flow
+  don't change. Used on the dashboard quick-timer form and the manual-entry
+  form (new + edit). Lives in `views/partials/task_picker.php` + a small
+  `initTaskPickers` IIFE in `assets/app.js` (no inline JS — strict CSP stays
+  strict).
+
+### Added
+- **Side-panel brand mark**: the FelixSchallerCOM wordmark sits above the
+  rotating carousel, implemented as a `mask-image` so it renders light on
+  the dark side-panel background without a second asset and without inline
+  styles that would trip the strict CSP.
+
+### Changed
+- **Side-panel feed endpoint has a sensible default** so a fresh install serves
+  HTML creatives out of the box, without needing a `banners` block in
+  `config.php`. `Banners::endpoint()` now falls back to
+  `https://assets.felixschaller.com/feed.json` (ad-blocker-neutral host) when
+  the operator has not configured one; previously it fell back to an empty
+  string, which silently kept the carousel on the bundled offline SVG set.
+- **Side-panel is a full-height, 200 px fixed rail on the right viewport
+  edge**: the main content column reserves the 200 px via `padding-right`
+  instead of a grid column, and the aside itself is `position: fixed` from
+  below the topbar to the viewport bottom. The visible creative stretches to
+  fill the whole slot (no more fixed 1:2 aspect-ratio inside a short card),
+  dots are overlaid at the bottom edge. Dead `.sp-head`/`.sp-label`/
+  `.sp-toggle` CSS from the retired collapsible header is gone, along with a
+  duplicated `.shell.has-aside`/`.sp-*` block left behind by the back-merge in
+  #77.
 
 > This release's headline is **full English UI support** (closes #95) — the
 > German-only Community edition is now bilingual, user-switchable in session.
@@ -461,9 +712,7 @@ control, PHPUnit suite, repo-hygiene docs.
   0.x. This is a cosmetic mislabel; the on-disk `VERSION` file is the
   source of truth.
 
-[Unreleased]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.9.0...HEAD
-[0.9.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.8.0...v0.9.0
-[0.8.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.6.0...v0.8.0
+[Unreleased]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.6.0...HEAD
 [0.6.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.2.0...v0.5.0
 [0.2.0]: https://github.com/freshNfunky/Timeminator-Community/compare/v0.1.0...v0.2.0
