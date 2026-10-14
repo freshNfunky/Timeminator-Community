@@ -523,4 +523,17 @@ return [
     'holiday.us.veterans_day'        => 'Veterans Day',
     'holiday.us.thanksgiving'        => 'Thanksgiving',
     'holiday.us.christmas'           => 'Christmas Day',
+
+    // ---------- Projekt-Planung (#111, B.2) ----------
+    'planning.target_hours'          => 'Soll-Stunden (Gesamt)',
+    'planning.target_hours_placeholder' => 'z.B. 120.00 — optional',
+    'planning.target_hours_hint'     => 'Gesamtes Projekt-Soll in Stunden. Woechentlich/monatlich/pro Person: Pro.',
+    'planning.col_target'            => 'Soll (h)',
+    'planning.col_actual'            => 'Ist (h)',
+    'planning.col_progress'          => 'Fortschritt',
+    'planning.col_project'           => 'Projekt',
+    'planning.dashboard_tile_title'  => 'Projekt-Planung',
+    'planning.err_target_invalid'    => 'Soll-Stunden muss eine positive Zahl sein.',
+    'planning.pro_teaser.intro'      => 'Wochen-/Monats-/Person-Breakdown, Gantt-Ansicht und Budget-Report sind Teil von',
+    'planning.pro_teaser.link'       => 'Timeminator Pro',
 ];

@@ -21,6 +21,23 @@ version heading when a release is cut.
 ## [Unreleased]
 
 ### Added
+- **Projekt-Soll-Stunden (simple project planning)** (Pro-Sync B.2, #111).
+  Second position of Phase B.
+  - New optional `projects.target_hours` column (DECIMAL / REAL,
+    nullable). Set on the project edit form; appears as a "Soll (h)"
+    column in the project list. German-friendly: the input accepts
+    `120,5` as well as `120.5`.
+  - New dashboard card **"Projekt-Planung"** that only renders when at
+    least one active project has `target_hours` set. Shows
+    Soll / Ist / Progress with a tri-color bar
+    (ok < 80 % · warn 80-100 % · over > 100 %).
+  - Pro-upsell line links to the existing `pro_budget` teaser: weekly /
+    monthly / per-person breakdowns, Gantt and budget reports stay Pro.
+  - Portable + idempotent PHP migration adds the column to existing
+    installs; base schema carries it on fresh installs.
+  - CSP stays strict: progress-bar widths are emitted in a single
+    nonce-authorized `<style>` block, no inline `style=""`.
+
 - **Static holiday overlay in the week calendar** (Pro-Sync B.1, #110).
   First position of Phase B (soft upsell).
   - New `src/Holidays.php` ships two built-in sets: DACH (DE + AT + CH

@@ -73,13 +73,25 @@ function ctrl_project_save(): void
         flash(t('projects.err_client_name_required', 'Kunde und Name sind erforderlich.'), 'err');
         redirect_route('projects');
     }
+    $targetRaw = trim((string) post('target_hours'));
+    $target = null;
+    if ($targetRaw !== '') {
+        // Accept comma OR dot as decimal separator — German users type "120,5".
+        $norm = str_replace(',', '.', $targetRaw);
+        if (!is_numeric($norm) || (float) $norm < 0) {
+            flash(t('planning.err_target_invalid', 'Soll-Stunden muss eine positive Zahl sein.'), 'err');
+            redirect_route('projects');
+        }
+        $target = round((float) $norm, 2);
+    }
     $d = [
-        'client_id' => $clientId,
-        'name'      => $name,
-        'code'      => trim((string) post('code')) ?: slugify($name),
-        'track'     => trim((string) post('track')) ?: null,
-        'color'     => trim((string) post('color')) ?: null,
-        'active'    => post('active') ? 1 : 0,
+        'client_id'    => $clientId,
+        'name'         => $name,
+        'code'         => trim((string) post('code')) ?: slugify($name),
+        'track'        => trim((string) post('track')) ?: null,
+        'color'        => trim((string) post('color')) ?: null,
+        'active'       => post('active') ? 1 : 0,
+        'target_hours' => $target,
     ];
     try {
         Repo::saveProject($d, $id ?: null);
