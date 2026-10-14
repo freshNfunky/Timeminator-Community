@@ -19,6 +19,7 @@ require __DIR__ . '/src/Mail.php';
 require __DIR__ . '/src/PasswordReset.php';
 require __DIR__ . '/src/Scheduler.php';
 require __DIR__ . '/src/Holidays.php';
+require __DIR__ . '/src/ProjectReport.php';
 require __DIR__ . '/src/seed.php';
 require __DIR__ . '/src/Migrator.php';
 
@@ -37,6 +38,7 @@ require __DIR__ . '/src/controllers/pro_teaser_ctrl.php';
 require __DIR__ . '/src/controllers/banners_ctrl.php';
 require __DIR__ . '/src/controllers/password_reset_ctrl.php';
 require __DIR__ . '/src/controllers/cron_ctrl.php';
+require __DIR__ . '/src/controllers/report_ctrl.php';
 require __DIR__ . '/src/Sentiment.php';
 require __DIR__ . '/src/controllers/sentiment_ctrl.php';
 
@@ -69,6 +71,8 @@ $routes = [
 
     'stats'        => 'ctrl_stats_index',
     'stats_data'   => 'ctrl_stats_data',
+    'report_projects'        => 'ctrl_report_projects',
+    'report_projects_export' => 'ctrl_report_projects_export',
     'sentiment'      => 'ctrl_sentiment_index',
     'sentiment_save' => 'ctrl_sentiment_save',
     'scopes'       => 'ctrl_scopes_index',

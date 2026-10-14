@@ -21,6 +21,28 @@ version heading when a release is cut.
 ## [Unreleased]
 
 ### Added
+- **Projekt-Report: Ist vs Plan** (Pro-Sync B.3, #112). Third and final
+  position of Phase B — with this merged the Pro-Sync-Welle for v0.9.0
+  is complete.
+  - New route `report_projects` + view `views/report/projects.php`.
+    Lists every active project that has a `target_hours` set (from
+    B.2), with the actual recorded time (sum of `duration_min` on
+    `time_entries`), the delta in hours, the completion percentage,
+    and a status badge: **ok** (< 80 %), **warn** (80-100 %),
+    **over** (> 100 %).
+  - Filter row: client dropdown + date range (from / to).
+  - Inline-SVG bar chart below the table — one group per project,
+    two bars (target grey, actual tinted by status). No JS chart
+    library; all geometry computed server-side.
+  - CSV export at `report_projects_export`, same columns as the
+    table.
+  - New nav entry **"Report"**, gated by `structure.manage`.
+  - Dashboard planning tile from B.2 now links to the full report
+    via a "Vollständiger Report" button.
+  - Pro teaser line under the table: budget column in €, delay
+    report, PDF export and heatmap stay in Pro — the line links
+    to the existing `pro_budget` teaser.
+
 - **Projekt-Soll-Stunden (simple project planning)** (Pro-Sync B.2, #111).
   Second position of Phase B.
   - New optional `projects.target_hours` column (DECIMAL / REAL,
