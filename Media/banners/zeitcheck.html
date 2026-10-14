@@ -1,0 +1,56 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8">
+<!-- Quelle für das Community-Banner-Creative "Zeit-Check" (300x600).
+     Render: Chrome headless @2x mit transparentem Hintergrund -> PNG -> eingebettet in assets/banners/zeitcheck.svg
+     Siehe docs/Umfrage/banner-deploy.md -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --cyan:#5fd7d0; --cobalt:#1e3fcc; --cobalt-lit:#3a5cf0; --white:#f4f7ff; --soft:#aeb9d6;
+    --fd:"Jost","Futura",system-ui,sans-serif; --fb:"IBM Plex Sans",system-ui,sans-serif;
+  }
+  *{margin:0;box-sizing:border-box}
+  html,body{width:300px;height:600px;background:transparent}
+  .card{width:300px;height:600px;border-radius:20px;overflow:hidden;position:relative;
+    display:flex;flex-direction:column;align-items:center;padding:26px 22px 22px;
+    font-family:var(--fb);color:var(--white);
+    background:
+      radial-gradient(240px 180px at 82% 2%, rgba(95,215,208,.20), transparent 60%),
+      radial-gradient(260px 240px at 0% 104%, rgba(58,92,240,.34), transparent 55%),
+      linear-gradient(162deg,#16277a 0%, #0f1733 54%, #0a0f1e 100%)}
+  .card::before{content:"";position:absolute;inset:0;
+    background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+    background-size:26px 26px;mask:linear-gradient(180deg,transparent,#000 25% 70%,transparent)}
+  .wordmark{width:232px;height:auto;position:relative;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))}
+  .eyebrow{position:relative;margin-top:14px;font-family:var(--fd);font-weight:600;font-size:12px;
+    letter-spacing:.24em;text-transform:uppercase;color:var(--cyan)}
+  .hero{position:relative;margin-top:16px;width:100%;border-radius:12px;overflow:hidden;
+    border:1px solid rgba(255,255,255,.14);box-shadow:0 14px 30px -14px rgba(0,0,0,.7)}
+  .hero img{display:block;width:100%;height:146px;object-fit:cover;object-position:top left}
+  .hero::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg,transparent 55%,rgba(10,15,30,.55))}
+  h1{position:relative;margin-top:20px;font-family:var(--fd);font-weight:600;font-size:30px;
+    line-height:1.04;letter-spacing:-.01em;text-align:center}
+  h1 .c{color:var(--cyan)}
+  .sub{position:relative;margin-top:12px;font-size:14.5px;color:var(--soft);text-align:center;line-height:1.4}
+  .sub b{color:var(--white);font-weight:600}
+  .spacer{flex:1}
+  .cta{position:relative;width:100%;height:50px;border-radius:25px;background:var(--cobalt-lit);
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    font-family:var(--fd);font-weight:600;font-size:17px;color:#fff;
+    box-shadow:0 10px 26px -8px rgba(58,92,240,.75)}
+  .foot{position:relative;margin-top:12px;font-size:10.5px;letter-spacing:.04em;color:var(--soft);opacity:.8}
+  .foot b{color:var(--cyan)}
+</style></head>
+<body><div class="card">
+  <img class="wordmark" src="../../assets/banners/logos/timeminator-wordmark.svg" alt="Timeminator">
+  <div class="eyebrow">Dein Feedback</div>
+  <div class="hero"><img src="../screenshots/01-dashboard.png" alt="Timeminator Dashboard"></div>
+  <h1>Gestalte<br>Timeminator <span class="c">mit.</span></h1>
+  <div class="sub">Der <b>Zeit-Check</b> — 3&nbsp;Minuten,<br>anonym, direkt in die Roadmap.</div>
+  <div class="spacer"></div>
+  <div class="cta">Umfrage starten ›</div>
+  <div class="foot">Community <b>v0.9.0</b> · anonym &amp; freiwillig</div>
+</div></body></html>
