@@ -526,4 +526,17 @@ return [
     'holiday.us.veterans_day'        => 'Veterans Day',
     'holiday.us.thanksgiving'        => 'Thanksgiving',
     'holiday.us.christmas'           => 'Christmas Day',
+
+    // ---------- Project planning (#111, B.2) ----------
+    'planning.target_hours'          => 'Target hours (total)',
+    'planning.target_hours_placeholder' => 'e.g. 120.00 — optional',
+    'planning.target_hours_hint'     => 'Total project target in hours. Weekly / monthly / per-person breakdown lives in Pro.',
+    'planning.col_target'            => 'Target (h)',
+    'planning.col_actual'            => 'Actual (h)',
+    'planning.col_progress'          => 'Progress',
+    'planning.col_project'           => 'Project',
+    'planning.dashboard_tile_title'  => 'Project planning',
+    'planning.err_target_invalid'    => 'Target hours must be a positive number.',
+    'planning.pro_teaser.intro'      => 'Weekly / monthly / per-person breakdown, Gantt view and budget reports live in',
+    'planning.pro_teaser.link'       => 'Timeminator Pro',
 ];

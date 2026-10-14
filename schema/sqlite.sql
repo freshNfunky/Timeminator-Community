@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS projects (
   track         TEXT NULL,
   color         TEXT NULL,
   active        INTEGER NOT NULL DEFAULT 1,
+  target_hours  REAL NULL,
   created_at    TEXT NOT NULL,
   FOREIGN KEY (client_id) REFERENCES clients(id)
 );

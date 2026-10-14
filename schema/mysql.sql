@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS projects (
   track         VARCHAR(96)  NULL,                  -- overrides client track when set
   color         VARCHAR(16)  NULL,
   active        TINYINT(1)   NOT NULL DEFAULT 1,
+  target_hours  DECIMAL(10,2) NULL,
   created_at    DATETIME     NOT NULL,
   FOREIGN KEY (client_id) REFERENCES clients(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

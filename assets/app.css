@@ -193,6 +193,15 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .tile-val{font-size:26px;font-weight:700;color:var(--brand)}
 .tile-lbl{font-size:12px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
 
+/* Planning tile — simple soll-vs-ist bar (#111, Pro-Sync B.2). */
+.planning-bar{background:var(--soft);border:1px solid var(--line);
+  border-radius:var(--radius);height:8px;overflow:hidden;min-width:120px}
+.planning-bar-fill{height:100%;transition:width .2s ease}
+.planning-bar-ok{background:var(--brand)}
+.planning-bar-warn{background:#f59e0b}
+.planning-bar-over{background:#ef4444}
+.planning-pro-teaser{margin-top:8px}
+
 /* Timer */
 .timer-card{padding:20px}
 .timer-running{display:flex;align-items:center;gap:18px;flex-wrap:wrap}

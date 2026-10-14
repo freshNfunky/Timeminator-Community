@@ -60,17 +60,50 @@ final class Repo
 
     public static function saveProject(array $d, ?int $id = null): int
     {
+        $target = array_key_exists('target_hours', $d) ? $d['target_hours'] : null;
         if ($id) {
             DB::run(
-                'UPDATE projects SET client_id=?, name=?, code=?, track=?, color=?, active=? WHERE id=?',
-                [$d['client_id'], $d['name'], $d['code'], $d['track'], $d['color'], $d['active'], $id]
+                'UPDATE projects SET client_id=?, name=?, code=?, track=?, color=?, active=?, target_hours=? WHERE id=?',
+                [$d['client_id'], $d['name'], $d['code'], $d['track'], $d['color'], $d['active'], $target, $id]
             );
             return $id;
         }
         return DB::insert(
-            'INSERT INTO projects (client_id, name, code, track, color, active, created_at) VALUES (?,?,?,?,?,?,?)',
-            [$d['client_id'], $d['name'], $d['code'], $d['track'], $d['color'], $d['active'], now()]
+            'INSERT INTO projects (client_id, name, code, track, color, active, target_hours, created_at) VALUES (?,?,?,?,?,?,?,?)',
+            [$d['client_id'], $d['name'], $d['code'], $d['track'], $d['color'], $d['active'], $target, now()]
         );
+    }
+
+    /**
+     * Dashboard planning tile data: for every active project that has
+     * `target_hours` set, return the target + the actual recorded minutes
+     * across all users (community is single-tenant so "all" matches the
+     * admin's expectation).
+     *
+     * @return array<int,array{id:int,name:string,client_name:string,target_hours:float,actual_minutes:int}>
+     */
+    public static function projectPlanningSnapshot(): array
+    {
+        $rows = DB::all(
+            'SELECT p.id, p.name, p.target_hours, c.name AS client_name,
+                    COALESCE((SELECT SUM(e.duration_min) FROM time_entries e
+                               WHERE e.project_id = p.id AND e.duration_min IS NOT NULL), 0) AS actual_minutes
+               FROM projects p
+               JOIN clients c ON c.id = p.client_id
+              WHERE p.active = 1 AND p.target_hours IS NOT NULL
+              ORDER BY c.name, p.name'
+        );
+        $out = [];
+        foreach ($rows as $r) {
+            $out[] = [
+                'id'             => (int) $r['id'],
+                'name'           => (string) $r['name'],
+                'client_name'    => (string) $r['client_name'],
+                'target_hours'   => (float) $r['target_hours'],
+                'actual_minutes' => (int) $r['actual_minutes'],
+            ];
+        }
+        return $out;
     }
 
     // ---------- Work packages (Arbeitspakete) ----------
