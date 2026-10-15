@@ -20,6 +20,47 @@ version heading when a release is cut.
 
 ## [Unreleased]
 
+## [0.9.1] — 2026-10-15
+
+> Hotfix release following the first click-through on v0.9.0. Two user-
+> facing issues (#122, #123) + three UX polish items caught during the
+> walkthrough.
+
+### Changed
+- **Sentiment-Tracking split in Mood + Flow** (fixes #122). The single
+  1-5 score per day conflated two independent signals: how a person
+  feels (Mood) vs how their work is going (Flow). An "innerlich
+  gekündigt" developer can be privately cheerful and simultaneously
+  stuck in a frustrating project — one scalar hid that pattern. The
+  Sentiment service, DB and UI now carry both as independent nullable
+  columns; at least one must be set to save an entry. The daily form
+  shows two separate 5-smiley rows (Mood: 😞😕😐🙂😄, Flow: 🛑🐢😐🏃🚀),
+  the personal and team sparklines render as two rows, team summary
+  reports both averages. Portable + idempotent PHP migration renames
+  the existing `score` to `mood` (same semantics), adds `flow INTEGER
+  NULL`, and drops `NOT NULL` on `mood` via a SQLite table rebuild so
+  flow-only entries work.
+
+### Fixed
+- **Sidepanel overlap on topbar + footer**. `.shell.has-aside` reserved
+  the right 200 px, but `topbar` and `foot` live outside the shell —
+  the fixed sidepanel (z-index 5) was covering the right-aligned
+  userbox + the footer. Added `body:has(.sidepanel) .topbar, …foot
+  { padding-right: 200px }` with the matching 1023 px breakpoint drop.
+- **Projekt-Report empty-state is now actionable** (fixes "unnötig das
+  suchen dem nutzer zu überlassen"). When there are no planned
+  projects, the report page lists every active unplanned project with
+  a direct "Soll setzen" button straight into its edit form (first 8,
+  "and N more" link to the full list), or links to project creation
+  when there are no active projects at all.
+
+### Added
+- **Feiertags-Liste im Wochen-Kalender**. The holiday overlay (B.1 /
+  #110) only surfaced as tiny badges in each day's header, hard to
+  discover. New card below the week grid lists every holiday in the
+  current week + the next 90 days (date, weekday, name, scope) so the
+  built-in data is actually visible.
+
 ## [0.9.0] — 2026-10-14
 
 > This release's headline is the **Pro → Community feature-sync wave**:
