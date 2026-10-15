@@ -95,7 +95,7 @@
       <tbody>
         <?php foreach ($__planningRows as $__r): ?>
           <tr>
-            <td><?= h($__r['client']) ?> / <?= h($__r['name']) ?></td>
+            <td><?= h($__r['client']) ?> / <a href="<?= h(route('project_show', ['id' => (int) $__r['id']])) ?>"><?= h($__r['name']) ?></a></td>
             <td class="r"><?= h(number_format($__r['target_h'], 2, ',', '.')) ?></td>
             <td class="r"><?= h(fmt_hours($__r['actual_m'])) ?></td>
             <td>
