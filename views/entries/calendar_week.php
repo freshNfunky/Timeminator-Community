@@ -18,8 +18,10 @@
  * @var DateTimeImmutable $week_start
  * @var string            $pro_url
  * @var array             $holidays  Keyed by ISO date; from Holidays::byDate()
+ * @var array             $holidays_upcoming  Flat list from Holidays::between()
  */
-$holidays = $holidays ?? [];
+$holidays          = $holidays          ?? [];
+$holidays_upcoming = $holidays_upcoming ?? [];
 $__weekEnd  = $week_start->modify('+6 days');
 $__prevWeek = $week_start->modify('-7 days');
 $__nextWeek = $week_start->modify('+7 days');
@@ -168,6 +170,34 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
       <?php endforeach; ?>
     </div>
   </div>
+</div>
+
+<div class="card holidays-card">
+  <div class="card-head">
+    <h2><?= h(t('cal.holidays_h2', 'Feiertage')) ?></h2>
+    <span class="muted"><?= h(sprintf(t('cal.holidays_subtitle', 'DACH / US — aus der eingebauten Liste. Locale: %s'), strtoupper(I18n::current()))) ?></span>
+  </div>
+  <?php if (!$holidays_upcoming): ?>
+    <p class="muted"><?= h(t('cal.holidays_empty', 'In den naechsten 90 Tagen keine Feiertage in der aktuellen Locale.')) ?></p>
+  <?php else: ?>
+    <ul class="holidays-list">
+      <?php
+        $__today = (new DateTimeImmutable('today'))->format('Y-m-d');
+        foreach ($holidays_upcoming as $__h):
+          $__dt   = new DateTimeImmutable($__h['date']);
+          $__past = strcmp($__h['date'], $__today) < 0;
+          $__name = t($__h['key'], $__h['key']);
+      ?>
+        <li class="holidays-list-item<?= $__past ? ' is-past' : '' ?>">
+          <span class="holidays-list-date"><?= h($__dt->format('d.m.Y')) ?></span>
+          <span class="holidays-list-dow muted"><?= h($__dt->format('D')) ?></span>
+          <span class="holidays-list-name"><?= h($__name) ?></span>
+          <span class="holidays-list-scope muted"><?= h($__h['scope']) ?></span>
+        </li>
+      <?php endforeach; ?>
+    </ul>
+    <p class="muted holidays-list-foot"><?= h(t('cal.holidays_hint', 'Als dezente Marker im Day-Head oben. Externe Kalender/CalDAV → Pro.')) ?></p>
+  <?php endif; ?>
 </div>
 
 <div class="card external-cal-teaser">

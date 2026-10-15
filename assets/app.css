@@ -216,6 +216,10 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .report-chart-legend-soll{background:var(--muted);opacity:.4}
 .report-chart-legend-ist-ok{background:var(--brand)}
 .report-pro-teaser{margin-top:16px}
+.report-empty-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;max-width:560px}
+.report-empty-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:8px 0;border-bottom:1px solid var(--line)}
+.report-empty-list li:last-child{border-bottom:0}
 
 /* Planning tile — simple soll-vs-ist bar (#111, Pro-Sync B.2). */
 .planning-bar{background:var(--soft);border:1px solid var(--line);
@@ -313,6 +317,11 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .shell{display:block}
 .shell.has-aside{display:block;max-width:none;margin:0;padding-right:200px}
 .shell.has-aside .wrap{max-width:1120px;margin:0 auto}
+/* Topbar/footer sit outside .shell (they span the full width), but the
+   fixed sidepanel takes the right 200 px. Without this gutter the
+   right-aligned userbox and footer wording vanish behind the panel. */
+body:has(.sidepanel) .topbar,
+body:has(.sidepanel) .foot{padding-right:200px}
 .sidepanel{position:fixed;top:56px;right:0;bottom:0;width:200px;
   padding:14px 10px;display:flex;flex-direction:column;gap:10px;
   background:var(--bg);z-index:5}
@@ -347,6 +356,8 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .sp-dot.active{background:#fff}
 @media (max-width:1023px){
   .shell.has-aside{padding-right:0}
+  body:has(.sidepanel) .topbar,
+  body:has(.sidepanel) .foot{padding-right:0}
   .sidepanel{position:static;width:auto;height:auto;padding:16px 0 0;
     margin-top:8px;border-top:1px solid var(--line);background:transparent;z-index:auto}
   .sp-brand{margin:0 0 10px}
@@ -416,6 +427,23 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
   padding:6px 8px;font-size:12px;font-weight:600;color:var(--ink);
   border-bottom:1px solid var(--line);text-align:center}
 .cal-day-today .cal-day-head{color:var(--brand)}
+
+/* Holidays list card below the week grid (#110). */
+.holidays-card{margin-top:18px}
+.holidays-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.holidays-list-item{display:grid;grid-template-columns:92px 42px 1fr auto;gap:12px;
+  align-items:baseline;padding:6px 2px;border-bottom:1px solid var(--line)}
+.holidays-list-item:last-child{border-bottom:0}
+.holidays-list-item.is-past{opacity:.5}
+.holidays-list-date{font-variant-numeric:tabular-nums;color:var(--brand);font-weight:600}
+.holidays-list-dow{font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.holidays-list-name{font-weight:500}
+.holidays-list-scope{font-size:12px;text-align:right}
+.holidays-list-foot{margin-top:10px}
+@media (max-width:640px){
+  .holidays-list-item{grid-template-columns:80px 1fr;row-gap:2px}
+  .holidays-list-dow,.holidays-list-scope{grid-column:1 / -1}
+}
 .cal-day-holiday-badge{position:sticky;top:28px;z-index:2;
   padding:3px 6px;font-size:11px;line-height:1.2;
   background:var(--soft);color:var(--muted);
