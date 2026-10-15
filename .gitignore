@@ -25,3 +25,4 @@ Thumbs.db
 /phpunit.xml
 /vendor/
 /composer.lock
+.claude/launch.json

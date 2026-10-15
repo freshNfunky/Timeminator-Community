@@ -5,7 +5,9 @@
  * @var ?int  $filter_client
  * @var string $filter_from
  * @var string $filter_to
+ * @var array $plannable       active projects without a target (empty state only)
  */
+$plannable = $plannable ?? [];
 
 $__rowCount    = count($rows);
 $__hasAny      = $__rowCount > 0;
@@ -59,7 +61,27 @@ $__chartWidth  = max(320, $__rowCount * ($__groupWidth + 24) + 40);
   </form>
 
   <?php if (!$__hasAny): ?>
-    <p class="muted"><?= h(t('report.empty', 'Noch keine aktiven Projekte mit gesetztem Soll. Lege ein Soll bei einem Projekt an, um den Report zu nutzen.')) ?></p>
+    <?php if (!$plannable): ?>
+      <p class="muted">
+        <?= h(t('report.empty_no_projects', 'Noch keine aktiven Projekte vorhanden. Lege zuerst ein Projekt an, dann setze dort ein Soll.')) ?>
+        <a class="btn btn-sm btn-primary" href="<?= h(route('projects')) ?>"><?= h(t('report.empty_new_project', 'Projekt anlegen')) ?></a>
+      </p>
+    <?php else: ?>
+      <p class="muted"><?= h(t('report.empty_no_targets', 'Keines deiner aktiven Projekte hat bisher ein Soll. Setze eins, dann erscheint es im Report:')) ?></p>
+      <ul class="report-empty-list">
+        <?php foreach (array_slice($plannable, 0, 8) as $__p): ?>
+          <li>
+            <span><strong><?= h($__p['client_name']) ?></strong> / <?= h($__p['name']) ?></span>
+            <a class="btn btn-sm" href="<?= h(route('projects', ['edit' => (int) $__p['id']])) ?>"><?= h(t('report.empty_set_target', 'Soll setzen')) ?></a>
+          </li>
+        <?php endforeach; ?>
+        <?php if (count($plannable) > 8): ?>
+          <li class="muted"><?= h(sprintf(t('report.empty_more', 'und %d weitere Projekte …'), count($plannable) - 8)) ?>
+            <a href="<?= h(route('projects')) ?>"><?= h(t('report.empty_all_projects', 'alle Projekte')) ?></a>
+          </li>
+        <?php endif; ?>
+      </ul>
+    <?php endif; ?>
   <?php else: ?>
     <table class="table">
       <thead>

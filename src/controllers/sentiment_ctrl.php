@@ -47,16 +47,17 @@ function ctrl_sentiment_save(): void
         redirect_route('login');
     }
 
-    $score = Sentiment::normalizeScore(post('score'));
-    if ($score === null) {
-        flash(t('sentiment.err_pick_score', 'Bitte waehle eine Stimmung aus (1 bis 5).'), 'err');
+    $mood = Sentiment::normalizeScore(post('mood'));
+    $flow = Sentiment::normalizeScore(post('flow'));
+    if ($mood === null && $flow === null) {
+        flash(t('sent.err_pick_any', 'Bitte setze Mood oder Flow (oder beides) auf 1-5.'), 'err');
         redirect_route('sentiment');
     }
     $asOf = Sentiment::normalizeDate((string) post('as_of', ''));
     $note = (string) post('note', '');
 
-    Sentiment::record($uid, $asOf, $score, $note);
+    Sentiment::record($uid, $asOf, $mood, $flow, $note);
 
-    flash('Danke, Stimmung fuer ' . $asOf . ' gespeichert.');
+    flash(sprintf(t('sent.flash_saved', 'Danke, Eintrag fuer %s gespeichert.'), $asOf));
     redirect_route('sentiment');
 }
