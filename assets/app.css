@@ -138,7 +138,12 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
    hidden radio + the emoji + a text label; the selected one lights up via
    `:has(:checked)` so no JS is needed to track selection. `.sentiment-sparkline`
    is the 60-day history strip (one bar per day, color by score). */
-.sentiment-scale{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+.sentiment-fieldset{border:1px solid var(--line);border-radius:var(--radius);
+  padding:10px 14px 14px;margin:0 0 14px}
+.sentiment-fieldset legend{padding:0 6px;font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.sentiment-dual{display:flex;flex-direction:column;gap:10px;margin:12px 0}
+.sentiment-dual-label{font-size:11px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+.sentiment-scale{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 0}
 .sentiment-pick{display:flex;flex-direction:column;align-items:center;gap:6px;
   padding:12px 10px;min-width:92px;border:1px solid var(--line);border-radius:12px;
   cursor:pointer;background:var(--panel);transition:border-color .12s,transform .08s,background .12s}
@@ -216,6 +221,69 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .report-chart-legend-soll{background:var(--muted);opacity:.4}
 .report-chart-legend-ist-ok{background:var(--brand)}
 .report-pro-teaser{margin-top:16px}
+.report-empty-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;max-width:560px}
+
+/* Projekt-Cockpit (v0.9.1, #124). Burn-up line chart + KPIs + recent list. */
+.cockpit-actions{display:flex;gap:8px;align-items:center}
+.cockpit-kpis{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0 18px}
+.cockpit-kpi{background:var(--soft);border:1px solid var(--line);border-radius:var(--radius);
+  padding:12px 16px;min-width:120px;text-align:left}
+.cockpit-kpi-val{font-size:20px;font-weight:700;color:var(--brand)}
+.cockpit-kpi-lbl{font-size:11px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
+.cockpit-chart-head,.cockpit-recent-head{margin-top:18px}
+.cockpit-chart-wrap{overflow-x:auto}
+.cockpit-chart-wrap svg{display:block;max-width:100%}
+.cockpit-grid{stroke:var(--line);stroke-width:1}
+.cockpit-tick{font-size:10px;fill:var(--muted)}
+.cockpit-line{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.cockpit-line-ok{stroke:var(--brand)}
+.cockpit-line-warn{stroke:#f59e0b}
+.cockpit-line-over{stroke:#ef4444}
+.cockpit-soll{stroke:var(--muted);stroke-width:1;stroke-dasharray:5 3;opacity:.6}
+.cockpit-soll-label{font-size:10px;fill:var(--muted)}
+.cockpit-chart-legend{margin-top:4px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.cockpit-legend-ist,.cockpit-legend-soll{display:inline-block;width:16px;height:3px;vertical-align:middle;margin-right:4px}
+.cockpit-legend-ist-ok{background:var(--brand)}
+.cockpit-legend-ist-warn{background:#f59e0b}
+.cockpit-legend-ist-over{background:#ef4444}
+.cockpit-legend-soll{background:var(--muted);opacity:.6}
+.cockpit-pro-teaser{margin-top:18px}
+
+/* Cockpit line-toggles (checkboxes above the chart, CSP-safe CSS :has) */
+.sr-only{position:absolute!important;clip:rect(1px,1px,1px,1px);width:1px;height:1px;overflow:hidden}
+.cockpit-toggles{display:flex;flex-wrap:wrap;gap:14px;border:0;padding:0;margin:0 0 10px}
+.cockpit-toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
+.cockpit-toggle input{margin:0}
+.cockpit-toggle-swatch{display:inline-block;width:16px;height:3px;vertical-align:middle}
+.cockpit-legend-budget{background:#8b5cf6;opacity:.6}
+.cockpit-legend-ideal{background:var(--muted);opacity:.5}
+.cockpit-toggle.is-pro-locked{opacity:.6;cursor:not-allowed}
+.cockpit-chart-ctl:has(.cockpit-toggle-ist:not(:checked)) .cockpit-line{visibility:hidden}
+.cockpit-chart-ctl:has(.cockpit-toggle-soll:not(:checked)) .cockpit-soll,
+.cockpit-chart-ctl:has(.cockpit-toggle-soll:not(:checked)) .cockpit-soll-label{visibility:hidden}
+
+/* Projekt-Health-Checks (Pro-upsell list) */
+.cockpit-health-head{margin-top:22px;display:flex;align-items:center;gap:8px}
+.cockpit-health-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;max-width:720px}
+.cockpit-health-item{display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;
+  padding:8px 10px;border:1px dashed var(--line);border-radius:var(--radius);opacity:.75}
+.cockpit-health-icon{font-size:18px;text-align:center}
+.cockpit-health-label{color:var(--muted)}
+.cockpit-health-cta{font-size:12px;color:var(--brand);text-decoration:none;white-space:nowrap}
+.cockpit-health-cta:hover{text-decoration:underline}
+
+/* List-editor pattern — inline edit form below the clicked row (#123). */
+.list-editor-new{margin-bottom:18px}
+.list-editor-table{margin:0}
+.list-editor-row.is-editing{background:var(--soft)}
+.list-editor-edit-row>td{background:var(--soft);border-left:3px solid var(--brand);
+  padding:16px}
+.form-inline{display:flex;flex-direction:column;gap:10px;max-width:720px}
+.form-inline label{display:flex;flex-direction:column;gap:4px}
+.form-inline-title{margin:0 0 8px;font-size:16px}
+.report-empty-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:8px 0;border-bottom:1px solid var(--line)}
+.report-empty-list li:last-child{border-bottom:0}
 
 /* Planning tile — simple soll-vs-ist bar (#111, Pro-Sync B.2). */
 .planning-bar{background:var(--soft);border:1px solid var(--line);
@@ -313,6 +381,11 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .shell{display:block}
 .shell.has-aside{display:block;max-width:none;margin:0;padding-right:200px}
 .shell.has-aside .wrap{max-width:1120px;margin:0 auto}
+/* Topbar/footer sit outside .shell (they span the full width), but the
+   fixed sidepanel takes the right 200 px. Without this gutter the
+   right-aligned userbox and footer wording vanish behind the panel. */
+body:has(.sidepanel) .topbar,
+body:has(.sidepanel) .foot{padding-right:200px}
 .sidepanel{position:fixed;top:56px;right:0;bottom:0;width:200px;
   padding:14px 10px;display:flex;flex-direction:column;gap:10px;
   background:var(--bg);z-index:5}
@@ -347,6 +420,8 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .sp-dot.active{background:#fff}
 @media (max-width:1023px){
   .shell.has-aside{padding-right:0}
+  body:has(.sidepanel) .topbar,
+  body:has(.sidepanel) .foot{padding-right:0}
   .sidepanel{position:static;width:auto;height:auto;padding:16px 0 0;
     margin-top:8px;border-top:1px solid var(--line);background:transparent;z-index:auto}
   .sp-brand{margin:0 0 10px}
@@ -416,6 +491,23 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
   padding:6px 8px;font-size:12px;font-weight:600;color:var(--ink);
   border-bottom:1px solid var(--line);text-align:center}
 .cal-day-today .cal-day-head{color:var(--brand)}
+
+/* Holidays list card below the week grid (#110). */
+.holidays-card{margin-top:18px}
+.holidays-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.holidays-list-item{display:grid;grid-template-columns:92px 42px 1fr auto;gap:12px;
+  align-items:baseline;padding:6px 2px;border-bottom:1px solid var(--line)}
+.holidays-list-item:last-child{border-bottom:0}
+.holidays-list-item.is-past{opacity:.5}
+.holidays-list-date{font-variant-numeric:tabular-nums;color:var(--brand);font-weight:600}
+.holidays-list-dow{font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.holidays-list-name{font-weight:500}
+.holidays-list-scope{font-size:12px;text-align:right}
+.holidays-list-foot{margin-top:10px}
+@media (max-width:640px){
+  .holidays-list-item{grid-template-columns:80px 1fr;row-gap:2px}
+  .holidays-list-dow,.holidays-list-scope{grid-column:1 / -1}
+}
 .cal-day-holiday-badge{position:sticky;top:28px;z-index:2;
   padding:3px 6px;font-size:11px;line-height:1.2;
   background:var(--soft);color:var(--muted);

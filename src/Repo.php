@@ -75,6 +75,61 @@ final class Repo
     }
 
     /**
+     * Burn-up series for a single project: one point per calendar day
+     * between the first recorded entry and today, carrying the cumulative
+     * minutes charged to that date. Days without an entry copy the
+     * previous cumulative value forward so the line never dips. The
+     * caller renders this as the X/Y data of a Project-Cockpit chart.
+     *
+     * @return array<int,array{d:string,cumulative_minutes:int,day_minutes:int}>
+     */
+    public static function projectBurnup(int $projectId, int $maxDays = 365): array
+    {
+        $first = DB::one(
+            'SELECT MIN(DATE(start_ts)) AS d
+               FROM time_entries
+              WHERE project_id = ? AND duration_min IS NOT NULL',
+            [$projectId]
+        );
+        if (!$first || empty($first['d'])) {
+            return [];
+        }
+        $start = new DateTimeImmutable((string) $first['d']);
+        $end   = new DateTimeImmutable('today');
+        // Clip to maxDays so a 3-year-old project doesn't push 1k points.
+        $span  = (int) $start->diff($end)->days;
+        if ($span > $maxDays) {
+            $start = $end->modify('-' . $maxDays . ' days');
+        }
+
+        $perDay = DB::all(
+            "SELECT DATE(start_ts) AS d, SUM(duration_min) AS mins
+               FROM time_entries
+              WHERE project_id = ? AND duration_min IS NOT NULL AND DATE(start_ts) >= ?
+           GROUP BY DATE(start_ts)",
+            [$projectId, $start->format('Y-m-d')]
+        );
+        $byDay = [];
+        foreach ($perDay as $r) { $byDay[(string) $r['d']] = (int) $r['mins']; }
+
+        $out = [];
+        $cursor = $start;
+        $cumulative = 0;
+        while ($cursor <= $end) {
+            $key = $cursor->format('Y-m-d');
+            $dayMin = $byDay[$key] ?? 0;
+            $cumulative += $dayMin;
+            $out[] = [
+                'd'                  => $key,
+                'cumulative_minutes' => $cumulative,
+                'day_minutes'        => $dayMin,
+            ];
+            $cursor = $cursor->modify('+1 day');
+        }
+        return $out;
+    }
+
+    /**
      * Dashboard planning tile data: for every active project that has
      * `target_hours` set, return the target + the actual recorded minutes
      * across all users (community is single-tenant so "all" matches the

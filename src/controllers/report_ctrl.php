@@ -10,12 +10,23 @@ function ctrl_report_projects(): void
     require_perm('structure.manage');
     [$clientFilter, $from, $to] = report_projects_filter_from_request();
     $rows = ProjectReport::rows($clientFilter, $from, $to);
+    // Empty-state nudge: when the user has active projects but none of
+    // them carry a target yet, link straight to each project's edit form
+    // instead of making them hunt around.
+    $plannable = [];
+    if (empty($rows)) {
+        $plannable = array_values(array_filter(
+            Repo::projects(true),
+            static fn(array $p) => $p['target_hours'] === null
+        ));
+    }
     view('report/projects', [
         'rows'         => $rows,
         'clients'      => Repo::clients(true),
         'filter_client' => $clientFilter,
         'filter_from'  => $from ?? '',
         'filter_to'    => $to ?? '',
+        'plannable'    => $plannable,
     ], t('report.projects_title', 'Projekt-Report'));
 }
 

@@ -2,17 +2,23 @@
 declare(strict_types=1);
 
 /**
- * Team-Sentiment-Tracking (fixes #92).
+ * Team-Sentiment-Tracking (fixes #92, split into Mood + Flow by #122).
  *
  * The Community edition landing page promises "team sentiment tracking", so
- * this is table-stakes rather than optional. Each user records a daily mood
- * score 1..5 with an optional short note. One row per (user_id, as_of) via
- * a unique index; a second write on the same day updates the first.
+ * this is table-stakes rather than optional. Each user records **two
+ * independent 1..5 scores per day**:
+ *   - `mood` — personal state (fröhlich / neutral / schlecht)
+ *   - `flow` — how work went today (im Fluss / zäh / blockiert)
  *
- * The team summary groups by day and returns the arithmetic mean + a response
- * count — the number stays usable even when individual rows are sparse. No
- * user name leaks into the team view; the per-day aggregate is intentionally
- * coarse so a single response in a day stays reasonably anonymous.
+ * The split lets a project manager spot the pattern that matters most:
+ * someone who is personally fine but perpetually frustrated in the
+ * project ("innerlich gekündigt"). One row per (user_id, as_of) via a
+ * unique index; either column may be NULL so a user can log just one of
+ * the two dimensions.
+ *
+ * Team aggregates are intentionally coarse: average + response count +
+ * distinct contributors per dimension, grouped by day. No individual
+ * score and no username ever leaves the aggregate.
  */
 final class Sentiment
 {
@@ -42,12 +48,19 @@ final class Sentiment
     }
 
     /**
-     * Insert or update today's (or $asOf's) sentiment for $userId. UPSERT:
-     * the (user_id, as_of) uniqueness is enforced by the schema, so a repeat
-     * save on the same day replaces the earlier value rather than erroring.
+     * Insert or update today's (or $asOf's) sentiment for $userId. UPSERT
+     * via (user_id, as_of) uniqueness, so a repeat save on the same day
+     * replaces the earlier value. Both $mood and $flow are optional
+     * (NULL = user did not set this dimension) — at least one must be
+     * provided, or the call is a no-op that returns false.
      */
-    public static function record(int $userId, string $asOf, int $score, ?string $note): void
+    public static function record(int $userId, string $asOf, ?int $mood, ?int $flow, ?string $note): bool
     {
+        $mood = $mood === null ? null : max(self::MIN_SCORE, min(self::MAX_SCORE, $mood));
+        $flow = $flow === null ? null : max(self::MIN_SCORE, min(self::MAX_SCORE, $flow));
+        if ($mood === null && $flow === null) {
+            return false;
+        }
         $note = $note !== null ? trim($note) : null;
         if ($note !== null && $note === '') { $note = null; }
         if ($note !== null && mb_strlen($note) > 500) {
@@ -61,16 +74,17 @@ final class Sentiment
         );
         if ($existing) {
             DB::run(
-                'UPDATE sentiment_entries SET score = ?, note = ?, updated_at = ? WHERE id = ?',
-                [$score, $note, $now, (int) $existing['id']]
+                'UPDATE sentiment_entries SET mood = ?, flow = ?, note = ?, updated_at = ? WHERE id = ?',
+                [$mood, $flow, $note, $now, (int) $existing['id']]
             );
         } else {
             DB::run(
-                'INSERT INTO sentiment_entries (user_id, as_of, score, note, created_at)
-                 VALUES (?, ?, ?, ?, ?)',
-                [$userId, $asOf, $score, $note, $now]
+                'INSERT INTO sentiment_entries (user_id, as_of, mood, flow, note, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?)',
+                [$userId, $asOf, $mood, $flow, $note, $now]
             );
         }
+        return true;
     }
 
     /** Latest entry for a user, or null. */
@@ -82,7 +96,7 @@ final class Sentiment
         );
     }
 
-    /** Today's entry for a user, or null. Lets the UI pre-fill the smiley picker. */
+    /** Today's entry for a user, or null. Lets the UI pre-fill the smiley pickers. */
     public static function todayForUser(int $userId): ?array
     {
         $today = (new DateTimeImmutable('today'))->format('Y-m-d');
@@ -92,32 +106,45 @@ final class Sentiment
         );
     }
 
-    /** @return array<int,array{as_of:string,score:int,note:?string}> */
+    /** @return array<int,array{as_of:string,mood:?int,flow:?int,note:?string}> */
     public static function historyForUser(int $userId, int $days = 60): array
     {
         $days = max(1, min(365, $days));
         $cutoff = (new DateTimeImmutable('today'))->modify('-' . $days . ' day')->format('Y-m-d');
-        return DB::all(
-            'SELECT as_of, score, note FROM sentiment_entries
+        $rows = DB::all(
+            'SELECT as_of, mood, flow, note FROM sentiment_entries
               WHERE user_id = ? AND as_of >= ?
               ORDER BY as_of ASC',
             [$userId, $cutoff]
         );
+        $out = [];
+        foreach ($rows as $r) {
+            $out[] = [
+                'as_of' => (string) $r['as_of'],
+                'mood'  => $r['mood'] !== null ? (int) $r['mood'] : null,
+                'flow'  => $r['flow'] !== null ? (int) $r['flow'] : null,
+                'note'  => $r['note'] !== null ? (string) $r['note'] : null,
+            ];
+        }
+        return $out;
     }
 
     /**
-     * Team-wide daily aggregate for the last $days. Returns one row per day
-     * that has at least one response; days without responses are omitted
-     * (the view decides whether to fill gaps).
+     * Team-wide daily aggregate for the last $days. One row per day that
+     * has at least one Mood OR one Flow response. The two dimensions get
+     * independent averages + counts so a day with 5 moods and 2 flows is
+     * surfaced correctly.
      *
-     * @return array<int,array{as_of:string,avg_score:float,n:int}>
+     * @return array<int,array{as_of:string,avg_mood:?float,n_mood:int,avg_flow:?float,n_flow:int}>
      */
     public static function teamDaily(int $days = 60): array
     {
         $days = max(1, min(365, $days));
         $cutoff = (new DateTimeImmutable('today'))->modify('-' . $days . ' day')->format('Y-m-d');
         $rows = DB::all(
-            'SELECT as_of, AVG(score) AS avg_score, COUNT(*) AS n
+            'SELECT as_of,
+                    AVG(mood) AS avg_mood, SUM(CASE WHEN mood IS NOT NULL THEN 1 ELSE 0 END) AS n_mood,
+                    AVG(flow) AS avg_flow, SUM(CASE WHEN flow IS NOT NULL THEN 1 ELSE 0 END) AS n_flow
                FROM sentiment_entries
               WHERE as_of >= ?
            GROUP BY as_of
@@ -126,43 +153,54 @@ final class Sentiment
         );
         $out = [];
         foreach ($rows as $r) {
+            $nMood = (int) $r['n_mood'];
+            $nFlow = (int) $r['n_flow'];
+            if ($nMood === 0 && $nFlow === 0) { continue; }
             $out[] = [
-                'as_of'     => (string) $r['as_of'],
-                'avg_score' => (float) $r['avg_score'],
-                'n'         => (int) $r['n'],
+                'as_of'    => (string) $r['as_of'],
+                'avg_mood' => $nMood > 0 ? (float) $r['avg_mood'] : null,
+                'n_mood'   => $nMood,
+                'avg_flow' => $nFlow > 0 ? (float) $r['avg_flow'] : null,
+                'n_flow'   => $nFlow,
             ];
         }
         return $out;
     }
 
     /**
-     * Team summary for a rolling window: average score, response count, and
-     * the number of distinct contributors. The last field is what justifies
-     * the "team" label — one person logging alone is personal, not team.
+     * Team summary for a rolling window: per-dimension average + response
+     * count, plus the total distinct contributors across both dimensions.
+     * The "contributors" field is what justifies the "team" label — one
+     * person logging alone is personal, not team.
      *
-     * @return array{avg:?float,responses:int,contributors:int,window_days:int}
+     * @return array{avg_mood:?float,n_mood:int,avg_flow:?float,n_flow:int,contributors:int,window_days:int}
      */
     public static function teamSummary(int $days = 30): array
     {
         $days = max(1, min(365, $days));
         $cutoff = (new DateTimeImmutable('today'))->modify('-' . $days . ' day')->format('Y-m-d');
         $row = DB::one(
-            'SELECT AVG(score) AS avg_score, COUNT(*) AS n,
+            'SELECT AVG(mood) AS avg_mood, SUM(CASE WHEN mood IS NOT NULL THEN 1 ELSE 0 END) AS n_mood,
+                    AVG(flow) AS avg_flow, SUM(CASE WHEN flow IS NOT NULL THEN 1 ELSE 0 END) AS n_flow,
                     COUNT(DISTINCT user_id) AS contributors
                FROM sentiment_entries
               WHERE as_of >= ?',
             [$cutoff]
         );
+        $nMood = $row ? (int) $row['n_mood'] : 0;
+        $nFlow = $row ? (int) $row['n_flow'] : 0;
         return [
-            'avg'          => $row && $row['avg_score'] !== null ? (float) $row['avg_score'] : null,
-            'responses'    => $row ? (int) $row['n'] : 0,
+            'avg_mood'     => $nMood > 0 ? (float) $row['avg_mood'] : null,
+            'n_mood'       => $nMood,
+            'avg_flow'     => $nFlow > 0 ? (float) $row['avg_flow'] : null,
+            'n_flow'       => $nFlow,
             'contributors' => $row ? (int) $row['contributors'] : 0,
             'window_days'  => $days,
         ];
     }
 
-    /** Human-readable emoji for a given score; used by views and chart labels. */
-    public static function emoji(int $score): string
+    /** Mood emoji 1..5 — the classic smiley scale. */
+    public static function moodEmoji(int $score): string
     {
         return match (max(1, min(5, $score))) {
             1 => '😞',
@@ -174,17 +212,38 @@ final class Sentiment
         };
     }
 
-    /** Human-readable label for a given score, resolved against the current locale. */
-    public static function label(int $score): string
+    /** Flow emoji 1..5 — a work-pace / blockage scale, visually distinct from Mood. */
+    public static function flowEmoji(int $score): string
     {
-        $key = 'sent.score.' . max(1, min(5, $score));
-        return function_exists('t')
-            ? t($key, self::labelFallback($score))
-            : self::labelFallback($score);
+        return match (max(1, min(5, $score))) {
+            1 => '🛑',  // blockiert
+            2 => '🐢',  // zäh
+            3 => '😐',  // neutral
+            4 => '🏃',  // flott
+            5 => '🚀',  // im Flow
+            default => '😐',
+        };
     }
 
-    /** German fallback copy used before the locale catalog is loaded. */
-    private static function labelFallback(int $score): string
+    /** Mood label resolved against the current locale (with German fallback). */
+    public static function moodLabel(int $score): string
+    {
+        $key = 'sent.mood.score.' . max(1, min(5, $score));
+        return function_exists('t')
+            ? t($key, self::moodLabelFallback($score))
+            : self::moodLabelFallback($score);
+    }
+
+    /** Flow label resolved against the current locale (with German fallback). */
+    public static function flowLabel(int $score): string
+    {
+        $key = 'sent.flow.score.' . max(1, min(5, $score));
+        return function_exists('t')
+            ? t($key, self::flowLabelFallback($score))
+            : self::flowLabelFallback($score);
+    }
+
+    private static function moodLabelFallback(int $score): string
     {
         return match (max(1, min(5, $score))) {
             1 => 'ganz schlecht',
@@ -192,6 +251,18 @@ final class Sentiment
             3 => 'okay',
             4 => 'gut',
             5 => 'sehr gut',
+            default => '',
+        };
+    }
+
+    private static function flowLabelFallback(int $score): string
+    {
+        return match (max(1, min(5, $score))) {
+            1 => 'blockiert',
+            2 => 'zaeh',
+            3 => 'neutral',
+            4 => 'flott',
+            5 => 'im Fluss',
             default => '',
         };
     }

@@ -62,6 +62,63 @@ function ctrl_projects_index(): void
     ], t('nav.projects'));
 }
 
+/**
+ * Projekt-Cockpit (v0.9.1 catch-up on #112) — a per-project detail view
+ * with a burn-up chart (cumulative Ist over time) + Soll horizontal line
+ * + status KPIs + last entries. Linked from the projects list and from
+ * the dashboard planning tile.
+ */
+function ctrl_project_show(): void
+{
+    require_perm('structure.manage');
+    $id = (int) get('id', 0);
+    $project = $id ? Repo::project($id) : null;
+    if (!$project) {
+        flash(t('projects.err_not_found', 'Projekt nicht gefunden.'), 'err');
+        redirect_route('projects');
+    }
+    $burnup = Repo::projectBurnup($id);
+    $recent = DB::all(
+        'SELECT e.*, u.username AS user_username, t.name AS task_name
+           FROM time_entries e
+      LEFT JOIN users u ON u.id = e.user_id
+      LEFT JOIN tasks t ON t.id = e.task_id
+          WHERE e.project_id = ?
+          ORDER BY e.start_ts DESC
+          LIMIT 10',
+        [$id]
+    );
+    $totalMin = (int) DB::scalar(
+        'SELECT COALESCE(SUM(duration_min), 0) FROM time_entries
+          WHERE project_id = ? AND duration_min IS NOT NULL',
+        [$id]
+    );
+    $targetMin = $project['target_hours'] !== null
+        ? (int) round(((float) $project['target_hours']) * 60)
+        : 0;
+    $percent = $targetMin > 0 ? (int) round(($totalMin / $targetMin) * 100) : 0;
+    $status  = ProjectReport::classify($percent);
+    // Simple 4-week trend: avg h/week over the last 28 days.
+    $cutoff28 = (new DateTimeImmutable('today'))->modify('-28 days')->format('Y-m-d');
+    $recent28 = (int) DB::scalar(
+        "SELECT COALESCE(SUM(duration_min), 0) FROM time_entries
+          WHERE project_id = ? AND duration_min IS NOT NULL AND DATE(start_ts) >= ?",
+        [$id, $cutoff28]
+    );
+    $trendPerWeek = round($recent28 / 60 / 4, 1);
+
+    view('structure/project_show', [
+        'project'       => $project,
+        'burnup'        => $burnup,
+        'recent'        => $recent,
+        'total_min'     => $totalMin,
+        'target_min'    => $targetMin,
+        'percent'       => $percent,
+        'status'        => $status,
+        'trend_per_week' => $trendPerWeek,
+    ], sprintf(t('projects.cockpit_title', 'Projekt: %s'), $project['name']));
+}
+
 function ctrl_project_save(): void
 {
     require_perm('structure.manage');

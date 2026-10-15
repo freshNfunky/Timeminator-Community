@@ -31,23 +31,34 @@ function ctrl_entries_index(): void
 
     $entries = Repo::entries($f);
     $holidays = [];
+    $holidaysUpcoming = [];
     if ($view === 'calendar' && isset($weekStart, $weekEnd)) {
+        $locale = I18n::current();
         $holidays = Holidays::byDate(
             $weekStart->format('Y-m-d'),
             $weekEnd->format('Y-m-d'),
-            I18n::current()
+            $locale
+        );
+        // "Upcoming" list below the grid: everything in the visible week
+        // plus the next ~90 days so the user can see what's coming.
+        $horizon = $weekStart->modify('+90 days');
+        $holidaysUpcoming = Holidays::between(
+            $weekStart->format('Y-m-d'),
+            $horizon->format('Y-m-d'),
+            $locale
         );
     }
     view('entries/index', [
-        'entries'     => $entries,
-        'clients'     => Repo::clients(),
-        'projects'    => Repo::projects(),
-        'filter'      => $f,
-        'total'       => Stats::totalMinutes($entries),
-        'view'        => $view,
-        'pro_url'     => (string) cfg('pro_url', 'https://timeminator.felixschaller.com'),
-        'week_start'  => $view === 'calendar' ? ($weekStart ?? null) : null,
-        'holidays'    => $holidays,
+        'entries'           => $entries,
+        'clients'           => Repo::clients(),
+        'projects'          => Repo::projects(),
+        'filter'            => $f,
+        'total'             => Stats::totalMinutes($entries),
+        'view'              => $view,
+        'pro_url'           => (string) cfg('pro_url', 'https://timeminator.felixschaller.com'),
+        'week_start'        => $view === 'calendar' ? ($weekStart ?? null) : null,
+        'holidays'          => $holidays,
+        'holidays_upcoming' => $holidaysUpcoming,
     ], t('nav.entries'));
 }
 

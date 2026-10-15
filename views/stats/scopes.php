@@ -11,7 +11,11 @@ $example = [
 <div class="cols">
   <div class="card col-form">
     <h2><?= h($edit ? t('scopes.edit', 'Sicht bearbeiten') : t('scopes.new', 'Neue Nachweis-Sicht')) ?></h2>
-    <p class="muted"><?= h(t('scopes.intro', 'Eine Nachweis-Sicht filtert und ordnet Eintraege generisch - ohne feste Projekte. Optionales Cutover-Datum ordnet Eintraege ab einem Stichtag einem anderen Kunden zu.')) ?></p>
+    <p class="muted"><?= t('scopes.intro_v2', 'Eine <strong>Nachweis-Sicht</strong> ist ein gespeichertes Filter- und Umbuchungs-Profil fuer die <a href="?r=stats">Statistik-Seite</a>. Dort erscheint sie im Dropdown „Nachweis-Sicht" und wendet ihre Regeln (Kunde-/Projekt-Filter, Traegerwechsel ab Stichtag) auf alle Diagramme und Tabellen an.') /* contains tags, intentional */ ?></p>
+    <details class="muted" style="margin-bottom:12px">
+      <summary><?= h(t('scopes.example_summary', 'Beispiel: Traegerwechsel-Umbuchung')) ?></summary>
+      <p><?= t('scopes.example_body', 'Nordlicht Consulting uebergibt ein Projekt zum 2025-11-01 an Aurora Labs. Die bisherigen Zeitbuchungen bleiben physisch an Nordlicht (unveraenderter Audit-Trail). Die Sicht sagt: „zeige in der Auswertung alles ab 2025-11-01 unter Aurora". Original-Entries werden nicht angeruehrt — nur die Nachweis-Darstellung in der Statistik.') ?></p>
+    </details>
     <form method="post" action="<?= h(route('scope_save')) ?>">
       <?= csrf_field() ?>
       <?php if ($edit): ?><input type="hidden" name="id" value="<?= (int) $edit['id'] ?>"><?php endif; ?>
