@@ -14,7 +14,7 @@ $__feature = t('nav.invoices');
 $__bullets = '<li>' . h(t('pro.inv.b1', 'Rechnungen aus geleisteten Zeiten erzeugen')) . '</li>'
            . '<li>' . h(t('pro.inv.b2', 'Stundensaetze pro Kunde / Projekt / Rolle')) . '</li>'
            . '<li>' . h(t('pro.inv.b3', 'PDF-Export mit eigenem Briefpapier')) . '</li>'
-           . '<li>Status: Entwurf, versendet, bezahlt</li>';
+           . '<li>' . h(t('pro.inv.b4', 'Status: Entwurf, versendet, bezahlt')) . '</li>';
 ?>
 <div class="pro-teaser">
   <div class="pro-teaser-mock" aria-hidden="true">
@@ -24,20 +24,31 @@ $__bullets = '<li>' . h(t('pro.inv.b1', 'Rechnungen aus geleisteten Zeiten erzeu
         <span class="pill pill-pro"><?= h(t('nav.pro_pill')) ?></span>
       </div>
       <div class="pro-teaser-toolbar">
-        <button class="btn btn-primary" type="button" disabled>+ Rechnung aus Zeiten</button>
-        <button class="btn" type="button" disabled>Vorlage</button>
-        <button class="btn" type="button" disabled>PDF</button>
+        <button class="btn btn-primary" type="button" disabled><?= h(t('pro.inv.btn_new', '+ Rechnung aus Zeiten')) ?></button>
+        <button class="btn" type="button" disabled><?= h(t('pro.inv.btn_template', 'Vorlage')) ?></button>
+        <button class="btn" type="button" disabled><?= h(t('pro.inv.btn_pdf', 'PDF')) ?></button>
       </div>
       <table class="table">
         <thead><tr>
-          <th>Nr.</th><th>Kunde</th><th>Projekte</th><th class="r">Stunden</th><th class="r">Betrag</th><th>Status</th>
+          <th><?= h(t('pro.inv.col_no', 'Nr.')) ?></th>
+          <th><?= h(t('struct.client', 'Kunde')) ?></th>
+          <th><?= h(t('nav.projects', 'Projekte')) ?></th>
+          <th class="r"><?= h(t('pro.inv.col_hours', 'Stunden')) ?></th>
+          <th class="r"><?= h(t('pro.inv.col_amount', 'Betrag')) ?></th>
+          <th><?= h(t('pro.inv.col_status', 'Status')) ?></th>
         </tr></thead>
         <tbody>
-        <?php $__i = 0; foreach ($groups as $g): $__i++;
+        <?php
+          $__statuses = [
+              t('pro.inv.status_draft', 'Entwurf'),
+              t('pro.inv.status_sent',  'Versendet'),
+              t('pro.inv.status_paid',  'Bezahlt'),
+          ];
+          $__i = 0; foreach ($groups as $g): $__i++;
           $__hours = $g['minutes'] / 60;
           $__rate  = 95 + (($__i * 7) % 40);
           $__sum   = (int) round($__hours * $__rate);
-          $__status = ['Entwurf', 'Versendet', 'Bezahlt'][($__i - 1) % 3];
+          $__status = $__statuses[($__i - 1) % 3];
         ?>
           <tr>
             <td>R-2026-<?= sprintf('%03d', 100 + $__i) ?></td>
@@ -49,7 +60,7 @@ $__bullets = '<li>' . h(t('pro.inv.b1', 'Rechnungen aus geleisteten Zeiten erzeu
           </tr>
         <?php endforeach; ?>
         <?php if (!$groups): ?>
-          <tr><td colspan="6" class="muted">Keine Zeiteintraege — in Pro siehst du hier deine Rechnungen.</td></tr>
+          <tr><td colspan="6" class="muted"><?= h(t('pro.inv.empty', 'Keine Zeiteintraege — in Pro siehst du hier deine Rechnungen.')) ?></td></tr>
         <?php endif; ?>
         </tbody>
       </table>

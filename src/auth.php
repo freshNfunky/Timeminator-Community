@@ -123,8 +123,8 @@ function require_perm(string $permission): void
         http_response_code(403);
         view('error', [
             'code' => 403,
-            'message' => 'Keine Berechtigung fuer diese Aktion (' . h($permission) . ').',
-        ], 'Kein Zugriff');
+            'message' => sprintf(t('err.no_permission', 'Keine Berechtigung fuer diese Aktion (%s).'), h($permission)),
+        ], t('err.no_access_title', 'Kein Zugriff'));
         exit;
     }
 }

@@ -91,14 +91,14 @@ function ctrl_scope_save(): void
     $id = post_int('id');
     $name = trim((string) post('name'));
     if ($name === '') {
-        flash('Name ist erforderlich.', 'err');
+        flash(t('scopes.err_name_required', 'Name ist erforderlich.'), 'err');
         redirect_route('scopes');
     }
     $configRaw = trim((string) post('config'));
     // Validate JSON; fall back to empty object.
     $decoded = json_decode($configRaw ?: '{}', true);
     if (!is_array($decoded)) {
-        flash('Konfiguration ist kein gueltiges JSON.', 'err');
+        flash(t('scopes.err_bad_json', 'Konfiguration ist kein gueltiges JSON.'), 'err');
         redirect_route('scopes', $id ? ['edit' => $id] : []);
     }
     Repo::saveScope([
@@ -106,7 +106,7 @@ function ctrl_scope_save(): void
         'description' => trim((string) post('description')) ?: null,
         'config'      => json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT),
     ], $id ?: null);
-    flash('Nachweis-Sicht gespeichert.');
+    flash(t('scopes.flash_saved', 'Nachweis-Sicht gespeichert.'));
     redirect_route('scopes');
 }
 
@@ -117,7 +117,7 @@ function ctrl_scope_delete(): void
     $id = post_int('id');
     if ($id) {
         Repo::deleteScope($id);
-        flash('Nachweis-Sicht geloescht.');
+        flash(t('scopes.flash_deleted', 'Nachweis-Sicht geloescht.'));
     }
     redirect_route('scopes');
 }

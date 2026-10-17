@@ -59,7 +59,11 @@ window.TmCharts = (function () {
   function empty(ctx, w, h){
     ctx.fillStyle = theme().muted;
     ctx.textAlign = 'center';
-    ctx.fillText('Keine Daten', w / 2, h / 2);
+    // Label comes from <body data-i18n-chart-empty="…"> so the UI language
+    // follows I18n::current(); defensive fallback keeps charts readable even
+    // if the attribute is missing (e.g. a page that forgot to use the layout).
+    var lbl = (document.body && document.body.getAttribute('data-i18n-chart-empty')) || 'Keine Daten';
+    ctx.fillText(lbl, w / 2, h / 2);
   }
 
   // Doughnut + returns legend HTML into legendEl.

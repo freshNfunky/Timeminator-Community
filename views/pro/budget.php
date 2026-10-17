@@ -14,8 +14,8 @@
 $__feature = t('pro.budget.feature', 'Budget / Soll');
 $__bullets = '<li>' . h(t('pro.bud.b1', 'Soll-Stunden und -Budget pro Projekt')) . '</li>'
            . '<li>' . h(t('pro.bud.b2', 'Live-Fortschritt gegen Ist-Zeiten')) . '</li>'
-           . '<li>Warnung ab 80 %, Alarm ab 100 %</li>'
-           . '<li>Monatliche Burn-Rate pro Kunde</li>';
+           . '<li>' . h(t('pro.bud.b3', 'Warnung ab 80 %, Alarm ab 100 %')) . '</li>'
+           . '<li>' . h(t('pro.bud.b4', 'Monatliche Burn-Rate pro Kunde')) . '</li>';
 ?>
 <style nonce="<?= h(csp_nonce()) ?>">
 <?php foreach ($rows as $__i => $__r): ?>
@@ -31,7 +31,10 @@ $__bullets = '<li>' . h(t('pro.bud.b1', 'Soll-Stunden und -Budget pro Projekt'))
       </div>
       <table class="table">
         <thead><tr>
-          <th>Kunde / Projekt</th><th class="r">Soll</th><th class="r">Ist</th><th>Fortschritt</th>
+          <th><?= h(t('pro.bud.col_client_project', 'Kunde / Projekt')) ?></th>
+          <th class="r"><?= h(t('pro.bud.col_target', 'Soll')) ?></th>
+          <th class="r"><?= h(t('pro.bud.col_actual', 'Ist')) ?></th>
+          <th><?= h(t('pro.bud.col_progress', 'Fortschritt')) ?></th>
         </tr></thead>
         <tbody>
         <?php foreach ($rows as $__i => $__r):
@@ -50,7 +53,7 @@ $__bullets = '<li>' . h(t('pro.bud.b1', 'Soll-Stunden und -Budget pro Projekt'))
           </tr>
         <?php endforeach; ?>
         <?php if (!$rows): ?>
-          <tr><td colspan="4" class="muted">Keine Projekte — in Pro siehst du hier dein Soll / Ist.</td></tr>
+          <tr><td colspan="4" class="muted"><?= h(t('pro.bud.empty', 'Keine Projekte — in Pro siehst du hier dein Soll / Ist.')) ?></td></tr>
         <?php endif; ?>
         </tbody>
       </table>

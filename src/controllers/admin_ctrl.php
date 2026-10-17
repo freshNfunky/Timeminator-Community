@@ -263,11 +263,20 @@ function ctrl_update_check(): void
     csrf_check();
     $res = Updater::check();
     if (empty($res['ok'])) {
-        flash('Update-Pruefung fehlgeschlagen: ' . ($res['error'] ?? 'unbekannt'), 'err');
+        flash(sprintf(
+            t('system.flash_update_check_failed', 'Update-Pruefung fehlgeschlagen: %s'),
+            $res['error'] ?? t('system.update_error_unknown', 'unbekannt')
+        ), 'err');
     } elseif (!empty($res['newer'])) {
-        flash('Update verfuegbar: Version ' . $res['latest'] . ' (aktuell ' . $res['current'] . ').', 'ok');
+        flash(sprintf(
+            t('system.flash_update_available', 'Update verfuegbar: Version %s (aktuell %s).'),
+            $res['latest'], $res['current']
+        ), 'ok');
     } else {
-        flash('Timeminator ist aktuell (Version ' . $res['current'] . ').');
+        flash(sprintf(
+            t('system.flash_update_current', 'Timeminator ist aktuell (Version %s).'),
+            $res['current']
+        ));
     }
     redirect_route('admin_system');
 }
@@ -309,7 +318,7 @@ function ctrl_update_skip(): void
         redirect_route('admin_system');
     }
     Updater::skipVersion($version);
-    flash('Version ' . $version . ' wird uebersprungen.');
+    flash(sprintf(t('system.flash_version_skipped', 'Version %s wird uebersprungen.'), $version));
     redirect(referrer_or_default(route('dashboard')));
 }
 

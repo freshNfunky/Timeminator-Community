@@ -38,10 +38,10 @@ final class Registration
         Settings::set('registration', $state);
 
         if (!$optIn) {
-            return ['ok' => true, 'message' => 'Registrierung deaktiviert. Es werden keine Daten gesendet.'];
+            return ['ok' => true, 'message' => t('registration.msg_opted_out', 'Registrierung deaktiviert. Es werden keine Daten gesendet.')];
         }
         if (self::isDisabled()) {
-            return ['ok' => false, 'message' => 'Registrierung ist administrativ deaktiviert.'];
+            return ['ok' => false, 'message' => t('registration.msg_admin_disabled', 'Registrierung ist administrativ deaktiviert.')];
         }
         return self::send($email);
     }
@@ -49,11 +49,11 @@ final class Registration
     public static function send(string $email): array
     {
         if (self::isDisabled()) {
-            return ['ok' => false, 'message' => 'Registrierung ist administrativ deaktiviert.'];
+            return ['ok' => false, 'message' => t('registration.msg_admin_disabled', 'Registrierung ist administrativ deaktiviert.')];
         }
         $endpoint = self::endpoint();
         if ($endpoint === '') {
-            return ['ok' => false, 'message' => 'Kein Registrierungs-Endpoint konfiguriert.'];
+            return ['ok' => false, 'message' => t('registration.msg_no_endpoint', 'Kein Registrierungs-Endpoint konfiguriert.')];
         }
         $payload = json_encode([
             'email'       => $email,
@@ -82,7 +82,7 @@ final class Registration
                 // when $ch goes out of scope; curl_close() is a no-op and was
                 // formally deprecated in PHP 8.5.
                 if ($resp === false) {
-                    throw new RuntimeException($err ?: 'Verbindung fehlgeschlagen.');
+                    throw new RuntimeException($err ?: t('registration.err_connection', 'Verbindung fehlgeschlagen.'));
                 }
             } else {
                 $ctx = stream_context_create(['http' => [
@@ -93,15 +93,15 @@ final class Registration
                 ]]);
                 $resp = @file_get_contents($endpoint, false, $ctx);
                 if ($resp === false) {
-                    throw new RuntimeException('Verbindung fehlgeschlagen (kein Netzzugang?).');
+                    throw new RuntimeException(t('registration.err_connection_offline', 'Verbindung fehlgeschlagen (kein Netzzugang?).'));
                 }
             }
             $state = self::status();
             $state['last_sent'] = now();
             Settings::set('registration', $state);
-            return ['ok' => true, 'message' => 'Registrierung gesendet. Danke!'];
+            return ['ok' => true, 'message' => t('registration.msg_sent', 'Registrierung gesendet. Danke!')];
         } catch (Throwable $e) {
-            return ['ok' => false, 'message' => 'Registrierung fehlgeschlagen: ' . $e->getMessage()];
+            return ['ok' => false, 'message' => sprintf(t('registration.err_failed', 'Registrierung fehlgeschlagen: %s'), $e->getMessage())];
         }
     }
 }
