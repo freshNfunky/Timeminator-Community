@@ -27,7 +27,7 @@ final class Stats
         if ($t === '') {
             $t = trim((string) ($e['client_track'] ?? ''));
         }
-        return $t === '' ? '(ohne Gleis)' : $t;
+        return $t === '' ? t('stats.no_track', '(ohne Gleis)') : $t;
     }
 
     /**

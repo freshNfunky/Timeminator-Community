@@ -2,7 +2,19 @@
 $from = (new DateTimeImmutable('first day of this month'))->format('Y-m-d');
 $to = (new DateTimeImmutable('now'))->format('Y-m-d');
 ?>
-<form id="statsForm" class="card filter-bar" data-endpoint="<?= h(route('stats_data')) ?>">
+<?php
+  // Translations handed to stats.js so the client renders localised labels.
+  // Done via data-attr instead of a global `window.TM_I18N` to keep the
+  // strict CSP happy (no inline script needed) and the surface tiny.
+  $__statsI18n = [
+      'scope_all'  => t('stats.scope_all', 'Gesamt'),
+      'by_project' => t('stats.by_project', 'nach Projekt'),
+      'by_client'  => t('stats.by_client',  'nach Kunde'),
+      'by_track'   => t('stats.by_track',   'nach Gleis'),
+      'error'      => t('stats.error',      'Fehler'),
+  ];
+?>
+<form id="statsForm" class="card filter-bar" data-endpoint="<?= h(route('stats_data')) ?>" data-i18n='<?= h(json_encode($__statsI18n, JSON_UNESCAPED_UNICODE)) ?>'>
   <label><?= h(t('entries.from')) ?> <input type="date" name="from" value="<?= h($from) ?>"></label>
   <label><?= h(t('entries.to')) ?> <input type="date" name="to" value="<?= h($to) ?>"></label>
   <label><?= h(t('stats.group_by', 'Gruppieren nach')) ?>
