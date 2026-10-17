@@ -18,10 +18,8 @@
  * @var DateTimeImmutable $week_start
  * @var string            $pro_url
  * @var array             $holidays  Keyed by ISO date; from Holidays::byDate()
- * @var array             $holidays_upcoming  Flat list from Holidays::between()
  */
-$holidays          = $holidays          ?? [];
-$holidays_upcoming = $holidays_upcoming ?? [];
+$holidays = $holidays ?? [];
 $__weekEnd  = $week_start->modify('+6 days');
 $__prevWeek = $week_start->modify('-7 days');
 $__nextWeek = $week_start->modify('+7 days');
@@ -37,13 +35,16 @@ $__dayHeaders = [
     t('cal.day_short.sun', 'So'),
 ];
 $__days = [];
+$__workingDays = Holidays::workingDays();
 for ($i = 0; $i < 7; $i++) {
     $d = $week_start->modify('+' . $i . ' days');
+    $__isoDow = (int) $d->format('N');
     $__days[] = [
-        'date'    => $d,
-        'ymd'     => $d->format('Y-m-d'),
-        'label'   => $__dayHeaders[$i] . ' ' . $d->format('d.m.'),
-        'isToday' => $d->format('Y-m-d') === $__today->format('Y-m-d'),
+        'date'        => $d,
+        'ymd'         => $d->format('Y-m-d'),
+        'label'       => $__dayHeaders[$i] . ' ' . $d->format('d.m.'),
+        'isToday'     => $d->format('Y-m-d') === $__today->format('Y-m-d'),
+        'isWorkDay'   => in_array($__isoDow, $__workingDays, true),
     ];
 }
 
@@ -145,10 +146,10 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
     <div class="cal-days">
       <?php foreach ($__days as $__i => $__day): ?>
         <?php $__holiday = $holidays[$__day['ymd']] ?? null; ?>
-        <div class="cal-day<?= $__day['isToday'] ? ' cal-day-today' : '' ?><?= $__holiday ? ' cal-day-holiday' : '' ?>" data-day="<?= h($__day['ymd']) ?>">
+        <div class="cal-day<?= $__day['isToday'] ? ' cal-day-today' : '' ?><?= $__holiday ? ' cal-day-holiday' : '' ?><?= !$__day['isWorkDay'] ? ' cal-day-nonworking' : '' ?>" data-day="<?= h($__day['ymd']) ?>">
           <div class="cal-day-head"><?= h($__day['label']) ?></div>
           <?php if ($__holiday): ?>
-            <div class="cal-day-holiday-badge" title="<?= h(t($__holiday['key'], $__holiday['key']) . ' — ' . $__holiday['scope']) ?>">
+            <div class="cal-day-holiday-badge" title="<?= h(t($__holiday['key'], $__holiday['key'])) ?>">
               <span class="cal-holiday-dot" aria-hidden="true">★</span>
               <span class="cal-holiday-name"><?= h(t($__holiday['key'], $__holiday['key'])) ?></span>
             </div>
@@ -172,41 +173,58 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
   </div>
 </div>
 
-<div class="card holidays-card">
-  <div class="card-head">
-    <h2><?= h(t('cal.holidays_h2', 'Feiertage')) ?></h2>
-    <span class="muted"><?= h(sprintf(t('cal.holidays_subtitle', 'DACH / US — aus der eingebauten Liste. Locale: %s'), strtoupper(I18n::current()))) ?></span>
-  </div>
-  <?php if (!$holidays_upcoming): ?>
-    <p class="muted"><?= h(t('cal.holidays_empty', 'In den naechsten 90 Tagen keine Feiertage in der aktuellen Locale.')) ?></p>
-  <?php else: ?>
-    <ul class="holidays-list">
-      <?php
-        $__today = (new DateTimeImmutable('today'))->format('Y-m-d');
-        foreach ($holidays_upcoming as $__h):
-          $__dt   = new DateTimeImmutable($__h['date']);
-          $__past = strcmp($__h['date'], $__today) < 0;
-          $__name = t($__h['key'], $__h['key']);
-      ?>
-        <li class="holidays-list-item<?= $__past ? ' is-past' : '' ?>">
-          <span class="holidays-list-date"><?= h($__dt->format('d.m.Y')) ?></span>
-          <span class="holidays-list-dow muted"><?= h($__dt->format('D')) ?></span>
-          <span class="holidays-list-name"><?= h($__name) ?></span>
-          <span class="holidays-list-scope muted"><?= h($__h['scope']) ?></span>
-        </li>
-      <?php endforeach; ?>
-    </ul>
-    <p class="muted holidays-list-foot"><?= h(t('cal.holidays_hint', 'Als dezente Marker im Day-Head oben. Externe Kalender/CalDAV → Pro.')) ?></p>
-  <?php endif; ?>
-</div>
-
+<?php
+  $__holidayRegion  = Holidays::currentRegion();
+  $__holidayCatalog = Holidays::catalog();
+  $__canEditHoliday = Auth::can('admin.system');
+?>
 <div class="card external-cal-teaser">
   <div class="card-head">
     <h2><?= h(t('cal.external_title', 'Externe Kalender')) ?></h2>
-    <span class="pill pill-pro"><?= h(t('nav.pro_feature_tooltip')) ?></span>
   </div>
-  <p class="muted"><?= t('cal.external_intro', 'Externe Quellen laufen in <strong>Timeminator Pro</strong>: CalDAV-Konten (iCloud, Google via CalDAV, FastMail&nbsp;&hellip;) und Kalender-Abos per iCal-/Outlook-URL (z.&nbsp;B. Feiertags-Kalender). Read-only Overlays im Grid.') /* contains <strong>, intentional */ ?></p>
+
+  <div class="calimport-item">
+    <div class="calimport-item-head">
+      <strong><?= h(t('calimport.holiday_h2', 'Feiertagskalender')) ?></strong>
+    </div>
+    <p class="muted"><?= h(t('calimport.holiday_intro', 'Genau ein gesetzlicher Feiertagskalender aus einer festen Liste. Liefert die Markierungen im Day-Head oben und ist Grundlage fuer die Soll-Reduktion in v1.1.')) ?></p>
+    <form method="post" action="<?= h(route('holiday_region_save')) ?>" class="calimport-form">
+      <?= csrf_field() ?>
+      <input type="hidden" name="_back" value="<?= h(route('entries') . '&week=' . $week_start->format('Y-\WW')) ?>">
+      <label class="field">
+        <span class="field-label"><?= h(t('calimport.region_label', 'Region')) ?></span>
+        <select name="holiday_region" <?= $__canEditHoliday ? '' : 'disabled' ?>>
+          <option value="__none__" <?= $__holidayRegion === '__none__' ? 'selected' : '' ?>>
+            <?= h(t('calimport.region_none', '— Keine Feiertagsmarkierung —')) ?>
+          </option>
+          <?php foreach ($__holidayCatalog as $__grp): ?>
+            <optgroup label="<?= h(t($__grp['label_key'], strtoupper($__grp['country']))) ?>">
+              <?php foreach ($__grp['options'] as $__opt): ?>
+                <option value="<?= h($__opt['code']) ?>" <?= $__holidayRegion === $__opt['code'] ? 'selected' : '' ?>>
+                  <?= h(t($__opt['label_key'], $__opt['code'])) ?>
+                </option>
+              <?php endforeach; ?>
+            </optgroup>
+          <?php endforeach; ?>
+        </select>
+      </label>
+      <?php if ($__canEditHoliday): ?>
+        <div class="form-actions">
+          <button class="btn btn-primary btn-sm" type="submit"><?= h(t('common.save', 'Speichern')) ?></button>
+        </div>
+      <?php else: ?>
+        <p class="muted"><?= h(t('calimport.readonly_hint', 'Nur ein Administrator kann den Feiertagskalender aendern.')) ?></p>
+      <?php endif; ?>
+    </form>
+  </div>
+
+  <p class="muted calimport-pro-intro"><?= t('cal.external_intro', 'Externe Quellen laufen in <strong>Timeminator Pro</strong>: CalDAV-Konten (iCloud, Google via CalDAV, FastMail&nbsp;&hellip;) und Kalender-Abos per iCal-/Outlook-URL. Read-only Overlays im Grid, mehrere parallel.') /* contains <strong>, intentional */ ?></p>
   <div class="external-cal-items">
+    <a class="external-cal-item" href="<?= h($pro_url) ?>" target="_blank" rel="noopener">
+      <strong><?= h(t('cal.ext_multi_title', 'Mehrere Feiertagskalender parallel')) ?></strong>
+      <span class="muted"><?= h(t('cal.ext_multi_hint', 'DE-BY + AT + US-FED gleichzeitig anzeigen; einer zaehlt fuer die 40h-Berechnung.')) ?></span>
+      <span class="pill pill-pro"><?= h(t('nav.pro_pill')) ?></span>
+    </a>
     <a class="external-cal-item" href="<?= h($pro_url) ?>" target="_blank" rel="noopener">
       <strong><?= h(t('cal.ext_caldav_title', 'CalDAV-Kalender hinzufuegen')) ?></strong>
       <span class="muted"><?= h(t('cal.ext_caldav_hint', 'iCloud, Google (CalDAV), FastMail, Zimbra …')) ?></span>
@@ -214,7 +232,12 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
     </a>
     <a class="external-cal-item" href="<?= h($pro_url) ?>" target="_blank" rel="noopener">
       <strong><?= h(t('cal.ext_ics_title', 'Kalender-Abo (iCal/Outlook-URL)')) ?></strong>
-      <span class="muted"><?= t('cal.ext_ics_hint', 'z.&nbsp;B. Feiertags-URL als <code>.ics</code>-Abo') /* contains <code>, intentional */ ?></span>
+      <span class="muted"><?= t('cal.ext_ics_hint', 'z.&nbsp;B. Teamkalender als <code>.ics</code>-Abo') /* contains <code>, intentional */ ?></span>
+      <span class="pill pill-pro"><?= h(t('nav.pro_pill')) ?></span>
+    </a>
+    <a class="external-cal-item" href="<?= h($pro_url) ?>" target="_blank" rel="noopener">
+      <strong><?= h(t('cal.ext_book_title', 'Zeitbuchung direkt aus dem Kalender')) ?></strong>
+      <span class="muted"><?= h(t('cal.ext_book_hint', 'Termin anklicken, Projekt zuordnen, Buchung fertig.')) ?></span>
       <span class="pill pill-pro"><?= h(t('nav.pro_pill')) ?></span>
     </a>
   </div>

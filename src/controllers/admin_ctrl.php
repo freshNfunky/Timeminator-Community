@@ -163,6 +163,7 @@ function ctrl_system_index(): void
         'manifest_override' => (string) Settings::get('update_manifest_url_override', ''),
         'update_disabled' => Updater::isDisabled(),
         'theme_preference'         => (string) Settings::get('theme_preference', 'system'),
+        'working_days'             => Holidays::workingDays(),
         'banner_config_off'        => Banners::isConfigDisabled(),
         'banner_visible'           => (bool) Settings::get('banner_visible', true),
         'banner_telemetry'         => Banners::telemetryEnabled(),
@@ -194,6 +195,51 @@ function ctrl_theme_save(): void
     Settings::set('theme_preference', $pref);
     flash(t('system.flash_theme_saved', 'Darstellung gespeichert.'));
     redirect_route('admin_system');
+}
+
+/**
+ * Persist the ISO weekday numbers that count as working days (Mon=1 … Sun=7).
+ * Lives under Admin -> System because it is a system-wide policy that
+ * drives both the week-view tinting and the future 40h target reduction.
+ */
+function ctrl_working_days_save(): void
+{
+    require_perm('admin.system');
+    csrf_check();
+    $raw = post('working_days', []);
+    if (!is_array($raw)) { $raw = []; }
+    $clean = [];
+    foreach ($raw as $v) {
+        $n = (int) $v;
+        if ($n >= 1 && $n <= 7) { $clean[$n] = true; }
+    }
+    $days = array_keys($clean);
+    sort($days);
+    if (!$days) { $days = [1, 2, 3, 4, 5]; } // never allow a zero-work week
+    Settings::set('working_days', implode(',', $days));
+    flash(t('system.flash_working_days_saved', 'Werktage gespeichert.'));
+    redirect_route('admin_system');
+}
+
+/**
+ * Persist the chosen holiday region (one entry from Holidays::catalog(),
+ * or the sentinel `__none__` to disable the overlay). Submitted from the
+ * "Externe Kalender" card below the week grid.
+ */
+function ctrl_holiday_region_save(): void
+{
+    require_perm('admin.system');
+    csrf_check();
+    $r = (string) post('holiday_region', Holidays::defaultRegion());
+    if (!Holidays::isValidRegion($r)) {
+        $r = Holidays::defaultRegion();
+    }
+    Settings::set('holiday_region', $r);
+    flash(t('calimport.flash_saved', 'Feiertagskalender gespeichert.'));
+    // Return to wherever the user triggered the save from (the week view).
+    $back = (string) post('_back', route('entries'));
+    header('Location: ' . $back);
+    exit;
 }
 
 /**

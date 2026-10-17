@@ -347,6 +347,18 @@ function collect_theme_colors(): array
     return array_keys($out);
 }
 
+/**
+ * Classify a Soll/Ist percentage into one of the three status buckets
+ * used across the planning + cockpit UI. Formerly `ProjectReport::classify`
+ * — now a plain helper after the report scrap was removed (#127).
+ */
+function project_status_bucket(int $percent): string
+{
+    if ($percent > 100) { return 'over'; }
+    if ($percent >= 80) { return 'warn'; }
+    return 'ok';
+}
+
 function client_ip(): string
 {
     $remote = (string) ($_SERVER['REMOTE_ADDR'] ?? '');

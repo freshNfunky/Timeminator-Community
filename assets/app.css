@@ -240,7 +240,32 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .cockpit-line-warn{stroke:#f59e0b}
 .cockpit-line-over{stroke:#ef4444}
 .cockpit-soll{stroke:var(--muted);stroke-width:1;stroke-dasharray:5 3;opacity:.6}
+.cockpit-area{opacity:.18}
+.cockpit-area-ok{fill:#10b981}
+.cockpit-area-over{fill:#ef4444;opacity:.28}
+.cockpit-chart-ctl:has(.cockpit-toggle-areas:not(:checked)) .cockpit-area{visibility:hidden}
+.cockpit-kpi.is-missing{border-style:dashed}
+.cockpit-kpi-cta{display:inline-block;margin-top:4px;font-size:11px;color:var(--brand);text-decoration:none}
+.cockpit-kpi-cta:hover{text-decoration:underline}
 .cockpit-soll-label{font-size:10px;fill:var(--muted)}
+.cockpit-deadline{stroke-width:1.2;stroke-dasharray:4 3;opacity:.85}
+.cockpit-deadline-planned{stroke:#64748b}
+.cockpit-deadline-estimated{stroke:#f59e0b}
+.cockpit-deadline-label{font-size:10px;font-weight:600}
+.cockpit-deadline-label-planned{fill:#94a3b8}
+.cockpit-deadline-label-estimated{fill:#f59e0b}
+/* Progress overlay (second series, right-hand %-scale) */
+.cockpit-tick-pct{fill:#8b5cf6;font-weight:600}
+.cockpit-progress-line{stroke:#8b5cf6;stroke-linecap:round;stroke-linejoin:round}
+.cockpit-progress-dot{fill:#8b5cf6;stroke:var(--panel);stroke-width:1}
+.cockpit-forecast-link{stroke:#8b5cf6;stroke-width:1;stroke-dasharray:3 2;opacity:.6}
+.cockpit-forecast-dot{fill:var(--panel);stroke:#8b5cf6;stroke-width:1.5}
+.cockpit-legend-progress{background:#8b5cf6}
+.cockpit-chart-ctl:has(.cockpit-toggle-progress:not(:checked)) .cockpit-progress-line,
+.cockpit-chart-ctl:has(.cockpit-toggle-progress:not(:checked)) .cockpit-progress-dot,
+.cockpit-chart-ctl:has(.cockpit-toggle-progress:not(:checked)) .cockpit-forecast-link,
+.cockpit-chart-ctl:has(.cockpit-toggle-progress:not(:checked)) .cockpit-forecast-dot,
+.cockpit-chart-ctl:has(.cockpit-toggle-progress:not(:checked)) .cockpit-tick-pct{visibility:hidden}
 .cockpit-chart-legend{margin-top:4px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .cockpit-legend-ist,.cockpit-legend-soll{display:inline-block;width:16px;height:3px;vertical-align:middle;margin-right:4px}
 .cockpit-legend-ist-ok{background:var(--brand)}
@@ -261,6 +286,45 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .cockpit-chart-ctl:has(.cockpit-toggle-ist:not(:checked)) .cockpit-line{visibility:hidden}
 .cockpit-chart-ctl:has(.cockpit-toggle-soll:not(:checked)) .cockpit-soll,
 .cockpit-chart-ctl:has(.cockpit-toggle-soll:not(:checked)) .cockpit-soll-label{visibility:hidden}
+
+/* Projekt-Tracker (zeitgestempelte Status-Berichte, #127) */
+.cockpit-tracker-head{margin-top:22px}
+.tracker-form{max-width:720px;display:flex;flex-direction:column;gap:10px;margin:8px 0 18px}
+.tracker-form label{display:flex;flex-direction:column;gap:4px}
+.tracker-type-label select{max-width:360px}
+.tracker-form textarea{min-height:72px;font-family:inherit}
+/* Conditional fields driven by data-attributes the small app.js script
+   sets whenever the Typ-/Status-select changes. CSP-safe. */
+.tracker-field{display:none}
+.tracker-form[data-tracker-type="status_report"] .tracker-field-status{display:block}
+.tracker-form[data-tracker-type="progress"] .tracker-field-progress{display:block}
+.tracker-form[data-tracker-status="on_plan"] .tracker-field-date{visibility:hidden}
+.tracker-status-row{display:grid;grid-template-columns:200px 1fr;gap:12px}
+.tracker-progress-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){
+  .tracker-status-row,.tracker-progress-row{grid-template-columns:1fr}
+}
+.tracker-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;max-width:720px}
+.tracker-item{border:1px solid var(--line);border-radius:var(--radius);padding:12px;background:var(--panel)}
+.tracker-item-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px;font-size:12px}
+.tracker-item-date{font-variant-numeric:tabular-nums;color:var(--brand);font-weight:600}
+.tracker-item-user{font-size:12px}
+.tracker-item-type{text-transform:none;font-size:11px;background:var(--soft);color:var(--muted)}
+.tracker-item-del{margin-left:auto}
+.tracker-item-del .btn-danger{padding:0 6px;font-size:11px;line-height:1.4}
+.tracker-item-note{color:var(--ink);line-height:1.5;white-space:pre-wrap}
+.tracker-item.is-editing{border-color:var(--brand);box-shadow:inset 3px 0 0 var(--brand)}
+.tracker-item-actions{margin-left:auto;display:flex;gap:6px;align-items:center}
+.tracker-item-status,.tracker-item-datevalue{font-size:11px}
+.tracker-item-status-on_plan{background:rgba(16,185,129,.15);color:#047857}
+.tracker-item-status-delay{background:rgba(245,158,11,.18);color:#92400e}
+.tracker-item-status-extension{background:rgba(139,92,246,.18);color:#6d28d9}
+:root[data-theme="dark"] .tracker-item-status-on_plan{color:#6ee7b7}
+:root[data-theme="dark"] .tracker-item-status-delay{color:#fcd34d}
+:root[data-theme="dark"] .tracker-item-status-extension{color:#c4b5fd}
+.tracker-item-datevalue{font-variant-numeric:tabular-nums}
+.tracker-edit-form{display:flex;flex-direction:column;gap:10px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.tracker-edit-form label{display:flex;flex-direction:column;gap:4px}
 
 /* Projekt-Health-Checks (Pro-upsell list) */
 .cockpit-health-head{margin-top:22px;display:flex;align-items:center;gap:8px}
@@ -577,6 +641,68 @@ body:has(.sidepanel) .foot{padding-right:200px}
 .external-cal-item strong{display:block;margin-bottom:4px}
 .external-cal-item .muted{display:block;font-size:12px;margin-bottom:28px}
 .external-cal-item .pill-pro{position:absolute;right:10px;bottom:10px}
+
+/* Community Feiertagskalender card — nested inside .external-cal-teaser,
+   framed to visually separate the "Enthalten" area from the Pro upsells
+   below. Form controls use the generic .field / .btn-sm styles. */
+.calimport-item{background:var(--soft);border:1px solid var(--line);
+  border-radius:9px;padding:12px;margin:4px 0 14px}
+.calimport-item-head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.calimport-item-head strong{font-size:15px}
+.pill-included{background:#dcfce7;color:#166534;font-weight:600;letter-spacing:.02em;
+  font-size:11px;padding:2px 7px;border-radius:999px}
+:root[data-theme="dark"] .pill-included{background:#14532d;color:#bbf7d0}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .pill-included{background:#14532d;color:#bbf7d0}
+}
+.calimport-form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin-top:8px}
+.calimport-form .field{flex:1 1 260px;min-width:220px}
+.calimport-form select{width:100%}
+.calimport-form .form-actions{margin:0}
+.calimport-pro-intro{margin-top:10px}
+.btn-sm{padding:5px 10px;font-size:13px}
+
+/* Werktag-Checkboxes inline (Mo Di Mi Do Fr Sa So). */
+.calimport-form-days{align-items:center}
+.calimport-days{display:flex;flex-wrap:wrap;gap:6px}
+.calimport-day{display:inline-flex;align-items:center;gap:4px;
+  background:var(--card);border:1px solid var(--line);border-radius:6px;
+  padding:4px 10px;font-size:13px;cursor:pointer}
+.calimport-day input{margin:0}
+.calimport-day-weekend{color:var(--muted)}
+
+/* Day-column tinting:
+   - .cal-day-holiday  → red/orange wash so the overlay reads at a glance
+   - .cal-day-nonworking → neutral grey wash for weekends / configured off-days
+   A holiday that also falls on a non-working day keeps the holiday tint
+   (specificity: both classes present, holiday rule wins because it comes
+   last and is more specific). */
+/* Column tints — applied to both the day column and the inner grid so the
+   whole column reads, not just the day-head band.
+
+   Light mode: muted neutral-grey for non-working, pale red for holidays.
+   Dark mode: the base card is deep marine-blue, so a plain grey/red at
+   low opacity disappears. Non-working is lifted with a brighter blue
+   overlay instead of grey (reads as "slightly lighter blue"); holidays
+   use a brighter red at higher opacity so they still pop. */
+.cal-day-nonworking,
+.cal-day-nonworking .cal-day-grid{background-color:rgba(100,116,139,.09)}
+.cal-day-nonworking .cal-day-head{color:var(--muted);font-style:italic}
+.cal-day-holiday,
+.cal-day-holiday .cal-day-grid{background-color:rgba(239,68,68,.07)}
+.cal-day-holiday .cal-day-head{color:#b91c1c}
+:root[data-theme="dark"] .cal-day-nonworking,
+:root[data-theme="dark"] .cal-day-nonworking .cal-day-grid{background-color:rgba(96,165,250,.10)}
+:root[data-theme="dark"] .cal-day-holiday,
+:root[data-theme="dark"] .cal-day-holiday .cal-day-grid{background-color:rgba(248,113,113,.14)}
+:root[data-theme="dark"] .cal-day-holiday .cal-day-head{color:#fecaca}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .cal-day-nonworking,
+  :root:not([data-theme="light"]) .cal-day-nonworking .cal-day-grid{background-color:rgba(96,165,250,.10)}
+  :root:not([data-theme="light"]) .cal-day-holiday,
+  :root:not([data-theme="light"]) .cal-day-holiday .cal-day-grid{background-color:rgba(248,113,113,.14)}
+  :root:not([data-theme="light"]) .cal-day-holiday .cal-day-head{color:#fecaca}
+}
 
 @media(max-width:820px){
   .cols{grid-template-columns:1fr}

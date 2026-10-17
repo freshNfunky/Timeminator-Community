@@ -97,7 +97,7 @@ function ctrl_project_show(): void
         ? (int) round(((float) $project['target_hours']) * 60)
         : 0;
     $percent = $targetMin > 0 ? (int) round(($totalMin / $targetMin) * 100) : 0;
-    $status  = ProjectReport::classify($percent);
+    $status  = project_status_bucket($percent);
     // Simple 4-week trend: avg h/week over the last 28 days.
     $cutoff28 = (new DateTimeImmutable('today'))->modify('-28 days')->format('Y-m-d');
     $recent28 = (int) DB::scalar(
@@ -108,15 +108,111 @@ function ctrl_project_show(): void
     $trendPerWeek = round($recent28 / 60 / 4, 1);
 
     view('structure/project_show', [
-        'project'       => $project,
-        'burnup'        => $burnup,
-        'recent'        => $recent,
-        'total_min'     => $totalMin,
-        'target_min'    => $targetMin,
-        'percent'       => $percent,
-        'status'        => $status,
-        'trend_per_week' => $trendPerWeek,
+        'project'         => $project,
+        'burnup'          => $burnup,
+        'recent'          => $recent,
+        'total_min'       => $totalMin,
+        'target_min'      => $targetMin,
+        'percent'         => $percent,
+        'status'          => $status,
+        'trend_per_week'  => $trendPerWeek,
+        'trackers'        => Repo::projectTrackers($id, 50),
+        'planned_end'     => $project['planned_end'] ?? null,
+        'estimated_end'   => Repo::projectEstimatedEnd($id),
     ], sprintf(t('projects.cockpit_title', 'Projekt: %s'), $project['name']));
+}
+
+/** Save a new Projekt-Status-Report tracker entry (#127). */
+function ctrl_project_tracker_save(): void
+{
+    require_perm('structure.manage');
+    csrf_check();
+    $projectId = post_int('project_id');
+    $note      = trim((string) post('note'));
+    $type      = trim((string) post('type', 'status_report'));
+    if (!$projectId || !Repo::project($projectId)) {
+        flash(t('projects.err_not_found', 'Projekt nicht gefunden.'), 'err');
+        redirect_route('projects');
+    }
+    if ($note === '') {
+        flash(t('tracker.err_note_empty', 'Bitte einen Text eintragen.'), 'err');
+        redirect_route('project_show', ['id' => $projectId]);
+    }
+
+    $parseNum = static function (string $raw): ?float {
+        $raw = trim($raw);
+        if ($raw === '') { return null; }
+        $norm = str_replace(',', '.', $raw);
+        return is_numeric($norm) ? (float) $norm : null;
+    };
+
+    $extra = [];
+    if ($type === 'progress') {
+        $value = $parseNum((string) post('value', ''));
+        if ($value === null) {
+            flash(t('tracker.err_value_empty', 'Bitte einen Fortschrittswert (0..100) angeben.'), 'err');
+            redirect_route('project_show', ['id' => $projectId]);
+        }
+        $forecast = $parseNum((string) post('value_forecast', ''));
+        $extra['value']          = $value;
+        $extra['value_forecast'] = $forecast;
+    } else {
+        $extra['status'] = (string) post('status', 'on_plan');
+        $extra['date_value'] = trim((string) post('date_value', ''));
+    }
+
+    try {
+        Repo::saveProjectTracker($projectId, $type, $note, $extra, Auth::id());
+        flash(t('tracker.flash_saved', 'Status-Eintrag gespeichert.'));
+    } catch (Throwable $e) {
+        flash($e->getMessage(), 'err');
+    }
+    redirect_route('project_show', ['id' => $projectId]);
+}
+
+/**
+ * Edit an existing tracker entry — enables backlog-fill scenarios and
+ * typo corrections. Pass `created_at` to backdate the entry to when it
+ * should have been recorded (common PM case: forgot to write the status
+ * report on Friday, writes it Monday but wants it to appear on Friday).
+ */
+function ctrl_project_tracker_update(): void
+{
+    require_perm('structure.manage');
+    csrf_check();
+    $id        = post_int('id');
+    $projectId = post_int('project_id');
+    if (!$id) { redirect_route('projects'); }
+
+    $extra = [
+        'status'         => (string) post('status', ''),
+        'date_value'     => trim((string) post('date_value', '')),
+        'value'          => post('value', null)          !== null && post('value', '')          !== '' ? (float) str_replace(',', '.', (string) post('value'))          : null,
+        'value_forecast' => post('value_forecast', null) !== null && post('value_forecast', '') !== '' ? (float) str_replace(',', '.', (string) post('value_forecast')) : null,
+    ];
+    $createdAt = trim((string) post('created_at', ''));
+
+    try {
+        Repo::updateProjectTracker($id, (string) post('note', ''), $createdAt !== '' ? $createdAt : null, $extra);
+        flash(t('tracker.flash_updated', 'Status-Eintrag aktualisiert.'));
+    } catch (Throwable $e) {
+        flash($e->getMessage(), 'err');
+    }
+    redirect_route('project_show', ['id' => $projectId]);
+}
+
+/** Admins (or the author) can retract a mis-posted tracker entry. */
+function ctrl_project_tracker_delete(): void
+{
+    require_perm('structure.manage');
+    csrf_check();
+    $id        = post_int('id');
+    $projectId = post_int('project_id');
+    if ($id) {
+        Repo::deleteProjectTracker($id);
+        flash(t('tracker.flash_deleted', 'Status-Eintrag entfernt.'));
+    }
+    redirect_route('project_show', ['id' => $projectId]);
 }
 
 function ctrl_project_save(): void
@@ -141,6 +237,11 @@ function ctrl_project_save(): void
         }
         $target = round((float) $norm, 2);
     }
+    $plannedEnd = trim((string) post('planned_end'));
+    if ($plannedEnd !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $plannedEnd)) {
+        flash(t('planning.err_planned_end_invalid', 'Deadline muss ein ISO-Datum (YYYY-MM-DD) sein.'), 'err');
+        redirect_route('projects');
+    }
     $d = [
         'client_id'    => $clientId,
         'name'         => $name,
@@ -149,6 +250,7 @@ function ctrl_project_save(): void
         'color'        => trim((string) post('color')) ?: null,
         'active'       => post('active') ? 1 : 0,
         'target_hours' => $target,
+        'planned_end'  => $plannedEnd !== '' ? $plannedEnd : null,
     ];
     try {
         Repo::saveProject($d, $id ?: null);

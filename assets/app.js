@@ -432,3 +432,29 @@
     }
   }
 })();
+
+/* Projekt-Tracker form (#127): sync visible fields with selected type +
+   enable date field only on delay/extension sub-status. Pure DOM-driven,
+   no network / CSP-safe (same-origin script). */
+(function () {
+  function apply(form) {
+    var typeEl   = form.querySelector('[name="type"]');
+    var statusEl = form.querySelector('[name="status"]');
+    if (!typeEl) { return; }
+    var type = typeEl.value || 'status_report';
+    form.setAttribute('data-tracker-type', type);
+    if (statusEl) {
+      var status = statusEl.value || 'on_plan';
+      form.setAttribute('data-tracker-status', status);
+    }
+  }
+  function bindTracker(form) {
+    apply(form);
+    form.addEventListener('change', function (e) {
+      if (e.target && (e.target.name === 'type' || e.target.name === 'status')) {
+        apply(form);
+      }
+    });
+  }
+  document.querySelectorAll('.tracker-form').forEach(bindTracker);
+})();

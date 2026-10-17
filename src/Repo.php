@@ -60,17 +60,254 @@ final class Repo
 
     public static function saveProject(array $d, ?int $id = null): int
     {
-        $target = array_key_exists('target_hours', $d) ? $d['target_hours'] : null;
+        $target      = array_key_exists('target_hours', $d) ? $d['target_hours'] : null;
+        $plannedEnd  = array_key_exists('planned_end', $d) ? $d['planned_end'] : null;
         if ($id) {
             DB::run(
-                'UPDATE projects SET client_id=?, name=?, code=?, track=?, color=?, active=?, target_hours=? WHERE id=?',
-                [$d['client_id'], $d['name'], $d['code'], $d['track'], $d['color'], $d['active'], $target, $id]
+                'UPDATE projects
+                    SET client_id=?, name=?, code=?, track=?, color=?, active=?, target_hours=?, planned_end=?
+                  WHERE id=?',
+                [$d['client_id'], $d['name'], $d['code'], $d['track'], $d['color'], $d['active'], $target, $plannedEnd, $id]
             );
             return $id;
         }
         return DB::insert(
-            'INSERT INTO projects (client_id, name, code, track, color, active, target_hours, created_at) VALUES (?,?,?,?,?,?,?,?)',
-            [$d['client_id'], $d['name'], $d['code'], $d['track'], $d['color'], $d['active'], $target, now()]
+            'INSERT INTO projects
+                (client_id, name, code, track, color, active, target_hours, planned_end, created_at)
+             VALUES (?,?,?,?,?,?,?,?,?)',
+            [$d['client_id'], $d['name'], $d['code'], $d['track'], $d['color'], $d['active'], $target, $plannedEnd, now()]
+        );
+    }
+
+    // ---------- Project trackers (#127) ----------
+
+    /**
+     * Community ships three PM-logical tracker types; the kaufmännischen ones
+     * (Teilrechnung, Zahlungseingang) + the enterprise-y ones (risk rating,
+     * approval chain, meeting log) stay Pro and appear as disabled teaser
+     * options in the dropdown.
+     */
+    /**
+     * Community-schaltbare Tracker-Typen. Vereinfachung aus dem UX-Review
+     * 2026-10-15 (#127): statt vieler Typen (delay / change_request / …)
+     * bekommt der `status_report` eine Sub-Status-Combobox (on_plan /
+     * delay / extension) + optionales neues Datum. `progress` bleibt
+     * eigener Typ wegen der 0..100-Zahl.
+     */
+    public const TRACKER_TYPES_COMMUNITY = ['status_report', 'progress'];
+    public const TRACKER_STATUSES = ['on_plan', 'delay', 'extension'];
+
+    /**
+     * @return array<int,array{id:int,project_id:int,type:string,note:string,value:?float,user_id:?int,user_username:?string,created_at:string}>
+     */
+    public static function projectTrackers(int $projectId, int $limit = 50): array
+    {
+        $rows = DB::all(
+            'SELECT t.id, t.project_id, t.type, t.status, t.date_value,
+                    t.note, t.value, t.value_forecast, t.user_id, t.created_at,
+                    u.username AS user_username
+               FROM project_trackers t
+          LEFT JOIN users u ON u.id = t.user_id
+              WHERE t.project_id = ?
+              ORDER BY t.created_at DESC
+              LIMIT ' . (int) $limit,
+            [$projectId]
+        );
+        $out = [];
+        foreach ($rows as $r) {
+            $out[] = [
+                'id'             => (int) $r['id'],
+                'project_id'     => (int) $r['project_id'],
+                'type'           => (string) $r['type'],
+                'status'         => $r['status']     !== null ? (string) $r['status']     : null,
+                'date_value'     => $r['date_value'] !== null ? (string) $r['date_value'] : null,
+                'note'           => (string) $r['note'],
+                'value'          => $r['value']          !== null ? (float) $r['value']          : null,
+                'value_forecast' => $r['value_forecast'] !== null ? (float) $r['value_forecast'] : null,
+                'user_id'        => $r['user_id']        !== null ? (int) $r['user_id']        : null,
+                'user_username'  => $r['user_username']  !== null ? (string) $r['user_username'] : null,
+                'created_at'     => (string) $r['created_at'],
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * @param array{status?:?string,date_value?:?string,value?:?float,value_forecast?:?float} $extra
+     *   - `status` only applies to `status_report` entries; one of
+     *     TRACKER_STATUSES or null.
+     *   - `date_value` ISO date (YYYY-MM-DD), only for status_report with
+     *     a delay/extension sub-status.
+     *   - `value` + `value_forecast` 0..100 for progress entries; ignored
+     *     otherwise. Forecast is optional.
+     */
+    public static function saveProjectTracker(int $projectId, string $type, string $note, array $extra, ?int $userId): int
+    {
+        $type = trim($type);
+        if (!in_array($type, self::TRACKER_TYPES_COMMUNITY, true)) {
+            $type = 'status_report';
+        }
+        $note = trim($note);
+        if ($note === '') {
+            throw new RuntimeException('tracker note must not be empty');
+        }
+        if (mb_strlen($note) > 4000) {
+            $note = mb_substr($note, 0, 4000);
+        }
+
+        $status    = null;
+        $dateValue = null;
+        $value     = null;
+        $forecast  = null;
+        if ($type === 'progress') {
+            $v = $extra['value'] ?? null;
+            if ($v === null) {
+                throw new RuntimeException('progress tracker requires a value (0..100)');
+            }
+            $value = max(0.0, min(100.0, (float) $v));
+            $f = $extra['value_forecast'] ?? null;
+            if ($f !== null) {
+                $forecast = max(0.0, min(100.0, (float) $f));
+            }
+        } else {
+            $s = $extra['status'] ?? null;
+            if ($s !== null && in_array($s, self::TRACKER_STATUSES, true)) {
+                $status = $s;
+            }
+            if (in_array($status, ['delay', 'extension'], true)) {
+                $d = $extra['date_value'] ?? null;
+                if (is_string($d) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) {
+                    $dateValue = $d;
+                }
+            }
+        }
+
+        return DB::insert(
+            'INSERT INTO project_trackers
+                (project_id, type, status, date_value, note, value, value_forecast, user_id, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [$projectId, $type, $status, $dateValue, $note, $value, $forecast, $userId, now()]
+        );
+    }
+
+    /**
+     * Latest "estimated project end" from the tracker log: the most recent
+     * date_value on a delay/extension status_report. Returns null if the
+     * project has never had a delay/extension tracker.
+     */
+    public static function projectEstimatedEnd(int $projectId): ?string
+    {
+        $row = DB::one(
+            "SELECT date_value FROM project_trackers
+              WHERE project_id = ? AND type = 'status_report'
+                AND status IN ('delay', 'extension')
+                AND date_value IS NOT NULL
+              ORDER BY created_at DESC LIMIT 1",
+            [$projectId]
+        );
+        return $row ? (string) $row['date_value'] : null;
+    }
+
+    public static function deleteProjectTracker(int $id): void
+    {
+        DB::run('DELETE FROM project_trackers WHERE id = ?', [$id]);
+    }
+
+    public static function projectTracker(int $id): ?array
+    {
+        $r = DB::one(
+            'SELECT t.*, u.username AS user_username
+               FROM project_trackers t
+          LEFT JOIN users u ON u.id = t.user_id
+              WHERE t.id = ?',
+            [$id]
+        );
+        if (!$r) { return null; }
+        return [
+            'id'             => (int) $r['id'],
+            'project_id'     => (int) $r['project_id'],
+            'type'           => (string) $r['type'],
+            'status'         => $r['status']     !== null ? (string) $r['status']     : null,
+            'date_value'     => $r['date_value'] !== null ? (string) $r['date_value'] : null,
+            'note'           => (string) $r['note'],
+            'value'          => $r['value']          !== null ? (float) $r['value']          : null,
+            'value_forecast' => $r['value_forecast'] !== null ? (float) $r['value_forecast'] : null,
+            'user_id'        => $r['user_id']        !== null ? (int) $r['user_id']        : null,
+            'user_username'  => $r['user_username']  !== null ? (string) $r['user_username'] : null,
+            'created_at'     => (string) $r['created_at'],
+        ];
+    }
+
+    /**
+     * Edit an existing tracker entry. The user may change date, status/
+     * date_value/value/value_forecast and note. Type is immutable (changing
+     * the type would require re-validating the per-type fields; use delete+
+     * create instead). Backlog-fill scenarios: $createdAt lets the user
+     * backdate the entry to when it should have been recorded.
+     *
+     * @param array{status?:?string,date_value?:?string,value?:?float,value_forecast?:?float} $extra
+     */
+    public static function updateProjectTracker(int $id, string $note, ?string $createdAt, array $extra): void
+    {
+        $row = self::projectTracker($id);
+        if (!$row) {
+            throw new RuntimeException('tracker not found');
+        }
+        $note = trim($note);
+        if ($note === '') {
+            throw new RuntimeException('tracker note must not be empty');
+        }
+        if (mb_strlen($note) > 4000) { $note = mb_substr($note, 0, 4000); }
+
+        $status    = $row['status'];
+        $dateValue = $row['date_value'];
+        $value     = $row['value'];
+        $forecast  = $row['value_forecast'];
+
+        if ($row['type'] === 'progress') {
+            if (array_key_exists('value', $extra)) {
+                $v = $extra['value'];
+                if ($v !== null) {
+                    $value = max(0.0, min(100.0, (float) $v));
+                }
+            }
+            if (array_key_exists('value_forecast', $extra)) {
+                $f = $extra['value_forecast'];
+                $forecast = $f !== null ? max(0.0, min(100.0, (float) $f)) : null;
+            }
+        } else {
+            if (array_key_exists('status', $extra)) {
+                $s = $extra['status'];
+                $status = ($s !== null && in_array($s, self::TRACKER_STATUSES, true)) ? $s : $status;
+            }
+            if (array_key_exists('date_value', $extra)) {
+                $d = $extra['date_value'];
+                if (is_string($d) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) {
+                    $dateValue = $d;
+                } elseif ($d === null || $d === '') {
+                    $dateValue = null;
+                }
+            }
+            // When the status switches back to on_plan, the date no longer applies.
+            if ($status === 'on_plan') { $dateValue = null; }
+        }
+
+        // Allow back-dating the entry; validate ISO datetime shape.
+        $ts = $row['created_at'];
+        if ($createdAt !== null && $createdAt !== '') {
+            // Accept "YYYY-MM-DDTHH:MM" (datetime-local) and plain "YYYY-MM-DD".
+            if (preg_match('/^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?)?$/', $createdAt)) {
+                try {
+                    $ts = (new DateTimeImmutable(str_replace('T', ' ', $createdAt)))->format('Y-m-d H:i:s');
+                } catch (Throwable) { /* keep existing */ }
+            }
+        }
+
+        DB::run(
+            'UPDATE project_trackers
+                SET note = ?, status = ?, date_value = ?, value = ?, value_forecast = ?, created_at = ?
+              WHERE id = ?',
+            [$note, $status, $dateValue, $value, $forecast, $ts, $id]
         );
     }
 
