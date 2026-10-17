@@ -37,10 +37,20 @@ final class StatsTest extends TestCase
             'project_track' => '',
             'client_track'  => 'acme-client',
         ]));
+        // Fallback label resolves via `t()`, so pin the locale explicitly;
+        // asserting both languages keeps the test deterministic regardless of
+        // the host's Accept-Language or configured default.
+        I18n::setSession('de'); I18n::reset();
         self::assertSame('(ohne Gleis)', Stats::entryTrack([
             'project_track' => '',
             'client_track'  => '',
         ]));
+        I18n::setSession('en'); I18n::reset();
+        self::assertSame('(no track)', Stats::entryTrack([
+            'project_track' => '',
+            'client_track'  => '',
+        ]));
+        I18n::reset();
         self::assertSame('acme', Stats::entryTrack([
             'project_track' => '  acme  ',   // gets trimmed
         ]));

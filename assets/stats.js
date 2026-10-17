@@ -4,12 +4,20 @@
   var form = document.getElementById('statsForm');
   if (!form || !window.TmCharts) return;
   var endpoint = form.getAttribute('data-endpoint');
+  // Labels come from the server (data-i18n on the form) so the UI language
+  // follows I18n::current() instead of being hardcoded to German.
+  var i18n = {};
+  try { i18n = JSON.parse(form.getAttribute('data-i18n') || '{}'); } catch (e) {}
 
   function render(data){
     document.getElementById('totalHours').textContent = data.total_hours.toFixed(2) + ' h';
-    document.getElementById('scopeName').textContent = data.scope ? data.scope.name : 'Gesamt';
+    document.getElementById('scopeName').textContent = data.scope ? data.scope.name : (i18n.scope_all || 'Gesamt');
     document.getElementById('rangeLbl').textContent = data.from + ' → ' + data.to;
-    var grpLbl = { project:'nach Projekt', client:'nach Kunde', track:'nach Gleis' }[data.group] || '';
+    var grpLbl = {
+      project: i18n.by_project || 'nach Projekt',
+      client:  i18n.by_client  || 'nach Kunde',
+      track:   i18n.by_track   || 'nach Gleis'
+    }[data.group] || '';
     document.getElementById('distGroupLbl').textContent = grpLbl;
 
     TmCharts.doughnut(
@@ -32,7 +40,7 @@
     fetch(endpoint + '&' + params, { headers: { 'Accept': 'application/json' } })
       .then(function(r){ return r.json(); })
       .then(render)
-      .catch(function(){ document.getElementById('totalHours').textContent = 'Fehler'; });
+      .catch(function(){ document.getElementById('totalHours').textContent = i18n.error || 'Fehler'; });
   }
 
   form.addEventListener('submit', function(e){ e.preventDefault(); load(); });
