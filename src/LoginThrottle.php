@@ -45,15 +45,19 @@ final class LoginThrottle
         if ($username !== '') {
             $win = self::escalatedWindowMin(['username' => $username], self::USER_MAX_FAILS);
             if (self::countFailsIn(['username' => $username], $win) >= self::USER_MAX_FAILS) {
-                return 'Zu viele Fehlversuche fuer diesen Benutzer. Bitte in '
-                    . self::formatWait($win) . ' erneut versuchen.';
+                return sprintf(
+                    t('login.err_too_many_user', 'Zu viele Fehlversuche fuer diesen Benutzer. Bitte in %s erneut versuchen.'),
+                    self::formatWait($win)
+                );
             }
         }
         if ($ip !== '') {
             $win = self::escalatedWindowMin(['ip_address' => $ip], self::IP_MAX_FAILS);
             if (self::countFailsIn(['ip_address' => $ip], $win) >= self::IP_MAX_FAILS) {
-                return 'Zu viele Fehlversuche von dieser IP-Adresse. Bitte in '
-                    . self::formatWait($win) . ' erneut versuchen.';
+                return sprintf(
+                    t('login.err_too_many_ip', 'Zu viele Fehlversuche von dieser IP-Adresse. Bitte in %s erneut versuchen.'),
+                    self::formatWait($win)
+                );
             }
         }
         return null;
@@ -191,13 +195,19 @@ final class LoginThrottle
     private static function formatWait(int $minutes): string
     {
         if ($minutes < 60) {
-            return $minutes . ' Minuten';
+            return sprintf(t('login.wait_minutes', '%d Minuten'), $minutes);
         }
         if ($minutes < 1440) {
             $h = intdiv($minutes, 60);
-            return $h . ($h === 1 ? ' Stunde' : ' Stunden');
+            return sprintf(
+                $h === 1 ? t('login.wait_hour', '%d Stunde') : t('login.wait_hours', '%d Stunden'),
+                $h
+            );
         }
         $d = intdiv($minutes, 1440);
-        return $d . ($d === 1 ? ' Tag' : ' Tagen');
+        return sprintf(
+            $d === 1 ? t('login.wait_day', '%d Tag') : t('login.wait_days', '%d Tagen'),
+            $d
+        );
     }
 }

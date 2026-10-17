@@ -22,28 +22,32 @@ $__bullets = '<li>' . h(t('pro.roles.b1', 'Beliebig viele eigene Rollen (statt z
         <span class="pill pill-pro"><?= h(t('nav.pro_pill')) ?></span>
       </div>
       <div class="pro-teaser-toolbar">
-        <button class="btn btn-primary" type="button" disabled>+ Neue Rolle</button>
-        <button class="btn" type="button" disabled>Vorlage: Buchhaltung</button>
-        <button class="btn" type="button" disabled>Vorlage: Projektleitung</button>
+        <button class="btn btn-primary" type="button" disabled><?= h(t('pro.roles.btn_new', '+ Neue Rolle')) ?></button>
+        <button class="btn" type="button" disabled><?= h(sprintf(t('pro.roles.btn_template', 'Vorlage: %s'), t('pro.roles.role_accounting', 'Buchhaltung'))) ?></button>
+        <button class="btn" type="button" disabled><?= h(sprintf(t('pro.roles.btn_template', 'Vorlage: %s'), t('pro.roles.role_pm', 'Projektleitung'))) ?></button>
       </div>
       <table class="table matrix">
         <thead>
           <tr>
             <th><?= h(t('roles.permissions')) ?></th>
-            <th>Admin</th><th>Projektleitung</th><th>Buchhaltung</th><th>Freelancer</th><th>Readonly</th>
+            <th><?= h(t('pro.roles.role_admin', 'Admin')) ?></th>
+            <th><?= h(t('pro.roles.role_pm', 'Projektleitung')) ?></th>
+            <th><?= h(t('pro.roles.role_accounting', 'Buchhaltung')) ?></th>
+            <th><?= h(t('pro.roles.role_freelancer', 'Freelancer')) ?></th>
+            <th><?= h(t('pro.roles.role_readonly', 'Readonly')) ?></th>
           </tr>
         </thead>
         <tbody>
           <?php foreach ([
-            'entries.manage'   => 'Zeiteintraege erfassen',
-            'entries.view_all' => 'Alle Nutzer sehen',
-            'stats.view'       => 'Statistik',
-            'structure.manage' => 'Struktur',
-            'invoices.create'  => 'Rechnungen erstellen',
-            'offers.create'    => 'Angebote erstellen',
-            'budget.view'      => 'Budgets einsehen',
-            'admin.users'      => 'Benutzerverwaltung',
-            'admin.roles'      => 'Rollenverwaltung',
+            'entries.manage'   => t('pro.roles.p_entries_manage',   'Zeiteintraege erfassen'),
+            'entries.view_all' => t('pro.roles.p_entries_view_all', 'Alle Nutzer sehen'),
+            'stats.view'       => t('pro.roles.p_stats_view',       'Statistik'),
+            'structure.manage' => t('pro.roles.p_structure_manage', 'Struktur'),
+            'invoices.create'  => t('pro.roles.p_invoices_create',  'Rechnungen erstellen'),
+            'offers.create'    => t('pro.roles.p_offers_create',    'Angebote erstellen'),
+            'budget.view'      => t('pro.roles.p_budget_view',      'Budgets einsehen'),
+            'admin.users'      => t('pro.roles.p_admin_users',      'Benutzerverwaltung'),
+            'admin.roles'      => t('pro.roles.p_admin_roles',      'Rollenverwaltung'),
           ] as $__key => $__label):
             // Deterministic sham per cell, so the mock stays stable.
             $__cells = [];

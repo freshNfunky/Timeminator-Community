@@ -18,6 +18,18 @@ final class I18nTest extends TestCase
         I18n::reset();
     }
 
+    // Mirror setUp as tearDown so individual tests that write $_SESSION['_locale']
+    // (e.g. testDetectPrefersQueryOverSessionOverHeader) don't leak that value
+    // into unrelated tests like LoginThrottleTest, which asserts German strings
+    // and silently flips to English when the session locale persists.
+    protected function tearDown(): void
+    {
+        $_GET = [];
+        $_SESSION = [];
+        $_SERVER['HTTP_ACCEPT_LANGUAGE'] = '';
+        I18n::reset();
+    }
+
     public function testSanitizeAcceptsSupportedAndStripsRegion(): void
     {
         self::assertSame('de', I18n::sanitize('de'));

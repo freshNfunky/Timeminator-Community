@@ -87,7 +87,7 @@ final class Updater
         ], 'ssl' => ['verify_peer' => true, 'verify_peer_name' => true]]);
         $body = @file_get_contents($url, false, $ctx);
         if ($body === false) {
-            throw new RuntimeException('Konnte URL nicht laden (kein Netzzugang?).');
+            throw new RuntimeException(t('updater.err_url_load', 'Konnte URL nicht laden (kein Netzzugang?).'));
         }
         if ($saveTo) {
             file_put_contents($saveTo, $body);
@@ -111,20 +111,20 @@ final class Updater
     public static function check(): array
     {
         if (self::isDisabled()) {
-            return ['ok' => false, 'error' => 'Update-Pruefung ist administrativ deaktiviert.'];
+            return ['ok' => false, 'error' => t('updater.err_check_disabled', 'Update-Pruefung ist administrativ deaktiviert.')];
         }
         $url = self::manifestUrl();
         if ($url === '') {
-            return ['ok' => false, 'error' => 'Keine update_manifest_url konfiguriert.'];
+            return ['ok' => false, 'error' => t('updater.err_no_manifest', 'Keine update_manifest_url konfiguriert.')];
         }
         try {
             [$status, $body] = self::httpGet($url);
             if ($status < 200 || $status >= 300) {
-                return ['ok' => false, 'error' => 'Release-Server antwortete mit HTTP ' . $status . '.'];
+                return ['ok' => false, 'error' => sprintf(t('updater.err_http_status', 'Release-Server antwortete mit HTTP %d.'), $status)];
             }
             $data = json_decode($body, true);
             if (!is_array($data) || empty($data['tag_name'])) {
-                return ['ok' => false, 'error' => 'Unerwartete Antwort vom Release-Server.'];
+                return ['ok' => false, 'error' => t('updater.err_bad_response', 'Unerwartete Antwort vom Release-Server.')];
             }
             $latest = self::normalize((string) $data['tag_name']);
             $assets = (array) ($data['assets'] ?? []);
@@ -276,18 +276,18 @@ final class Updater
     public static function apply(): array
     {
         if (!class_exists('ZipArchive')) {
-            return [false, 'PHP-Erweiterung ZipArchive fehlt; bitte manuell aktualisieren.'];
+            return [false, t('updater.err_no_ziparchive', 'PHP-Erweiterung ZipArchive fehlt; bitte manuell aktualisieren.')];
         }
         $info = self::check();
         if (empty($info['ok'])) {
-            return [false, $info['error'] ?? 'Update-Pruefung fehlgeschlagen.'];
+            return [false, $info['error'] ?? t('updater.err_check_failed', 'Update-Pruefung fehlgeschlagen.')];
         }
         if (empty($info['newer'])) {
-            return [false, 'Bereits aktuell (Version ' . self::current() . ').'];
+            return [false, sprintf(t('updater.err_already_current', 'Bereits aktuell (Version %s).'), self::current())];
         }
         $download = (string) $info['download'];
         if ($download === '') {
-            return [false, 'Kein Download-Link im Release gefunden.'];
+            return [false, t('updater.err_no_download_link', 'Kein Download-Link im Release gefunden.')];
         }
 
         $tmpDir = APP_ROOT . '/data/update_' . date('Ymd_His');
@@ -304,18 +304,21 @@ final class Updater
 
             $checkResult = self::verifyChecksum($zipPath, $info, $tmpDir);
             if ($checkResult['status'] === 'mismatch') {
-                throw new RuntimeException('Checksumme des Downloads passt nicht (' . $checkResult['expected'] . ' erwartet, ' . $checkResult['actual'] . ' erhalten).');
+                throw new RuntimeException(sprintf(
+                    t('updater.err_checksum_mismatch', 'Checksumme des Downloads passt nicht (%s erwartet, %s erhalten).'),
+                    $checkResult['expected'], $checkResult['actual']
+                ));
             }
             if ($checkResult['status'] === 'missing') {
                 if ($strict) {
-                    throw new RuntimeException('Release liefert keine SHA-256 Checksumme und require_release_checksum ist aktiviert.');
+                    throw new RuntimeException(t('updater.err_checksum_strict', 'Release liefert keine SHA-256 Checksumme und require_release_checksum ist aktiviert.'));
                 }
-                $warnings[] = 'Release liefert keine SHA-256 Checksumme; ' . $checkResult['message'];
+                $warnings[] = t('updater.warn_checksum_missing', 'Release liefert keine SHA-256 Checksumme; ') . $checkResult['message'];
             }
 
             $zip = new ZipArchive();
             if ($zip->open($zipPath) !== true) {
-                throw new RuntimeException('Release-Archiv konnte nicht geoeffnet werden.');
+                throw new RuntimeException(t('updater.err_zip_open', 'Release-Archiv konnte nicht geoeffnet werden.'));
             }
             $extractDir = $tmpDir . '/extract';
             @mkdir($extractDir, 0775, true);
@@ -356,9 +359,9 @@ final class Updater
             // Best-effort tmp cleanup.
             self::rrmdir($tmpDir);
 
-            $msg = 'Aktualisiert auf Version ' . self::current() . '.';
+            $msg = sprintf(t('updater.flash_updated', 'Aktualisiert auf Version %s.'), self::current());
             if ($warnings) {
-                $msg .= ' Hinweise: ' . implode(' | ', $warnings);
+                $msg .= ' ' . t('updater.flash_warnings_label', 'Hinweise:') . ' ' . implode(' | ', $warnings);
             }
             return [true, $msg];
         } catch (Throwable $e) {
@@ -366,7 +369,7 @@ final class Updater
             // Also drop the failed backup dir since we already restored from it.
             self::rrmdir($backupDir);
             self::rrmdir($tmpDir);
-            return [false, 'Update fehlgeschlagen: ' . $e->getMessage()];
+            return [false, sprintf(t('updater.err_update_failed', 'Update fehlgeschlagen: %s'), $e->getMessage())];
         }
     }
 
@@ -377,16 +380,19 @@ final class Updater
     {
         $backup = Settings::get('update_backup');
         if (!is_array($backup) || empty($backup['dir']) || !is_dir($backup['dir'])) {
-            return [false, 'Kein Backup einer vorherigen Version gefunden.'];
+            return [false, t('updater.err_no_backup', 'Kein Backup einer vorherigen Version gefunden.')];
         }
         $manifest = (array) ($backup['manifest'] ?? ['backed_up' => [], 'created' => []]);
         try {
             self::restoreFromManifest($manifest, $backup['dir']);
             self::rrmdir($backup['dir']);
             Settings::set('update_backup', null);
-            return [true, 'Zurueckgesetzt auf Version ' . (string) ($backup['from_version'] ?? '?') . '.'];
+            return [true, sprintf(
+                t('updater.flash_rolled_back', 'Zurueckgesetzt auf Version %s.'),
+                (string) ($backup['from_version'] ?? '?')
+            )];
         } catch (Throwable $e) {
-            return [false, 'Rollback fehlgeschlagen: ' . $e->getMessage()];
+            return [false, sprintf(t('updater.err_rollback_failed', 'Rollback fehlgeschlagen: %s'), $e->getMessage())];
         }
     }
 
@@ -428,7 +434,7 @@ final class Updater
                 $bakPath = $backupDir . '/' . $rel;
                 @mkdir(dirname($bakPath), 0775, true);
                 if (!copy($dstPath, $bakPath)) {
-                    throw new RuntimeException('Backup fuer ' . $rel . ' fehlgeschlagen.');
+                    throw new RuntimeException(sprintf(t('updater.err_backup_file', 'Backup fuer %s fehlgeschlagen.'), $rel));
                 }
                 $manifest['backed_up'][] = $rel;
             } else {
@@ -436,7 +442,7 @@ final class Updater
             }
             @mkdir(dirname($dstPath), 0775, true);
             if (!copy($srcPath, $dstPath)) {
-                throw new RuntimeException('Konnte ' . $rel . ' nicht schreiben.');
+                throw new RuntimeException(sprintf(t('updater.err_write_file', 'Konnte %s nicht schreiben.'), $rel));
             }
         }
     }
@@ -465,10 +471,10 @@ final class Updater
                 $bakPath = $backupDir . '/' . $rel;
                 @mkdir(dirname($bakPath), 0775, true);
                 if (!copy($item->getPathname(), $bakPath)) {
-                    throw new RuntimeException('Backup vor Prune fuer ' . $rel . ' fehlgeschlagen.');
+                    throw new RuntimeException(sprintf(t('updater.err_backup_before_prune', 'Backup vor Prune fuer %s fehlgeschlagen.'), $rel));
                 }
                 if (!unlink($item->getPathname())) {
-                    throw new RuntimeException('Konnte veraltete Datei ' . $rel . ' nicht entfernen.');
+                    throw new RuntimeException(sprintf(t('updater.err_prune_file', 'Konnte veraltete Datei %s nicht entfernen.'), $rel));
                 }
                 $manifest['pruned'][] = $rel;
             }
@@ -543,23 +549,23 @@ final class Updater
         $expected = '';
         $checksumUrl = (string) ($info['checksum_url'] ?? '');
         if ($checksumUrl === '') {
-            return ['status' => 'missing', 'message' => 'Update wurde ohne Pruefsummen-Vergleich installiert.'];
+            return ['status' => 'missing', 'message' => t('updater.checksum_missing_default', 'Update wurde ohne Pruefsummen-Vergleich installiert.')];
         }
 
         $sumsPath = $tmpDir . '/checksum.txt';
         try {
             self::httpGet($checksumUrl, [], $sumsPath);
         } catch (Throwable $e) {
-            return ['status' => 'missing', 'message' => 'Pruefsummen-Datei nicht abrufbar (' . $e->getMessage() . ').'];
+            return ['status' => 'missing', 'message' => sprintf(t('updater.checksum_fetch_failed', 'Pruefsummen-Datei nicht abrufbar (%s).'), $e->getMessage())];
         }
         $text = trim((string) @file_get_contents($sumsPath));
         if ($text === '') {
-            return ['status' => 'missing', 'message' => 'Pruefsummen-Datei war leer.'];
+            return ['status' => 'missing', 'message' => t('updater.checksum_empty', 'Pruefsummen-Datei war leer.')];
         }
         $assetName = strtolower((string) ($info['asset_name'] ?? ''));
         $expected = self::parseChecksumFor($text, $assetName);
         if ($expected === '') {
-            return ['status' => 'missing', 'message' => 'Pruefsummen-Datei enthaelt keinen Hash fuer ' . $assetName . '.'];
+            return ['status' => 'missing', 'message' => sprintf(t('updater.checksum_no_hash', 'Pruefsummen-Datei enthaelt keinen Hash fuer %s.'), $assetName)];
         }
         $actual = strtolower((string) hash_file('sha256', $zipPath));
         if (!hash_equals($expected, $actual)) {

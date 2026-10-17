@@ -24,7 +24,7 @@ $__banner    = Banners::isVisible();
 </style>
 <?php endif; ?>
 </head>
-<body>
+<body data-i18n-chart-empty="<?= h(t('charts.empty', 'Keine Daten')) ?>">
 <header class="topbar">
   <a class="brand" href="<?= h(route('dashboard')) ?>">⏱ <?= h(cfg('app_name', 'Timeminator')) ?></a>
   <nav class="mainnav">

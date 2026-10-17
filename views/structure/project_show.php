@@ -473,11 +473,11 @@ if ($__hasData) {
       <div class="tracker-progress-row">
         <label>
           <?= h(t('tracker.value_progress', 'Fortschritt heute (%)')) ?>
-          <input type="number" name="value" min="0" max="100" step="1" placeholder="z.B. 45">
+          <input type="number" name="value" min="0" max="100" step="1" placeholder="<?= h(t('tracker.value_placeholder_now', 'z.B. 45')) ?>">
         </label>
         <label>
           <?= h(t('tracker.value_forecast', 'Prognose in 1 Monat (%)')) ?>
-          <input type="number" name="value_forecast" min="0" max="100" step="1" placeholder="z.B. 70">
+          <input type="number" name="value_forecast" min="0" max="100" step="1" placeholder="<?= h(t('tracker.value_placeholder_forecast', 'z.B. 70')) ?>">
         </label>
       </div>
     </div>

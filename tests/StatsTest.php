@@ -50,6 +50,10 @@ final class StatsTest extends TestCase
             'project_track' => '',
             'client_track'  => '',
         ]));
+        // Clear the test's session-locale write before yielding to other
+        // tests: without this, LoginThrottle messages later in the suite
+        // come out English and break their German assertions.
+        unset($_SESSION['_locale']);
         I18n::reset();
         self::assertSame('acme', Stats::entryTrack([
             'project_track' => '  acme  ',   // gets trimmed

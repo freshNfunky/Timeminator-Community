@@ -112,7 +112,7 @@ function ctrl_imports_upload(): void
     try {
         $preview = imports_parse_csv($file['tmp_name']);
     } catch (Throwable $e) {
-        flash('CSV konnte nicht gelesen werden: ' . $e->getMessage(), 'err');
+        flash(sprintf(t('imports.err_csv_read', 'CSV konnte nicht gelesen werden: %s'), $e->getMessage()), 'err');
         redirect_route('imports');
     }
     $preview['label'] = trim((string) post('label')) ?: basename((string) $file['name']);
@@ -161,7 +161,7 @@ function ctrl_imports_confirm(): void
         );
         $inserted++;
     }
-    flash("$inserted Zeitbuchungen importiert (Batch #$batchId).");
+    flash(sprintf(t('imports.flash_imported', '%d Zeitbuchungen importiert (Batch #%d).'), $inserted, $batchId));
     redirect_route('imports');
 }
 
@@ -189,7 +189,7 @@ function ctrl_imports_delete(): void
     $affected = (int) DB::scalar('SELECT COUNT(*) FROM time_entries WHERE batch_id = ?', [$id]);
     DB::run('DELETE FROM time_entries WHERE batch_id = ?', [$id]);
     DB::run('DELETE FROM import_batches WHERE id = ?', [$id]);
-    flash("Batch #$id samt $affected Buchungen entfernt.");
+    flash(sprintf(t('imports.flash_deleted', 'Batch #%d samt %d Buchungen entfernt.'), $id, $affected));
     redirect_route('imports');
 }
 
