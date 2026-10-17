@@ -12,6 +12,7 @@
  * @var string $manifest_override
  * @var bool   $update_disabled
  * @var string $theme_preference
+ * @var array  $working_days
  * @var bool   $banner_config_off
  * @var bool   $banner_visible
  * @var bool   $banner_telemetry
@@ -81,6 +82,34 @@
           <input type="radio" name="theme_preference" value="dark" <?= $theme_preference === 'dark' ? 'checked' : '' ?>>
           <?= h(t('system.theme_dark', 'Dunkel')) ?>
         </label>
+        <div class="form-actions"><button class="btn btn-primary" type="submit"><?= h(t('common.save')) ?></button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2><?= h(t('system.working_days_h2', 'Werktage')) ?></h2>
+      <p class="muted"><?= h(t('system.working_days_hint', 'Welche Wochentage zaehlen als Werktage? Nicht-Werktage werden im Kalender dezent eingefaerbt und (ab v1.1) aus der 40h-Soll-Berechnung ausgenommen. Default: Montag bis Freitag; Einzelhandel kann z. B. Samstag dazunehmen.')) ?></p>
+      <form method="post" action="<?= h(route('working_days_save')) ?>">
+        <?= csrf_field() ?>
+        <?php
+          $__dayLabels = [
+              1 => t('cal.day_short.mon', 'Mo'),
+              2 => t('cal.day_short.tue', 'Di'),
+              3 => t('cal.day_short.wed', 'Mi'),
+              4 => t('cal.day_short.thu', 'Do'),
+              5 => t('cal.day_short.fri', 'Fr'),
+              6 => t('cal.day_short.sat', 'Sa'),
+              7 => t('cal.day_short.sun', 'So'),
+          ];
+        ?>
+        <div class="calimport-days">
+          <?php foreach ($__dayLabels as $__dow => $__lbl): ?>
+            <label class="check calimport-day<?= in_array($__dow, [6,7], true) ? ' calimport-day-weekend' : '' ?>">
+              <input type="checkbox" name="working_days[]" value="<?= $__dow ?>" <?= in_array($__dow, $working_days, true) ? 'checked' : '' ?>>
+              <?= h($__lbl) ?>
+            </label>
+          <?php endforeach; ?>
+        </div>
         <div class="form-actions"><button class="btn btn-primary" type="submit"><?= h(t('common.save')) ?></button></div>
       </form>
     </div>

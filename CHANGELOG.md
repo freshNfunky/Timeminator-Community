@@ -20,6 +20,38 @@ version heading when a release is cut.
 
 ## [Unreleased]
 
+### Changed
+- **Feiertagskalender: Region-basierte Auswahl**. Die statische DACH/US-
+  Union der v0.9.0 wird durch eine Region-basierte Auswahl ersetzt
+  (ISO 3166-2 Codes: `DE-BY`, `DE-NW`, `AT-ALL`, `CH-ZH`, `US-FED` …).
+  Admin wählt genau einen Kalender im Dropdown in der "Externe Kalender"-
+  Karte unter dem Wochenraster. Nur die in dieser Region gesetzlichen
+  Feiertage erscheinen als Day-Head-Marker. `DE-ALL` liefert strikt die
+  bundesweit gueltigen Tage (Grundlage für die kommende 40h-Soll-
+  Reduktion in v1.1), nicht die Union aller Bundeslaender — wer
+  Allerheiligen etc. will, muss das passende Bundesland waehlen.
+  Pro-Teaser für Multi-Kalender + CalDAV + Baum-Auswahl bleibt in
+  derselben Karte sichtbar. Entfernt: die "Naechste 90 Tage"-Liste
+  unter dem Grid (war Fehlinterpretation der ursprünglichen Anforderung,
+  verwies auf Pro-Issue #217).
+
+### Added
+- **Werktage-Konfiguration** (Admin → System). Checkbox-Reihe Mo–So,
+  Default Mo–Fr; wird in `Settings['working_days']` persistiert und
+  wirkt im Wochen-Grid (Nicht-Werktage werden dezent eingefärbt) und
+  ab v1.1 auf die 40h-Soll-Berechnung. Use-Case: Einzelhandel
+  (+ Samstag), Gastro (+ Sonntag), Teilzeit-Pattern.
+- **Day-Column-Tinting** im Wochen-Kalender: Nicht-Werktage leicht
+  grau (Light) / helles Blau (Dark), Feiertage soft rot in beiden
+  Modi. Semi-transparent, so dass Heute-Ring und Events darüber
+  lesbar bleiben. Feiertag-Tint hat Precedence über Wochenend-Tint.
+
+### Pro-Sync
+- Pro-Issue #217: Multi-Feiertagskalender + CalDAV + Baum-Auswahl
+  (Baum-UI-Hinweis als Comment ergänzt).
+- Pro-Issue #218: Werktage-Config + Day-Column-Tinting parity
+  (inkl. optionalem per-User-Override für Teilzeit).
+
 ## [0.9.1] — 2026-10-15
 
 > Hotfix release following the first click-through on v0.9.0. Addresses

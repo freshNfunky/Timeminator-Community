@@ -20,6 +20,10 @@
     <datalist id="tracklist-<?= $edit ? (int) $edit['id'] : 'new' ?>"><?php foreach (($tracks ?? []) as $__tr): ?><option value="<?= h($__tr) ?>"><?php endforeach; ?></datalist>
   </label>
   <label><?= h(t('clients.color', 'Farbe')) ?> <input type="color" name="color" value="<?= h($edit['color'] ?? '#10b981') ?>"></label>
+  <label><?= h(t('planning.planned_end', 'Geplantes Projekt-Ende')) ?>
+    <input type="date" name="planned_end" value="<?= h((string) ($edit['planned_end'] ?? '')) ?>">
+    <small class="muted"><?= h(t('planning.planned_end_hint', 'Deadline — erscheint als vertikale Linie im Projekt-Cockpit.')) ?></small>
+  </label>
   <label><?= h(t('planning.target_hours', 'Soll-Stunden (Gesamt)')) ?>
     <input type="text" inputmode="decimal" name="target_hours"
            value="<?= h($edit && $edit['target_hours'] !== null ? number_format((float) $edit['target_hours'], 2, '.', '') : '') ?>"

@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS projects (
   color         TEXT NULL,
   active        INTEGER NOT NULL DEFAULT 1,
   target_hours  REAL NULL,
+  planned_end   TEXT NULL,
   created_at    TEXT NOT NULL,
   FOREIGN KEY (client_id) REFERENCES clients(id)
 );
@@ -176,6 +177,22 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 CREATE UNIQUE INDEX IF NOT EXISTS uq_prt_token_hash ON password_reset_tokens (token_hash);
 CREATE INDEX IF NOT EXISTS idx_prt_user     ON password_reset_tokens (user_id);
 CREATE INDEX IF NOT EXISTS idx_prt_expires  ON password_reset_tokens (expires_at);
+
+CREATE TABLE IF NOT EXISTS project_trackers (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id  INTEGER NOT NULL,
+  type        TEXT    NOT NULL DEFAULT 'status_report',
+  status      TEXT    NULL,       -- status_report sub-status: on_plan|delay|extension
+  date_value  TEXT    NULL,       -- new deadline (ISO date) for delay/extension
+  note        TEXT    NOT NULL,
+  value       REAL    NULL,       -- progress now %, 0..100
+  value_forecast REAL NULL,       -- 1-month-ahead forecast %, 0..100
+  user_id     INTEGER NULL,
+  created_at  TEXT    NOT NULL,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_project_trackers_project ON project_trackers (project_id, created_at);
 
 CREATE TABLE IF NOT EXISTS scheduler_runs (
   name              TEXT    PRIMARY KEY,

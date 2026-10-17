@@ -19,7 +19,6 @@ require __DIR__ . '/src/Mail.php';
 require __DIR__ . '/src/PasswordReset.php';
 require __DIR__ . '/src/Scheduler.php';
 require __DIR__ . '/src/Holidays.php';
-require __DIR__ . '/src/ProjectReport.php';
 require __DIR__ . '/src/seed.php';
 require __DIR__ . '/src/Migrator.php';
 
@@ -38,7 +37,6 @@ require __DIR__ . '/src/controllers/pro_teaser_ctrl.php';
 require __DIR__ . '/src/controllers/banners_ctrl.php';
 require __DIR__ . '/src/controllers/password_reset_ctrl.php';
 require __DIR__ . '/src/controllers/cron_ctrl.php';
-require __DIR__ . '/src/controllers/report_ctrl.php';
 require __DIR__ . '/src/Sentiment.php';
 require __DIR__ . '/src/controllers/sentiment_ctrl.php';
 
@@ -64,7 +62,10 @@ $routes = [
     'client_save'  => 'ctrl_client_save',
     'projects'     => 'ctrl_projects_index',
     'project_save' => 'ctrl_project_save',
-    'project_show' => 'ctrl_project_show',
+    'project_show'           => 'ctrl_project_show',
+    'project_tracker_save'   => 'ctrl_project_tracker_save',
+    'project_tracker_update' => 'ctrl_project_tracker_update',
+    'project_tracker_delete' => 'ctrl_project_tracker_delete',
     'workpackages'     => 'ctrl_workpackages_index',
     'workpackage_save' => 'ctrl_workpackage_save',
     'tasks'        => 'ctrl_tasks_index',
@@ -72,8 +73,6 @@ $routes = [
 
     'stats'        => 'ctrl_stats_index',
     'stats_data'   => 'ctrl_stats_data',
-    'report_projects'        => 'ctrl_report_projects',
-    'report_projects_export' => 'ctrl_report_projects_export',
     'sentiment'      => 'ctrl_sentiment_index',
     'sentiment_save' => 'ctrl_sentiment_save',
     'scopes'       => 'ctrl_scopes_index',
@@ -100,6 +99,8 @@ $routes = [
     'cron_regen_token'  => 'ctrl_cron_regen_token',
     'cron_web_run'      => 'ctrl_cron_web_run',
     'theme_save'        => 'ctrl_theme_save',
+    'holiday_region_save' => 'ctrl_holiday_region_save',
+    'working_days_save'   => 'ctrl_working_days_save',
     'language_save'     => 'ctrl_language_save',
     'sidepanel'         => 'ctrl_banners_feed',
     'banners_save'      => 'ctrl_banners_save',

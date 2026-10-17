@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS projects (
   color         VARCHAR(16)  NULL,
   active        TINYINT(1)   NOT NULL DEFAULT 1,
   target_hours  DECIMAL(10,2) NULL,
+  planned_end   DATE         NULL,
   created_at    DATETIME     NOT NULL,
   FOREIGN KEY (client_id) REFERENCES clients(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -182,6 +183,22 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
   KEY idx_prt_user    (user_id),
   KEY idx_prt_expires (expires_at),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS project_trackers (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  project_id  INT NOT NULL,
+  type        VARCHAR(64) NOT NULL DEFAULT 'status_report',
+  status      VARCHAR(32) NULL,          -- status_report sub-status
+  date_value  DATE NULL,                 -- delay/extension new deadline
+  note        TEXT NOT NULL,
+  value       DECIMAL(10,2) NULL,
+  value_forecast DECIMAL(10,2) NULL,
+  user_id     INT NULL,
+  created_at  DATETIME NOT NULL,
+  KEY idx_project_trackers_project (project_id, created_at),
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS scheduler_runs (

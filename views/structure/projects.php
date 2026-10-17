@@ -8,6 +8,7 @@ $list_headers = [
     t('projects.col_project', 'Projekt'),
     t('clients.track_short'),
     t('planning.col_target', 'Soll (h)'),
+    t('planning.col_deadline', 'Deadline'),
 ];
 $list_row_renderer = static function (array $p): string {
     $colorAttr = h(strtolower((string) ($p['color'] ?: ($p['client_color'] ?: ''))));
@@ -19,6 +20,10 @@ $list_row_renderer = static function (array $p): string {
     $out .= '<td>' . h($p['track'] ?: ($p['client_track'] ?? '')) . '</td>';
     $out .= '<td class="r">' . ($p['target_hours'] !== null
         ? h(number_format((float) $p['target_hours'], 2, ',', '.') . ' h')
+        : '<span class="muted">—</span>') . '</td>';
+    $__pe = (string) ($p['planned_end'] ?? '');
+    $out .= '<td class="nowrap">' . ($__pe !== ''
+        ? h((new DateTimeImmutable($__pe))->format('d.m.Y'))
         : '<span class="muted">—</span>') . '</td>';
     return $out;
 };
