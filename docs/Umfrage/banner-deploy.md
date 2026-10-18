@@ -33,18 +33,18 @@ dass Admins ihre CSP anpassen müssen.
   "id": "zeitcheck-2026",
   "title": "Gestalte Timeminator mit – der Zeit-Check: 3 Minuten, anonym, direkt in die Roadmap.",
   "cta": "Umfrage starten",
-  "href": "https://claude.ai/artifact/Bk5a3MoW3EuJCNPPvs2aFb",
+  "href": "https://umfrage.timeminator.com/01/",
   "image": "data:image/png;base64,…  (vollständig in feed-item.json)"
 }
 ```
 
 ## Allowlist & Release
 
-Der `href` zeigt **direkt** auf `claude.ai`. Jede Community-Instanz säubert den Feed gegen **ihre
-eigene** `banners.allowed_hosts` — die Allowlist lebt also in jeder laufenden Instanz. `claude.ai`
-wurde dem Code-Default hinzugefügt (`config.sample.php`, `src/Banners.php`, `src/helpers.php`) und
-**greift, sobald die Instanzen auf die Release mit dieser Änderung aktualisiert sind** (steht
-unmittelbar an).
+Der `href` zeigt **direkt** auf `umfrage.timeminator.com`. Jede Community-Instanz säubert den Feed
+gegen **ihre eigene** `banners.allowed_hosts` — die Allowlist lebt also in jeder laufenden Instanz.
+`timeminator.com` (eine First-Party-Brand-Domain, Subdomains inklusive) wurde dem Code-Default
+hinzugefügt (`config.sample.php`, `src/Banners.php`, `src/helpers.php`) und **greift, sobald die
+Instanzen auf die Release mit dieser Änderung aktualisiert sind** (steht unmittelbar an).
 
 Bis dahin wird der Link auf älteren Instanzen gestrippt (Banner-Bild ohne funktionierenden Link).
 Da die Release unmittelbar ansteht, wird das bewusst in Kauf genommen — ein Zwischen-Redirect

@@ -4,7 +4,7 @@ Die Umfrage ist ein **research-led door opener**: nach Einblicken fragen statt v
 Quest-Seite ist das „Geben vor dem Fragen". Das öffnet Türen, die ein Pitch sofort zuschlägt.
 
 **Links** (vor dem Versand einsetzen):
-- Quest-Seite (öffentlich): `https://claude.ai/artifact/Bk5a3MoW3EuJCNPPvs2aFb`
+- Quest-Seite: `https://umfrage.timeminator.com/01/`
 - Demo: `https://demo.felixschaller.com`
 
 ---

@@ -8,11 +8,11 @@ Feedback-Formular führt. Stand: 2026-10-13 · Timeminator Community v0.9.0.
 
 | Baustein | Wo | Zweck |
 |---|---|---|
-| **Quest-Seite** (Artifact) | `https://claude.ai/artifact/Bk5a3MoW3EuJCNPPvs2aFb` | Öffentliches Attention-Vehikel für LinkedIn/Sales Navigator. 4 Mini-Quests, anonym, kein Login. |
+| **Quest-Seite** (self-hosted) | `https://umfrage.timeminator.com/01/` | Öffentliches Attention-Vehikel für LinkedIn/Sales Navigator. 4 Mini-Quests, anonym, kein Login. |
 | **Feedback-Formular** | Google Forms (xixum.ai) `…/1FAIpQLScLMOFUT7dmyNqQcQ_rhmPJ5m5U24kXTnF6NyEOEuo6xk2Gtw` | Sammelt die eigentlichen Antworten anonym ein. |
 | **Demo** | `https://demo.felixschaller.com` | Live-Instanz zum Ausprobieren. |
 
-> Die Quest-Seite muss vor dem Teilen **öffentlich** geschaltet werden (Share → „Jeder mit dem Link").
+> Die Quest-Seite ist self-hosted unter `umfrage.timeminator.com/01/` (eigene Domain → seriöser für Kaltakquise). Die claude.ai-Artifact-Version diente als Vorlage/Preview.
 
 ## Dateien in diesem Ordner
 
@@ -25,7 +25,7 @@ Feedback-Formular führt. Stand: 2026-10-13 · Timeminator Community v0.9.0.
 
 ## Status / offen
 
-- [ ] Quest-Seite öffentlich schalten.
+- [x] Quest-Seite live (self-hosted) unter `umfrage.timeminator.com/01/`.
 - [ ] In-App-Banner-Creative auf `assets.felixschaller.com` hochladen + Feed-JSON ergänzen (siehe `banner-deploy.md`).
-- [ ] Release ausliefern, damit die erweiterte Allowlist (`claude.ai`) bei bestehenden Nutzern greift (steht an; bis dahin wird der Banner-Link auf älteren Instanzen gestrippt — bewusst in Kauf genommen). Generischer Redirect-Dienst als Future Work: Issue #117.
+- [ ] Release ausliefern, damit die erweiterte Allowlist (`timeminator.com`) bei bestehenden Nutzern greift (steht an; bis dahin wird der Banner-Link auf älteren Instanzen gestrippt — bewusst in Kauf genommen). Generischer Redirect-Dienst als Future Work: Issue #117.
 - [ ] Optional: Kanal-Shortlinks für Quellen-Tracking.
