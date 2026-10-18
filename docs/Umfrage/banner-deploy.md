@@ -38,6 +38,29 @@ dass Admins ihre CSP anpassen müssen.
 }
 ```
 
+## Lokalisierung (DE/EN)
+
+Die Banner werden **je nach Timeminator-Spracheinstellung** lokalisiert ausgespielt — eine
+deutsche oder englische Variante. Für den Zeit-Check gibt es daher zwei Creatives und zwei
+Feed-Items:
+
+| Sprache | Creative | href |
+|---|---|---|
+| DE | `assets/banners/zeitcheck.svg` | `https://umfrage.timeminator.com/01/` |
+| EN | `assets/banners/zeitcheck-en.svg` *(TODO)* | EN-Umfrage-Variante *(TODO, siehe unten)* |
+
+> Hinweis: Im aktuellen Community-Banner-Code (`src/Banners.php`, `src/controllers/banners_ctrl.php`)
+> gibt es **keine** Sprach-Logik. Die Lokalisierung läuft außerhalb dieses Moduls (Feed-seitig oder
+> in einem anderen Branch). Mechanik hier noch nachzutragen, sobald geklärt.
+
+**Offener Punkt — Umfrage nur auf Deutsch:** Die Umfrageseite existiert aktuell nur in Deutsch.
+Der englische Banner braucht daher ein englisches Ziel. Optionen:
+1. **EN-Umfragevariante** unter z. B. `umfrage.timeminator.com/01/en/` anlegen (Quest-Seite ins
+   Englische übersetzen) — der EN-Banner verlinkt dorthin. *(sauber, etwas Aufwand)*
+2. **Interim:** EN-Banner zeigt auf die DE-Umfrage `…/01/`. *(schnell, aber Sprachbruch)*
+
+Bis die EN-Variante steht, ist Variante 2 der Platzhalter.
+
 ## Allowlist & Release
 
 Der `href` zeigt **direkt** auf `umfrage.timeminator.com`. Jede Community-Instanz säubert den Feed
