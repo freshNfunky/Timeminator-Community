@@ -17,7 +17,8 @@ Feedback-Formular führt. Stand: 2026-10-13 · Timeminator Community v0.9.0.
 ## Dateien in diesem Ordner
 
 - [`fragenkatalog.md`](fragenkatalog.md) – kompletter Fragenkatalog (Referenz, 1:1 in Forms einpflegbar).
-- [`google-form-generator.gs`](google-form-generator.gs) – Apps-Script, das das Google Form automatisch baut.
+- [`quest-de.html`](quest-de.html) / [`quest-en.html`](quest-en.html) – die Quest-Umfrageseiten (DE live unter `/01/`, EN für `/01/en/`).
+- [`google-form-generator.gs`](google-form-generator.gs) / [`google-form-generator-en.gs`](google-form-generator-en.gs) – Apps-Scripts, die das Google Form (DE/EN) automatisch bauen.
 - [`outreach-playbook.md`](outreach-playbook.md) – Platzierungs-Kanäle + Sales-Navigator-Nachrichten (Templates).
 - [`banner-deploy.md`](banner-deploy.md) – wie das In-App-Community-Banner deployt wird.
 - `assets/` – LinkedIn-Bild (1080×1350 + @2x), QR-Code (PNG + SVG).
