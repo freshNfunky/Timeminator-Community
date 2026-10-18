@@ -91,6 +91,7 @@ final class BannersTest extends TestCase
         self::assertTrue(Banners::isAllowedHref('https://xixum.ai'));              // XIXUM product
         self::assertTrue(Banners::isAllowedHref('https://app.xixum.ai/assess'));   // subdomain
         self::assertTrue(Banners::isAllowedHref('https://af-ax.com'));             // AF-AX
+        self::assertTrue(Banners::isAllowedHref('https://umfrage.timeminator.com/01/index.html')); // Timeminator survey
         self::assertTrue(Banners::isAllowedHref('https://claude.ai/artifact/x'));  // Claude artifact (Zeit-Check)
         self::assertFalse(Banners::isAllowedHref('http://felixschaller.com'));       // not https
         self::assertFalse(Banners::isAllowedHref('https://evil.example.com'));        // wrong host
