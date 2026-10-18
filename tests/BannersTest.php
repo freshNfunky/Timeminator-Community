@@ -99,6 +99,31 @@ final class BannersTest extends TestCase
         self::assertFalse(Banners::isAllowedHref('javascript:alert(1)'));
     }
 
+    public function testLocaleEndpointInsertsLangBeforeJson(): void
+    {
+        self::assertSame(
+            'https://assets.felixschaller.com/feed-de.json',
+            Banners::localeEndpoint('https://assets.felixschaller.com/feed.json', 'de')
+        );
+        self::assertSame(
+            'https://assets.felixschaller.com/feed-en.json',
+            Banners::localeEndpoint('https://assets.felixschaller.com/feed.json', 'en')
+        );
+        // Query string preserved; custom filename supported.
+        self::assertSame(
+            'https://host/path/banners-de.json?x=1',
+            Banners::localeEndpoint('https://host/path/banners.json?x=1', 'de')
+        );
+        // 'de-DE' clamps to the 2-letter code.
+        self::assertSame(
+            'https://host/feed-de.json',
+            Banners::localeEndpoint('https://host/feed.json', 'de-DE')
+        );
+        // Not localizable -> empty (caller uses the base feed).
+        self::assertSame('', Banners::localeEndpoint('https://host/feed', 'de'));
+        self::assertSame('', Banners::localeEndpoint('https://host/feed.json', 'x'));
+    }
+
     public function testImageAllowsRelativeDataUriAndHttpsFirstParty(): void
     {
         self::assertTrue(Banners::isAllowedImage('banners/xixum-maturity.svg'));
