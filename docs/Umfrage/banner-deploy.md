@@ -59,9 +59,8 @@ Die englische Variante der Quest-Seite ist gebaut: [`quest-en.html`](quest-en.ht
 Live-Version liegt zur Parität als [`quest-de.html`](quest-de.html) daneben). Deployen unter
 `umfrage.timeminator.com/01/en/` — dann zeigt der englische Banner sauber dorthin.
 
-**Feedback-Formular EN:** Generator liegt bereit als [`google-form-generator-en.gs`](google-form-generator-en.gs)
-(englisches Google Form, anonym, extern offen). Nach dem Ausführen die LIVE-URL in `quest-en.html`
-als `ctaForm`-`href` eintragen. Interim zeigt der Button dort noch auf das **deutsche** Form.
+**Feedback-Formular EN:** erstellt (Generator: [`google-form-generator-en.gs`](google-form-generator-en.gs))
+und in `quest-en.html` eingetragen — der englische Funnel ist damit durchgängig (EN-Seite → EN-Form).
 
 ## Allowlist & Release
 
