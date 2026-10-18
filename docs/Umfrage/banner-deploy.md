@@ -47,19 +47,22 @@ Feed-Items:
 | Sprache | Creative | href |
 |---|---|---|
 | DE | `assets/banners/zeitcheck.svg` | `https://umfrage.timeminator.com/01/` |
-| EN | `assets/banners/zeitcheck-en.svg` *(TODO)* | EN-Umfrage-Variante *(TODO, siehe unten)* |
+| EN | `assets/banners/zeitcheck-en.svg` *(dein EN-Creative)* | `https://umfrage.timeminator.com/01/en/` |
 
 > Hinweis: Im aktuellen Community-Banner-Code (`src/Banners.php`, `src/controllers/banners_ctrl.php`)
 > gibt es **keine** Sprach-Logik. Die Lokalisierung läuft außerhalb dieses Moduls (Feed-seitig oder
 > in einem anderen Branch). Mechanik hier noch nachzutragen, sobald geklärt.
 
-**Offener Punkt — Umfrage nur auf Deutsch:** Die Umfrageseite existiert aktuell nur in Deutsch.
-Der englische Banner braucht daher ein englisches Ziel. Optionen:
-1. **EN-Umfragevariante** unter z. B. `umfrage.timeminator.com/01/en/` anlegen (Quest-Seite ins
-   Englische übersetzen) — der EN-Banner verlinkt dorthin. *(sauber, etwas Aufwand)*
-2. **Interim:** EN-Banner zeigt auf die DE-Umfrage `…/01/`. *(schnell, aber Sprachbruch)*
+### EN-Umfrageseite
 
-Bis die EN-Variante steht, ist Variante 2 der Platzhalter.
+Die englische Variante der Quest-Seite ist gebaut: [`quest-en.html`](quest-en.html) (die deutsche
+Live-Version liegt zur Parität als [`quest-de.html`](quest-de.html) daneben). Deployen unter
+`umfrage.timeminator.com/01/en/` — dann zeigt der englische Banner sauber dorthin.
+
+**Noch offen — Feedback-Formular nur auf Deutsch:** Die Quest-Seite ist englisch, aber der
+„Feedback geben"-Button führt (interim) weiter zum **deutschen** Google Form. Für einen durchgängig
+englischen Funnel braucht es ein englisches Formular — lässt sich aus `google-form-generator.gs`
+mit übersetzten Strings erzeugen. Bis dahin: Sprachbruch am Formular bewusst in Kauf genommen.
 
 ## Allowlist & Release
 
