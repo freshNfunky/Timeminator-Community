@@ -1,6 +1,5 @@
 <?php /** @var ?array $edit @var array $projects */ ?>
-<h3 class="form-inline-title"><?= h($edit ? t('wp.edit', 'Arbeitspaket bearbeiten') : t('wp.new', 'Neues Arbeitspaket')) ?></h3>
-<p class="muted"><?= t('wp.intro', 'Arbeitspakete (en: <em>Workpackages</em>) sitzen zwischen Projekt und Aufgabe. Beim Upgrade bekommt jedes Projekt automatisch ein Paket <strong>Allgemein</strong>.') /* contains <em>/<strong>, intentional */ ?></p>
+<h3 class="form-inline-title"><?= h($edit ? t('wp.edit', 'Arbeitspaket bearbeiten') : t('wp.new', 'Neues Arbeitspaket')) ?><?= tip('wp.intro') ?></h3>
 <form method="post" action="<?= h(route('workpackage_save')) ?>" class="form-inline">
   <?= csrf_field() ?>
   <?php if ($edit): ?><input type="hidden" name="id" value="<?= (int) $edit['id'] ?>"><?php endif; ?>
@@ -13,9 +12,8 @@
     </select>
   </label>
   <label><?= h(t('struct.name')) ?> <input type="text" name="name" value="<?= h($edit['name'] ?? '') ?>" required placeholder="<?= h(t('wp.name_placeholder', 'z. B. Phase 1 — Konzept')) ?>"></label>
-  <label><?= h(t('struct.code_short', 'Kennung')) ?>
+  <label><?= h(t('struct.code_short', 'Kennung')) ?><?= tip('wp.code_unique_hint') ?>
     <input type="text" name="code" value="<?= h($edit['code'] ?? '') ?>" placeholder="<?= h(t('struct.code_auto', 'auto')) ?>">
-    <small class="muted"><?= h(t('wp.code_unique_hint', 'Eindeutig innerhalb des Projekts.')) ?></small>
   </label>
   <label class="check"><input type="checkbox" name="active" value="1" <?= (!$edit || $edit['active']) ? 'checked' : '' ?>> <?= h(t('struct.active')) ?></label>
   <div class="form-actions">

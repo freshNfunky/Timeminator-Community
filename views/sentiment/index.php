@@ -13,8 +13,7 @@ $selectedFlow = $today && isset($today['flow']) && $today['flow'] !== null ? (in
 $noteValue    = (string) ($today['note'] ?? '');
 ?>
 <div class="card">
-  <h2><?= h(t('sent.today_title', 'Dein Eintrag heute')) ?></h2>
-  <p class="muted"><?= h(t('sent.today_intro_v2', 'Zwei Signale pro Tag: wie fuehlst du dich (Mood) und wie laeuft die Arbeit (Flow). Beide sind optional, mindestens eines muss gesetzt sein.')) ?></p>
+  <h2><?= h(t('sent.today_title', 'Dein Eintrag heute')) ?><?= tip('sent.today_intro_v2') ?></h2>
   <form method="post" action="<?= h(route('sentiment_save')) ?>" class="sentiment-form">
     <?= csrf_field() ?>
     <input type="hidden" name="as_of" value="<?= h((new DateTimeImmutable('today'))->format('Y-m-d')) ?>">
@@ -156,8 +155,7 @@ $noteValue    = (string) ($today['note'] ?? '');
 
 <?php if ($canTeam): ?>
   <div class="card">
-    <h2><?= h(t('sent.team_title', 'Team-Stimmung')) ?></h2>
-    <p class="muted"><?= h(sprintf(t('sent.team_intro', 'Aggregierter Durchschnitt der letzten %d Tage. Nur Mittelwerte und Anzahl Antworten; keine Einzelstimmen, keine Namen.'), (int) $teamSummary['window_days'])) ?></p>
+    <h2><?= h(t('sent.team_title', 'Team-Stimmung')) ?><?= tip_text(sprintf(t('sent.team_intro', 'Aggregierter Durchschnitt der letzten %d Tage. Nur Mittelwerte und Anzahl Antworten; keine Einzelstimmen, keine Namen.'), (int) $teamSummary['window_days'])) ?></h2>
 
     <div class="sentiment-team-summary">
       <div>

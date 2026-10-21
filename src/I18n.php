@@ -201,3 +201,41 @@ function t(string $key, ?string $default = null): string
 {
     return I18n::translate($key, $default);
 }
+
+/**
+ * Render an ⓘ info-tip badge next to a heading or label. The translation
+ * for `$key` is placed into both `aria-label` and `data-tip`; CSS handles
+ * reveal on hover / focus / tap. Use only for plain prose — HTML markup
+ * cannot survive the attribute encoding.
+ *
+ * Views emit it right after the thing it annotates:
+ *   <h2><?= h(t('system.theme_h2')) ?><?= tip('system.theme_hint') ?></h2>
+ *
+ * Returns a safe HTML snippet; the caller must NOT re-escape with h().
+ */
+function tip_text(string $text): string
+{
+    if ($text === '') { return ''; }
+    $plain = strip_tags($text);
+    $plain = html_entity_decode($plain, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $plain = trim(preg_replace('/\s+/', ' ', $plain));
+    $safe  = htmlspecialchars($plain, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    return '<span class="info-tip" tabindex="0" role="button"'
+         . ' aria-label="' . $safe . '" data-tip="' . $safe . '">ⓘ</span>';
+}
+
+function tip(string $key, ?string $default = null): string
+{
+    $text = t($key, $default);
+    if ($text === '') { return ''; }
+    // The underlying string may contain inline markup (<strong>, <code>,
+    // <em>) and entities (&mdash;, &nbsp;) because the source lang-string
+    // was authored for an in-page paragraph. Attributes can carry neither,
+    // so flatten to plain text before encoding into aria-label / data-tip.
+    $plain = strip_tags($text);
+    $plain = html_entity_decode($plain, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $plain = trim(preg_replace('/\s+/', ' ', $plain));
+    $safe  = htmlspecialchars($plain, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    return '<span class="info-tip" tabindex="0" role="button"'
+         . ' aria-label="' . $safe . '" data-tip="' . $safe . '">ⓘ</span>';
+}

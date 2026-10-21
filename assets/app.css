@@ -188,6 +188,37 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600}
 .badge-live{background:var(--badge-live-bg);color:var(--badge-live-ink)}
 
+/* Info-tip: an inline ⓘ that reveals a help bubble on hover/focus/tap.
+   Used to hide one-time "how it works" prose from Community views without
+   losing it entirely. Pure CSS, CSP-safe (no inline script/style, no JS):
+   `data-tip` carries the text, `::after` renders it on :hover + :focus.
+   `tabindex="0"` + `role="button"` make it keyboard- and touch-reachable.
+   For strings with inline markup (<code>, <em>, <strong>) keep the HTML
+   next to the icon — only pure-prose strings belong in `data-tip`. */
+.info-tip{display:inline-flex;align-items:center;justify-content:center;
+  width:16px;height:16px;margin-left:4px;border-radius:50%;
+  background:var(--pill-bg);color:var(--muted);
+  font-size:11px;font-weight:600;font-style:normal;line-height:1;
+  cursor:help;position:relative;vertical-align:middle;
+  user-select:none;outline:none}
+.info-tip:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.info-tip::after{
+  content:attr(data-tip);
+  position:absolute;left:50%;top:calc(100% + 8px);transform:translateX(-50%);
+  min-width:200px;max-width:min(360px, 80vw);
+  padding:9px 12px;
+  background:var(--panel);color:var(--ink);
+  border:1px solid var(--line);border-radius:7px;
+  box-shadow:0 6px 18px rgba(0,0,0,.18);
+  font-size:12.5px;font-weight:400;font-style:normal;line-height:1.45;
+  text-align:left;white-space:pre-wrap;
+  opacity:0;pointer-events:none;visibility:hidden;
+  transition:opacity .12s ease, visibility 0s linear .12s;
+  z-index:50}
+.info-tip:hover::after,.info-tip:focus::after,.info-tip:focus-visible::after{
+  opacity:1;visibility:visible;transition-delay:0s, 0s}
+/* Dark-mode: inherits via tokens; nothing extra needed. */
+
 /* Layout helpers */
 .cols{display:grid;grid-template-columns:360px 1fr;gap:18px;align-items:start}
 .col-form,.col-list{min-width:0}

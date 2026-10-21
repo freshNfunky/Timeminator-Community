@@ -6,8 +6,7 @@
  */
 ?>
 <div class="card">
-  <h2><?= h(t('cron.h2', 'Jobs')) ?></h2>
-  <p class="muted"><?= h(t('cron.intro', 'Timeminator kennt zwei Varianten den Scheduler zu triggern: ueber System-Cron auf dem Server oder ueber einen externen Web-Cron-Dienst, der den Endpoint unten regelmaessig aufruft. Faellig ist ein Job, wenn seine letzte Ausfuehrung laenger zurueckliegt als sein Intervall.')) ?></p>
+  <h2><?= h(t('cron.h2', 'Jobs')) ?><?= tip('cron.intro') ?></h2>
 
   <?php if (!$jobs): ?>
     <p class="muted"><?= h(t('cron.no_jobs', 'Keine Jobs registriert.')) ?></p>
@@ -68,11 +67,9 @@
 </div>
 
 <div class="card">
-  <h2><?= h(t('cron.web_cron_h2', 'Web-Cron-Endpoint')) ?></h2>
-  <p class="muted"><?= h(t('cron.web_cron_intro', 'Externer Scheduler ruft diese URL regelmaessig auf (empfohlen: alle 15 Minuten). Der Token ist pro Installation einmalig; wenn er leakt, hier regenerieren.')) ?></p>
+  <h2><?= h(t('cron.web_cron_h2', 'Web-Cron-Endpoint')) ?><?= tip('cron.web_cron_intro') ?></h2>
   <p><code style="word-break:break-all"><?= h($web_cron) ?></code></p>
-  <h3 style="margin-top:16px"><?= h(t('cron.system_cron_h3', 'System-Cron (klassisch)')) ?></h3>
-  <p class="muted"><?= h(t('cron.system_cron_intro', 'Als Alternative kannst du den Scheduler direkt per CLI anstossen. Beispiel-crontab-Zeile (alle 15 Minuten):')) ?></p>
+  <h3 style="margin-top:16px"><?= h(t('cron.system_cron_h3', 'System-Cron (klassisch)')) ?><?= tip('cron.system_cron_intro') ?></h3>
   <pre><code>*/15 * * * * curl -s "<?= h($web_cron) ?>" &gt; /dev/null</code></pre>
 
   <form method="post" action="<?= h(route('cron_regen_token')) ?>" class="inline" style="margin-top:16px"

@@ -62,7 +62,7 @@ $to = (new DateTimeImmutable('now'))->format('Y-m-d');
     <div class="chart-box"><canvas id="chartSeries"></canvas></div>
   </div>
   <div class="card chart-wide">
-    <h2><?= h(t('stats.tracks_h2', 'Gleis-Vergleich')) ?> <span class="muted"><?= h(t('stats.tracks_hint', '(Gruppen gegenuebergestellt)')) ?></span></h2>
+    <h2><?= h(t('stats.tracks_h2', 'Gleis-Vergleich')) ?><?= tip('stats.tracks_hint') ?></h2>
     <div class="chart-box"><canvas id="chartTracks"></canvas></div>
   </div>
 </div>

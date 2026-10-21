@@ -429,8 +429,7 @@ if ($__hasData) {
     </div><!-- /.cockpit-chart-ctl -->
   <?php endif; ?>
 
-  <h3 class="cockpit-tracker-head"><?= h(t('tracker.h3', 'Projekt-Tracker')) ?></h3>
-  <p class="muted"><?= h(t('tracker.intro', 'Zeitgestempelte Status-Berichte: Scope-Aenderungen, Terminverschiebungen, Risiken. Ergibt die Projekt-Historie auf einen Blick.')) ?></p>
+  <h3 class="cockpit-tracker-head"><?= h(t('tracker.h3', 'Projekt-Tracker')) ?><?= tip('tracker.intro') ?></h3>
   <form method="post" action="<?= h(route('project_tracker_save')) ?>" class="tracker-form" data-tracker-type="status_report" data-tracker-status="on_plan">
     <?= csrf_field() ?>
     <input type="hidden" name="project_id" value="<?= (int) $project['id'] ?>">

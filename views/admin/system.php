@@ -57,8 +57,7 @@
     </div>
 
     <div class="card">
-      <h2><?= h(t('system.perms_h2', 'Rechte-Katalog')) ?></h2>
-      <p class="muted"><?= h(t('system.perms_hint', 'Nach einem Update neue Berechtigungen in die Datenbank uebernehmen.')) ?></p>
+      <h2><?= h(t('system.perms_h2', 'Rechte-Katalog')) ?><?= tip('system.perms_hint') ?></h2>
       <form method="post" action="<?= h(route('admin_system')) ?>" class="inline">
         <?= csrf_field() ?><input type="hidden" name="action" value="sync_perms">
         <button class="btn" type="submit"><?= h(t('system.sync_perms', 'Rechte synchronisieren')) ?></button>
@@ -66,8 +65,7 @@
     </div>
 
     <div class="card">
-      <h2><?= h(t('system.theme_h2', 'Darstellung')) ?></h2>
-      <p class="muted"><?= t('system.theme_hint', 'Hell / Dunkel-Modus fuer die gesamte Instanz. <strong>System</strong> uebernimmt die OS-Einstellung des jeweiligen Browsers (<code>prefers-color-scheme</code>) &mdash; Standard. Hell oder Dunkel erzwingen eine feste Darstellung fuer alle Benutzer; nuetzlich z.&nbsp;B. fuer Screenshots.') /* contains inline markup */ ?></p>
+      <h2><?= h(t('system.theme_h2', 'Darstellung')) ?><?= tip('system.theme_hint') ?></h2>
       <form method="post" action="<?= h(route('theme_save')) ?>">
         <?= csrf_field() ?>
         <label class="check">
@@ -87,8 +85,7 @@
     </div>
 
     <div class="card">
-      <h2><?= h(t('system.working_days_h2', 'Werktage')) ?></h2>
-      <p class="muted"><?= h(t('system.working_days_hint', 'Welche Wochentage zaehlen als Werktage? Nicht-Werktage werden im Kalender dezent eingefaerbt und (ab v1.1) aus der 40h-Soll-Berechnung ausgenommen. Default: Montag bis Freitag; Einzelhandel kann z. B. Samstag dazunehmen.')) ?></p>
+      <h2><?= h(t('system.working_days_h2', 'Werktage')) ?><?= tip('system.working_days_hint') ?></h2>
       <form method="post" action="<?= h(route('working_days_save')) ?>">
         <?= csrf_field() ?>
         <?php
@@ -115,8 +112,7 @@
     </div>
 
     <div class="card">
-      <h2><?= h(t('admin.language_section', 'Sprache')) ?></h2>
-      <p class="muted"><?= h(t('admin.language_hint')) ?></p>
+      <h2><?= h(t('admin.language_section', 'Sprache')) ?><?= tip('admin.language_hint') ?></h2>
       <form method="post" action="<?= h(route('language_save')) ?>">
         <?= csrf_field() ?>
         <?php foreach (I18n::available() as $__loc): ?>
@@ -156,8 +152,7 @@
     </div>
 
     <div class="card">
-      <h2><?= h(t('system.endpoints_h2', 'Endpoints')) ?></h2>
-      <p class="muted"><?= t('system.endpoints_intro_short', 'Update-Kanal und Registrierungs-Endpoint sind vom Installer vorbelegt. Hier kannst du sie ueberschreiben oder ganz abschalten. Leer lassen = Standard aus <code>config.php</code>.') /* contains code tag */ ?></p>
+      <h2><?= h(t('system.endpoints_h2', 'Endpoints')) ?><?= tip('system.endpoints_intro_short') ?></h2>
       <form method="post" action="<?= h(route('endpoints_save')) ?>">
         <?= csrf_field() ?>
         <label><?= h(t('install.update_manifest_url')) ?>
@@ -206,8 +201,7 @@
 </div>
 
 <div class="card">
-  <h2><?= h(t('system.endpoints_h2', 'Endpoints')) ?></h2>
-  <p class="muted"><?= t('system.endpoints_intro_long', 'Zwei URLs steuert die Community-Edition: wo sie nach neuen Releases schaut (<em>Update-Kanal</em>) und wohin die Opt-in-Benachrichtigungs-Anmeldung geht (<em>Benachrichtigungs-Endpoint</em>). <strong>Kein Lizenzserver</strong> &mdash; die Community-Edition hat keine Lizenz-Mechanik. Felder leer lassen = Standard aus <code>config.php</code>.') /* contains inline markup */ ?></p>
+  <h2><?= h(t('system.endpoints_h2', 'Endpoints')) ?><?= tip('system.endpoints_intro_long') ?></h2>
   <form method="post" action="<?= h(route('endpoints_save')) ?>" class="endpoint-form">
     <?= csrf_field() ?>
     <label><?= h(t('install.update_manifest_url')) ?>
@@ -237,8 +231,7 @@
 </div>
 
 <div class="card">
-  <h2><?= h(t('mail.h2', 'Mail (SMTP)')) ?></h2>
-  <p class="muted"><?= h(t('mail.intro', 'Fuer das Zuruecksetzen von Passwoertern und zukuenftige Benachrichtigungen. Lass die SMTP-Felder leer, um die Mails ueber die lokale PHP-mail()-Funktion zu versenden (sendmail), oder konfiguriere einen SMTP-Server.')) ?></p>
+  <h2><?= h(t('mail.h2', 'Mail (SMTP)')) ?><?= tip('mail.intro') ?></h2>
   <?php if (!$mail_configured): ?>
     <p class="muted"><em><?= h(t('mail.not_configured_hint', 'Noch nicht konfiguriert — Password-Reset-Mails koennen nicht verschickt werden, bis zumindest eine From-Adresse gesetzt ist.')) ?></em></p>
   <?php endif; ?>
@@ -250,9 +243,8 @@
     <label><?= h(t('mail.from_name', 'Absender-Name')) ?>
       <input type="text" name="mail_from_name" value="<?= h($mail['from_name']) ?>" placeholder="<?= h(cfg('app_name', 'Timeminator')) ?>">
     </label>
-    <label><?= h(t('mail.host', 'SMTP-Host')) ?>
+    <label><?= h(t('mail.host', 'SMTP-Host')) ?><?= tip('mail.host_hint') ?>
       <input type="text" name="mail_host" value="<?= h($mail['host']) ?>" placeholder="smtp.example.com">
-      <small class="muted"><?= h(t('mail.host_hint', 'Leer = PHP mail() / lokaler sendmail.')) ?></small>
     </label>
     <label><?= h(t('mail.port', 'Port')) ?>
       <input type="number" name="mail_port" value="<?= h((string) ($mail['port'] ?: '')) ?>" min="0" max="65535" placeholder="587">
@@ -274,9 +266,8 @@
   </form>
   <form method="post" action="<?= h(route('mail_test')) ?>" class="endpoint-form" style="margin-top:12px">
     <?= csrf_field() ?>
-    <label><?= h(t('mail.test_to', 'Test-Mail an')) ?>
+    <label><?= h(t('mail.test_to', 'Test-Mail an')) ?><?= tip('mail.test_hint') ?>
       <input type="email" name="test_to" value="<?= h((string) (Auth::user()['email'] ?? '')) ?>" placeholder="du@example.com">
-      <small class="muted"><?= h(t('mail.test_hint', 'Leer = eigene E-Mail aus dem Benutzerprofil.')) ?></small>
     </label>
     <div class="form-actions">
       <button class="btn btn-ghost" type="submit" <?= $mail_configured ? '' : 'disabled' ?>><?= h(t('mail.test_submit', 'Test-Mail schicken')) ?></button>

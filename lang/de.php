@@ -316,6 +316,7 @@ return [
     'imports.err_no_valid_row'  => 'Kein gueltiger Datensatz in der CSV.',
     'imports.flash_discarded'   => 'Vorschau verworfen.',
     'imports.err_csv_read'      => 'CSV konnte nicht gelesen werden: %s',
+    'imports.first_200_short'   => 'Zeige die ersten 200 Zeilen.',
     'imports.flash_imported'    => '%d Zeitbuchungen importiert (Batch #%d).',
     'imports.flash_deleted'     => 'Batch #%d samt %d Buchungen entfernt.',
 
