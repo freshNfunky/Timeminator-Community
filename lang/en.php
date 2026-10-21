@@ -324,6 +324,7 @@ return [
     'imports.err_no_valid_row'  => 'No valid row in the CSV.',
     'imports.flash_discarded'   => 'Preview discarded.',
     'imports.err_csv_read'      => 'Could not read CSV: %s',
+    'imports.first_200_short'   => 'Showing the first 200 rows.',
     'imports.flash_imported'    => 'Imported %d time entries (batch #%d).',
     'imports.flash_deleted'     => 'Removed batch #%d and %d entries.',
 

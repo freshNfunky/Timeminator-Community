@@ -13,10 +13,9 @@
 <?php if ($preview): ?>
   <div class="card">
     <div class="card-head">
-      <h2><?= h(sprintf(t('imports.preview_h2', 'Vorschau: %s'), $preview['label'])) ?></h2>
+      <h2><?= h(sprintf(t('imports.preview_h2', 'Vorschau: %s'), $preview['label'])) ?><?= tip_text(sprintf(t('imports.preview_intro', 'Trennzeichen erkannt: <code>%s</code>. Uebersprungen wird jede Zeile, deren Kunde/Projekt/Aufgabe nicht schon existiert &mdash; die Import-UI erzeugt bewusst keine Struktur.'), $preview['stats']['delim'])) ?></h2>
       <span class="pill"><?= h(sprintf(t('imports.stats_label', '%d gueltig / %d uebersprungen'), (int) $preview['stats']['ok'], (int) $preview['stats']['bad'])) ?></span>
     </div>
-    <p class="muted"><?= sprintf(t('imports.preview_intro', 'Trennzeichen erkannt: <code>%s</code>. Uebersprungen wird jede Zeile, deren Kunde/Projekt/Aufgabe nicht schon existiert &mdash; die Import-UI erzeugt bewusst keine Struktur.'), h($preview['stats']['delim'])) /* contains <code>, intentional */ ?></p>
 
     <table class="table">
       <thead>
@@ -51,7 +50,7 @@
       </tbody>
     </table>
     <?php if (count($preview['rows']) > 200): ?>
-      <p class="muted"><?= h(t('imports.first_200_hint', 'Es werden nur die ersten 200 Zeilen der Vorschau angezeigt. Alle als OK markierten Zeilen aus der Datei werden beim Bestaetigen importiert.')) ?></p>
+      <p class="muted"><?= h(t('imports.first_200_short', 'Zeige die ersten 200 Zeilen.')) ?><?= tip('imports.first_200_hint') ?></p>
     <?php endif; ?>
 
     <div class="form-actions">
@@ -67,8 +66,7 @@
   </div>
 <?php else: ?>
   <div class="card narrow">
-    <h2><?= h(t('imports.new_h2', 'Neue CSV hochladen')) ?></h2>
-    <p class="muted"><?= t('imports.new_intro', 'Erwartete Spalten (Header, deutsch/englisch egal, Reihenfolge egal): <code>start_ts</code>, <code>end_ts</code>, entweder <code>client_code</code> oder <code>client_name</code>, entweder <code>project_code</code> oder <code>project_name</code>, <code>task_name</code>. Optional: <code>user_username</code>, <code>note</code>, <code>evidence</code>. Kunde, Projekt und Aufgabe muessen vorher existieren.') /* contains <code>, intentional */ ?></p>
+    <h2><?= h(t('imports.new_h2', 'Neue CSV hochladen')) ?><?= tip('imports.new_intro') ?></h2>
     <form method="post" action="<?= h(route('imports_upload')) ?>" enctype="multipart/form-data">
       <?= csrf_field() ?>
       <label><?= h(t('imports.label', 'Bezeichnung')) ?> <input type="text" name="label" placeholder="<?= h(t('imports.label_placeholder', 'Q3 2026 Backfill')) ?>"></label>
