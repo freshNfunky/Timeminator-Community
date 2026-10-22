@@ -1,0 +1,127 @@
+<!doctype html><html lang="de"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Timeminator · Umfragen</title>
+<meta name="description" content="Die Umfragen-Subdomain von Timeminator – self-hosted Zeiterfassung. Aktuelle Umfragen, Website und Live-Demo.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#eef1f7; --surface:#ffffff; --surface-2:#f6f8fc;
+    --ink:#101634; --ink-soft:#54607a; --ink-faint:#8a94a9; --line:#e1e6f1;
+    --brand:#1e3fcc; --brand-2:#3a5cf0; --brand-ink:#ffffff;
+    --cyan:#0d8f89; --amber:#c77d13;
+    --shadow:0 1px 2px rgba(16,22,52,.05), 0 12px 32px -18px rgba(16,22,52,.28);
+    --radius:14px;
+    --font-display:"Jost","Futura",system-ui,sans-serif;
+    --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --font-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+    --bg:#0a0f1e; --surface:#141c31; --surface-2:#0f1628;
+    --ink:#eef1f8; --ink-soft:#a3aec5; --ink-faint:#6c7795; --line:#273047;
+    --brand:#6f87ff; --brand-2:#8aa0ff; --brand-ink:#0a0f1e;
+    --cyan:#5fd7d0; --amber:#f5c451;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 40px -20px rgba(0,0,0,.7);
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0a0f1e; --surface:#141c31; --surface-2:#0f1628;
+    --ink:#eef1f8; --ink-soft:#a3aec5; --ink-faint:#6c7795; --line:#273047;
+    --brand:#6f87ff; --brand-2:#8aa0ff; --brand-ink:#0a0f1e;
+    --cyan:#5fd7d0; --amber:#f5c451;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 40px -20px rgba(0,0,0,.7);
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:1.55;
+    -webkit-font-smoothing:antialiased;min-height:100svh;display:flex;flex-direction:column;overflow-x:hidden}
+  .wrap{width:100%;max-width:620px;margin:0 auto;padding:0 20px}
+  main{flex:1;display:flex;align-items:center;padding-block:48px}
+
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:600;
+    letter-spacing:.14em;text-transform:uppercase;font-size:13px;color:var(--ink-soft);margin-bottom:22px}
+  .brand .dot{width:11px;height:11px;border-radius:3px;background:var(--brand);
+    box-shadow:0 0 0 4px color-mix(in srgb,var(--brand) 18%,transparent)}
+  h1{font-family:var(--font-display);font-weight:600;letter-spacing:-.01em;line-height:1.08;
+    font-size:clamp(1.8rem,6vw,2.6rem);margin:0 0 .4em;text-wrap:balance}
+  .lede{font-size:clamp(1rem,2.6vw,1.12rem);color:var(--ink-soft);max-width:48ch;margin:0 0 2em}
+  .lede b{color:var(--ink);font-weight:600}
+
+  .links{display:flex;flex-direction:column;gap:12px;margin:0}
+  a.card{display:flex;align-items:center;gap:16px;text-decoration:none;color:inherit;
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:16px 18px;transition:border-color .15s,transform .12s,box-shadow .2s}
+  a.card:hover{border-color:var(--brand);transform:translateY(-1px)}
+  a.card:active{transform:translateY(0)}
+  a.card:focus-visible{outline:2.5px solid var(--brand);outline-offset:3px}
+  .ic{flex:none;width:44px;height:44px;border-radius:11px;display:grid;place-items:center;
+    font-size:1.35rem;background:var(--surface-2);border:1px solid var(--line)}
+  .card .body{flex:1;min-width:0}
+  .card .t{font-family:var(--font-display);font-weight:600;font-size:1.08rem;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .card .d{color:var(--ink-soft);font-size:.9rem;margin-top:2px}
+  .tag{font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+    font-weight:600;padding:3px 8px;border-radius:99px;background:color-mix(in srgb,var(--cyan) 16%,transparent);
+    color:var(--cyan);border:1px solid color-mix(in srgb,var(--cyan) 35%,transparent)}
+  .card.primary{border-color:color-mix(in srgb,var(--brand) 45%,var(--line))}
+  .card.primary .ic{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+  .arrow{flex:none;color:var(--ink-faint);font-size:1.2rem;transition:transform .15s,color .15s}
+  a.card:hover .arrow{color:var(--brand);transform:translateX(3px)}
+  .ext{font-size:.72rem;color:var(--ink-faint);font-weight:500}
+
+  footer{padding:22px 20px 40px;text-align:center;font-size:.8rem;color:var(--ink-faint)}
+  footer .sep{opacity:.5}
+</style>
+</head><body>
+<main>
+  <div class="wrap">
+    <div class="brand"><span class="dot"></span> Timeminator · Umfragen</div>
+    <h1>Du bist auf der Umfragen-Subdomain gelandet.</h1>
+    <p class="lede">Unter <b>umfrage.timeminator.com</b> liegen die Umfragen zu <b>Timeminator</b> – der self-hosted, quelloffenen Zeiterfassung. Hier gibt es sonst nichts zu sehen. Wahrscheinlich suchst du eins davon:</p>
+
+    <div class="links">
+      <a class="card primary" href="/01/">
+        <span class="ic" aria-hidden="true">🕹</span>
+        <span class="body">
+          <span class="t">Zeit-Check <span class="tag">Aktuelle Umfrage</span></span>
+          <span class="d">Vier kurze Mini-Challenges, 3 Minuten, null Login – plus dein Feedback.</span>
+        </span>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a class="card" href="/01en/">
+        <span class="ic" aria-hidden="true">🕹</span>
+        <span class="body">
+          <span class="t">Time Check <span class="tag">English</span></span>
+          <span class="d">Four quick mini-challenges, 3 minutes, zero login – plus your feedback.</span>
+        </span>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a class="card" href="https://timeminator.com/" rel="noopener">
+        <span class="ic" aria-hidden="true">🌐</span>
+        <span class="body">
+          <span class="t">Zur Website <span class="ext">timeminator.com&nbsp;↗</span></span>
+          <span class="d">Was Timeminator ist, Funktionen, Download &amp; Doku.</span>
+        </span>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a class="card" href="https://demo.felixschaller.com/" rel="noopener">
+        <span class="ic" aria-hidden="true">▶</span>
+        <span class="body">
+          <span class="t">Live-Demo <span class="ext">demo.felixschaller.com&nbsp;↗</span></span>
+          <span class="d">Timeminator direkt im Browser ausprobieren – ohne Login, Beispieldaten.</span>
+        </span>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Timeminator · self-hosted Zeiterfassung · Open Source (MIT) <span class="sep">·</span> made by FelixSchallerCOM
+</footer>
+</body></html>

@@ -47,7 +47,7 @@ Feed-Items:
 | Sprache | Creative | href |
 |---|---|---|
 | DE | `assets/banners/zeitcheck.svg` | `https://umfrage.timeminator.com/01/` |
-| EN | `assets/banners/zeitcheck-en.svg` *(dein EN-Creative)* | `https://umfrage.timeminator.com/01/en/` |
+| EN | `assets/banners/zeitcheck-en.svg` *(dein EN-Creative)* | `https://umfrage.timeminator.com/01en/` |
 
 > Hinweis: Im aktuellen Community-Banner-Code (`src/Banners.php`, `src/controllers/banners_ctrl.php`)
 > gibt es **keine** Sprach-Logik. Die Lokalisierung läuft außerhalb dieses Moduls (Feed-seitig oder
@@ -56,8 +56,9 @@ Feed-Items:
 ### EN-Umfrageseite
 
 Die englische Variante der Quest-Seite ist gebaut: [`quest-en.html`](quest-en.html) (die deutsche
-Live-Version liegt zur Parität als [`quest-de.html`](quest-de.html) daneben). Deployen unter
-`umfrage.timeminator.com/01/en/` — dann zeigt der englische Banner sauber dorthin.
+Live-Version liegt zur Parität als [`quest-de.html`](quest-de.html) daneben). Deployen als
+**Geschwister-Ordner** `umfrage.timeminator.com/01en/` (als `index.html`) — dann zeigt der englische
+Banner sauber dorthin. Die Root-Landingpage ([`root-index.html`](root-index.html)) verlinkt beide.
 
 **Feedback-Formular EN:** erstellt (Generator: [`google-form-generator-en.gs`](google-form-generator-en.gs))
 und in `quest-en.html` eingetragen — der englische Funnel ist damit durchgängig (EN-Seite → EN-Form).
