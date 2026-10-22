@@ -30,6 +30,8 @@ require __DIR__ . '/src/controllers/auth_ctrl.php';
 require __DIR__ . '/src/controllers/dashboard_ctrl.php';
 require __DIR__ . '/src/controllers/entries_ctrl.php';
 require __DIR__ . '/src/controllers/structure_ctrl.php';
+require __DIR__ . '/src/controllers/presets_ctrl.php';
+require __DIR__ . '/src/controllers/processes_ctrl.php';
 require __DIR__ . '/src/controllers/stats_ctrl.php';
 require __DIR__ . '/src/controllers/admin_ctrl.php';
 require __DIR__ . '/src/controllers/imports_ctrl.php';
@@ -70,6 +72,18 @@ $routes = [
     'workpackage_save' => 'ctrl_workpackage_save',
     'tasks'        => 'ctrl_tasks_index',
     'task_save'    => 'ctrl_task_save',
+
+    // v1.0 F6: Presets + Projekt-/Prozesskategorien + interne Prozesse
+    'presets'                 => 'ctrl_presets_index',
+    'project_categories'      => 'ctrl_project_categories_index',
+    'project_category_save'   => 'ctrl_project_category_save',
+    'project_category_delete' => 'ctrl_project_category_delete',
+    'process_categories'      => 'ctrl_process_categories_index',
+    'process_category_save'   => 'ctrl_process_category_save',
+    'process_category_delete' => 'ctrl_process_category_delete',
+    'processes'               => 'ctrl_processes_index',
+    'process_save'            => 'ctrl_process_save',
+    'process_delete'          => 'ctrl_process_delete',
 
     'stats'        => 'ctrl_stats_index',
     'stats_data'   => 'ctrl_stats_data',

@@ -1,14 +1,27 @@
 <?php
-/** @var ?array $edit  @var array $clients  @var array $tracks */
+/** @var ?array $edit  @var array $clients  @var array $tracks  @var array $project_categories */
+$project_categories = $project_categories ?? Repo::projectCategories(true);
 ?>
 <h3 class="form-inline-title"><?= h($edit ? t('projects.edit', 'Projekt bearbeiten') : t('projects.new', 'Neues Projekt')) ?></h3>
 <form method="post" action="<?= h(route('project_save')) ?>" class="form-inline">
   <?= csrf_field() ?>
   <?php if ($edit): ?><input type="hidden" name="id" value="<?= (int) $edit['id'] ?>"><?php endif; ?>
+  <label><?= h(t('projects.category', 'Projektart')) ?><?= tip('projects.category_hint', 'Legt fest, ob ein Kunde Pflicht ist und wie er heisst (z. B. Foerdermittelgeber bei Foerderprojekten). Verwalten in Presets.') ?>
+    <select name="category_id">
+      <?php foreach ($project_categories as $__pc): ?>
+        <option value="<?= (int) $__pc['id'] ?>" <?= ($edit['category_id'] ?? 0) == $__pc['id'] ? 'selected' : '' ?>
+                data-needs-client="<?= (int) $__pc['needs_client'] ?>"
+                data-client-label="<?= h($__pc['client_label'] ?: t('project_cat.client_default', 'Kunde')) ?>">
+          <?= h($__pc['label']) ?>
+        </option>
+      <?php endforeach; ?>
+    </select>
+  </label>
   <label><?= h(t('struct.client', 'Kunde')) ?>
-    <select name="client_id" required>
+    <select name="client_id">
       <option value=""><?= h(t('projects.pick_client', 'Kunde waehlen …')) ?></option>
       <?php foreach (($clients ?? []) as $__c): ?>
+        <?php if (($__c['code'] ?? '') === '__internal__') continue; ?>
         <option value="<?= (int) $__c['id'] ?>" <?= ($edit['client_id'] ?? 0) == $__c['id'] ? 'selected' : '' ?>><?= h($__c['name']) ?></option>
       <?php endforeach; ?>
     </select>

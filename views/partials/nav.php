@@ -5,6 +5,7 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
 <a href="<?= h(route('dashboard')) ?>"<?= $active(['dashboard']) ?>><?= h(t('nav.dashboard')) ?></a>
 <?php if (Auth::can('entries.manage')): ?>
   <a href="<?= h(route('entries')) ?>"<?= $active(['entries', 'entry_form']) ?>><?= h(t('nav.entries')) ?></a>
+  <a href="<?= h(route('processes')) ?>"<?= $active(['processes']) ?>><?= h(t('nav.processes', 'Interne Prozesse')) ?></a>
 <?php endif; ?>
 <?php if (Auth::can('stats.view')): ?>
   <a href="<?= h(route('stats')) ?>"<?= $active(['stats']) ?>><?= h(t('nav.stats')) ?></a>
@@ -62,6 +63,9 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
       <?php endif; ?>
       <?php if (Auth::can('admin.imports')): ?>
         <a href="<?= h(route('imports')) ?>"<?= $active(['imports']) ?>><?= h(t('nav.import')) ?></a>
+      <?php endif; ?>
+      <?php if (Auth::can('structure.manage')): ?>
+        <a href="<?= h(route('presets')) ?>"<?= $active(['presets', 'project_categories', 'process_categories']) ?>><?= h(t('nav.presets', 'Presets')) ?></a>
       <?php endif; ?>
       <?php if (Auth::can('admin.system')): ?>
         <a href="<?= h(route('admin_system')) ?>"<?= $active(['admin_system']) ?>><?= h(t('nav.system')) ?></a>
