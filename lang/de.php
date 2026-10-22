@@ -1025,4 +1025,19 @@ return [
 
     'presets.absence_cat_h2'        => 'Abwesenheitsarten',
     'presets.absence_cat_hint'      => 'Urlaub, Krankheit, Ueberstundenabbau — plus eigene Arten. Konto-Zuordnung (Urlaubs- vs. Ueberstundenkonto) nutzt F1 Mitarbeiter-Cockpit spaeter.',
+
+    // ---------- v1.0 F4: Sentiment-Granularität (daily / weekly) ----------
+    'system.sentiment_granularity_h2'   => 'Stimmungs-Rhythmus',
+    'system.sentiment_granularity_hint' => 'Wie oft wird nach Mood und Flow gefragt? Taeglich = ein Eintrag pro Tag; Woechentlich = ein Preset fuer die ganze Woche (bereits einzeln gesetzte Tage werden nicht ueberschrieben).',
+    'sent.granularity_day'           => 'Taeglich',
+    'sent.granularity_week'          => 'Woechentlich',
+    'sent.err_bad_granularity'       => 'Ungueltige Granularitaet.',
+    'sent.flash_granularity_saved'   => 'Kalendereinstellung gespeichert.',
+    'sent.flash_week_filled'         => '%d Tag(e) der laufenden Woche vorbelegt (bereits gesetzte Tage unberuehrt).',
+    'sent.week_preset_h2'            => 'Wochen-Preset',
+    'sent.week_preset_hint'          => 'Setzt eine Dimension (Mood oder Flow) auf einmal fuer alle noch leeren Tage der laufenden Woche. Tage mit bereits individuell gesetztem Wert bleiben unberuehrt.',
+    'sent.for_week'                  => 'fuer diese Woche',
+    'sent.fill_week_btn'             => 'Woche vorbelegen',
+    'sent.mood_label'                => 'Mood',
+    'sent.flow_label'                => 'Flow',
 ];

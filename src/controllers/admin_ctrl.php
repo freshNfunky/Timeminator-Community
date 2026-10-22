@@ -164,6 +164,7 @@ function ctrl_system_index(): void
         'update_disabled' => Updater::isDisabled(),
         'theme_preference'         => (string) Settings::get('theme_preference', 'system'),
         'working_days'             => Holidays::workingDays(),
+        'sentiment_granularity'    => Sentiment::granularity(),
         'banner_config_off'        => Banners::isConfigDisabled(),
         'banner_visible'           => (bool) Settings::get('banner_visible', true),
         'banner_telemetry'         => Banners::telemetryEnabled(),
@@ -194,6 +195,25 @@ function ctrl_theme_save(): void
     }
     Settings::set('theme_preference', $pref);
     flash(t('system.flash_theme_saved', 'Darstellung gespeichert.'));
+    redirect_route('admin_system');
+}
+
+/**
+ * Sentiment-Tracking-Granularität (v1.0 F4, portiert aus Pro #323):
+ * steuert ob der Nutzer jeden Tag einzeln buchen soll (`day`) oder nur
+ * ein Wochen-Preset vorbelegt wird (`week`). Default: week.
+ */
+function ctrl_sentiment_granularity_save(): void
+{
+    require_perm('admin.system');
+    csrf_check();
+    $g = (string) post('granularity');
+    if (!array_key_exists($g, Sentiment::GRANULARITIES)) {
+        flash(t('sent.err_bad_granularity', 'Ungueltige Granularitaet.'), 'err');
+        redirect_route('admin_system');
+    }
+    Settings::set('sentiment_granularity', $g);
+    flash(t('sent.flash_granularity_saved', 'Kalendereinstellung gespeichert.'));
     redirect_route('admin_system');
 }
 
