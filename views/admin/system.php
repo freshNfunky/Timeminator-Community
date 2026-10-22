@@ -13,6 +13,7 @@
  * @var bool   $update_disabled
  * @var string $theme_preference
  * @var array  $working_days
+ * @var string $sentiment_granularity
  * @var bool   $banner_config_off
  * @var bool   $banner_visible
  * @var bool   $banner_telemetry
@@ -107,6 +108,20 @@
             </label>
           <?php endforeach; ?>
         </div>
+        <div class="form-actions"><button class="btn btn-primary" type="submit"><?= h(t('common.save')) ?></button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2><?= h(t('system.sentiment_granularity_h2', 'Stimmungs-Rhythmus')) ?><?= tip('system.sentiment_granularity_hint', 'Wie oft wird nach Mood und Flow gefragt? Taeglich = ein Eintrag pro Tag; Woechentlich = ein Preset fuer die ganze Woche (bereits einzeln gesetzte Tage werden nicht ueberschrieben).') ?></h2>
+      <form method="post" action="<?= h(route('sentiment_granularity_save')) ?>">
+        <?= csrf_field() ?>
+        <?php foreach (Sentiment::GRANULARITIES as $__g => $__defaultLabel): ?>
+          <label class="check">
+            <input type="radio" name="granularity" value="<?= h($__g) ?>" <?= $sentiment_granularity === $__g ? 'checked' : '' ?>>
+            <?= h(t('sent.granularity_' . $__g, $__defaultLabel)) ?>
+          </label>
+        <?php endforeach; ?>
         <div class="form-actions"><button class="btn btn-primary" type="submit"><?= h(t('common.save')) ?></button></div>
       </form>
     </div>

@@ -70,6 +70,30 @@ $noteValue    = (string) ($today['note'] ?? '');
   </form>
 </div>
 
+<?php if (($granularity ?? 'day') === 'week'): ?>
+<div class="card">
+  <h2><?= h(t('sent.week_preset_h2', 'Wochen-Preset')) ?><?= tip('sent.week_preset_hint', 'Setzt eine Dimension (Mood oder Flow) auf einmal fuer alle noch leeren Tage der laufenden Woche. Tage mit bereits individuell gesetztem Wert bleiben unberuehrt.') ?></h2>
+  <div class="row">
+    <?php foreach (Sentiment::DIMENSIONS as $__dim): ?>
+      <form method="post" action="<?= h(route('sentiment_fill_week')) ?>" class="sentiment-week-form">
+        <?= csrf_field() ?>
+        <input type="hidden" name="dim" value="<?= h($__dim) ?>">
+        <h3 style="margin:0 0 8px"><?= h($__dim === 'mood' ? t('sent.mood_label', 'Mood') : t('sent.flow_label', 'Flow')) ?> <?= h(t('sent.for_week', 'fuer diese Woche')) ?></h3>
+        <div class="sentiment-scale" role="radiogroup">
+          <?php for ($__s = 1; $__s <= 5; $__s++): ?>
+            <label class="sentiment-pick">
+              <input type="radio" name="score" value="<?= $__s ?>" required>
+              <span class="sentiment-emoji" aria-hidden="true"><?= h($__dim === 'mood' ? Sentiment::moodEmoji($__s) : Sentiment::flowEmoji($__s)) ?></span>
+            </label>
+          <?php endfor; ?>
+        </div>
+        <div class="form-actions"><button class="btn btn-sm" type="submit"><?= h(t('sent.fill_week_btn', 'Woche vorbelegen')) ?></button></div>
+      </form>
+    <?php endforeach; ?>
+  </div>
+</div>
+<?php endif; ?>
+
 <div class="card">
   <h2><?= h(t('sent.history_title', 'Dein Verlauf (60 Tage)')) ?></h2>
   <?php if (!$history): ?>

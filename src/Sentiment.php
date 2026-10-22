@@ -24,6 +24,20 @@ final class Sentiment
 {
     public const MIN_SCORE = 1;
     public const MAX_SCORE = 5;
+    public const DIMENSIONS = ['mood', 'flow'];
+
+    /**
+     * Calendar/dashboard display + input granularity (v1.0 F4, portiert
+     * aus Pro #323/#331). Steuert, ob der Nutzer jeden Tag einzeln buchen
+     * soll oder ein Wochen-Preset vorbelegt werden kann.
+     */
+    public const GRANULARITIES = ['day' => 'Taeglich', 'week' => 'Woechentlich'];
+
+    public static function granularity(): string
+    {
+        $g = (string) Settings::get('sentiment_granularity', 'week');
+        return array_key_exists($g, self::GRANULARITIES) ? $g : 'week';
+    }
 
     /** Clamp a user-supplied value to the valid 1..5 range, or null if garbage. */
     public static function normalizeScore(mixed $v): ?int
@@ -32,6 +46,18 @@ final class Sentiment
         $i = (int) $v;
         if ($i < self::MIN_SCORE || $i > self::MAX_SCORE) { return null; }
         return $i;
+    }
+
+    /** Strict YYYY-MM-DD (a real calendar date) or null. */
+    public static function parseDay(string $s): ?string
+    {
+        $dt = DateTimeImmutable::createFromFormat('!Y-m-d', trim($s));
+        return $dt && $dt->format('Y-m-d') === trim($s) ? trim($s) : null;
+    }
+
+    public static function today(): string
+    {
+        return (new DateTimeImmutable('today'))->format('Y-m-d');
     }
 
     /** ISO date string (YYYY-MM-DD) for a user-supplied date, or today. */
@@ -265,5 +291,53 @@ final class Sentiment
             5 => 'im Fluss',
             default => '',
         };
+    }
+
+    // ---------- v1.0 F4: Granularity-UX helpers (portiert aus Pro) --------
+
+    /** The user's entry for one day, or null. */
+    public static function forDay(int $userId, string $asOf): ?array
+    {
+        return DB::one('SELECT * FROM sentiment_entries WHERE user_id = ? AND as_of = ?', [$userId, $asOf]);
+    }
+
+    /** Set a single dimension of the day, leaving the other dimension and the note untouched. */
+    public static function setDimension(int $userId, string $asOf, string $dim, int $score): void
+    {
+        $col = $dim === 'flow' ? 'flow' : 'mood';
+        $now = now();
+        $existing = DB::one('SELECT id FROM sentiment_entries WHERE user_id = ? AND as_of = ?', [$userId, $asOf]);
+        if ($existing) {
+            DB::run("UPDATE sentiment_entries SET $col = ?, updated_at = ? WHERE id = ?",
+                [$score, $now, (int) $existing['id']]);
+        } else {
+            DB::run("INSERT INTO sentiment_entries (user_id, as_of, $col, created_at, updated_at) VALUES (?,?,?,?,?)",
+                [$userId, $asOf, $score, $now, $now]);
+        }
+    }
+
+    /**
+     * Bulk-fill one dimension across [$from, $to] inclusive. Conservative:
+     * a day that already carries this dimension is left alone — individual
+     * entries always win over a later bulk fill.
+     *
+     * @return array<string,int> day => score for every day actually filled
+     */
+    public static function fillRange(int $userId, string $from, string $to, string $dim, int $score): array
+    {
+        $filled = [];
+        $d = new DateTimeImmutable($from);
+        $end = new DateTimeImmutable($to);
+        while ($d <= $end) {
+            $day = $d->format('Y-m-d');
+            $existing = self::forDay($userId, $day);
+            $col = $dim === 'flow' ? 'flow' : 'mood';
+            if ($existing === null || $existing[$col] === null) {
+                self::setDimension($userId, $day, $dim, $score);
+                $filled[$day] = $score;
+            }
+            $d = $d->modify('+1 day');
+        }
+        return $filled;
     }
 }

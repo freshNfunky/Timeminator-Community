@@ -34,7 +34,37 @@ function ctrl_sentiment_index(): void
         'canTeam'      => $canTeam,
         'teamSummary'  => $teamSummary,
         'teamDaily'    => $teamDaily,
+        'granularity'  => Sentiment::granularity(),
     ], t('nav.sentiment'));
+}
+
+/**
+ * Bulk-Setzen einer Dimension für die aktuelle KW (v1.0 F4). Portiert aus
+ * Pro #323: setzt mood oder flow auf $score, aber nur fuer Tage dieser
+ * Woche, die diese Dimension noch nicht haben — niemals Overwrite.
+ */
+function ctrl_sentiment_fill_week(): void
+{
+    require_perm('sentiment.record');
+    csrf_check();
+    $uid = Auth::id();
+    if ($uid === null) {
+        redirect_route('login');
+    }
+    $score = Sentiment::normalizeScore(post('score'));
+    $dim   = (string) post('dim');
+    if ($score === null || !in_array($dim, Sentiment::DIMENSIONS, true)) {
+        flash(t('sent.err_pick_any', 'Bitte setze Mood oder Flow (oder beides) auf 1-5.'), 'err');
+        redirect_route('sentiment');
+    }
+    $monday = (new DateTimeImmutable('today'))->modify('monday this week')->format('Y-m-d');
+    $today  = Sentiment::today();
+    $filled = Sentiment::fillRange($uid, $monday, $today, $dim, $score);
+    flash(sprintf(
+        t('sent.flash_week_filled', '%d Tag(e) der laufenden Woche vorbelegt (bereits gesetzte Tage unberuehrt).'),
+        count($filled)
+    ));
+    redirect_route('sentiment');
 }
 
 function ctrl_sentiment_save(): void

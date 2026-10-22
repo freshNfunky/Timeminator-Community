@@ -1028,4 +1028,19 @@ return [
 
     'presets.absence_cat_h2'        => 'Absence types',
     'presets.absence_cat_hint'      => 'Vacation, sick, overtime drawdown — plus your own types. The account mapping (vacation vs overtime account) will be used by the F1 Employee Cockpit later.',
+
+    // ---------- v1.0 F4: Sentiment granularity (daily / weekly) ----------
+    'system.sentiment_granularity_h2'   => 'Sentiment rhythm',
+    'system.sentiment_granularity_hint' => 'How often is mood + flow asked? Daily = one entry per day; Weekly = one preset for the whole week (days already set individually are not overwritten).',
+    'sent.granularity_day'           => 'Daily',
+    'sent.granularity_week'          => 'Weekly',
+    'sent.err_bad_granularity'       => 'Invalid granularity.',
+    'sent.flash_granularity_saved'   => 'Calendar setting saved.',
+    'sent.flash_week_filled'         => '%d day(s) of the current week pre-filled (days already set are untouched).',
+    'sent.week_preset_h2'            => 'Week preset',
+    'sent.week_preset_hint'          => 'Sets one dimension (Mood or Flow) at once for all still-empty days of the current week. Days with an individual value remain untouched.',
+    'sent.for_week'                  => 'for this week',
+    'sent.fill_week_btn'             => 'Fill week',
+    'sent.mood_label'                => 'Mood',
+    'sent.flow_label'                => 'Flow',
 ];
