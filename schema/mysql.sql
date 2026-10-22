@@ -81,6 +81,31 @@ CREATE TABLE IF NOT EXISTS projects (
   FOREIGN KEY (category_id) REFERENCES project_categories(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS absence_categories (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  ckey          VARCHAR(64)  NOT NULL UNIQUE,
+  label         VARCHAR(191) NOT NULL,
+  position      INT          NOT NULL DEFAULT 0,
+  active        TINYINT(1)   NOT NULL DEFAULT 1,
+  account       VARCHAR(16)  NULL,
+  created_at    DATETIME     NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS absences (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  user_id       INT NOT NULL,
+  category_id   INT NOT NULL,
+  start_date    DATE NOT NULL,
+  end_date      DATE NOT NULL,
+  note          VARCHAR(255) NULL,
+  hours         DECIMAL(4,2) NULL,
+  created_at    DATETIME NOT NULL,
+  updated_at    DATETIME NOT NULL,
+  INDEX idx_absences_user (user_id, start_date, end_date),
+  FOREIGN KEY (user_id)     REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (category_id) REFERENCES absence_categories(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS process_categories (
   id            INT AUTO_INCREMENT PRIMARY KEY,
   ckey          VARCHAR(64)  NOT NULL UNIQUE,

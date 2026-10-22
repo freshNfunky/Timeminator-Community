@@ -14,6 +14,7 @@ function ctrl_presets_index(): void
     view('presets/index', [
         'project_categories' => Repo::projectCategories(),
         'process_categories' => ProcessRepo::categories(),
+        'absence_categories' => AbsenceRepo::categories(),
         'pro_url'            => (string) cfg('pro_url', 'https://timeminator.felixschaller.com'),
     ], t('presets.title', 'Presets'));
 }
