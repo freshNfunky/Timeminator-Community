@@ -221,7 +221,16 @@ function ctrl_project_save(): void
     csrf_check();
     $id = post_int('id');
     $name = trim((string) post('name'));
+    $categoryId = post_int('category_id');
     $clientId = post_int('client_id');
+    // Category-driven client gate: wenn die Projektart "needs_client=0" sagt
+    // (z. B. Internes Projekt), nehmen wir den Sentinel-Kunden `__internal__`
+    // damit client_id nie NULL werden muss — und die bestehenden JOINs
+    // unveraendert bleiben.
+    $categoryRow = $categoryId ? Repo::projectCategory($categoryId) : null;
+    if ($categoryRow && !(int) $categoryRow['needs_client']) {
+        $clientId = Repo::internalClientId();
+    }
     if ($name === '' || !$clientId) {
         flash(t('projects.err_client_name_required', 'Kunde und Name sind erforderlich.'), 'err');
         redirect_route('projects');
@@ -244,6 +253,7 @@ function ctrl_project_save(): void
     }
     $d = [
         'client_id'    => $clientId,
+        'category_id'  => $categoryId ?: null,
         'name'         => $name,
         'code'         => trim((string) post('code')) ?: slugify($name),
         'track'        => trim((string) post('track')) ?: null,

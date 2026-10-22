@@ -54,9 +54,21 @@ CREATE TABLE IF NOT EXISTS clients (
   created_at    DATETIME     NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS project_categories (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  ckey          VARCHAR(64)  NOT NULL UNIQUE,
+  label         VARCHAR(191) NOT NULL,
+  needs_client  TINYINT(1)   NOT NULL DEFAULT 1,
+  client_label  VARCHAR(64)  NULL,
+  position      INT          NOT NULL DEFAULT 0,
+  active        TINYINT(1)   NOT NULL DEFAULT 1,
+  created_at    DATETIME     NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS projects (
   id            INT AUTO_INCREMENT PRIMARY KEY,
   client_id     INT NOT NULL,
+  category_id   INT NULL,
   name          VARCHAR(191) NOT NULL,
   code          VARCHAR(64)  NOT NULL UNIQUE,
   track         VARCHAR(96)  NULL,                  -- overrides client track when set
@@ -65,8 +77,33 @@ CREATE TABLE IF NOT EXISTS projects (
   target_hours  DECIMAL(10,2) NULL,
   planned_end   DATE         NULL,
   created_at    DATETIME     NOT NULL,
-  FOREIGN KEY (client_id) REFERENCES clients(id)
+  FOREIGN KEY (client_id)   REFERENCES clients(id),
+  FOREIGN KEY (category_id) REFERENCES project_categories(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS process_categories (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  ckey          VARCHAR(64)  NOT NULL UNIQUE,
+  label         VARCHAR(191) NOT NULL,
+  position      INT          NOT NULL DEFAULT 0,
+  active        TINYINT(1)   NOT NULL DEFAULT 1,
+  created_at    DATETIME     NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS process_entries (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  user_id       INT NOT NULL,
+  category_id   INT NOT NULL,
+  start_ts      DATETIME NOT NULL,
+  end_ts        DATETIME NOT NULL,
+  duration_min  INT      NOT NULL,
+  note          VARCHAR(255) NULL,
+  created_at    DATETIME NOT NULL,
+  updated_at    DATETIME NOT NULL,
+  INDEX idx_process_entries_user (user_id, start_ts),
+  FOREIGN KEY (user_id)     REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (category_id) REFERENCES process_categories(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS work_packages (
   id            INT          AUTO_INCREMENT PRIMARY KEY,

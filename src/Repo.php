@@ -40,8 +40,11 @@ final class Repo
 
     public static function projects(bool $activeOnly = false): array
     {
-        $sql = 'SELECT p.*, c.name AS client_name, c.track AS client_track, c.color AS client_color
-                  FROM projects p JOIN clients c ON c.id = p.client_id';
+        $sql = 'SELECT p.*, c.name AS client_name, c.track AS client_track, c.color AS client_color,
+                       pc.label AS category_label, pc.ckey AS category_ckey, pc.needs_client AS category_needs_client
+                  FROM projects p
+                  JOIN clients c ON c.id = p.client_id
+             LEFT JOIN project_categories pc ON pc.id = p.category_id';
         if ($activeOnly) {
             $sql .= ' WHERE p.active = 1';
         }
@@ -51,8 +54,12 @@ final class Repo
     public static function project(int $id): ?array
     {
         return DB::one(
-            'SELECT p.*, c.name AS client_name, c.track AS client_track
-               FROM projects p JOIN clients c ON c.id = p.client_id
+            'SELECT p.*, c.name AS client_name, c.track AS client_track,
+                    pc.label AS category_label, pc.ckey AS category_ckey, pc.needs_client AS category_needs_client,
+                    pc.client_label AS category_client_label
+               FROM projects p
+               JOIN clients c ON c.id = p.client_id
+          LEFT JOIN project_categories pc ON pc.id = p.category_id
               WHERE p.id = ?',
             [$id]
         );
@@ -62,20 +69,77 @@ final class Repo
     {
         $target      = array_key_exists('target_hours', $d) ? $d['target_hours'] : null;
         $plannedEnd  = array_key_exists('planned_end', $d) ? $d['planned_end'] : null;
+        $categoryId  = array_key_exists('category_id', $d) ? ($d['category_id'] ?: null) : null;
         if ($id) {
             DB::run(
                 'UPDATE projects
-                    SET client_id=?, name=?, code=?, track=?, color=?, active=?, target_hours=?, planned_end=?
+                    SET client_id=?, category_id=?, name=?, code=?, track=?, color=?, active=?, target_hours=?, planned_end=?
                   WHERE id=?',
-                [$d['client_id'], $d['name'], $d['code'], $d['track'], $d['color'], $d['active'], $target, $plannedEnd, $id]
+                [$d['client_id'], $categoryId, $d['name'], $d['code'], $d['track'], $d['color'], $d['active'], $target, $plannedEnd, $id]
             );
             return $id;
         }
         return DB::insert(
             'INSERT INTO projects
-                (client_id, name, code, track, color, active, target_hours, planned_end, created_at)
-             VALUES (?,?,?,?,?,?,?,?,?)',
-            [$d['client_id'], $d['name'], $d['code'], $d['track'], $d['color'], $d['active'], $target, $plannedEnd, now()]
+                (client_id, category_id, name, code, track, color, active, target_hours, planned_end, created_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?)',
+            [$d['client_id'], $categoryId, $d['name'], $d['code'], $d['track'], $d['color'], $d['active'], $target, $plannedEnd, now()]
+        );
+    }
+
+    // ---------- Project categories (v1.0 F6, portiert aus Pro #272) ----------
+
+    /** @return list<array<string,mixed>> */
+    public static function projectCategories(bool $activeOnly = false): array
+    {
+        $sql = 'SELECT * FROM project_categories';
+        if ($activeOnly) {
+            $sql .= ' WHERE active = 1';
+        }
+        return DB::all($sql . ' ORDER BY position, label');
+    }
+
+    public static function projectCategory(int $id): ?array
+    {
+        return DB::one('SELECT * FROM project_categories WHERE id = ?', [$id]);
+    }
+
+    public static function saveProjectCategory(array $d, ?int $id = null): int
+    {
+        if ($id) {
+            DB::run(
+                'UPDATE project_categories SET label=?, needs_client=?, client_label=?, position=?, active=? WHERE id=?',
+                [$d['label'], $d['needs_client'], $d['client_label'], $d['position'], $d['active'], $id]
+            );
+            return $id;
+        }
+        return DB::insert(
+            'INSERT INTO project_categories (ckey, label, needs_client, client_label, position, active, created_at)
+             VALUES (?,?,?,?,?,?,?)',
+            [$d['ckey'], $d['label'], $d['needs_client'], $d['client_label'], $d['position'], $d['active'], now()]
+        );
+    }
+
+    public static function deleteProjectCategory(int $id): void
+    {
+        DB::run('DELETE FROM project_categories WHERE id = ?', [$id]);
+    }
+
+    /**
+     * Sentinel-Kunde fuer "Internes Projekt": lazy angelegt, damit client_id
+     * nie nullable werden muss. Reservierter Code; taucht in normalen
+     * Kunden-Dropdowns NICHT auf.
+     */
+    public static function internalClientId(): int
+    {
+        $code = '__internal__';
+        $id = (int) DB::scalar('SELECT id FROM clients WHERE code = ?', [$code]);
+        if ($id) {
+            return $id;
+        }
+        return DB::insert(
+            'INSERT INTO clients (name, code, active, created_at) VALUES (?,?,1,?)',
+            ['Intern', $code, now()]
         );
     }
 

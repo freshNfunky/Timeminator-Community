@@ -785,3 +785,22 @@ body:has(.sidepanel) .foot{padding-right:200px}
   .pro-upsell{position:static;order:-1}
 }
 
+
+/* v1.0 F6: Presets-Hub + inline-edit rows + preset chips */
+.row-edit > summary{list-style:none;cursor:pointer;padding:6px 0;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.row-edit > summary::-webkit-details-marker{display:none}
+.row-edit > summary:hover{background:color-mix(in oklab, var(--panel), var(--brand) 6%)}
+.row-edit[open] > summary{background:color-mix(in oklab, var(--panel), var(--brand) 12%);border-left:3px solid var(--brand);padding-left:9px}
+.row-edit-label{margin-left:auto;color:var(--muted);font-size:12.5px}
+.row-edit[open] .row-edit-label{display:none}
+.row-edit-form{padding:10px 0 10px 12px;border-left:3px solid var(--brand);background:color-mix(in oklab, var(--panel), var(--brand) 4%)}
+.row-edit-form label{margin:0;display:inline-flex;flex-direction:column;gap:2px}
+.row-edit-form .grow{flex:1 1 auto}
+
+.preset-chip-list{list-style:none;padding:0;margin:10px 0 0;display:flex;flex-wrap:wrap;gap:6px}
+.preset-chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12.5px}
+.preset-chip.is-inactive{opacity:.5}
+.preset-pro-list{list-style:none;padding:0;margin:12px 0}
+.preset-pro-list li{padding:8px 0;border-bottom:1px solid var(--line)}
+.preset-pro-list li:last-child{border-bottom:none}
+.pro-teaser-row{border:1px dashed var(--line)}

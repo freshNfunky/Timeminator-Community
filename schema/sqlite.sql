@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS clients (
 CREATE TABLE IF NOT EXISTS projects (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   client_id     INTEGER NOT NULL,
+  category_id   INTEGER NULL,
   name          TEXT NOT NULL,
   code          TEXT NOT NULL UNIQUE,
   track         TEXT NULL,
@@ -59,8 +60,44 @@ CREATE TABLE IF NOT EXISTS projects (
   target_hours  REAL NULL,
   planned_end   TEXT NULL,
   created_at    TEXT NOT NULL,
-  FOREIGN KEY (client_id) REFERENCES clients(id)
+  FOREIGN KEY (client_id) REFERENCES clients(id),
+  FOREIGN KEY (category_id) REFERENCES project_categories(id)
 );
+
+CREATE TABLE IF NOT EXISTS project_categories (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  ckey          TEXT    NOT NULL UNIQUE,
+  label         TEXT    NOT NULL,
+  needs_client  INTEGER NOT NULL DEFAULT 1,
+  client_label  TEXT    NULL,
+  position      INTEGER NOT NULL DEFAULT 0,
+  active        INTEGER NOT NULL DEFAULT 1,
+  created_at    TEXT    NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS process_categories (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  ckey          TEXT    NOT NULL UNIQUE,
+  label         TEXT    NOT NULL,
+  position      INTEGER NOT NULL DEFAULT 0,
+  active        INTEGER NOT NULL DEFAULT 1,
+  created_at    TEXT    NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS process_entries (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id       INTEGER NOT NULL,
+  category_id   INTEGER NOT NULL,
+  start_ts      TEXT    NOT NULL,
+  end_ts        TEXT    NOT NULL,
+  duration_min  INTEGER NOT NULL,
+  note          TEXT    NULL,
+  created_at    TEXT    NOT NULL,
+  updated_at    TEXT    NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (category_id) REFERENCES process_categories(id)
+);
+CREATE INDEX IF NOT EXISTS idx_process_entries_user ON process_entries (user_id, start_ts);
 
 CREATE TABLE IF NOT EXISTS work_packages (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
