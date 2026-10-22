@@ -32,6 +32,7 @@ require __DIR__ . '/src/controllers/entries_ctrl.php';
 require __DIR__ . '/src/controllers/structure_ctrl.php';
 require __DIR__ . '/src/controllers/presets_ctrl.php';
 require __DIR__ . '/src/controllers/processes_ctrl.php';
+require __DIR__ . '/src/controllers/absences_ctrl.php';
 require __DIR__ . '/src/controllers/stats_ctrl.php';
 require __DIR__ . '/src/controllers/admin_ctrl.php';
 require __DIR__ . '/src/controllers/imports_ctrl.php';
@@ -84,6 +85,14 @@ $routes = [
     'processes'               => 'ctrl_processes_index',
     'process_save'            => 'ctrl_process_save',
     'process_delete'          => 'ctrl_process_delete',
+
+    // v1.0 F5: Abwesenheiten
+    'absences'                => 'ctrl_absences_index',
+    'absence_save'            => 'ctrl_absence_save',
+    'absence_delete'          => 'ctrl_absence_delete',
+    'absence_categories'      => 'ctrl_absence_categories_index',
+    'absence_category_save'   => 'ctrl_absence_category_save',
+    'absence_category_delete' => 'ctrl_absence_category_delete',
 
     'stats'        => 'ctrl_stats_index',
     'stats_data'   => 'ctrl_stats_data',

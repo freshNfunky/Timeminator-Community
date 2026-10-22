@@ -6,6 +6,7 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
 <?php if (Auth::can('entries.manage')): ?>
   <a href="<?= h(route('entries')) ?>"<?= $active(['entries', 'entry_form']) ?>><?= h(t('nav.entries')) ?></a>
   <a href="<?= h(route('processes')) ?>"<?= $active(['processes']) ?>><?= h(t('nav.processes', 'Interne Prozesse')) ?></a>
+  <a href="<?= h(route('absences')) ?>"<?= $active(['absences']) ?>><?= h(t('nav.absences', 'Abwesenheiten')) ?></a>
 <?php endif; ?>
 <?php if (Auth::can('stats.view')): ?>
   <a href="<?= h(route('stats')) ?>"<?= $active(['stats']) ?>><?= h(t('nav.stats')) ?></a>

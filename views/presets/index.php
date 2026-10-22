@@ -1,11 +1,13 @@
 <?php
 /**
- * Presets-Hub (v1.0 F6). Übersicht aller Katalog-/Vorlagen-Sektionen,
- * Community-Scope: Projektarten + Prozessarten. Vier Sektionen (Billing,
- * Textvorlagen, Senioritaet, Arbeitstage) sind Pro-only Teaser.
+ * Presets-Hub (v1.0 F6 + F5). Übersicht aller Katalog-/Vorlagen-Sektionen,
+ * Community-Scope: Projektarten + Prozessarten + Abwesenheitsarten.
+ * Vier Sektionen (Billing, Textvorlagen, Senioritaet, Arbeitstage) sind
+ * Pro-only Teaser.
  *
  * @var array  $project_categories
  * @var array  $process_categories
+ * @var array  $absence_categories
  * @var string $pro_url
  */
 ?>
@@ -40,6 +42,26 @@
     <ul class="preset-chip-list">
       <?php foreach ($process_categories as $__c): ?>
         <li class="preset-chip<?= $__c['active'] ? '' : ' is-inactive' ?>"><?= h($__c['label']) ?></li>
+      <?php endforeach; ?>
+    </ul>
+  <?php endif; ?>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2><?= h(t('presets.absence_cat_h2', 'Abwesenheitsarten')) ?></h2>
+    <a class="btn btn-sm" href="<?= h(route('absence_categories')) ?>"><?= h(t('presets.manage', 'Verwalten')) ?></a>
+  </div>
+  <p class="muted"><?= h(t('presets.absence_cat_hint', 'Urlaub, Krankheit, Ueberstundenabbau — plus eigene Arten. Konto-Zuordnung (Urlaubs- vs. Ueberstundenkonto) nutzt F1 Mitarbeiter-Cockpit spaeter.')) ?></p>
+  <?php if ($absence_categories): ?>
+    <ul class="preset-chip-list">
+      <?php foreach ($absence_categories as $__c): ?>
+        <li class="preset-chip<?= $__c['active'] ? '' : ' is-inactive' ?>">
+          <?= h($__c['label']) ?>
+          <?php if (!empty($__c['account'])): ?>
+            <span class="muted"> · <?= h(AbsenceRepo::accountLabel($__c['account'])) ?></span>
+          <?php endif; ?>
+        </li>
       <?php endforeach; ?>
     </ul>
   <?php endif; ?>

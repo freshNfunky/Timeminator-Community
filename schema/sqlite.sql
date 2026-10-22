@@ -75,6 +75,31 @@ CREATE TABLE IF NOT EXISTS project_categories (
   created_at    TEXT    NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS absence_categories (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  ckey          TEXT    NOT NULL UNIQUE,
+  label         TEXT    NOT NULL,
+  position      INTEGER NOT NULL DEFAULT 0,
+  active        INTEGER NOT NULL DEFAULT 1,
+  account       TEXT    NULL,
+  created_at    TEXT    NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS absences (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id       INTEGER NOT NULL,
+  category_id   INTEGER NOT NULL,
+  start_date    TEXT    NOT NULL,
+  end_date      TEXT    NOT NULL,
+  note          TEXT    NULL,
+  hours         REAL    NULL,
+  created_at    TEXT    NOT NULL,
+  updated_at    TEXT    NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (category_id) REFERENCES absence_categories(id)
+);
+CREATE INDEX IF NOT EXISTS idx_absences_user ON absences (user_id, start_date, end_date);
+
 CREATE TABLE IF NOT EXISTS process_categories (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   ckey          TEXT    NOT NULL UNIQUE,
