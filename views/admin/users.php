@@ -1,4 +1,4 @@
-<?php /** @var array $users @var array $roles @var ?array $edit */ ?>
+<?php /** @var array $users @var array $roles @var ?array $edit @var array $terms_history @var array $carryover @var int $carryover_year @var array $holiday_catalog */ ?>
 
 <?php
 $list_items = $users;
@@ -23,3 +23,8 @@ $list_new_route    = 'admin_users';
 $list_empty_msg    = t('users.empty', 'Noch keine Benutzer.');
 $list_show_new     = $edit === null;
 require __DIR__ . '/../partials/list_editor.php';
+
+// v1.0 F1: Vertragsdaten + Jahresuebertrag unter der Haupt-Form, nur beim Edit.
+if ($edit) {
+    require APP_ROOT . '/views/partials/forms/employee_terms.php';
+}

@@ -269,6 +269,32 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
   applied_at TEXT NOT NULL
 );
 
+-- v1.0 F1: Mitarbeiter-Vertragsdaten (historisiert) + Jahresuebertraege.
+-- Mitgefuehrt in Migration 2026-10-28-01-employee-terms.php; hier fuer
+-- frische Installationen und Tests (bootInMemoryDb) direkt mit angelegt.
+CREATE TABLE IF NOT EXISTS employee_terms (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id         INTEGER NOT NULL,
+  valid_from      TEXT    NOT NULL,
+  employment_type TEXT    NOT NULL,
+  weekly_hours    REAL    NOT NULL DEFAULT 40,
+  vacation_days   REAL    NOT NULL DEFAULT 25,
+  holiday_region  TEXT    NULL,
+  created_at      TEXT    NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_employee_terms_user_from ON employee_terms (user_id, valid_from);
+
+CREATE TABLE IF NOT EXISTS account_carryovers (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id        INTEGER NOT NULL,
+  year           INTEGER NOT NULL,
+  vacation_days  REAL    NOT NULL DEFAULT 0,
+  overtime_hours REAL    NOT NULL DEFAULT 0,
+  UNIQUE (user_id, year),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- Hinweis: Planung/Budget/Report, Angebote und Rechnungen (inkl. Buchhaltungs-
 -- Konnektoren) sind Teil von Timeminator Pro und nicht in dieser Community-
 -- Edition enthalten. Siehe README.md.

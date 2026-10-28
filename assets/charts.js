@@ -187,6 +187,98 @@ window.TmCharts = (function () {
     });
   }
 
+  /**
+   * Stacked area over time (v1.0 F1 Mitarbeiter-Cockpit). spec:
+   * { xLabels, weekStarts?, series: [{label, color, data}], target: [h|null],
+   *   unit, targetLabel? }. Each series stacks on the previous; dashed line
+   *   draws the week target; hover tooltip over the chart-box.
+   */
+  function stackedArea(canvas, spec, legendEl){
+    var s = setup(canvas), ctx = s.ctx, th = theme();
+    var xs = spec.xLabels || [], series = spec.series || [], target = spec.target || [];
+    var n = xs.length, unit = spec.unit || 'h';
+    if (!n || !series.length){ empty(ctx, s.w, s.h); if (legendEl) legendEl.innerHTML = ''; return; }
+    var totals = [];
+    for (var i = 0; i < n; i++){
+      var sum = 0;
+      series.forEach(function(se){ sum += Number(se.data[i] || 0); });
+      totals.push(sum);
+    }
+    var maxV = Math.max.apply(null, totals.concat(target.filter(function(v){ return v !== null && v !== undefined; })));
+    var yMax = niceMax(maxV * 1.05);
+    ctx.font = '11px -apple-system,Segoe UI,Roboto,sans-serif';
+    var padL = Math.ceil(ctx.measureText(yMax + ' ' + unit).width) + 14, padR = 16, padT = 12, padB = 40;
+    var plotW = s.w - padL - padR, plotH = s.h - padT - padB;
+    var xAt = function(i){ return padL + (n <= 1 ? plotW / 2 : (plotW * i) / (n - 1)); };
+    var yAt = function(v){ return padT + plotH - (v / yMax) * plotH; };
+
+    ctx.strokeStyle = th.line; ctx.fillStyle = th.muted; ctx.lineWidth = 1; ctx.textAlign = 'right';
+    for (var g = 0; g <= 4; g++){
+      var gv = (yMax * g) / 4, gy = Math.round(yAt(gv)) + 0.5;
+      ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(padL + plotW, gy); ctx.stroke();
+      ctx.fillText((Math.round(gv * 10) / 10) + ' ' + unit, padL - 6, gy);
+    }
+    ctx.textAlign = 'center';
+    var step = Math.max(1, Math.ceil(n / Math.max(1, Math.floor(plotW / 46))));
+    for (var xi = 0; xi < n; xi += step){ ctx.fillText(xs[xi], xAt(xi), padT + plotH + 16); }
+
+    var lower = new Array(n).fill(0);
+    series.forEach(function(se){
+      var upper = lower.map(function(l, i){ return l + Number(se.data[i] || 0); });
+      ctx.beginPath();
+      for (var i = 0; i < n; i++){ i ? ctx.lineTo(xAt(i), yAt(upper[i])) : ctx.moveTo(xAt(i), yAt(upper[i])); }
+      for (var j = n - 1; j >= 0; j--){ ctx.lineTo(xAt(j), yAt(lower[j])); }
+      ctx.closePath();
+      ctx.globalAlpha = 0.85; ctx.fillStyle = se.color; ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = se.color; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (var k = 0; k < n; k++){ k ? ctx.lineTo(xAt(k), yAt(upper[k])) : ctx.moveTo(xAt(k), yAt(upper[k])); }
+      ctx.stroke();
+      lower = upper;
+    });
+
+    var hasTarget = target.some(function(v){ return v !== null && v !== undefined; });
+    if (hasTarget){
+      ctx.setLineDash([6, 4]); ctx.strokeStyle = th.ink; ctx.lineWidth = 1.5; ctx.beginPath();
+      var started = false;
+      target.forEach(function(v, i){
+        if (v === null || v === undefined){ started = false; return; }
+        started ? ctx.lineTo(xAt(i), yAt(v)) : ctx.moveTo(xAt(i), yAt(v)); started = true;
+      });
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    if (legendEl){
+      var rows = series.slice().reverse().map(function(se){
+        return '<li><span class="lg-sw" style="background:' + se.color + '"></span><span class="lg-lbl">' + escapeHtml(se.label) + '</span></li>';
+      });
+      if (hasTarget) rows.push('<li><span class="lg-dash"></span><span class="lg-lbl">' + escapeHtml(spec.targetLabel || 'Week target') + '</span></li>');
+      legendEl.innerHTML = '<ul class="chart-legend">' + rows.join('') + '</ul>';
+    }
+
+    var box = canvas.parentNode, tip = box.querySelector('.chart-tip');
+    if (!tip){ tip = document.createElement('div'); tip.className = 'chart-tip'; tip.hidden = true; box.appendChild(tip); }
+    canvas.onmousemove = function(ev){
+      var r = canvas.getBoundingClientRect(), mx = ev.clientX - r.left;
+      var i = Math.max(0, Math.min(n - 1, Math.round(((mx - padL) / plotW) * (n - 1))));
+      var lines = series.slice().reverse().filter(function(se){ return Number(se.data[i] || 0) > 0; }).map(function(se){
+        return '<span class="lg-sw" style="background:' + se.color + '"></span>' + escapeHtml(se.label) + ': <strong>' + (Math.round(Number(se.data[i]) * 10) / 10) + ' ' + unit + '</strong>';
+      });
+      var t = target[i];
+      var totalLabel = spec.totalLabel || 'total';
+      var ofLabel = spec.ofLabel || 'of';
+      var fromLabel = spec.weekFromLabel || 'from';
+      tip.innerHTML = '<div><strong>' + escapeHtml(xs[i]) + '</strong>'
+        + (spec.weekStarts ? ' <span class="muted">' + escapeHtml(fromLabel) + ' ' + escapeHtml(spec.weekStarts[i]) + '</span>' : '') + '</div>'
+        + lines.join('<br>') + '<div class="muted">' + escapeHtml(totalLabel) + ' ' + (Math.round(totals[i] * 10) / 10) + ' ' + unit + (t !== null && t !== undefined ? ' ' + escapeHtml(ofLabel) + ' ' + t + ' ' + unit : '') + '</div>';
+      tip.hidden = false;
+      var left = xAt(i) + 12;
+      if (left + 190 > s.w) left = xAt(i) - 12 - 190;
+      tip.style.left = Math.max(4, left) + 'px'; tip.style.top = '8px';
+    };
+    canvas.onmouseleave = function(){ tip.hidden = true; };
+  }
+
   function roundRect(ctx, x, y, w, h, r){
     r = Math.min(r, w / 2, h / 2); if (r < 0) r = 0;
     ctx.beginPath();
@@ -201,5 +293,5 @@ window.TmCharts = (function () {
   function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
-  return { doughnut: doughnut, barsV: barsV, barsH: barsH, groupedBars: groupedBars };
+  return { doughnut: doughnut, barsV: barsV, barsH: barsH, groupedBars: groupedBars, stackedArea: stackedArea };
 })();

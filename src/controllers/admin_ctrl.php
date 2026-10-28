@@ -7,11 +7,66 @@ function ctrl_users_index(): void
 {
     require_perm('admin.users');
     $editId = (int) get('edit', 0);
+    $edit = $editId ? DB::one('SELECT * FROM users WHERE id = ?', [$editId]) : null;
+    $year = (int) (new DateTimeImmutable('today'))->format('Y');
     view('admin/users', [
-        'users' => DB::all('SELECT u.*, r.label AS role_label FROM users u LEFT JOIN roles r ON r.id = u.role_id ORDER BY u.username'),
-        'roles' => DB::all('SELECT * FROM roles ORDER BY label'),
-        'edit'  => $editId ? DB::one('SELECT * FROM users WHERE id = ?', [$editId]) : null,
+        'users'         => DB::all('SELECT u.*, r.label AS role_label FROM users u LEFT JOIN roles r ON r.id = u.role_id ORDER BY u.username'),
+        'roles'         => DB::all('SELECT * FROM roles ORDER BY label'),
+        'edit'          => $edit,
+        'terms_history' => $edit ? EmployeeRepo::history($editId) : [],
+        'carryover'     => $edit ? EmployeeRepo::carryover($editId, $year) : ['vacation_days' => 0, 'overtime_hours' => 0],
+        'carryover_year'=> $year,
+        'holiday_catalog' => class_exists('Holidays') ? Holidays::catalog() : [],
     ], t('nav.users'));
+}
+
+/** v1.0 F1: speichere Vertragsstand (Beschaeftigungsart, Wochenstunden, Urlaubsanspruch) ab Datum. */
+function ctrl_employee_terms_save(): void
+{
+    require_perm('admin.users');
+    csrf_check();
+    $userId = post_int('user_id');
+    $validFrom = trim((string) post('valid_from'));
+    $type = (string) post('employment_type', EmployeeRepo::TYPE_EMPLOYEE);
+    $weekly = (float) post('weekly_hours', 40);
+    $vacation = (float) post('vacation_days', 25);
+    $region = trim((string) post('holiday_region', ''));
+    if ($region === '' || $region === '__none__') { $region = null; }
+    if (!$userId || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $validFrom)) {
+        flash(t('employee.err_invalid_date', 'Ungueltiges Gueltig-ab-Datum.'), 'err');
+        redirect_route('admin_users', ['edit' => $userId]);
+    }
+    if ($weekly < 0 || $weekly > 80) { $weekly = 40; }
+    if ($vacation < 0 || $vacation > 60) { $vacation = 25; }
+    EmployeeRepo::saveTerms($userId, $validFrom, $type, $weekly, $vacation, $region);
+    flash(t('employee.flash_terms_saved', 'Vertragsdaten gespeichert.'));
+    redirect_route('admin_users', ['edit' => $userId]);
+}
+
+function ctrl_employee_terms_delete(): void
+{
+    require_perm('admin.users');
+    csrf_check();
+    $termId = post_int('id');
+    $userId = post_int('user_id');
+    if ($termId) { EmployeeRepo::deleteTerms($termId); flash(t('employee.flash_terms_deleted', 'Vertragsstand entfernt.')); }
+    redirect_route('admin_users', ['edit' => $userId]);
+}
+
+/** v1.0 F1: Jahresuebertrag (Resturlaub, Ueberstundensaldo) fuer das laufende Jahr setzen. */
+function ctrl_account_carryover_save(): void
+{
+    require_perm('admin.users');
+    csrf_check();
+    $userId = post_int('user_id');
+    $year = (int) post('year', (int) (new DateTimeImmutable('today'))->format('Y'));
+    $vac = (float) post('vacation_days', 0);
+    $ot  = (float) post('overtime_hours', 0);
+    if ($userId) {
+        EmployeeRepo::saveCarryover($userId, $year, $vac, $ot);
+        flash(t('employee.flash_carryover_saved', 'Jahresuebertrag gespeichert.'));
+    }
+    redirect_route('admin_users', ['edit' => $userId]);
 }
 
 function ctrl_user_save(): void
