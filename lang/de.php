@@ -1132,7 +1132,7 @@ return [
     'cockpit.index_h2'            => 'Projekt-Cockpit',
     'cockpit.project_title'       => 'Projekt-Cockpit: %s',
     'cockpit.back_to_overview'    => 'zurueck zur Uebersicht',
-    'cockpit.open_detail_edit'    => 'Projekt-Details &amp; Tracker →',
+    'cockpit.open_detail_edit'    => 'Projekt-Details & Tracker →',
 
     'cockpit.n_reviews_due'       => '%d Reviews faellig',
     'cockpit.all_reviews_current' => 'Alle Reviews aktuell',
@@ -1229,6 +1229,9 @@ return [
 
     // ---------- v1.0 F3: Firmen-Cockpit (Issue #162) ----------
     'nav.cockpit_company'              => 'Firmen-Cockpit',
+    'nav.cockpit_group'                => 'Cockpit',
+    'nav.monitoring'                   => 'Monitoring',
+    'nav.master_data'                  => 'Stammdaten',
 
     'cockpit.company_title'            => 'Firmen-Cockpit',
     'cockpit.company_h2'               => 'Firmen-Cockpit',
@@ -1237,7 +1240,7 @@ return [
 
     'cockpit.company_kpis_h3'          => 'Jahreskennzahlen (kaufmaennisch)',
     'cockpit.company_kpis_subtitle'    => 'Angebote, Rechnungen, Kosten und Ergebnis liegen in Timeminator Pro.',
-    'cockpit.in_pro'                   => 'in Pro verfuegbar &rarr;',
+    'cockpit.in_pro'                   => 'in Pro verfuegbar →',
     'co.tile_offers_won'               => 'Angebote gewonnen',
     'co.tile_invoiced'                 => 'Rechnungsstellung',
     'co.tile_paid'                     => 'Bezahlt',
