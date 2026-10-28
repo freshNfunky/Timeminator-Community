@@ -19,7 +19,7 @@ $noteValue    = (string) ($today['note'] ?? '');
     <input type="hidden" name="as_of" value="<?= h((new DateTimeImmutable('today'))->format('Y-m-d')) ?>">
 
     <fieldset class="sentiment-fieldset">
-      <legend><?= h(t('sent.mood_legend', 'Mood — persoenliche Stimmung')) ?></legend>
+      <legend><?= h(t('sent.mood_legend', 'Mood — persoenliche Stimmung')) ?><?= tip('sent.mood_hint') ?></legend>
       <div class="sentiment-scale" role="radiogroup" aria-label="<?= h(t('sent.mood_legend', 'Mood')) ?>">
         <label class="sentiment-pick<?= $selectedMood === 0 ? ' is-selected' : '' ?>">
           <input type="radio" name="mood" value="" <?= $selectedMood === 0 ? 'checked' : '' ?>>
@@ -37,7 +37,7 @@ $noteValue    = (string) ($today['note'] ?? '');
     </fieldset>
 
     <fieldset class="sentiment-fieldset">
-      <legend><?= h(t('sent.flow_legend', 'Flow — wie laeuft die Arbeit')) ?></legend>
+      <legend><?= h(t('sent.flow_legend', 'Flow — wie laeuft die Arbeit')) ?><?= tip('sent.flow_hint') ?></legend>
       <div class="sentiment-scale" role="radiogroup" aria-label="<?= h(t('sent.flow_legend', 'Flow')) ?>">
         <label class="sentiment-pick<?= $selectedFlow === 0 ? ' is-selected' : '' ?>">
           <input type="radio" name="flow" value="" <?= $selectedFlow === 0 ? 'checked' : '' ?>>

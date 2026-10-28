@@ -10,6 +10,7 @@
 </div>
 
 <div class="card timer-card">
+  <h2 class="timer-card-title"><?= h(t('dash.timer_h2', 'Zeitaufzeichnung')) ?><?= tip('dash.timer_hint') ?></h2>
   <?php if ($running): ?>
     <div class="timer-running" data-start="<?= h($running['start_ts']) ?>">
       <div>
@@ -75,7 +76,7 @@
   </style>
   <div class="card">
     <div class="card-head">
-      <h2><?= h(t('planning.dashboard_tile_title', 'Projekt-Planung')) ?></h2>
+      <h2><?= h(t('planning.dashboard_tile_title', 'Projekt-Planung')) ?><?= tip('planning.dashboard_tile_hint') ?></h2>
       <span class="pill"><?= (int) count($__planningRows) ?></span>
     </div>
     <table class="table">

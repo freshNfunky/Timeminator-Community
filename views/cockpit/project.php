@@ -43,8 +43,7 @@ $f = $row['flags'] ?? ['kickoff' => false, 'closeout' => false, 'deadline_overdu
 <?php if (Auth::can('structure.manage')): ?>
 <div class="card" style="margin-top:16px">
   <div class="card-head">
-    <h3><?= h(t('cockpit.health_h3', 'Projekt-Health')) ?></h3>
-    <span class="muted"><?= h(t('cockpit.health_subtitle', 'Kickoff, Abschluss und Review-Turnus')) ?></span>
+    <h3><?= h(t('cockpit.health_h3', 'Projekt-Health')) ?><?= tip('cockpit.health_subtitle') ?></h3>
   </div>
 
   <form method="post" action="<?= h(route('cockpit_health_save')) ?>" class="form-inline">
@@ -95,8 +94,7 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
 ?>
 <div class="card" style="margin-top:16px">
   <div class="card-head">
-    <h3><?= h(t('cockpit.plan_h3', 'Soll / Ist-Matrix')) ?></h3>
-    <span class="muted"><?= h(t('cockpit.plan_subtitle', 'Mitarbeiter x Kalenderwoche — Soll-Stunden editierbar (Ist aus Buchungen)')) ?></span>
+    <h3><?= h(t('cockpit.plan_h3', 'Soll / Ist-Matrix')) ?><?= tip('cockpit.plan_subtitle') ?></h3>
   </div>
 
   <?php if (Auth::can('structure.manage')): ?>
@@ -159,9 +157,6 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
         </tbody>
       </table>
     </div>
-    <p class="muted" style="font-size:12px;margin-top:6px">
-      <?= h(t('cockpit.plan_legend', 'Oben: Ist (gebuchte Stunden). Unten: Soll — Werte eintippen und Feld verlassen, speichert automatisch.')) ?>
-    </p>
   <?php endif; ?>
 </div>
 
@@ -219,8 +214,7 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
 
 <div class="card" style="margin-top:16px">
   <div class="card-head">
-    <h3><?= h(t('cockpit.burnup_h3', 'Burn-Up (kumulative Stunden)')) ?></h3>
-    <span class="muted"><?= h(t('cockpit.burnup_subtitle', 'Ist aus Buchungen vs. Zielstunden')) ?></span>
+    <h3><?= h(t('cockpit.burnup_h3', 'Burn-Up (kumulative Stunden)')) ?><?= tip('cockpit.burnup_subtitle') ?></h3>
   </div>
   <div class="chart-box" style="height:260px"><canvas id="cockpitBurnup"></canvas></div>
   <div id="cockpitBurnupLegend"></div>
@@ -229,8 +223,7 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
 <?php if (Auth::can('structure.manage')): ?>
 <div class="card" style="margin-top:16px">
   <div class="card-head">
-    <h3><?= h(t('cockpit.date_shift_h3', 'Terminverschiebung')) ?></h3>
-    <span class="muted"><?= h(t('cockpit.date_shift_subtitle', 'Neues Enddatum mit Begruendung — Verschiebung wird protokolliert und in der Timeline sichtbar.')) ?></span>
+    <h3><?= h(t('cockpit.date_shift_h3', 'Terminverschiebung')) ?><?= tip('cockpit.date_shift_subtitle') ?></h3>
   </div>
   <form method="post" action="<?= h(route('cockpit_date_shift_save')) ?>" class="form-inline">
     <?= csrf_field() ?>
@@ -280,8 +273,7 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
 
 <div class="card" style="margin-top:16px">
   <div class="card-head">
-    <h3><?= h(t('cockpit.timeline_h3', 'Tracker-Timeline')) ?></h3>
-    <span class="muted"><?= h(t('cockpit.timeline_subtitle', 'Fortschrittsmeldungen, Terminverschiebungen und Status-Reports — neueste zuerst')) ?></span>
+    <h3><?= h(t('cockpit.timeline_h3', 'Tracker-Timeline')) ?><?= tip('cockpit.timeline_subtitle') ?></h3>
   </div>
 
   <?php if (!$timeline): ?>
