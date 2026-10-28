@@ -11,6 +11,7 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
 <?php if (Auth::can('stats.view')): ?>
   <a href="<?= h(route('stats')) ?>"<?= $active(['stats']) ?>><?= h(t('nav.stats')) ?></a>
   <a href="<?= h(route('cockpit_employees')) ?>"<?= $active(['cockpit_employees']) ?>><?= h(t('nav.cockpit_employees', 'Mitarbeiter-Cockpit')) ?></a>
+  <a href="<?= h(route('cockpit')) ?>"<?= $active(['cockpit', 'cockpit_project', 'cockpit_review']) ?>><?= h(t('nav.cockpit', 'Projekt-Cockpit')) ?></a>
 <?php endif; ?>
 <?php if (Auth::can('sentiment.record')): ?>
   <a href="<?= h(route('sentiment')) ?>"<?= $active(['sentiment']) ?>><?= h(t('nav.sentiment')) ?></a>

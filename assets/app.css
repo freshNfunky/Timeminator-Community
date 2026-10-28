@@ -422,6 +422,32 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .chart-tip{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.4;color:var(--ink);pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.08);max-width:220px;z-index:5}
 .chart-tip .muted{color:var(--muted)}
 
+/* v1.0 F2: Projekt-Cockpit */
+.pill-ok{background:#dcfce7;color:#166534}
+.pill-warn{background:#fef3c7;color:#92400e}
+.pill-progress{background:#dbeafe;color:#1e3a8a}
+.pill-date_shift{background:#ede9fe;color:#5b21b6}
+.pill-status_report{background:#f3f4f6;color:#374151}
+:root[data-theme="dark"] .pill-ok{background:#14532d;color:#bbf7d0}
+:root[data-theme="dark"] .pill-warn{background:#78350f;color:#fde68a}
+:root[data-theme="dark"] .pill-progress{background:#1e3a8a;color:#dbeafe}
+:root[data-theme="dark"] .pill-date_shift{background:#5b21b6;color:#ede9fe}
+:root[data-theme="dark"] .pill-status_report{background:#374151;color:#f3f4f6}
+
+.tracker-timeline{list-style:none;margin:0;padding:0}
+.tracker-timeline .tt-item{border-left:3px solid var(--line);padding:8px 0 8px 14px;margin-left:4px}
+.tracker-timeline .tt-item.tt-progress{border-left-color:#2563eb}
+.tracker-timeline .tt-item.tt-date_shift{border-left-color:#8b5cf6}
+.tracker-timeline .tt-item.tt-status_report{border-left-color:#94a3b8}
+.tracker-timeline .tt-head{display:flex;gap:8px;align-items:center;font-size:13px}
+.tracker-timeline .tt-body{margin-top:4px;font-size:14px}
+
+/* Plan-Matrix */
+#planMatrix .plan-ist{font-size:12px;color:var(--muted);text-align:right}
+#planMatrix .plan-soll-input{border:1px solid var(--line);border-radius:4px;padding:2px 4px;font-size:13px}
+#planMatrix .plan-soll-input:focus{border-color:var(--brand);outline:none}
+#planMatrix td.plan-cell{padding:4px 6px;vertical-align:top}
+
 /* Report traffic-light cells */
 .cell-green{background:var(--cell-green-bg);color:var(--cell-green-ink)}
 .cell-orange{background:var(--cell-orange-bg);color:var(--cell-orange-ink)}

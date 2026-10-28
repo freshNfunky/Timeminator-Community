@@ -293,5 +293,58 @@ window.TmCharts = (function () {
   function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
-  return { doughnut: doughnut, barsV: barsV, barsH: barsH, groupedBars: groupedBars, stackedArea: stackedArea };
+  /**
+   * Lean multi-line chart (v1.0 F2 Projekt-Cockpit Burn-Up). spec:
+   * { xLabels, series: [{label, color, data, dashed?}], unit, targetLabel? }.
+   * No dual-axis, no money formatting — one y-axis for all series.
+   */
+  function lines(canvas, spec, legendEl){
+    var s = setup(canvas), ctx = s.ctx, th = theme();
+    var xs = spec.xLabels || [], series = spec.series || [], unit = spec.unit || '';
+    var n = xs.length;
+    var allVals = [];
+    series.forEach(function(se){ (se.data || []).forEach(function(v){ if (v !== null && v !== undefined) allVals.push(v); }); });
+    if (!n || !series.length || !allVals.length){ empty(ctx, s.w, s.h); if (legendEl) legendEl.innerHTML = ''; return; }
+    var yMax = niceMax(Math.max.apply(null, allVals) * 1.05);
+    ctx.font = '11px -apple-system,Segoe UI,Roboto,sans-serif';
+    var padL = Math.ceil(ctx.measureText(yMax + ' ' + unit).width) + 14, padR = 16, padT = 12, padB = 40;
+    var plotW = s.w - padL - padR, plotH = s.h - padT - padB;
+    var xAt = function(i){ return padL + (n <= 1 ? plotW / 2 : (plotW * i) / (n - 1)); };
+    var yAt = function(v){ return padT + plotH - (v / yMax) * plotH; };
+
+    ctx.strokeStyle = th.line; ctx.fillStyle = th.muted; ctx.lineWidth = 1; ctx.textAlign = 'right';
+    for (var g = 0; g <= 4; g++){
+      var gv = (yMax * g) / 4, gy = Math.round(yAt(gv)) + 0.5;
+      ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(padL + plotW, gy); ctx.stroke();
+      ctx.fillText((Math.round(gv * 10) / 10) + (unit ? ' ' + unit : ''), padL - 6, gy);
+    }
+    ctx.textAlign = 'center';
+    var step = Math.max(1, Math.ceil(n / Math.max(1, Math.floor(plotW / 60))));
+    for (var xi = 0; xi < n; xi += step){ ctx.fillText(xs[xi], xAt(xi), padT + plotH + 16); }
+
+    series.forEach(function(se){
+      ctx.strokeStyle = se.color || '#2563eb'; ctx.lineWidth = 1.5;
+      if (se.dashed) { ctx.setLineDash([6, 4]); } else { ctx.setLineDash([]); }
+      ctx.beginPath();
+      var started = false;
+      (se.data || []).forEach(function(v, i){
+        if (v === null || v === undefined) { started = false; return; }
+        started ? ctx.lineTo(xAt(i), yAt(v)) : ctx.moveTo(xAt(i), yAt(v));
+        started = true;
+      });
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    if (legendEl){
+      legendEl.innerHTML = '<ul class="chart-legend">' + series.map(function(se){
+        return '<li>' + (se.dashed
+            ? '<span class="lg-dash" style="border-top-color:' + (se.color || '#2563eb') + '"></span>'
+            : '<span class="lg-sw" style="background:' + (se.color || '#2563eb') + '"></span>')
+          + '<span class="lg-lbl">' + escapeHtml(se.label || '') + '</span></li>';
+      }).join('') + '</ul>';
+    }
+  }
+
+  return { doughnut: doughnut, barsV: barsV, barsH: barsH, groupedBars: groupedBars, stackedArea: stackedArea, lines: lines };
 })();

@@ -23,6 +23,8 @@ require __DIR__ . '/src/Workdays.php';
 require __DIR__ . '/src/EmployeeRepo.php';
 require __DIR__ . '/src/AccountRepo.php';
 require __DIR__ . '/src/EmployeeStats.php';
+require __DIR__ . '/src/DateShiftRepo.php';
+require __DIR__ . '/src/PlanRepo.php';
 require __DIR__ . '/src/seed.php';
 require __DIR__ . '/src/Migrator.php';
 
@@ -47,6 +49,7 @@ require __DIR__ . '/src/controllers/cron_ctrl.php';
 require __DIR__ . '/src/Sentiment.php';
 require __DIR__ . '/src/controllers/sentiment_ctrl.php';
 require __DIR__ . '/src/controllers/employees_ctrl.php';
+require __DIR__ . '/src/controllers/cockpit_ctrl.php';
 
 $r = (string) get('r', Auth::check() ? 'dashboard' : 'login');
 
@@ -105,6 +108,19 @@ $routes = [
     'employee_terms_save'     => 'ctrl_employee_terms_save',
     'employee_terms_delete'   => 'ctrl_employee_terms_delete',
     'account_carryover_save'  => 'ctrl_account_carryover_save',
+
+    // v1.0 F2: Projekt-Cockpit
+    'cockpit'                      => 'ctrl_cockpit_index',
+    'cockpit_project'              => 'ctrl_cockpit_project',
+    'cockpit_review'               => 'ctrl_cockpit_review',
+    'cockpit_review_batch_save'    => 'ctrl_cockpit_review_batch_save',
+    'cockpit_health_save'          => 'ctrl_cockpit_health_save',
+    'cockpit_review_interval_save' => 'ctrl_cockpit_review_interval_save',
+    'cockpit_plan_cell_save'       => 'ctrl_cockpit_plan_cell_save',
+    'cockpit_plan_total_save'      => 'ctrl_cockpit_plan_total_save',
+    'cockpit_plan_delete'          => 'ctrl_cockpit_plan_delete',
+    'cockpit_date_shift_save'      => 'ctrl_cockpit_date_shift_save',
+    'cockpit_burnup_data'          => 'ctrl_cockpit_burnup_data',
 
     'stats'        => 'ctrl_stats_index',
     'stats_data'   => 'ctrl_stats_data',

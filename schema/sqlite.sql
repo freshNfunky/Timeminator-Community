@@ -58,7 +58,11 @@ CREATE TABLE IF NOT EXISTS projects (
   color         TEXT NULL,
   active        INTEGER NOT NULL DEFAULT 1,
   target_hours  REAL NULL,
+  planned_start TEXT NULL,
   planned_end   TEXT NULL,
+  kickoff_at    TEXT NULL,
+  closeout_at   TEXT NULL,
+  review_interval_days INTEGER NULL,
   created_at    TEXT NOT NULL,
   FOREIGN KEY (client_id) REFERENCES clients(id),
   FOREIGN KEY (category_id) REFERENCES project_categories(id)
@@ -249,6 +253,8 @@ CREATE TABLE IF NOT EXISTS project_trackers (
   note        TEXT    NOT NULL,
   value       REAL    NULL,       -- progress now %, 0..100
   value_forecast REAL NULL,       -- 1-month-ahead forecast %, 0..100
+  project_mood  INTEGER NULL,     -- v1.0 F2: 1..5 bei type='progress'
+  customer_mood INTEGER NULL,     -- v1.0 F2: 1..5 bei type='progress'
   user_id     INTEGER NULL,
   created_at  TEXT    NOT NULL,
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
@@ -268,6 +274,39 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
   version    TEXT PRIMARY KEY,
   applied_at TEXT NOT NULL
 );
+
+-- v1.0 F2: Plan-Allokationen (Soll-Stunden-Matrix Mitarbeiter x Zeitraum).
+CREATE TABLE IF NOT EXISTS plan_allocations (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id      INTEGER NOT NULL,
+  user_id         INTEGER NULL,
+  period_kind     TEXT    NOT NULL DEFAULT 'total',
+  period_start    TEXT    NULL,
+  planned_minutes INTEGER NOT NULL DEFAULT 0,
+  note            TEXT    NULL,
+  created_at      TEXT    NOT NULL,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_plan_project      ON plan_allocations (project_id);
+CREATE INDEX IF NOT EXISTS idx_plan_project_week ON plan_allocations (project_id, period_kind, period_start);
+
+-- v1.0 F2: Terminverschiebungs-Log fuer Projekte (und optional Arbeitspakete).
+CREATE TABLE IF NOT EXISTS date_shifts (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind       TEXT    NOT NULL,
+  object_id  INTEGER NOT NULL,
+  project_id INTEGER NOT NULL,
+  old_end    TEXT    NULL,
+  new_end    TEXT    NULL,
+  reason     TEXT    NOT NULL,
+  user_id    INTEGER NULL,
+  created_at TEXT    NOT NULL,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_date_shifts_project ON date_shifts (project_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_date_shifts_object  ON date_shifts (kind, object_id, created_at);
 
 -- v1.0 F1: Mitarbeiter-Vertragsdaten (historisiert) + Jahresuebertraege.
 -- Mitgefuehrt in Migration 2026-10-28-01-employee-terms.php; hier fuer
