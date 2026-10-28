@@ -50,6 +50,7 @@ require __DIR__ . '/src/Sentiment.php';
 require __DIR__ . '/src/controllers/sentiment_ctrl.php';
 require __DIR__ . '/src/controllers/employees_ctrl.php';
 require __DIR__ . '/src/controllers/cockpit_ctrl.php';
+require __DIR__ . '/src/controllers/company_cockpit_ctrl.php';
 
 $r = (string) get('r', Auth::check() ? 'dashboard' : 'login');
 
@@ -121,6 +122,9 @@ $routes = [
     'cockpit_plan_delete'          => 'ctrl_cockpit_plan_delete',
     'cockpit_date_shift_save'      => 'ctrl_cockpit_date_shift_save',
     'cockpit_burnup_data'          => 'ctrl_cockpit_burnup_data',
+
+    // v1.0 F3: Firmen-Cockpit (teaser-heavy)
+    'cockpit_company'              => 'ctrl_cockpit_company',
 
     'stats'        => 'ctrl_stats_index',
     'stats_data'   => 'ctrl_stats_data',

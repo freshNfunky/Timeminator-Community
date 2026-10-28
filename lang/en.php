@@ -1225,4 +1225,43 @@ return [
     'date_shift.flash_saved'         => 'Date shift saved.',
     'date_shift.flash_first_set'     => 'Date set (no shift, previous value was empty).',
     'date_shift.flash_no_change'     => 'No change — date is identical.',
+
+    // ---------- v1.0 F3: Company Cockpit (Issue #162) ----------
+    'nav.cockpit_company'              => 'Company Cockpit',
+
+    'cockpit.company_title'            => 'Company Cockpit',
+    'cockpit.company_h2'               => 'Company Cockpit',
+    'cockpit.company_year'             => 'Year',
+    'cockpit.company_intro'            => 'This edition shows the time-based yearly figures for your company. Revenue, invoices and the full balance sheet are part of Timeminator Pro.',
+
+    'cockpit.company_kpis_h3'          => 'Yearly KPIs (commercial)',
+    'cockpit.company_kpis_subtitle'    => 'Offers, invoices, costs and result live in Timeminator Pro.',
+    'cockpit.in_pro'                   => 'available in Pro &rarr;',
+    'co.tile_offers_won'               => 'Offers won',
+    'co.tile_invoiced'                 => 'Invoiced',
+    'co.tile_paid'                     => 'Paid',
+    'co.tile_open'                     => 'Outstanding',
+    'co.tile_cost_external'            => 'External costs',
+    'co.tile_cost_internal'            => 'Internal costs',
+    'co.tile_result'                   => 'Result',
+
+    'cockpit.company_matrix_h3'        => 'Week actual / target — company-wide',
+    'cockpit.company_matrix_subtitle'  => 'Last 8 weeks + 2 weeks ahead · target from project allocations · actual from bookings',
+    'cockpit.company_matrix_empty'     => 'No bookings or allocations in the window.',
+    'cockpit.company_matrix_legend'    => 'Top: actual · bottom: target. Colour: green = target set, orange = below 50 % of target, red = above 110 % of target.',
+
+    'cockpit.company_cats_h3'          => 'Projects by category',
+    'cockpit.company_cats_subtitle'    => 'Year %d · hours & project count · revenue by category is Pro',
+    'cockpit.company_cats_empty'       => 'No active projects.',
+    'cockpit.company_cats_count'       => 'Projects',
+    'cockpit.company_cats_hours'       => 'Hours (year)',
+    'cockpit.company_cats_revenue'     => 'Revenue',
+
+    'cockpit.company_processes_h3'     => 'Internal processes',
+    'cockpit.company_processes_subtitle' => 'Year %d · hours per process category · total %s h',
+    'cockpit.company_processes_empty'  => 'No active process categories.',
+    'cockpit.company_processes_cat'    => 'Process',
+    'cockpit.company_processes_count'  => 'Entries',
+    'cockpit.company_processes_hours'  => 'Hours',
+    'cockpit.company_processes_share'  => 'Share',
 ];

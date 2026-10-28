@@ -41,6 +41,8 @@ require APP_ROOT . '/src/EmployeeStats.php';
 require APP_ROOT . '/src/DateShiftRepo.php';
 require APP_ROOT . '/src/PlanRepo.php';
 require APP_ROOT . '/src/controllers/cockpit_ctrl.php';
+require APP_ROOT . '/src/ProcessRepo.php';
+require APP_ROOT . '/src/controllers/company_cockpit_ctrl.php';
 
 // Tests access session superglobals without a real session; initialize empty
 // so a direct $_SESSION read doesn't warn.
