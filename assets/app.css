@@ -455,6 +455,9 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .pro-teaser-tile .tile-value{font-size:22px;font-weight:700;margin:4px 0;color:var(--muted)}
 .pro-teaser-tile .tile-cta{font-size:11px;color:var(--brand)}
 
+/* Dashboard: Zeitaufzeichnung-Titel ueber dem Timer, dezent */
+.timer-card .timer-card-title{font-size:15px;margin:0 0 10px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px}
+
 /* Report traffic-light cells */
 .cell-green{background:var(--cell-green-bg);color:var(--cell-green-ink)}
 .cell-orange{background:var(--cell-orange-bg);color:var(--cell-orange-ink)}

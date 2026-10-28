@@ -1040,6 +1040,11 @@ return [
     'sent.fill_week_btn'             => 'Woche vorbelegen',
     'sent.mood_label'                => 'Mood',
     'sent.flow_label'                => 'Flow',
+    'sent.mood_hint'                 => 'Mood ist deine persoenliche Stimmung heute, unabhaengig von der Arbeit — wie geht es dir als Mensch? Die Skala reicht von schlecht (1) bis sehr gut (5). "Ueberspringen" laesst den Tag ohne Eintrag.',
+    'sent.flow_hint'                 => 'Flow bewertet, wie die Arbeit heute lief, unabhaengig von deiner Stimmung — kamst du gut voran, war es ein Zaehlfluss oder liefst du gegen Hindernisse? 1 = sehr zaeh, 5 = voellig im Flow.',
+    'dash.timer_h2'                  => 'Zeitaufzeichnung',
+    'dash.timer_hint'                => 'Starte oder stoppe die laufende Zeitbuchung. Projekt und Aufgabe waehlen, optional eine Notiz dazuschreiben, dann Start — der Zaehler laeuft, bis du Stop drueckst oder dich abmeldest. Wenn kein Timer laeuft, kannst du Buchungen auch nachtraeglich per "Manuell eintragen" erfassen.',
+    'planning.dashboard_tile_hint'   => 'Projekte mit hinterlegten Soll-Stunden: Ist (gebuchte Stunden) im Vergleich zum Soll, prozentuale Fortschrittsleiste. Gruen bis 80 %, orange ab 80 %, rot ueber 100 %. Zum Vollbild-Projekt-Cockpit mit Soll/Ist-Matrix und Burn-Up im Menu "Projekt-Cockpit".',
 
     // ---------- v1.0 F1: Mitarbeiter-Cockpit (Issue #158) ----------
     'nav.cockpit_employees'          => 'Mitarbeiter-Cockpit',
@@ -1174,11 +1179,10 @@ return [
     'cockpit.err_unknown_field'   => 'Unbekanntes Feld.',
 
     'cockpit.plan_h3'             => 'Soll / Ist-Matrix',
-    'cockpit.plan_subtitle'       => 'Mitarbeiter x Kalenderwoche — Soll-Stunden editierbar (Ist aus Buchungen)',
+    'cockpit.plan_subtitle'       => 'Mitarbeiter × Kalenderwoche. Oben: Ist (gebuchte Stunden). Unten: Soll — Werte eintippen und Feld verlassen, speichert automatisch (Ist bleibt aus Buchungen abgeleitet).',
     'cockpit.plan_total'          => 'Projekt-Gesamt-Soll (Stunden)',
     'cockpit.plan_no_members'     => 'Noch keine Buchungen oder Planungen auf diesem Projekt. Mitarbeiter erscheinen hier nach der ersten Buchung bzw. Wochen-Planung.',
     'cockpit.plan_col_member'     => 'Mitarbeiter',
-    'cockpit.plan_legend'         => 'Oben: Ist (gebuchte Stunden). Unten: Soll — Werte eintippen und Feld verlassen, speichert automatisch.',
     'cockpit.err_project_or_employee' => 'Projekt oder Mitarbeiter nicht gefunden.',
     'cockpit.err_invalid_week'    => 'Ungueltige Woche (ISO-Datum YYYY-MM-DD erforderlich).',
     'cockpit.err_hours_number'    => 'Stundenwert muss eine Zahl sein.',

@@ -1043,6 +1043,11 @@ return [
     'sent.fill_week_btn'             => 'Fill week',
     'sent.mood_label'                => 'Mood',
     'sent.flow_label'                => 'Flow',
+    'sent.mood_hint'                 => 'Mood is how you feel personally today, independent of work — how are you as a person? The scale goes from bad (1) to very good (5). "Skip" leaves the day without an entry.',
+    'sent.flow_hint'                 => 'Flow rates how the work went today, independent of your mood — were you making progress, grinding, or running into obstacles? 1 = very frustrating, 5 = fully in the flow.',
+    'dash.timer_h2'                  => 'Time tracking',
+    'dash.timer_hint'                => 'Start or stop the running time entry. Pick a project and task, optionally add a note, then press Start — the counter runs until you press Stop or sign out. If no timer is running, you can also add entries after the fact via "Add manually".',
+    'planning.dashboard_tile_hint'   => 'Projects with set target hours: Actual (booked hours) vs. Target, with a percentage progress bar. Green up to 80 %, orange from 80 %, red above 100 %. For the full-screen Project Cockpit with target/actual matrix and burn-up, use the "Project Cockpit" menu item.',
 
     // ---------- v1.0 F1: Employee Cockpit (Issue #158) ----------
     'nav.cockpit_employees'          => 'Employee Cockpit',
@@ -1177,11 +1182,10 @@ return [
     'cockpit.err_unknown_field'   => 'Unknown field.',
 
     'cockpit.plan_h3'             => 'Target / Actual matrix',
-    'cockpit.plan_subtitle'       => 'Employee x calendar week — target hours editable (actual from bookings)',
+    'cockpit.plan_subtitle'       => 'Employee × calendar week. Top: Actual (booked hours). Bottom: Target — type a value and leave the field, it auto-saves (actual stays derived from bookings).',
     'cockpit.plan_total'          => 'Project total target (hours)',
     'cockpit.plan_no_members'     => 'No bookings or allocations on this project yet. Employees appear here after the first booking or weekly allocation.',
     'cockpit.plan_col_member'     => 'Employee',
-    'cockpit.plan_legend'         => 'Top: Actual (booked hours). Bottom: Target — type a value and leave the field, it auto-saves.',
     'cockpit.err_project_or_employee' => 'Project or employee not found.',
     'cockpit.err_invalid_week'    => 'Invalid week (ISO date YYYY-MM-DD required).',
     'cockpit.err_hours_number'    => 'Hours must be a number.',
