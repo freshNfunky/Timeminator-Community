@@ -33,23 +33,48 @@ dass Admins ihre CSP anpassen müssen.
   "id": "zeitcheck-2026",
   "title": "Gestalte Timeminator mit – der Zeit-Check: 3 Minuten, anonym, direkt in die Roadmap.",
   "cta": "Umfrage starten",
-  "href": "https://claude.ai/artifact/Bk5a3MoW3EuJCNPPvs2aFb",
+  "href": "https://umfrage.timeminator.com/01/",
   "image": "data:image/png;base64,…  (vollständig in feed-item.json)"
 }
 ```
 
-## ⚠️ Wichtig: Allowlist & Release
+## Lokalisierung (DE/EN)
 
-Der `href` liegt auf `claude.ai`. Jede Community-Instanz säubert den Feed gegen **ihre eigene**
-`banners.allowed_hosts`. `claude.ai` wurde dem Code-Default hinzugefügt (`config.sample.php`,
-`src/Banners.php`, `src/helpers.php`) — **greift bei bestehenden Nutzern aber erst nach einem
-Update auf eine Release, die diese Änderung enthält.**
+Die Banner werden **je nach Timeminator-Spracheinstellung** lokalisiert ausgespielt — eine
+deutsche oder englische Variante. Für den Zeit-Check gibt es daher zwei Creatives und zwei
+Feed-Items:
 
-Zwei Wege:
-1. **Release ausliefern**, dann Banner live schalten (sauber, aber mit Vorlauf).
-2. **Sofort für aktuelle Nutzer:** `href` auf einen `felixschaller.com`-Redirect zeigen
-   (z. B. `https://go.felixschaller.com/zeitcheck` → 302 zur Quest-Seite). `felixschaller.com`
-   ist bei allen Instanzen längst erlaubt — kein Release nötig.
+| Sprache | Creative | href |
+|---|---|---|
+| DE | `assets/banners/zeitcheck.svg` | `https://umfrage.timeminator.com/01/` |
+| EN | `assets/banners/zeitcheck-en.svg` *(dein EN-Creative)* | `https://umfrage.timeminator.com/01en/` |
+
+> Hinweis: Im aktuellen Community-Banner-Code (`src/Banners.php`, `src/controllers/banners_ctrl.php`)
+> gibt es **keine** Sprach-Logik. Die Lokalisierung läuft außerhalb dieses Moduls (Feed-seitig oder
+> in einem anderen Branch). Mechanik hier noch nachzutragen, sobald geklärt.
+
+### EN-Umfrageseite
+
+Die englische Variante der Quest-Seite ist gebaut: [`quest-en.html`](quest-en.html) (die deutsche
+Live-Version liegt zur Parität als [`quest-de.html`](quest-de.html) daneben). Deployen als
+**Geschwister-Ordner** `umfrage.timeminator.com/01en/` (als `index.html`) — dann zeigt der englische
+Banner sauber dorthin. Die Root-Landingpage ([`root-index.html`](root-index.html)) verlinkt beide.
+
+**Feedback-Formular EN:** erstellt (Generator: [`google-form-generator-en.gs`](google-form-generator-en.gs))
+und in `quest-en.html` eingetragen — der englische Funnel ist damit durchgängig (EN-Seite → EN-Form).
+
+## Allowlist & Release
+
+Der `href` zeigt **direkt** auf `umfrage.timeminator.com`. Jede Community-Instanz säubert den Feed
+gegen **ihre eigene** `banners.allowed_hosts` — die Allowlist lebt also in jeder laufenden Instanz.
+`timeminator.com` (eine First-Party-Brand-Domain, Subdomains inklusive) wurde dem Code-Default
+hinzugefügt (`config.sample.php`, `src/Banners.php`, `src/helpers.php`) und **greift, sobald die
+Instanzen auf die Release mit dieser Änderung aktualisiert sind** (steht unmittelbar an).
+
+Bis dahin wird der Link auf älteren Instanzen gestrippt (Banner-Bild ohne funktionierenden Link).
+Da die Release unmittelbar ansteht, wird das bewusst in Kauf genommen — ein Zwischen-Redirect
+lohnt den Aufwand nicht. Ein generischer, ID-basierter Shortlink-/Redirect-Dienst (bit.ly-Stil)
+ist als Future Work notiert: Issue #117.
 
 ## Upload auf assets.felixschaller.com
 

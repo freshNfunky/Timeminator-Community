@@ -4,7 +4,7 @@ Die Umfrage ist ein **research-led door opener**: nach Einblicken fragen statt v
 Quest-Seite ist das „Geben vor dem Fragen". Das öffnet Türen, die ein Pitch sofort zuschlägt.
 
 **Links** (vor dem Versand einsetzen):
-- Quest-Seite (öffentlich): `https://claude.ai/artifact/Bk5a3MoW3EuJCNPPvs2aFb`
+- Quest-Seite: `https://umfrage.timeminator.com/01/`
 - Demo: `https://demo.felixschaller.com`
 
 ---
@@ -35,6 +35,70 @@ DSGVO: keine E-Mails scrapen, nur die LinkedIn-Mechanik nutzen.
 
 ---
 
+## Sales Navigator – Zielgruppen & Suchfilter
+
+Ziel: erst **Listen** bauen (Saved Searches → Lead-Listen), dann in kleinen Tagesbatches anschreiben.
+Wer den Schmerz hat: Zeiterfassung, Projekt-/Budgetüberblick, Nachweise, Abrechnung aus Stunden,
+Datenhoheit. Sweet Spot: **Solo bis ~50 MA**, DACH (DE-Link) bzw. international (EN-Link `/01en/`).
+
+**Allgemeine Filter-Bausteine (Lead-Suche):**
+- *Geografie:* DACH (DE, AT, CH) → DE-Link · übriges EU/UK/US → EN-Link
+- *Unternehmensgröße:* „1", „2–10", „11–50" (ggf. „51–200")
+- *Seniorität:* Owner/Partner, CXO, Director, Head
+- *Spotlights* (Antwortquote ↑): „Posted on LinkedIn in past 30 days" (aktiv), „Changed jobs in last 90 days" (neu in Rolle, offen für Tools)
+- *Boolean* funktioniert im Titel- und Keyword-Feld: `("A" OR "B") AND NOT "C"`
+
+**Such-Rezepte (je eine Saved Search):**
+
+1. **DACH-Agenturen & Studios** → DE `/01/`
+   Geo DACH · Branche: Marketing/Werbung, Design, IT-Services, Software · Größe 2–10, 11–50 · Seniorität Owner/Partner
+   Titel: `"Inhaber" OR "Geschäftsführer" OR "Gründer" OR "Founder" OR "Managing Director" OR "Partner"`
+
+2. **DACH-Berater & Freelancer** (IT/Eng/Design) → DE `/01/`
+   Geo DACH · Branche: IT-Services, Unternehmensberatung, Ingenieurwesen, Design · Größe 1, 2–10 · Typ: Selbstständig
+   Titel: `"Freelancer" OR "Freiberufler" OR "selbstständig" OR "Consultant" OR "Berater" OR "Interim"`
+
+3. **Projekt-/PMO-/Operations-Leitung in KMU** → DE `/01/`
+   Geo DACH · Branche: IT-Services, Software, Ingenieurwesen, Beratung, Architektur · Größe 11–50, 51–200
+   Titel: `"Projektleiter" OR "PMO" OR "Head of Operations" OR "Operations Manager" OR "Kaufmännische Leitung" OR "COO"`
+
+4. **R&D-/FuE-Leitung** (Förder-/Nachweis-Angle) → DE `/01/`
+   Geo DACH · Branche: Forschung, Software, Ingenieurwesen, Med-/Biotech, Automotive · Größe 11–50, 51–200
+   Titel: `"Leiter Forschung" OR "Head of R&D" OR "FuE" OR "Entwicklungsleiter" OR "CTO"`
+   Angle: auditierbare Zeiten für Förderung/Nachweise.
+
+5. **International / Privacy- & Self-Hosting-affin** → EN `/01en/`
+   Geo: EU (ohne DACH) + UK · Branche: IT-Services, Software, Design, Beratung · Größe 1–10, 11–50
+   Titel: `"Founder" OR "Co-Founder" OR "Agency Owner" OR "Freelancer" OR "Consultant" OR "CTO"`
+   Keywords: `"self-hosted" OR "open source" OR "GDPR" OR "data sovereignty"`
+
+**Listen-Workflow:** je Rezept Saved Search anlegen → Treffer sichten → gute Fits in Lead-Liste
+(„Zeit-Check DE" / „Zeit-Check EN") → nach Segment taggen → in Tagesbatches abarbeiten.
+
+**Volumen/Sicherheit:** max. ~15–25 Vernetzungsanfragen/Tag (LinkedIn-Wochenlimit ~100–200),
+immer personalisiert. InMail-Credits sparsam für hochwertige Nicht-Kontakte; sonst Vernetzungsnotiz.
+
+## Outreach-Texte (EN) — für Segment 5 (`/01en/`)
+
+**1) Connection request note** (max. 300 chars)
+> Hi [First name], I'm researching how small businesses and freelancers keep their project time under control — no pitch, just honest insights from the field. Would be glad to connect. Best, Felix
+
+**2) First message after connecting**
+> Thanks for connecting, [First name]! Quick context: I'm building Timeminator, a self-hosted time-tracking tool. Before I build further, I want to understand where SMBs and freelancers really struggle with time & project overview.
+>
+> I made a 3-minute "Time Check" for it: anonymous, no login, interactive mini-questions instead of a dull form. Your view as a [role/industry] would be gold.
+>
+> Fancy a look? 👉 https://umfrage.timeminator.com/01en/
+>
+> If it's not your thing — no worries at all. 🙂
+
+**3) Friendly bump** (after 4–5 days, once)
+> Quick nudge, [First name] — in case the Time Check slipped through: https://umfrage.timeminator.com/01en/ · 3 min, anonymous, feeds straight into the roadmap. Thanks!
+
+**4) InMail** (non-connections, with subject)
+> **Subject:** 3 minutes: how do you keep project time under control?
+> Hi [First name], I'm surveying SMBs & freelancers on where time tracking and project overview break down day to day — anonymous, no selling. My interactive "Time Check" takes 3 minutes: https://umfrage.timeminator.com/01en/ · Your feedback shapes a self-hosted tool. Would mean a lot!
+
 ## Weitere Platzierungen
 
 **Direkt am Produkt (höchste Qualität):**
@@ -56,6 +120,6 @@ DSGVO: keine E-Mails scrapen, nur die LinkedIn-Mechanik nutzen.
 
 ## Quellen-Tracking (optional)
 
-Pro Kanal einen eigenen Shortlink (`go.felixschaller.com/zeitcheck-sn`, `-li`, `-xing`, `-reddit`),
-alle auf die Quest-Seite zeigend → so siehst du, welcher Kanal zieht. Optional eine Frage
-„Wie bist du hergekommen?" im Formular.
+Interim: eine optionale Frage „Wie bist du hergekommen?" im Formular. Sauberes Per-Kanal-Tracking
+über einen eigenen ID-basierten Shortlink/Redirect (bit.ly-Stil) ist als Future Work notiert:
+Issue #117.

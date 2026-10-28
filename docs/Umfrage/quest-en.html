@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Timeminator Time Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  html{scroll-padding-top:env(safe-area-inset-top,0px)}
+  img{max-width:100%}
+  [hidden]:not([hidden=until-found i]){display:none!important}
+
+  /* Layout: single-column quest journey, max ~720px, stations as cards with eyebrow labels.
+     Color: cobalt (primary) + cyan (secondary) + amber (Pro/quest accent) on slate-tinted neutrals.
+     Type: Jost (display) + IBM Plex Sans (body) + IBM Plex Mono (numbers/timer). */
+  :root {
+    --bg:#eef1f7; --surface:#ffffff; --surface-2:#f6f8fc;
+    --ink:#101634; --ink-soft:#54607a; --ink-faint:#8a94a9; --line:#e1e6f1;
+    --brand:#1e3fcc; --brand-2:#3a5cf0; --brand-ink:#ffffff;
+    --cyan:#0d8f89; --cyan-soft:#e2f4f2;
+    --amber:#c77d13; --amber-soft:#fbeccb;
+    --ok:#16a34a; --warn:#d97706; --alert:#c8385e;
+    --shadow:0 1px 2px rgba(16,22,52,.05), 0 12px 32px -18px rgba(16,22,52,.28);
+    --radius:14px;
+    --font-display:"Jost","Futura",system-ui,sans-serif;
+    --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --font-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+    --bg:#0a0f1e; --surface:#141c31; --surface-2:#0f1628;
+    --ink:#eef1f8; --ink-soft:#a3aec5; --ink-faint:#6c7795; --line:#273047;
+    --brand:#6f87ff; --brand-2:#8aa0ff; --brand-ink:#0a0f1e;
+    --cyan:#5fd7d0; --cyan-soft:#12302e;
+    --amber:#f5c451; --amber-soft:#3a2f14;
+    --ok:#4ade80; --warn:#fbbf24; --alert:#f87a9a;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 40px -20px rgba(0,0,0,.7);
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0a0f1e; --surface:#141c31; --surface-2:#0f1628;
+    --ink:#eef1f8; --ink-soft:#a3aec5; --ink-faint:#6c7795; --line:#273047;
+    --brand:#6f87ff; --brand-2:#8aa0ff; --brand-ink:#0a0f1e;
+    --cyan:#5fd7d0; --cyan-soft:#12302e;
+    --amber:#f5c451; --amber-soft:#3a2f14;
+    --ok:#4ade80; --warn:#fbbf24; --alert:#f87a9a;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 40px -20px rgba(0,0,0,.7);
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:1.55;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .wrap{max-width:720px;margin:0 auto;padding-inline:20px;padding-block:0}
+
+  /* Progress bar (sticky) */
+  .progress{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;
+    background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line)}
+  .progress .wrap{display:flex;align-items:center;gap:12px;padding-block:10px}
+  .progress .track{flex:1;height:6px;border-radius:99px;background:var(--line);overflow:hidden;min-width:0}
+  .progress .fill{height:100%;width:0;border-radius:99px;
+    background:linear-gradient(90deg,var(--brand),var(--cyan));transition:width .5s cubic-bezier(.2,.7,.2,1)}
+  .progress .count{font-family:var(--font-mono);font-size:12px;color:var(--ink-soft);white-space:nowrap;
+    font-variant-numeric:tabular-nums}
+
+  /* Hero */
+  header.hero{padding-block:46px 30px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:600;
+    letter-spacing:.14em;text-transform:uppercase;font-size:14px;color:var(--ink-soft)}
+  .brand .dot{width:11px;height:11px;border-radius:3px;background:var(--brand);box-shadow:0 0 0 4px color-mix(in srgb,var(--brand) 18%,transparent)}
+  h1{font-family:var(--font-display);font-weight:600;letter-spacing:-.01em;line-height:1.05;
+    font-size:clamp(2rem,7vw,3.1rem);margin:.5em 0 .35em;text-wrap:balance}
+  h1 .hl{color:var(--brand);position:relative;white-space:nowrap}
+  .lede{font-size:clamp(1.02rem,2.6vw,1.2rem);color:var(--ink-soft);max-width:52ch;margin:0 0 1.5em}
+  .meta-row{display:flex;flex-wrap:wrap;gap:8px}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;
+    padding:6px 11px;border-radius:99px;background:var(--surface);border:1px solid var(--line);color:var(--ink-soft)}
+  .pill b{color:var(--ink);font-weight:600}
+
+  /* Stations */
+  section.station{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:24px 22px;margin-block:18px;scroll-margin-top:72px}
+  .eyebrow{display:flex;align-items:center;gap:9px;font-family:var(--font-mono);font-size:11.5px;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px}
+  .eyebrow .num{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;
+    background:var(--surface-2);border:1px solid var(--line);color:var(--brand);font-weight:600}
+  .station.done .eyebrow .num{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+  .station h2{font-family:var(--font-display);font-weight:500;font-size:1.42rem;margin:.1em 0 .3em;letter-spacing:-.01em;text-wrap:balance}
+  .station p{margin:.4em 0;color:var(--ink-soft)}
+  .station p.pitch{color:var(--ink);font-size:.95rem;border-left:3px solid var(--cyan);
+    padding-left:12px;margin-top:14px}
+  .microq{margin-top:16px;font-weight:600;font-size:.95rem}
+
+  /* Buttons & chips */
+  button{font-family:inherit;cursor:pointer}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border-radius:11px;
+    font-weight:600;font-size:1rem;padding:13px 20px;border:1px solid transparent;transition:transform .12s,box-shadow .2s,background .2s}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+  .btn-primary:hover{background:var(--brand-2)}
+  .btn-ghost{background:var(--surface);color:var(--ink);border-color:var(--line)}
+  .btn-ghost:hover{border-color:var(--brand);color:var(--brand)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .chip{font-family:inherit;font-size:.9rem;padding:8px 13px;border-radius:99px;background:var(--surface-2);
+    border:1px solid var(--line);color:var(--ink-soft);transition:.15s}
+  .chip:hover{border-color:var(--brand)}
+  .chip[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+  :focus-visible{outline:2.5px solid var(--brand);outline-offset:2px;border-radius:6px}
+
+  /* Quest 1 — Timer */
+  .timer-box{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:16px}
+  .timer-readout{font-family:var(--font-mono);font-size:2.6rem;font-weight:600;letter-spacing:.02em;
+    font-variant-numeric:tabular-nums;min-width:4.2ch}
+  .timer-readout.live{color:var(--brand)}
+  .timer-btn{min-width:150px}
+  .timer-btn.running{background:var(--alert);border-color:var(--alert);color:#fff}
+  .timer-note{font-size:.9rem;color:var(--ok);font-weight:600;min-height:1.2em;margin-top:8px}
+
+  /* Quest 2 — Data ownership */
+  .switch-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:16px}
+  .switch{position:relative;width:62px;height:34px;flex:none}
+  .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+  .switch .slot{position:absolute;inset:0;border-radius:99px;background:var(--line);transition:.25s}
+  .switch .knob{position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:.25s}
+  .switch input:checked ~ .slot{background:var(--cyan)}
+  .switch input:checked ~ .knob{transform:translateX(28px)}
+  .switch-label{font-weight:600}
+  .vault{margin-top:16px;border:1px dashed var(--line);border-radius:12px;padding:16px;
+    display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--surface-2);position:relative;overflow:hidden}
+  .vault .where{font-family:var(--font-mono);font-size:.85rem;color:var(--ink-soft)}
+  .vault .where b{color:var(--ink)}
+  .dots{display:flex;gap:6px}
+  .dots i{width:10px;height:10px;border-radius:3px;background:var(--brand);display:block;
+    transition:transform .5s cubic-bezier(.2,.7,.2,1),background .3s}
+  .vault.home .dots i{background:var(--cyan)}
+  .vault.away .dots i:nth-child(1){transform:translate(-6px,-10px) rotate(8deg)}
+  .vault.away .dots i:nth-child(3){transform:translate(7px,9px) rotate(-10deg)}
+  .vault.away .dots i:nth-child(4){transform:translate(-9px,8px)}
+
+  /* Quest 3 — Target/actual traffic light */
+  .ampel-grid{margin-top:16px}
+  .ampel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;font-family:var(--font-mono);
+    font-size:.82rem;color:var(--ink-soft);margin-bottom:8px}
+  .bar{height:16px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;position:relative}
+  .bar .soll{position:absolute;top:-4px;bottom:-4px;left:71.4%;width:2px;background:var(--ink-faint)}
+  .bar .burn{height:100%;width:0;border-radius:99px;transition:width .25s,background .25s}
+  .lights{display:flex;gap:8px;margin-top:14px}
+  .light{flex:1;text-align:center;padding:8px 4px;border-radius:9px;border:1px solid var(--line);
+    font-size:.8rem;font-weight:600;color:var(--ink-faint);background:var(--surface-2);transition:.2s}
+  .light.on[data-l="ok"]{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok);border-color:var(--ok)}
+  .light.on[data-l="warn"]{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn);border-color:var(--warn)}
+  .light.on[data-l="over"]{background:color-mix(in srgb,var(--alert) 16%,transparent);color:var(--alert);border-color:var(--alert)}
+  input[type=range]{width:100%;margin-top:16px;accent-color:var(--brand);height:28px}
+  .ampel-status{margin-top:10px;font-weight:600;font-size:.95rem}
+
+  /* Finale */
+  section.finale{text-align:center;background:linear-gradient(160deg,var(--surface),var(--surface-2));
+    border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:34px 24px;margin-block:18px}
+  .badge{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:12px;
+    letter-spacing:.08em;text-transform:uppercase;padding:7px 14px;border-radius:99px;
+    background:var(--amber-soft);color:var(--amber);border:1px solid color-mix(in srgb,var(--amber) 40%,transparent);font-weight:600}
+  section.finale h2{font-family:var(--font-display);font-weight:600;font-size:1.8rem;margin:.5em 0 .25em;letter-spacing:-.01em}
+  section.finale p{color:var(--ink-soft);max-width:46ch;margin:0 auto 1.4em}
+  .cta-row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+  .cta-row .btn{flex:1 1 200px;max-width:280px;text-decoration:none}
+  .cta-hint{font-size:.8rem;color:var(--amber);font-weight:600;margin-top:2px}
+  .foot{display:flex;flex-direction:column;align-items:center;gap:6px;margin:26px 0 44px;
+    font-size:.82rem;color:var(--ink-faint);text-align:center}
+  .foot a{color:var(--ink-soft)}
+  .foot .sep{opacity:.5}
+
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;animation:none!important}
+  }
+</style>
+</head>
+<body>
+
+<div class="progress">
+  <div class="wrap">
+    <div class="track"><div class="fill" id="pfill"></div></div>
+    <div class="count" id="pcount" aria-live="polite">0 / 4 stations</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="brand"><span class="dot"></span> Timeminator · Time Check</div>
+    <h1>Where does your <span class="hl">most valuable resource</span> leak away?</h1>
+    <p class="lede">Four quick mini-challenges, three minutes, zero login. Try the idea behind a self-hosted time tracker for yourself — then leave your feedback at the end.</p>
+    <div class="meta-row">
+      <span class="pill">⏱ <b>3 minutes</b></span>
+      <span class="pill">🕹 <b>4 quests</b> to tap</span>
+      <span class="pill">🔒 Anonymous &amp; voluntary</span>
+    </div>
+  </header>
+
+  <!-- Station 1 -->
+  <section class="station" id="s1" data-station="1">
+    <div class="eyebrow"><span class="num">1</span> The Flow Timer</div>
+    <h2>How much time does tracking time cost you?</h2>
+    <p>The honest answer for most people: too much — because they reconstruct the day from memory each evening. Tap Start once, then Stop. That's the entire process.</p>
+    <div class="timer-box">
+      <div class="timer-readout" id="treadout">00:00</div>
+      <button class="btn btn-primary timer-btn" id="tbtn" aria-live="polite">▶ Start timer</button>
+    </div>
+    <div class="timer-note" id="tnote" role="status"></div>
+    <p class="pitch">In Timeminator one click starts the clock — today, this week and this month add up automatically. No back-filling, no guessing.</p>
+  </section>
+
+  <!-- Station 2 -->
+  <section class="station" id="s2" data-station="2">
+    <div class="eyebrow"><span class="num">2</span> Data ownership</div>
+    <h2>Who actually owns your time data?</h2>
+    <p>With most SaaS trackers it sits in someone else's cloud. Flip the switch and bring it home.</p>
+    <div class="switch-row">
+      <label class="switch">
+        <input type="checkbox" id="vswitch" aria-label="Data on your own server instead of someone else's cloud">
+        <span class="slot"></span><span class="knob"></span>
+      </label>
+      <span class="switch-label" id="vlabel">Someone else's cloud</span>
+    </div>
+    <div class="vault away" id="vault">
+      <div class="where" id="vwhere">Your data: <b>somewhere out there</b></div>
+      <div class="dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <p class="pitch">Timeminator is self-hosted — it runs on ordinary PHP hosting. Every entry stays on your server and is logged auditably.</p>
+  </section>
+
+  <!-- Station 3 -->
+  <section class="station" id="s3" data-station="3">
+    <div class="eyebrow"><span class="num">3</span> Target vs. actual · Pro cockpit</div>
+    <h2>Is your project still on budget — or already over?</h2>
+    <p>Say you plan <b>100 hours</b> for a project. Drag the slider and watch the live cockpit react — before it's too late.</p>
+    <div class="ampel-grid">
+      <div class="ampel-head"><span>Actual: <b id="istval" style="color:var(--ink)">0 h</b></span><span>Target 100 h</span></div>
+      <div class="bar"><div class="soll"></div><div class="burn" id="burn"></div></div>
+      <input type="range" id="istrange" min="0" max="140" value="0" step="1" aria-label="Actual hours logged">
+      <div class="lights" aria-hidden="true">
+        <span class="light" data-l="ok" id="l-ok">on track</span>
+        <span class="light" data-l="warn" id="l-warn">tight (from 80%)</span>
+        <span class="light" data-l="over" id="l-over">over</span>
+      </div>
+      <div class="ampel-status" id="ampstatus" role="status">Drag the slider…</div>
+    </div>
+    <p class="pitch">Timeminator Pro plans target hours &amp; budget per project and shows progress live with a traffic light and weekly heatmap — warning from 80%, alarm from 100%.</p>
+  </section>
+
+  <!-- Station 4 -->
+  <section class="station" id="s4" data-station="4">
+    <div class="eyebrow"><span class="num">4</span> Your time leak</div>
+    <h2>Where do you lose the most time today?</h2>
+    <p>Tap what fits (multiple choice) — that's already the first part of your feedback.</p>
+    <div class="chips" id="leakchips" role="group" aria-label="Where do you lose time?">
+      <button class="chip" aria-pressed="false">Forgetting to start the timer</button>
+      <button class="chip" aria-pressed="false">Overview at month-end</button>
+      <button class="chip" aria-pressed="false">Gathering proof &amp; records</button>
+      <button class="chip" aria-pressed="false">Keeping the budget in view</button>
+      <button class="chip" aria-pressed="false">Quotes &amp; invoices</button>
+      <button class="chip" aria-pressed="false">Data in other clouds</button>
+      <button class="chip" aria-pressed="false">Team not on board</button>
+    </div>
+    <p class="pitch">These are exactly the leaks Timeminator targets — from the one-click timer through auditable proof views to the budget report.</p>
+  </section>
+
+  <!-- Finale -->
+  <section class="finale" id="finale">
+    <span class="badge" id="qbadge">🏁 Quest · 0 / 4</span>
+    <h2>Your feedback shapes the tool.</h2>
+    <p>You've just experienced the core idea of Timeminator. Now your opinion counts — two minutes, anonymous. And if you feel like it: try it live.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" id="ctaForm" href="https://docs.google.com/forms/d/e/1FAIpQLSe9sjTQMqfAdNfqb7OZsfn_XamaOyRj5-Rv62RU8LErMQkVvw/viewform" target="_blank" rel="noopener">Give 2-min feedback →</a>
+      <a class="btn btn-ghost" id="ctaDemo" href="https://demo.felixschaller.com/?lang=en" target="_blank" rel="noopener">Try it live in the demo</a>
+    </div>
+    <div class="cta-hint" id="ctaHint" hidden></div>
+  </section>
+
+  <div class="foot">
+    <div>Timeminator Community · v0.9.1 · self-hosted time tracking · Open Source (MIT)</div>
+    <div><span class="sep">made by</span> FelixSchallerCOM</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var done = {};
+  function markDone(n){
+    if(done[n]) return;
+    done[n] = true;
+    var sec = document.querySelector('[data-station="'+n+'"]');
+    if(sec) sec.classList.add('done');
+    var c = Object.keys(done).length;
+    document.getElementById('pfill').style.width = (c/4*100)+'%';
+    document.getElementById('pcount').textContent = c+' / 4 stations';
+    var badge = document.getElementById('qbadge');
+    badge.textContent = (c>=4 ? '🏁 Quest complete!' : '🏁 Quest · '+c+' / 4');
+  }
+
+  /* Quest 1 — Timer */
+  var running=false, secs=0, iv=null;
+  var readout=document.getElementById('treadout'), btn=document.getElementById('tbtn'), note=document.getElementById('tnote');
+  function fmt(s){var m=Math.floor(s/60),r=s%60;return (m<10?'0':'')+m+':'+(r<10?'0':'')+r;}
+  btn.addEventListener('click', function(){
+    if(!running){
+      running=true; btn.textContent='■ Stop & log'; btn.classList.add('running');
+      readout.classList.add('live'); note.textContent='';
+      iv=setInterval(function(){secs++;readout.textContent=fmt(secs);},1000);
+    } else {
+      running=false; clearInterval(iv);
+      btn.textContent='▶ Start timer'; btn.classList.remove('running'); readout.classList.remove('live');
+      note.textContent = secs>0 ? '✓ Logged in '+fmt(secs)+' — that’s how fast time tracking is.' : '✓ Logged. That’s all it takes.';
+      secs=0;
+      markDone(1);
+    }
+  });
+
+  /* Quest 2 — Data ownership */
+  var sw=document.getElementById('vswitch'), vlabel=document.getElementById('vlabel'),
+      vault=document.getElementById('vault'), vwhere=document.getElementById('vwhere');
+  sw.addEventListener('change', function(){
+    if(sw.checked){
+      vlabel.textContent='Your server';
+      vault.classList.remove('away'); vault.classList.add('home');
+      vwhere.innerHTML='Your data: <b>on your own machine</b> 🔒';
+      markDone(2);
+    } else {
+      vlabel.textContent='Someone else’s cloud';
+      vault.classList.remove('home'); vault.classList.add('away');
+      vwhere.innerHTML='Your data: <b>somewhere out there</b>';
+    }
+  });
+
+  /* Quest 3 — Target/actual traffic light */
+  var SOLL=100, range=document.getElementById('istrange'), burn=document.getElementById('burn'),
+      istval=document.getElementById('istval'), amp=document.getElementById('ampstatus'),
+      lOk=document.getElementById('l-ok'), lWarn=document.getElementById('l-warn'), lOver=document.getElementById('l-over');
+  function tone(v){ return v<80?'ok':(v<=100?'warn':'over'); }
+  function paintAmpel(){
+    var ist=+range.value, pct=ist/SOLL*100, t=tone(pct);
+    istval.textContent=ist+' h';
+    burn.style.width=Math.min(100,pct)+'%';
+    var col = t==='ok'?'var(--ok)':t==='warn'?'var(--warn)':'var(--alert)';
+    burn.style.background=col;
+    [lOk,lWarn,lOver].forEach(function(el){el.classList.remove('on')});
+    ({ok:lOk,warn:lWarn,over:lOver})[t].classList.add('on');
+    amp.style.color=col;
+    amp.textContent = t==='ok' ? 'Comfortably on track — '+Math.round(pct)+'% of the budget.'
+      : t==='warn' ? 'Careful, it’s getting tight — '+Math.round(pct)+'% used.'
+      : 'Budget blown — '+Math.round(pct)+'%. Good thing you see it now.';
+    if(ist>0) markDone(3);
+  }
+  range.addEventListener('input', paintAmpel);
+
+  /* Quest 4 — Chips */
+  var chips=document.querySelectorAll('#leakchips .chip');
+  chips.forEach(function(ch){
+    ch.addEventListener('click', function(){
+      var on = ch.getAttribute('aria-pressed')==='true';
+      ch.setAttribute('aria-pressed', on?'false':'true');
+      if(document.querySelectorAll('#leakchips .chip[aria-pressed="true"]').length>0) markDone(4);
+    });
+  });
+
+  /* CTA guard — never links into the void while a link is still a placeholder */
+  function guard(id, label){
+    var a=document.getElementById(id), hint=document.getElementById('ctaHint');
+    if(a.getAttribute('href').indexOf('{{')>-1){
+      a.addEventListener('click', function(e){
+        e.preventDefault();
+        hint.hidden=false;
+        hint.textContent='Note to the operator: set the '+label+' link in the page.';
+      });
+    }
+  }
+  guard('ctaForm','Feedback');
+  guard('ctaDemo','Demo');
+})();
+</script>
+
+</body></html>
