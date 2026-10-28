@@ -19,6 +19,8 @@ require __DIR__ . '/src/Mail.php';
 require __DIR__ . '/src/PasswordReset.php';
 require __DIR__ . '/src/Scheduler.php';
 require __DIR__ . '/src/Holidays.php';
+require __DIR__ . '/src/ProcessRepo.php';
+require __DIR__ . '/src/AbsenceRepo.php';
 require __DIR__ . '/src/Workdays.php';
 require __DIR__ . '/src/EmployeeRepo.php';
 require __DIR__ . '/src/AccountRepo.php';
