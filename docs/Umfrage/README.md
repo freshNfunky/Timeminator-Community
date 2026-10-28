@@ -8,16 +8,18 @@ Feedback-Formular führt. Stand: 2026-10-13 · Timeminator Community v0.9.0.
 
 | Baustein | Wo | Zweck |
 |---|---|---|
-| **Quest-Seite** (Artifact) | `https://claude.ai/artifact/Bk5a3MoW3EuJCNPPvs2aFb` | Öffentliches Attention-Vehikel für LinkedIn/Sales Navigator. 4 Mini-Quests, anonym, kein Login. |
+| **Quest-Seite** (self-hosted) | `https://umfrage.timeminator.com/01/` | Öffentliches Attention-Vehikel für LinkedIn/Sales Navigator. 4 Mini-Quests, anonym, kein Login. |
 | **Feedback-Formular** | Google Forms (xixum.ai) `…/1FAIpQLScLMOFUT7dmyNqQcQ_rhmPJ5m5U24kXTnF6NyEOEuo6xk2Gtw` | Sammelt die eigentlichen Antworten anonym ein. |
 | **Demo** | `https://demo.felixschaller.com` | Live-Instanz zum Ausprobieren. |
 
-> Die Quest-Seite muss vor dem Teilen **öffentlich** geschaltet werden (Share → „Jeder mit dem Link").
+> Die Quest-Seite ist self-hosted unter `umfrage.timeminator.com/01/` (eigene Domain → seriöser für Kaltakquise). Die claude.ai-Artifact-Version diente als Vorlage/Preview.
 
 ## Dateien in diesem Ordner
 
 - [`fragenkatalog.md`](fragenkatalog.md) – kompletter Fragenkatalog (Referenz, 1:1 in Forms einpflegbar).
-- [`google-form-generator.gs`](google-form-generator.gs) – Apps-Script, das das Google Form automatisch baut.
+- [`quest-de.html`](quest-de.html) / [`quest-en.html`](quest-en.html) – die Quest-Umfrageseiten (DE live unter `/01/`, EN für `/01en/`).
+- [`root-index.html`](root-index.html) – Root-Landingpage von `umfrage.timeminator.com` (verlinkt DE + EN Umfrage, Website, Demo).
+- [`google-form-generator.gs`](google-form-generator.gs) / [`google-form-generator-en.gs`](google-form-generator-en.gs) – Apps-Scripts, die das Google Form (DE/EN) automatisch bauen.
 - [`outreach-playbook.md`](outreach-playbook.md) – Platzierungs-Kanäle + Sales-Navigator-Nachrichten (Templates).
 - [`banner-deploy.md`](banner-deploy.md) – wie das In-App-Community-Banner deployt wird.
 - `assets/` – LinkedIn-Bild (1080×1350 + @2x), QR-Code (PNG + SVG).
@@ -25,7 +27,7 @@ Feedback-Formular führt. Stand: 2026-10-13 · Timeminator Community v0.9.0.
 
 ## Status / offen
 
-- [ ] Quest-Seite öffentlich schalten.
+- [x] Quest-Seite live (self-hosted) unter `umfrage.timeminator.com/01/`.
 - [ ] In-App-Banner-Creative auf `assets.felixschaller.com` hochladen + Feed-JSON ergänzen (siehe `banner-deploy.md`).
-- [ ] Für bestehende Community-Nutzer: Release ausliefern, damit die erweiterte Allowlist (`claude.ai`) greift — **oder** Banner-`href` auf einen `felixschaller.com`-Redirect zeigen (greift sofort).
+- [ ] Release ausliefern, damit die erweiterte Allowlist (`timeminator.com`) bei bestehenden Nutzern greift (steht an; bis dahin wird der Banner-Link auf älteren Instanzen gestrippt — bewusst in Kauf genommen). Generischer Redirect-Dienst als Future Work: Issue #117.
 - [ ] Optional: Kanal-Shortlinks für Quellen-Tracking.
