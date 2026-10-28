@@ -276,6 +276,30 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
   applied_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- v1.0 F1: Mitarbeiter-Vertragsdaten (historisiert) + Jahresuebertraege.
+CREATE TABLE IF NOT EXISTS employee_terms (
+  id              INT AUTO_INCREMENT PRIMARY KEY,
+  user_id         INT NOT NULL,
+  valid_from      DATE NOT NULL,
+  employment_type VARCHAR(16) NOT NULL,
+  weekly_hours    DECIMAL(5,2) NOT NULL DEFAULT 40,
+  vacation_days   DECIMAL(5,2) NOT NULL DEFAULT 25,
+  holiday_region  VARCHAR(32) NULL,
+  created_at      DATETIME NOT NULL,
+  INDEX idx_employee_terms_user_from (user_id, valid_from),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS account_carryovers (
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  user_id        INT NOT NULL,
+  year           INT NOT NULL,
+  vacation_days  DECIMAL(6,2) NOT NULL DEFAULT 0,
+  overtime_hours DECIMAL(7,2) NOT NULL DEFAULT 0,
+  UNIQUE KEY uk_carry_user_year (user_id, year),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET foreign_key_checks = 1;
 
 -- Hinweis: Planung/Budget/Report, Angebote und Rechnungen (inkl. Buchhaltungs-

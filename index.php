@@ -19,6 +19,10 @@ require __DIR__ . '/src/Mail.php';
 require __DIR__ . '/src/PasswordReset.php';
 require __DIR__ . '/src/Scheduler.php';
 require __DIR__ . '/src/Holidays.php';
+require __DIR__ . '/src/Workdays.php';
+require __DIR__ . '/src/EmployeeRepo.php';
+require __DIR__ . '/src/AccountRepo.php';
+require __DIR__ . '/src/EmployeeStats.php';
 require __DIR__ . '/src/seed.php';
 require __DIR__ . '/src/Migrator.php';
 
@@ -42,6 +46,7 @@ require __DIR__ . '/src/controllers/password_reset_ctrl.php';
 require __DIR__ . '/src/controllers/cron_ctrl.php';
 require __DIR__ . '/src/Sentiment.php';
 require __DIR__ . '/src/controllers/sentiment_ctrl.php';
+require __DIR__ . '/src/controllers/employees_ctrl.php';
 
 $r = (string) get('r', Auth::check() ? 'dashboard' : 'login');
 
@@ -93,6 +98,13 @@ $routes = [
     'absence_categories'      => 'ctrl_absence_categories_index',
     'absence_category_save'   => 'ctrl_absence_category_save',
     'absence_category_delete' => 'ctrl_absence_category_delete',
+
+    // v1.0 F1: Mitarbeiter-Cockpit
+    'cockpit_employees'       => 'ctrl_cockpit_employees',
+    'cockpit_employee_weeks'  => 'ctrl_cockpit_employee_weeks',
+    'employee_terms_save'     => 'ctrl_employee_terms_save',
+    'employee_terms_delete'   => 'ctrl_employee_terms_delete',
+    'account_carryover_save'  => 'ctrl_account_carryover_save',
 
     'stats'        => 'ctrl_stats_index',
     'stats_data'   => 'ctrl_stats_data',
