@@ -75,6 +75,38 @@ final class Banners
         return $override !== '' ? $override : self::endpointDefault();
     }
 
+    /**
+     * Active UI language as a 2-letter code ('de', 'en', …), or '' when the app
+     * exposes no locale. Drives which localized feed variant is fetched.
+     */
+    public static function currentLang(): string
+    {
+        if (!class_exists('I18n') || !method_exists('I18n', 'current')) {
+            return '';
+        }
+        $l = substr(strtolower((string) I18n::current()), 0, 2);
+        return preg_match('/^[a-z]{2}$/', $l) ? $l : '';
+    }
+
+    /**
+     * Locale-scoped feed URL for a base endpoint: feed.json -> feed-<lang>.json
+     * (the suffix is inserted before the .json extension; any query string is
+     * preserved). Returns '' when the endpoint has no .json to localize.
+     */
+    public static function localeEndpoint(string $endpoint, string $lang): string
+    {
+        $lang = substr(strtolower($lang), 0, 2);
+        if (!preg_match('/^[a-z]{2}$/', $lang)) {
+            return '';
+        }
+        $parts = explode('?', $endpoint, 2);
+        if (!preg_match('/\.json$/i', $parts[0])) {
+            return '';
+        }
+        $path = preg_replace('/\.json$/i', '-' . $lang . '.json', $parts[0]);
+        return $path . (isset($parts[1]) ? '?' . $parts[1] : '');
+    }
+
     public static function cacheTtl(): int
     {
         return max(60, (int) (self::conf()['cache_ttl'] ?? self::DEFAULT_TTL));
@@ -115,20 +147,37 @@ final class Banners
      */
     public static function feed(): array
     {
-        $now = time();
-        $cache = Settings::get(self::CACHE_KEY, null);
+        $now  = time();
+        $lang = self::currentLang();
+        // Cache per locale so 'de' and 'en' viewers don't overwrite each other.
+        $cacheKey = self::CACHE_KEY . ($lang !== '' ? '_' . $lang : '');
+
+        $cache = Settings::get($cacheKey, null);
         if (is_array($cache) && !empty($cache['items']) && ($cache['fetched_at'] ?? 0) + self::cacheTtl() > $now) {
             return ['source' => 'cache', 'items' => self::sanitizeItems($cache['items'])];
         }
 
-        $endpoint = self::endpoint();
-        if ($endpoint !== '') {
-            $items = self::fetchRemote($endpoint);
-            if ($items !== null && $items !== []) {
-                Settings::set(self::CACHE_KEY, ['fetched_at' => $now, 'items' => $items]);
-                return ['source' => 'remote', 'items' => self::sanitizeItems($items)];
+        $base = self::endpoint();
+        if ($base !== '') {
+            // Try the locale feed first (feed-<lang>.json), then fall back to the
+            // base feed (feed.json) when the localization is absent or empty.
+            $candidates = [];
+            if ($lang !== '') {
+                $loc = self::localeEndpoint($base, $lang);
+                if ($loc !== '' && $loc !== $base) {
+                    $candidates[] = $loc;
+                }
             }
-            // Fetch failed: keep serving a stale cache if we have one.
+            $candidates[] = $base;
+
+            foreach ($candidates as $url) {
+                $items = self::fetchRemote($url);
+                if ($items !== null && $items !== []) {
+                    Settings::set($cacheKey, ['fetched_at' => $now, 'items' => $items]);
+                    return ['source' => 'remote', 'items' => self::sanitizeItems($items)];
+                }
+            }
+            // All fetches failed: keep serving a stale per-locale cache if we have one.
             if (is_array($cache) && !empty($cache['items'])) {
                 return ['source' => 'cache', 'items' => self::sanitizeItems($cache['items'])];
             }
@@ -371,7 +420,7 @@ final class Banners
      */
     public static function allowedHosts(): array
     {
-        $hosts = self::conf()['allowed_hosts'] ?? ['felixschaller.com', 'xixum.ai', 'af-ax.com', 'claude.ai'];
+        $hosts = self::conf()['allowed_hosts'] ?? ['felixschaller.com', 'timeminator.com', 'xixum.ai', 'af-ax.com', 'claude.ai'];
         $out = [];
         foreach ((array) $hosts as $h) {
             $h = strtolower(trim((string) $h));
@@ -379,7 +428,7 @@ final class Banners
                 $out[] = $h;
             }
         }
-        return $out ?: ['felixschaller.com', 'xixum.ai', 'af-ax.com', 'claude.ai'];
+        return $out ?: ['felixschaller.com', 'timeminator.com', 'xixum.ai', 'af-ax.com', 'claude.ai'];
     }
 
     private static function hostAllowed(string $host): bool

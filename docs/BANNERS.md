@@ -18,7 +18,13 @@ turn every part of it off.
 2. That route fetches the creatives **server-side** from a configurable banner
    subdomain (default `https://assets.felixschaller.com/feed.json`) so creatives
    can be rotated without shipping a new Timeminator release, and caches them for
-   `cache_ttl` seconds.
+   `cache_ttl` seconds (cached **per locale**).
+   - **Localized feeds:** the app requests the locale-scoped feed first, derived
+     from the active UI language (`I18n::current()`) — e.g. `feed-de.json` /
+     `feed-en.json` — and **falls back to the base `feed.json`** when that
+     localization is missing or empty. So German users get German creatives,
+     English users English ones, and anything not localized still shows. The
+     suffix is inserted before `.json`, so only the file name varies by locale.
 3. On **any** failure — isolated server, blocked outbound traffic, CSP block,
    timeout, malformed response — the app serves the **bundled default set** in
    [`assets/banners/default.json`](../assets/banners/default.json), so the slot
@@ -47,8 +53,8 @@ Content-Security-Policy (`connect-src 'self'`) needs no exception.
 Every creative is sanitized before it is shown:
 
 - `href` is accepted **only** if it is `https://` on one of the first-party hosts
-  in `banners.allowed_hosts` (default `felixschaller.com`, `xixum.ai`,
-  `af-ax.com`; subdomains included) — the remote feed can never point the slot at
+  in `banners.allowed_hosts` (default `felixschaller.com`, `timeminator.com`,
+  `xixum.ai`, `af-ax.com`; subdomains included) — the remote feed can never point the slot at
   an arbitrary site.
 - `image` is accepted as a same-origin relative asset, an inline `data:image/*`
   URI, or an `https` image on an allowed host. The default CSP sets

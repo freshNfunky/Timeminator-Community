@@ -91,12 +91,38 @@ final class BannersTest extends TestCase
         self::assertTrue(Banners::isAllowedHref('https://xixum.ai'));              // XIXUM product
         self::assertTrue(Banners::isAllowedHref('https://app.xixum.ai/assess'));   // subdomain
         self::assertTrue(Banners::isAllowedHref('https://af-ax.com'));             // AF-AX
+        self::assertTrue(Banners::isAllowedHref('https://umfrage.timeminator.com/01/index.html')); // Timeminator survey
         self::assertTrue(Banners::isAllowedHref('https://claude.ai/artifact/x'));  // Claude artifact (Zeit-Check)
         self::assertFalse(Banners::isAllowedHref('http://felixschaller.com'));       // not https
         self::assertFalse(Banners::isAllowedHref('https://evil.example.com'));        // wrong host
         self::assertFalse(Banners::isAllowedHref('https://felixschaller.com.evil.com')); // suffix trick
         self::assertFalse(Banners::isAllowedHref('https://notxixum.ai'));             // not a subdomain
         self::assertFalse(Banners::isAllowedHref('javascript:alert(1)'));
+    }
+
+    public function testLocaleEndpointInsertsLangBeforeJson(): void
+    {
+        self::assertSame(
+            'https://assets.felixschaller.com/feed-de.json',
+            Banners::localeEndpoint('https://assets.felixschaller.com/feed.json', 'de')
+        );
+        self::assertSame(
+            'https://assets.felixschaller.com/feed-en.json',
+            Banners::localeEndpoint('https://assets.felixschaller.com/feed.json', 'en')
+        );
+        // Query string preserved; custom filename supported.
+        self::assertSame(
+            'https://host/path/banners-de.json?x=1',
+            Banners::localeEndpoint('https://host/path/banners.json?x=1', 'de')
+        );
+        // 'de-DE' clamps to the 2-letter code.
+        self::assertSame(
+            'https://host/feed-de.json',
+            Banners::localeEndpoint('https://host/feed.json', 'de-DE')
+        );
+        // Not localizable -> empty (caller uses the base feed).
+        self::assertSame('', Banners::localeEndpoint('https://host/feed', 'de'));
+        self::assertSame('', Banners::localeEndpoint('https://host/feed.json', 'x'));
     }
 
     public function testImageAllowsRelativeDataUriAndHttpsFirstParty(): void
