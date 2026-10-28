@@ -1222,4 +1222,43 @@ return [
     'date_shift.flash_saved'         => 'Terminverschiebung gespeichert.',
     'date_shift.flash_first_set'     => 'Datum gesetzt (keine Verschiebung, da vorher leer).',
     'date_shift.flash_no_change'     => 'Keine Aenderung — Datum identisch.',
+
+    // ---------- v1.0 F3: Firmen-Cockpit (Issue #162) ----------
+    'nav.cockpit_company'              => 'Firmen-Cockpit',
+
+    'cockpit.company_title'            => 'Firmen-Cockpit',
+    'cockpit.company_h2'               => 'Firmen-Cockpit',
+    'cockpit.company_year'             => 'Jahr',
+    'cockpit.company_intro'            => 'Diese Edition zeigt die zeitbasierten Jahreskennzahlen deiner Firma. Umsatz, Rechnungen und Firmenbilanz sind Teil von Timeminator Pro.',
+
+    'cockpit.company_kpis_h3'          => 'Jahreskennzahlen (kaufmaennisch)',
+    'cockpit.company_kpis_subtitle'    => 'Angebote, Rechnungen, Kosten und Ergebnis liegen in Timeminator Pro.',
+    'cockpit.in_pro'                   => 'in Pro verfuegbar &rarr;',
+    'co.tile_offers_won'               => 'Angebote gewonnen',
+    'co.tile_invoiced'                 => 'Rechnungsstellung',
+    'co.tile_paid'                     => 'Bezahlt',
+    'co.tile_open'                     => 'Offen',
+    'co.tile_cost_external'            => 'Kosten extern',
+    'co.tile_cost_internal'            => 'Kosten intern',
+    'co.tile_result'                   => 'Ergebnis',
+
+    'cockpit.company_matrix_h3'        => 'Woche Ist / Soll — firmenweit',
+    'cockpit.company_matrix_subtitle'  => 'Letzte 8 Wochen + 2 Wochen voraus · Soll aus Projekt-Allokationen · Ist aus Buchungen',
+    'cockpit.company_matrix_empty'     => 'Keine Buchungen oder Planungen im Fenster.',
+    'cockpit.company_matrix_legend'    => 'Oben: Ist · unten: Soll. Farbe: gruen = Soll gesetzt, orange = unter 50 % des Soll, rot = ueber 110 % des Soll.',
+
+    'cockpit.company_cats_h3'          => 'Projekte nach Projektart',
+    'cockpit.company_cats_subtitle'    => 'Jahr %d · Stunden & Projektanzahl · Umsatz je Projektart ist Pro',
+    'cockpit.company_cats_empty'       => 'Keine aktiven Projekte.',
+    'cockpit.company_cats_count'       => 'Projekte',
+    'cockpit.company_cats_hours'       => 'Stunden (Jahr)',
+    'cockpit.company_cats_revenue'     => 'Umsatz',
+
+    'cockpit.company_processes_h3'     => 'Interne Prozesse',
+    'cockpit.company_processes_subtitle' => 'Jahr %d · Stunden je Prozess-Kategorie · gesamt %s h',
+    'cockpit.company_processes_empty'  => 'Keine Prozess-Kategorien aktiv.',
+    'cockpit.company_processes_cat'    => 'Prozess',
+    'cockpit.company_processes_count'  => 'Buchungen',
+    'cockpit.company_processes_hours'  => 'Stunden',
+    'cockpit.company_processes_share'  => 'Anteil',
 ];
