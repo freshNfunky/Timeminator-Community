@@ -87,6 +87,30 @@ final class Repo
         );
     }
 
+    /**
+     * v1.0 F2: Setzt nur planned_end — symmetrisch zu DateShiftRepo::logIfShifted
+     * (die Shift-Historie bleibt im Log, das Projekt zeigt immer das neueste
+     * Datum).
+     */
+    public static function setProjectPlannedEnd(int $projectId, ?string $plannedEnd): void
+    {
+        DB::run('UPDATE projects SET planned_end = ? WHERE id = ?', [$plannedEnd, $projectId]);
+    }
+
+    /** v1.0 F2: Kickoff- oder Closeout-Zeitstempel toggle-setzen (NULL loescht das Flag). */
+    public static function setProjectHealthField(int $projectId, string $field, ?string $value): void
+    {
+        if (!in_array($field, ['kickoff_at', 'closeout_at', 'planned_start'], true)) {
+            return;
+        }
+        DB::run("UPDATE projects SET $field = ? WHERE id = ?", [$value, $projectId]);
+    }
+
+    public static function setProjectReviewIntervalDays(int $projectId, ?int $days): void
+    {
+        DB::run('UPDATE projects SET review_interval_days = ? WHERE id = ?', [$days, $projectId]);
+    }
+
     // ---------- Project categories (v1.0 F6, portiert aus Pro #272) ----------
 
     /** @return list<array<string,mixed>> */
@@ -158,7 +182,7 @@ final class Repo
      * delay / extension) + optionales neues Datum. `progress` bleibt
      * eigener Typ wegen der 0..100-Zahl.
      */
-    public const TRACKER_TYPES_COMMUNITY = ['status_report', 'progress'];
+    public const TRACKER_TYPES_COMMUNITY = ['status_report', 'progress', 'date_shift'];
     public const TRACKER_STATUSES = ['on_plan', 'delay', 'extension'];
 
     /**
@@ -168,7 +192,9 @@ final class Repo
     {
         $rows = DB::all(
             'SELECT t.id, t.project_id, t.type, t.status, t.date_value,
-                    t.note, t.value, t.value_forecast, t.user_id, t.created_at,
+                    t.note, t.value, t.value_forecast,
+                    t.project_mood, t.customer_mood,
+                    t.user_id, t.created_at,
                     u.username AS user_username
                FROM project_trackers t
           LEFT JOIN users u ON u.id = t.user_id
@@ -188,6 +214,8 @@ final class Repo
                 'note'           => (string) $r['note'],
                 'value'          => $r['value']          !== null ? (float) $r['value']          : null,
                 'value_forecast' => $r['value_forecast'] !== null ? (float) $r['value_forecast'] : null,
+                'project_mood'   => $r['project_mood']   !== null ? (int) $r['project_mood']   : null,
+                'customer_mood'  => $r['customer_mood']  !== null ? (int) $r['customer_mood']  : null,
                 'user_id'        => $r['user_id']        !== null ? (int) $r['user_id']        : null,
                 'user_username'  => $r['user_username']  !== null ? (string) $r['user_username'] : null,
                 'created_at'     => (string) $r['created_at'],
@@ -219,10 +247,15 @@ final class Repo
             $note = mb_substr($note, 0, 4000);
         }
 
-        $status    = null;
-        $dateValue = null;
-        $value     = null;
-        $forecast  = null;
+        $status       = null;
+        $dateValue    = null;
+        $value        = null;
+        $forecast     = null;
+        $projectMood  = null;
+        $customerMood = null;
+        $moodClamp = static fn($v) =>
+            ($v === null || $v === '') ? null : (int) max(1, min(5, (int) $v));
+
         if ($type === 'progress') {
             $v = $extra['value'] ?? null;
             if ($v === null) {
@@ -232,6 +265,21 @@ final class Repo
             $f = $extra['value_forecast'] ?? null;
             if ($f !== null) {
                 $forecast = max(0.0, min(100.0, (float) $f));
+            }
+            // v1.0 F2: Progress-Trackereintrag kann ein as_of-Datum tragen
+            // (date_value wiederverwendet) + 1..5-Stimmungen am Progress.
+            $d = $extra['date_value'] ?? null;
+            if (is_string($d) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) {
+                $dateValue = $d;
+            }
+            $projectMood  = $moodClamp($extra['project_mood']  ?? null);
+            $customerMood = $moodClamp($extra['customer_mood'] ?? null);
+        } elseif ($type === 'date_shift') {
+            // v1.0 F2: Terminverschiebung — note = Begruendung,
+            // date_value = neues Enddatum.
+            $d = $extra['date_value'] ?? null;
+            if (is_string($d) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) {
+                $dateValue = $d;
             }
         } else {
             $s = $extra['status'] ?? null;
@@ -248,9 +296,11 @@ final class Repo
 
         return DB::insert(
             'INSERT INTO project_trackers
-                (project_id, type, status, date_value, note, value, value_forecast, user_id, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [$projectId, $type, $status, $dateValue, $note, $value, $forecast, $userId, now()]
+                (project_id, type, status, date_value, note, value, value_forecast,
+                 project_mood, customer_mood, user_id, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [$projectId, $type, $status, $dateValue, $note, $value, $forecast,
+             $projectMood, $customerMood, $userId, now()]
         );
     }
 
