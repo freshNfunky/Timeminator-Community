@@ -71,6 +71,66 @@ function ctrl_process_delete(): void
     redirect_route('processes');
 }
 
+/**
+ * JSON-API fuer den Kalender-Dialog (v1.0, konsistent mit Pro): legt einen
+ * internen Prozess-Eintrag an oder aktualisiert ihn. Antwortet mit
+ * {ok, process?, error?}.
+ */
+function ctrl_process_api_save(): void
+{
+    require_perm('entries.manage');
+    csrf_check();
+    header('Content-Type: application/json');
+    $id         = post_int('id');
+    $categoryId = post_int('category_id');
+    $start      = parse_dtlocal((string) post('start_ts'));
+    $end        = parse_dtlocal((string) post('end_ts'));
+    $note       = trim((string) post('note'));
+    if (!$categoryId || !$start || !$end) {
+        echo json_encode(['ok' => false, 'error' => t('processes.err_fields_required', 'Kategorie, Beginn und Ende sind erforderlich.')]);
+        exit;
+    }
+    if ($id) {
+        $existing = ProcessRepo::entry($id);
+        if (!$existing || (int) $existing['user_id'] !== Auth::id()) {
+            echo json_encode(['ok' => false, 'error' => 'forbidden']);
+            exit;
+        }
+    }
+    try {
+        $savedId = ProcessRepo::save([
+            'user_id'     => Auth::id(),
+            'category_id' => $categoryId,
+            'start_ts'    => $start,
+            'end_ts'      => $end,
+            'note'        => $note ?: null,
+        ], $id ?: null);
+        $row = ProcessRepo::entry($savedId);
+        echo json_encode(['ok' => true, 'process' => $row]);
+    } catch (RuntimeException $e) {
+        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+function ctrl_process_api_delete(): void
+{
+    require_perm('entries.manage');
+    csrf_check();
+    header('Content-Type: application/json');
+    $id = post_int('id');
+    if ($id) {
+        $existing = ProcessRepo::entry($id);
+        if ($existing && (int) $existing['user_id'] === Auth::id()) {
+            ProcessRepo::delete($id);
+            echo json_encode(['ok' => true]);
+            exit;
+        }
+    }
+    echo json_encode(['ok' => false, 'error' => 'not_found']);
+    exit;
+}
+
 // ---------- Prozesskategorien (Admin-Katalog) ----------
 
 function ctrl_process_categories_index(): void

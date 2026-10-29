@@ -73,6 +73,67 @@ function ctrl_absence_delete(): void
     redirect_route('absences');
 }
 
+/**
+ * JSON-API fuer den Kalender-Dialog (v1.0, konsistent mit Pro): legt eine
+ * Abwesenheit an oder aktualisiert sie. Antwortet mit {ok, absence?, error?}.
+ */
+function ctrl_absence_api_save(): void
+{
+    require_perm('entries.manage');
+    csrf_check();
+    header('Content-Type: application/json');
+    $id         = post_int('id');
+    $categoryId = post_int('category_id');
+    $start      = trim((string) post('start_date'));
+    $end        = trim((string) post('end_date')) ?: $start;
+    $note       = trim((string) post('note'));
+    if (!$categoryId || $start === '') {
+        echo json_encode(['ok' => false, 'error' => t('absences.err_fields_required', 'Kategorie und Von-Datum sind erforderlich.')]);
+        exit;
+    }
+    if ($id) {
+        $existing = AbsenceRepo::absence($id);
+        if (!$existing || (int) $existing['user_id'] !== Auth::id()) {
+            echo json_encode(['ok' => false, 'error' => 'forbidden']);
+            exit;
+        }
+    }
+    try {
+        $cat = AbsenceRepo::category($categoryId);
+        $savedId = AbsenceRepo::save([
+            'user_id'     => Auth::id(),
+            'category_id' => $categoryId,
+            'start_date'  => $start,
+            'end_date'    => $end,
+            'note'        => $note ?: null,
+            'hours'       => AbsenceRepo::parseHours(post('hours'), $cat),
+        ], $id ?: null);
+        $row = AbsenceRepo::absence($savedId);
+        echo json_encode(['ok' => true, 'absence' => $row]);
+    } catch (RuntimeException $e) {
+        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+function ctrl_absence_api_delete(): void
+{
+    require_perm('entries.manage');
+    csrf_check();
+    header('Content-Type: application/json');
+    $id = post_int('id');
+    if ($id) {
+        $existing = AbsenceRepo::absence($id);
+        if ($existing && (int) $existing['user_id'] === Auth::id()) {
+            AbsenceRepo::delete($id);
+            echo json_encode(['ok' => true]);
+            exit;
+        }
+    }
+    echo json_encode(['ok' => false, 'error' => 'not_found']);
+    exit;
+}
+
 // ---------- Abwesenheitsarten (Admin-Katalog) ----------
 
 function ctrl_absence_categories_index(): void

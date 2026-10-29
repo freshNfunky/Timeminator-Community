@@ -39,16 +39,40 @@ function ctrl_entries_index(): void
             $region
         );
     }
+    // v1.0 Kalender-Dialog (konsistent mit Pro): im Kalender-Modus laedt
+    // der Entries-Controller zusaetzlich Abwesenheiten + Prozess-Buchungen
+    // der Woche sowie die aktiven Kategorien, damit der neue Overlay-Dialog
+    // alle drei Typen anbieten kann.
+    // v1.0: Beide Views (Kalender + Liste) laden Abwesenheiten + Prozesse
+    // damit der Create-Dialog mit 3-Typ-Switcher ueberall funktioniert.
+    $uid = (int) Auth::id();
+    if ($view === 'calendar' && isset($weekStart, $weekEnd)) {
+        $fromDay = $weekStart->modify('-1 day')->format('Y-m-d');
+        $toDay   = $weekEnd->modify('+1 day')->format('Y-m-d');
+    } else {
+        $fromDay = $f['from'] ?: (new DateTimeImmutable('-30 days'))->format('Y-m-d');
+        $toDay   = $f['to']   ?: (new DateTimeImmutable('+30 days'))->format('Y-m-d');
+    }
+    $absences    = AbsenceRepo::forUser($uid, $fromDay, $toDay);
+    $processes   = ProcessRepo::forUser($uid, $fromDay . ' 00:00:00', $toDay . ' 23:59:59');
+    $absenceCats = AbsenceRepo::categories(true);
+    $processCats = ProcessRepo::categories(true);
+    $tasks       = Repo::tasks(true);
     view('entries/index', [
-        'entries'    => $entries,
-        'clients'    => Repo::clients(),
-        'projects'   => Repo::projects(),
-        'filter'     => $f,
-        'total'      => Stats::totalMinutes($entries),
-        'view'       => $view,
-        'pro_url'    => (string) cfg('pro_url', 'https://timeminator.felixschaller.com'),
-        'week_start' => $view === 'calendar' ? ($weekStart ?? null) : null,
-        'holidays'   => $holidays,
+        'entries'     => $entries,
+        'clients'     => Repo::clients(),
+        'projects'    => Repo::projects(),
+        'filter'      => $f,
+        'total'       => Stats::totalMinutes($entries),
+        'view'        => $view,
+        'pro_url'     => (string) cfg('pro_url', 'https://timeminator.felixschaller.com'),
+        'week_start'  => $view === 'calendar' ? ($weekStart ?? null) : null,
+        'holidays'    => $holidays,
+        'absences'    => $absences,
+        'processes'   => $processes,
+        'absenceCats' => $absenceCats,
+        'processCats' => $processCats,
+        'tasks'       => $tasks,
     ], t('nav.entries'));
 }
 
@@ -254,6 +278,64 @@ function ctrl_entry_delete(): void
         flash(t('entries.flash_deleted', 'Eintrag geloescht.'));
     }
     redirect_route('entries');
+}
+
+/**
+ * JSON-API fuer den Kalender-Dialog (v1.0, konsistent mit Pro): legt einen
+ * Projekt-Zeiteintrag an oder aktualisiert ihn. Antwortet mit
+ * {ok, entry?, error?}.
+ */
+function ctrl_entry_api_save(): void
+{
+    require_perm('entries.manage');
+    csrf_check();
+    header('Content-Type: application/json');
+    $id     = post_int('id');
+    $taskId = post_int('task_id');
+    $start  = parse_dtlocal((string) post('start_ts'));
+    $end    = parse_dtlocal((string) post('end_ts'));
+    $note   = trim((string) post('note'));
+
+    if (!$taskId || !$start || !$end) {
+        echo json_encode(['ok' => false, 'error' => t('entries.err_required', 'Aufgabe, Start und Ende sind erforderlich.')]);
+        exit;
+    }
+    if ($end <= $start) {
+        echo json_encode(['ok' => false, 'error' => t('entries.err_end_before_start', 'Ende muss nach dem Start liegen.')]);
+        exit;
+    }
+    try {
+        if ($id) {
+            $existing = Repo::entry($id);
+            if (!$existing || ((int) $existing['user_id'] !== Auth::id() && !Auth::isAdmin())) {
+                echo json_encode(['ok' => false, 'error' => 'forbidden']);
+                exit;
+            }
+            Repo::updateEntry($id, $taskId, $start, $end, $note);
+            echo json_encode(['ok' => true, 'entry' => Repo::entry($id)]);
+            exit;
+        }
+        $newId = Repo::createEntry(Auth::id(), $taskId, $start, $end, $note, 'manual');
+        echo json_encode(['ok' => true, 'entry' => Repo::entry($newId)]);
+    } catch (Throwable $e) {
+        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+function ctrl_entry_api_delete(): void
+{
+    require_perm('entries.manage');
+    csrf_check();
+    header('Content-Type: application/json');
+    $id = post_int('id');
+    if ($id) {
+        Repo::deleteEntry($id, Auth::id(), Auth::isAdmin());
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+    echo json_encode(['ok' => false, 'error' => 'not_found']);
+    exit;
 }
 
 // ---------- Timer ----------

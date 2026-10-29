@@ -109,6 +109,59 @@ foreach ($entries as $__e) {
     ];
 }
 
+// v1.0 Kalender-Dialog: Interne Prozesse als farblich getrennte Bloecke
+// im selben Grid rendern (gleiche top/height-Mathematik wie entries).
+$__procPerDay = [];
+foreach (($processes ?? []) as $__p) {
+    try {
+        $__s = new DateTimeImmutable((string) $__p['start_ts']);
+        $__eEnd = new DateTimeImmutable((string) ($__p['end_ts'] ?? $__p['start_ts']));
+    } catch (Throwable) { continue; }
+    if ($__eEnd <= $__s) { $__eEnd = $__s->modify('+15 minutes'); }
+    $__sTs = $__s->getTimestamp();
+    $__dayOffset = (int) floor(($__sTs - $__weekMid) / 86400);
+    if ($__dayOffset < 0 || $__dayOffset > 6) { continue; }
+    $__dayStart = (int) $week_start->modify('+' . $__dayOffset . ' days')->setTime(0, 0)->getTimestamp();
+    $__dayEnd = $__dayStart + 86400;
+    $__vs = max($__sTs, $__dayStart);
+    $__ve = min($__eEnd->getTimestamp(), $__dayEnd);
+    $__topPct = (($__vs - $__dayStart) / 86400) * 100.0;
+    $__hPct = (($__ve - $__vs) / 86400) * 100.0;
+    if ($__hPct < 1.2) { $__hPct = 1.2; }
+    if ($__topPct < $__minTop) { $__minTop = $__topPct; }
+    $__procPerDay[$__dayOffset][] = [
+        'id'     => (int) $__p['id'],
+        'top'    => round($__topPct, 3),
+        'height' => round($__hPct, 3),
+        'start'  => $__s->format('H:i'),
+        'end'    => $__eEnd->format('H:i'),
+        'label'  => (string) ($__p['category_label'] ?? ''),
+        'note'   => (string) ($__p['note'] ?? ''),
+    ];
+}
+
+// Abwesenheiten je Tag (ein Tag kann mehrere ueberlappende haben).
+$__absByDay = [];
+foreach (($absences ?? []) as $__a) {
+    try {
+        $__from = new DateTimeImmutable((string) $__a['start_date']);
+        $__to   = new DateTimeImmutable((string) ($__a['end_date'] ?? $__a['start_date']));
+    } catch (Throwable) { continue; }
+    for ($__d = $__from; $__d <= $__to; $__d = $__d->modify('+1 day')) {
+        $__ymd = $__d->format('Y-m-d');
+        $__absByDay[$__ymd][] = [
+            'id'       => (int) $__a['id'],
+            'category' => (string) ($__a['category_label'] ?? ''),
+            'account'  => (string) ($__a['category_account'] ?? ''),
+            'hours'    => $__a['hours'] !== null ? (float) $__a['hours'] : null,
+            'note'     => (string) ($__a['note'] ?? ''),
+            'start'    => (string) $__a['start_date'],
+            'end'      => (string) ($__a['end_date'] ?? $__a['start_date']),
+            'cat_id'   => (int) $__a['category_id'],
+        ];
+    }
+}
+
 $__filterQp = array_filter($filter ?? [], static fn($v) => $v !== '' && $v !== 0 && $v !== null);
 unset($__filterQp['from'], $__filterQp['to']);
 $__weekQp = static function (DateTimeImmutable $m) use ($__filterQp): array {
@@ -121,6 +174,9 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
 .cal-week { --cal-scroll: <?= $__earliestHour * 56 ?>px; }
 <?php foreach ($__perDay as $__dayOffset => $__events): foreach ($__events as $__ev): ?>
 .cal-event-<?= (int) $__ev['id'] ?>{top:<?= $__ev['top'] ?>%;height:<?= $__ev['height'] ?>%;<?= $__ev['color'] !== '' ? 'background-color:' . $__ev['color'] . ';' : '' ?>}
+<?php endforeach; endforeach; ?>
+<?php foreach ($__procPerDay as $__dayOffset => $__events): foreach ($__events as $__ev): ?>
+.cal-process-<?= (int) $__ev['id'] ?>{top:<?= $__ev['top'] ?>%;height:<?= $__ev['height'] ?>%}
 <?php endforeach; endforeach; ?>
 </style>
 
@@ -154,17 +210,39 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
               <span class="cal-holiday-name"><?= h(t($__holiday['key'], $__holiday['key'])) ?></span>
             </div>
           <?php endif; ?>
+          <?php foreach ($__absByDay[$__day['ymd']] ?? [] as $__ab): ?>
+            <button type="button" class="cal-day-absence"
+                    data-absence-id="<?= (int) $__ab['id'] ?>"
+                    data-cat-id="<?= (int) $__ab['cat_id'] ?>"
+                    data-start="<?= h($__ab['start']) ?>"
+                    data-end="<?= h($__ab['end']) ?>"
+                    data-hours="<?= h($__ab['hours'] === null ? '' : (string) $__ab['hours']) ?>"
+                    data-note="<?= h($__ab['note']) ?>"
+                    title="<?= h($__ab['category'] . ($__ab['note'] !== '' ? ' · ' . $__ab['note'] : '')) ?>">
+              <?= h($__ab['category']) ?>
+            </button>
+          <?php endforeach; ?>
           <div class="cal-day-grid" data-day="<?= h($__day['ymd']) ?>">
             <?php for ($h = 1; $h < 24; $h++): ?>
               <div class="cal-day-line"></div>
             <?php endfor; ?>
             <?php foreach ($__perDay[$__i] ?? [] as $__ev): ?>
-              <a class="cal-event cal-event-<?= (int) $__ev['id'] ?><?= $__ev['running'] ? ' cal-event-running' : '' ?>"
-                 href="<?= h(route('entry_form', ['id' => $__ev['id']])) ?>"
+              <button type="button" class="cal-event cal-event-<?= (int) $__ev['id'] ?><?= $__ev['running'] ? ' cal-event-running' : '' ?>"
+                 data-entry-type="project"
+                 data-entry-id="<?= (int) $__ev['id'] ?>"
                  title="<?= h($__ev['client'] . ' / ' . $__ev['project'] . ' · ' . $__ev['task']) ?>&#10;<?= h($__ev['start']) ?> – <?= h($__ev['end']) ?><?= $__ev['note'] !== '' ? '&#10;' . h($__ev['note']) : '' ?>">
                 <span class="cal-event-time"><?= h($__ev['start']) ?></span>
                 <span class="cal-event-label"><?= h($__ev['client']) ?><?= $__ev['project'] !== '' ? ' / ' . h($__ev['project']) : '' ?></span>
-              </a>
+              </button>
+            <?php endforeach; ?>
+            <?php foreach ($__procPerDay[$__i] ?? [] as $__ev): ?>
+              <button type="button" class="cal-event cal-process cal-process-<?= (int) $__ev['id'] ?>"
+                 data-entry-type="process"
+                 data-entry-id="<?= (int) $__ev['id'] ?>"
+                 title="<?= h($__ev['label'] . ($__ev['note'] !== '' ? ' · ' . $__ev['note'] : '')) ?>&#10;<?= h($__ev['start']) ?> – <?= h($__ev['end']) ?>">
+                <span class="cal-event-time"><?= h($__ev['start']) ?></span>
+                <span class="cal-event-label"><?= h($__ev['label']) ?></span>
+              </button>
             <?php endforeach; ?>
           </div>
         </div>
@@ -172,6 +250,9 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
     </div>
   </div>
 </div>
+
+<!-- Dialog + JS werden zentral in views/entries/index.php eingebunden, damit
+     sowohl Kalender- als auch Liste-View den gleichen Create/Edit-Flow bekommen. -->
 
 <?php
   $__holidayRegion  = Holidays::currentRegion();
