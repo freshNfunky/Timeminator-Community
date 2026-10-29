@@ -458,6 +458,39 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 /* Dashboard: Zeitaufzeichnung-Titel ueber dem Timer, dezent */
 .timer-card .timer-card-title{font-size:15px;margin:0 0 10px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px}
 
+/* v1.0 Kalender-Dialog: Prozess-Bloecke + Absence-Badges + Dialog-Styles */
+.cal-day-grid{cursor:crosshair}
+.cal-event{appearance:none;border:none;font:inherit;text-align:left;cursor:pointer;color:inherit}
+.cal-event.cal-process{background:#f59e0b;color:#1f2937}
+:root[data-theme="dark"] .cal-event.cal-process{background:#92400e;color:#fde68a}
+.cal-day-absence{display:block;width:calc(100% - 8px);margin:4px;padding:3px 6px;background:#10b981;color:#fff;border:none;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;text-align:left;line-height:1.2}
+:root[data-theme="dark"] .cal-day-absence{background:#065f46;color:#d1fae5}
+.cal-day-absence:hover{opacity:.85}
+
+.cal-dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:20px;max-width:520px;width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.cal-dialog::backdrop{background:rgba(0,0,0,.45)}
+.cal-dialog form > label,.cal-dialog form > .row{display:block;margin-bottom:10px}
+.cal-dialog form .row{display:flex;gap:10px}
+.cal-dialog form .row > .grow{flex:1}
+.cal-dialog h3{margin:0 0 14px;font-size:17px}
+.cal-dialog select,.cal-dialog input[type=text],.cal-dialog input[type=date],.cal-dialog input[type=datetime-local]{width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--ink);font:inherit;margin-top:3px}
+.cal-dialog .form-actions{display:flex;gap:8px;margin-top:14px;align-items:center}
+.cal-dialog .form-actions .btn-danger{margin-left:auto}
+
+/* v1.0 Entries: prominente Reiter oben (Kalender | Liste) */
+.entries-tabs{display:flex;gap:4px;align-items:center;margin:0 0 12px;border-bottom:1px solid var(--line);padding:0 4px}
+.entries-tabs .entries-tab{padding:10px 18px;color:var(--muted);text-decoration:none;font-weight:500;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;position:relative;top:1px}
+.entries-tabs .entries-tab:hover{color:var(--ink);background:var(--panel-alt,rgba(0,0,0,.03))}
+.entries-tabs .entries-tab.is-active{color:var(--ink);background:var(--panel);border-color:var(--line);border-bottom-color:var(--panel)}
+.entries-tabs .entries-tab-spacer{flex:1}
+:root[data-theme="dark"] .entries-tabs .entries-tab:hover{background:rgba(255,255,255,.04)}
+
+/* Entries-Liste: Typ-Pills */
+.pill-process{background:#fef3c7;color:#92400e}
+.pill-absence{background:#d1fae5;color:#065f46}
+:root[data-theme="dark"] .pill-process{background:#78350f;color:#fde68a}
+:root[data-theme="dark"] .pill-absence{background:#065f46;color:#d1fae5}
+
 /* Report traffic-light cells */
 .cell-green{background:var(--cell-green-bg);color:var(--cell-green-ink)}
 .cell-orange{background:var(--cell-orange-bg);color:var(--cell-orange-ink)}

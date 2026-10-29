@@ -39,12 +39,12 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
   <details class="nav-group"<?= $__monActive ? ' open' : '' ?>>
     <summary class="nav-group-toggle<?= $__monActive ? ' active' : '' ?>"><?= h(t('nav.monitoring', 'Monitoring')) ?></summary>
     <div class="nav-group-items">
+      <?php // Abwesenheiten + Interne Prozesse werden jetzt direkt im
+            // Kalender-Dialog unter Zeiteintraege erfasst (konsistent mit
+            // Pro); die separaten Listen-Seiten bleiben per URL erreichbar,
+            // sind aber nicht mehr prominent navigierbar. ?>
       <?php if (Auth::can('stats.view')): ?>
         <a href="<?= h(route('stats')) ?>"<?= $active(['stats']) ?>><?= h(t('nav.stats')) ?></a>
-      <?php endif; ?>
-      <?php if (Auth::can('entries.manage')): ?>
-        <a href="<?= h(route('absences')) ?>"<?= $active(['absences']) ?>><?= h(t('nav.absences', 'Abwesenheiten')) ?></a>
-        <a href="<?= h(route('processes')) ?>"<?= $active(['processes']) ?>><?= h(t('nav.processes', 'Interne Prozesse')) ?></a>
       <?php endif; ?>
       <?php if (Auth::can('sentiment.record')): ?>
         <a href="<?= h(route('sentiment')) ?>"<?= $active(['sentiment']) ?>><?= h(t('nav.sentiment')) ?></a>
