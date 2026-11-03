@@ -325,7 +325,19 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 /* Projekt-Tracker (zeitgestempelte Status-Berichte, #127) */
 .cockpit-tracker-head{margin-top:22px}
 .tracker-form{max-width:720px;display:flex;flex-direction:column;gap:10px;margin:8px 0 18px}
-.tracker-form label{display:flex;flex-direction:column;gap:4px}
+/* Tracker-Entry-Forms zweispaltig (Felix-Feedback 2026-11-03: "nimmt zu viel
+   platz ein. vllt. kann man das zweispaltig machen"): Grid mit zwei Spalten,
+   jedes Feld steht in einer der beiden Spalten. Elemente mit .grow (z. B. der
+   Kommentar) spannen beide Spalten. Buttons und versteckte Inputs ebenso. */
+.tracker-form{display:grid !important;grid-template-columns:repeat(2, minmax(0, 1fr));gap:10px 16px;align-items:end}
+.tracker-form label{display:flex;flex-direction:column;gap:4px;margin:0;min-width:0}
+.tracker-form label.grow,
+.tracker-form .form-actions,
+.tracker-form > input[type="hidden"]{grid-column:1 / -1}
+.tracker-form input[type="date"],
+.tracker-form input[type="number"],
+.tracker-form input[type="text"],
+.tracker-form select{width:100%;box-sizing:border-box}
 .tracker-type-label select{max-width:360px}
 .tracker-form textarea{min-height:72px;font-family:inherit}
 /* Conditional fields driven by data-attributes the small app.js script

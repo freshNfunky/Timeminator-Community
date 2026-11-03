@@ -289,7 +289,12 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
   ?>
 
   <div class="row tracker-entry-row" style="align-items:flex-end;margin-bottom:.6em">
-    <label><?= h(t('cockpit.booking_type', 'Buchungs-Typ')) ?>
+    <label>
+      <?= h(t('cockpit.booking_type', 'Buchungs-Typ')) ?>
+      <?php /* Tooltip statt Prosa-Absatz (Felix-Feedback 2026-11-03: "prosa-text.
+              hinter tooltip verstecken."): der Pro-Hinweis sitzt als ⓘ-Badge
+              neben dem Label und oeffnet den gleichen Text als Popover. */ ?>
+      <?= tip('cockpit.tracker_pro_hint') ?>
       <select id="trackerType" class="tracker-type-select">
         <option value="progress"><?= h(t('cockpit.tt_progress', 'Fortschritt')) ?></option>
         <option value="date_shift"><?= h(t('cockpit.tt_date_shift', 'Terminverschiebung')) ?></option>
@@ -298,9 +303,6 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
         <?php endforeach; ?>
       </select>
     </label>
-    <p class="muted tracker-pro-hint" style="flex:1 1 20em;margin:0">
-      <?= h(t('cockpit.tracker_pro_hint', 'Weitere Typen (Risiko, Entscheidung, Meeting, Kosten, Rechnungen …) sind in der Pro-Variante verfuegbar.')) ?>
-    </p>
   </div>
 
   <?php // === Fortschritts-Meldung (Community: progress) ================= ?>
