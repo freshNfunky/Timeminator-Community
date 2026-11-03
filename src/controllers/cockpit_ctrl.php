@@ -286,7 +286,18 @@ function ctrl_cockpit_health_save(): void
         flash(t('cockpit.err_unknown_field', 'Unbekanntes Feld.'), 'err');
         redirect_route('cockpit_project', ['id' => $id]);
     }
-    $value = (bool) post('done') ? (new DateTimeImmutable('today'))->format('Y-m-d H:i:s') : null;
+    if ((bool) post('clear')) {
+        $value = null;
+    } else {
+        $date = trim((string) post('date'));
+        if ($date !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            $value = $date . ' 00:00:00';
+        } elseif ((bool) post('done')) {
+            $value = (new DateTimeImmutable('today'))->format('Y-m-d H:i:s');
+        } else {
+            $value = null;
+        }
+    }
     Repo::setProjectHealthField($id, $field, $value);
     flash(t('common.saved', 'Gespeichert.'));
     redirect_route('cockpit_project', ['id' => $id]);

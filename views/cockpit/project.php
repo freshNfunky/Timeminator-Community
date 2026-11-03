@@ -46,35 +46,33 @@ $f = $row['flags'] ?? ['kickoff' => false, 'closeout' => false, 'deadline_overdu
     <h3><?= h(t('cockpit.health_h3', 'Projekt-Health')) ?><?= tip('cockpit.health_subtitle') ?></h3>
   </div>
 
-  <form method="post" action="<?= h(route('cockpit_health_save')) ?>" class="form-inline">
-    <?= csrf_field() ?>
-    <input type="hidden" name="id"    value="<?= (int) $project['id'] ?>">
-    <input type="hidden" name="field" value="kickoff_at">
-    <label class="check">
-      <input type="checkbox" name="done" value="1" <?= $f['kickoff'] ? 'checked' : '' ?> onchange="this.form.submit()">
-      <?= h(t('cockpit.health_kickoff', 'Kickoff erfolgt')) ?>
-      <?php if (!empty($project['kickoff_at'])): ?><span class="muted">(<?= h((new DateTimeImmutable($project['kickoff_at']))->format('d.m.Y')) ?>)</span><?php endif; ?>
-    </label>
-  </form>
+  <?php
+    $renderHealthRow = function (string $field, string $label, ?string $currentIso) use ($project) {
+      $dateVal = $currentIso ? (new DateTimeImmutable($currentIso))->format('Y-m-d') : '';
+  ?>
+    <form method="post" action="<?= h(route('cockpit_health_save')) ?>" class="health-row">
+      <?= csrf_field() ?>
+      <input type="hidden" name="id"    value="<?= (int) $project['id'] ?>">
+      <input type="hidden" name="field" value="<?= h($field) ?>">
+      <span class="health-row-label"><?= h($label) ?></span>
+      <input type="date" name="date" value="<?= h($dateVal) ?>" class="health-row-date">
+      <button class="btn btn-ghost btn-sm" type="submit"><?= h(t('common.save', 'Speichern')) ?></button>
+      <?php if ($currentIso): ?>
+        <button class="btn btn-ghost btn-sm" type="submit" name="clear" value="1"><?= h(t('cockpit.health_clear', 'Zuruecksetzen')) ?></button>
+      <?php endif; ?>
+    </form>
+  <?php }; ?>
 
-  <form method="post" action="<?= h(route('cockpit_health_save')) ?>" class="form-inline">
-    <?= csrf_field() ?>
-    <input type="hidden" name="id"    value="<?= (int) $project['id'] ?>">
-    <input type="hidden" name="field" value="closeout_at">
-    <label class="check">
-      <input type="checkbox" name="done" value="1" <?= $f['closeout'] ? 'checked' : '' ?> onchange="this.form.submit()">
-      <?= h(t('cockpit.health_closeout', 'Abschluss erfolgt')) ?>
-      <?php if (!empty($project['closeout_at'])): ?><span class="muted">(<?= h((new DateTimeImmutable($project['closeout_at']))->format('d.m.Y')) ?>)</span><?php endif; ?>
-    </label>
-  </form>
+  <?php $renderHealthRow('kickoff_at',  t('cockpit.health_kickoff',  'Kickoff'),  $project['kickoff_at']  ?? null); ?>
+  <?php $renderHealthRow('closeout_at', t('cockpit.health_closeout', 'Abschluss'), $project['closeout_at'] ?? null); ?>
 
-  <form method="post" action="<?= h(route('cockpit_review_interval_save')) ?>" class="form-inline" style="margin-top:8px">
+  <form method="post" action="<?= h(route('cockpit_review_interval_save')) ?>" class="health-row health-row-review">
     <?= csrf_field() ?>
     <input type="hidden" name="id" value="<?= (int) $project['id'] ?>">
-    <label>
+    <span class="health-row-label">
       <?= h(t('cockpit.health_review_days', 'Review-Turnus in Tagen (leer = Default')) ?> <?= (int) $default_review_days ?>)
-      <input type="number" name="review_interval_days" value="<?= h((string) ($project['review_interval_days'] ?? '')) ?>" min="1" style="width:6em">
-    </label>
+    </span>
+    <input type="number" name="review_interval_days" class="health-row-days" value="<?= h((string) ($project['review_interval_days'] ?? '')) ?>" min="1">
     <button class="btn btn-ghost btn-sm" type="submit"><?= h(t('common.save')) ?></button>
   </form>
 </div>

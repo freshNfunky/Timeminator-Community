@@ -1176,8 +1176,9 @@ return [
 
     'cockpit.health_h3'           => 'Project health',
     'cockpit.health_subtitle'     => 'Kickoff, close-out and review cadence',
-    'cockpit.health_kickoff'      => 'Kickoff done',
-    'cockpit.health_closeout'     => 'Close-out done',
+    'cockpit.health_kickoff'      => 'Kickoff',
+    'cockpit.health_closeout'     => 'Close-out',
+    'cockpit.health_clear'        => 'Clear',
     'cockpit.health_review_days'  => 'Review cadence in days (empty = default',
     'cockpit.err_unknown_field'   => 'Unknown field.',
 
