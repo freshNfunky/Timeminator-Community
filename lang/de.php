@@ -1181,6 +1181,8 @@ return [
     'cockpit.burnup_deadline'     => 'Planende',
     'cockpit.burnup_delay'        => 'Verzoegerung',
     'cockpit.burnup_ideal'        => 'Ideal',
+    'cockpit.burnup_within'       => 'im Budget',
+    'cockpit.burnup_over'         => 'Budget ueberschritten',
     'cockpit.health_review_days'  => 'Review-Turnus in Tagen (leer = Default',
     'cockpit.err_unknown_field'   => 'Unbekanntes Feld.',
 

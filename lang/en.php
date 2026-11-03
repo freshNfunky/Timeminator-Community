@@ -1184,6 +1184,8 @@ return [
     'cockpit.burnup_deadline'     => 'Planned end',
     'cockpit.burnup_delay'        => 'Delay',
     'cockpit.burnup_ideal'        => 'Ideal',
+    'cockpit.burnup_within'       => 'within budget',
+    'cockpit.burnup_over'         => 'over budget',
     'cockpit.health_review_days'  => 'Review cadence in days (empty = default',
     'cockpit.err_unknown_field'   => 'Unknown field.',
 
