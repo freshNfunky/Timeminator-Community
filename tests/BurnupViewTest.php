@@ -187,6 +187,140 @@ final class BurnupViewTest extends TestCase
         );
     }
 
+    public function testTrackerEntryCardHasProgressFormAndDateShiftForm(): void
+    {
+        // Historische Regression (Felix-Feedback 2026-11-03: "tracker eingabe
+        // erlaubt aktuell nur terminverschiebung. das ist ein downgrade"):
+        // der Tracker-Eintrag-Bereich muss Fortschritts-Meldung UND
+        // Terminverschiebung anbieten, Pro-Typen als deaktivierte Teaser.
+        $view = file_get_contents($this->root() . '/views/cockpit/project.php');
+        $this->assertIsString($view);
+
+        // Typ-Switcher vorhanden (Pro-UI-Paritaet).
+        $this->assertStringContainsString('id="trackerType"', $view, 'Tracker-Typ-Switcher (#trackerType) fehlt');
+
+        // Fortschritts-Formular mit Pflicht-Progress-Wert, Prognose, Moods, Kommentar.
+        // Attribut-Reihenfolge ist egal - pruefen, dass beide Tokens im selben <form> stehen.
+        $this->assertMatchesRegularExpression(
+            '/<form[^>]*action="[^"]*project_tracker_save[^"]*"[^>]*data-tracker-type="progress"|<form[^>]*data-tracker-type="progress"[^>]*action="[^"]*project_tracker_save/s',
+            $view,
+            'Fortschritts-Formular (data-tracker-type="progress") fehlt'
+        );
+        $this->assertStringContainsString('name="value"',           $view, 'Fortschritt-Feld (value) fehlt');
+        $this->assertStringContainsString('name="value_forecast"',  $view, 'Prognose-Feld (value_forecast) fehlt');
+        $this->assertStringContainsString('name="project_mood"',    $view, 'Projekt-Stimmung-Feld fehlt');
+        $this->assertStringContainsString('name="customer_mood"',   $view, 'Kunden-Stimmung-Feld fehlt');
+
+        // Terminverschiebungs-Formular bleibt bestehen (data-tracker-type="date_shift").
+        $this->assertMatchesRegularExpression(
+            '/<form[^>]*action="[^"]*cockpit_date_shift_save[^"]*"[^>]*data-tracker-type="date_shift"|<form[^>]*data-tracker-type="date_shift"[^>]*action="[^"]*cockpit_date_shift_save/s',
+            $view,
+            'Terminverschiebungs-Formular (data-tracker-type="date_shift") fehlt'
+        );
+    }
+
+    public function testTrackerEntryExposesProTypesAsDisabledOptions(): void
+    {
+        // Kaufmaennische und PM-Typen aus der Pro-Variante muessen im
+        // Switcher sichtbar aber deaktiviert sein, damit User wissen, was
+        // in Pro verfuegbar ist - ohne die Backend-Pfade ausbauen zu muessen.
+        $view = file_get_contents($this->root() . '/views/cockpit/project.php');
+        $this->assertIsString($view);
+
+        // Alle sieben Pro-Typen sind im $proTypes-Array der View enthalten.
+        foreach (['risk', 'decision', 'meeting', 'cost', 'budget_increase', 'invoice_sent', 'invoice_payment'] as $proType) {
+            $this->assertMatchesRegularExpression(
+                "/'" . preg_quote($proType, '/') . "'\s*=>\s*t\(/",
+                $view,
+                "Pro-Typ \"$proType\" fehlt im \$proTypes-Array der Tracker-Entry-Card"
+            );
+        }
+        // Options werden aus dem Array heraus als disabled gerendert.
+        $this->assertStringContainsString(
+            'disabled data-pro="1"',
+            $view,
+            'Pro-Typen muessen im Switcher als disabled mit data-pro="1" gerendert werden'
+        );
+    }
+
+    public function testProgressTrackerControllerPersistsMoodsAndAsOf(): void
+    {
+        // Historische Regression: der Save-Pfad fuer Fortschrittsmeldungen
+        // muss project_mood, customer_mood und das date_value (Stand-Datum)
+        // bis in die project_trackers-Tabelle durchreichen.
+        $src = file_get_contents($this->root() . '/src/controllers/structure_ctrl.php');
+        $this->assertIsString($src);
+
+        $this->assertStringContainsString(
+            "\$extra['project_mood']",
+            $src,
+            'ctrl_project_tracker_save reicht project_mood nicht ins $extra-Array durch'
+        );
+        $this->assertStringContainsString(
+            "\$extra['customer_mood']",
+            $src,
+            'ctrl_project_tracker_save reicht customer_mood nicht durch'
+        );
+        $this->assertStringContainsString(
+            "\$extra['date_value'] = \$asOf",
+            $src,
+            'ctrl_project_tracker_save reicht date_value (as_of) nicht durch'
+        );
+    }
+
+    public function testPlanMatrixHasIstSollColorCoding(): void
+    {
+        // Historische Regression (Felix-Feedback 2026-11-03: "keine
+        // farbkodierung von soll und ist - siehe provariante"): die Plan-
+        // Matrix muss Zellen nach Ist/Soll-Verhaeltnis einfaerben:
+        // rot wenn Ist > 1.15*Soll, orange wenn 1.0 < Ratio <= 1.15,
+        // gruen wenn Ist <= Soll (bei Soll > 0). Soll=0 und Ist>0 → orange.
+        $view = file_get_contents($this->root() . '/views/cockpit/project.php');
+        $this->assertIsString($view);
+
+        // Alle drei Ampel-Klassen tauchen im Zell-Rendering auf.
+        $this->assertStringContainsString("'cell-red'",    $view, 'cell-red fehlt in der Matrix-Farbkodierung');
+        $this->assertStringContainsString("'cell-orange'", $view, 'cell-orange fehlt in der Matrix-Farbkodierung');
+        $this->assertStringContainsString("'cell-green'",  $view, 'cell-green fehlt in der Matrix-Farbkodierung');
+
+        // Ratio-Logik ist explizit per Ampel-Schwellen (keine stumme Gleichheit).
+        $this->assertMatchesRegularExpression(
+            '/\$ratio\s*=\s*\$ist\s*\/\s*\$soll/s',
+            $view,
+            'Ist/Soll-Ratio wird nicht berechnet'
+        );
+        $this->assertMatchesRegularExpression(
+            '/ratio\s*>\s*1\.15.*?cell-red/s',
+            $view,
+            'Grenze 1.15 fuer cell-red fehlt'
+        );
+        $this->assertMatchesRegularExpression(
+            '/ratio\s*>\s*1\.0.*?cell-orange/s',
+            $view,
+            'Grenze 1.0 fuer cell-orange fehlt'
+        );
+
+        // Die td-Zelle traegt data-ist + data-soll, damit JS nach einem Save die
+        // Farbe live aktualisieren kann (ohne Reload).
+        $this->assertStringContainsString(
+            'data-ist="<?= (int) $ist ?>"',
+            $view,
+            'plan-cell braucht data-ist fuer JS-Farbaktualisierung'
+        );
+        $this->assertStringContainsString(
+            'data-soll="<?= (int) $soll ?>"',
+            $view,
+            'plan-cell braucht data-soll fuer JS-Farbaktualisierung'
+        );
+
+        // JS entfernt alte Klassen und setzt die passende nach Save neu.
+        $this->assertStringContainsString(
+            "classList.remove('cell-green', 'cell-orange', 'cell-red')",
+            $view,
+            'JS entfernt Ampel-Klassen nicht vor dem Neu-Setzen'
+        );
+    }
+
     public function testPlanMatrixSavesCsrfUnderCorrectFieldName(): void
     {
         // Historische Regression (Felix-Feedback 2026-11-03): der Plan-Matrix-JS

@@ -138,8 +138,22 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
               $ist  = $matrix_ist[$uid][$wk]  ?? 0;
               $soll = $matrix_soll[$uid][$wk] ?? 0;
               $wkStart = $weekMonday($wk);
+              // Farbkodierung analog Pro-Variante (Felix-Feedback 2026-11-03):
+              //   Ist > 1.15 * Soll → rot     (deutlich ueberbucht)
+              //   Ist > 1.00 * Soll → orange  (leichte Ueberbuchung)
+              //   Ist <= Soll (Soll > 0) → gruen (im Plan)
+              //   Soll=0 & Ist>0 → orange     (ungeplanter Aufwand)
+              //   Beides 0 → keine Farbe
+              $cellClass = '';
+              if ($soll > 0) {
+                  $ratio = $ist / $soll;
+                  $cellClass = $ratio > 1.15 ? 'cell-red'
+                             : ($ratio > 1.0 ? 'cell-orange' : 'cell-green');
+              } elseif ($ist > 0) {
+                  $cellClass = 'cell-orange';
+              }
             ?>
-              <td class="r plan-cell" data-week="<?= h($wkStart) ?>">
+              <td class="r plan-cell <?= $cellClass ?>" data-week="<?= h($wkStart) ?>" data-ist="<?= (int) $ist ?>" data-soll="<?= (int) $soll ?>">
                 <div class="plan-ist"><?= h($minToHr((int) $ist)) ?: '—' ?></div>
                 <?php if (Auth::can('structure.manage')): ?>
                   <input class="plan-soll-input" type="text" inputmode="decimal"
@@ -197,6 +211,19 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
           var hrs = mins ? (mins / 60).toFixed(1).replace('.', ',') : '';
           inp.value = hrs;
           orig = inp.value;
+          // Zellen-Farbe nach neuem Soll live aktualisieren (Pro-Vorbild,
+          // Felix-Feedback 2026-11-03): gruen/orange/rot je nach Ist-Soll-
+          // Verhaeltnis, sonst keine Markierung.
+          var ist  = parseInt(cell.getAttribute('data-ist')  || '0', 10);
+          cell.setAttribute('data-soll', String(mins));
+          cell.classList.remove('cell-green', 'cell-orange', 'cell-red');
+          if (mins > 0) {
+            var ratio = ist / mins;
+            cell.classList.add(ratio > 1.15 ? 'cell-red'
+                             : (ratio > 1.0 ? 'cell-orange' : 'cell-green'));
+          } else if (ist > 0) {
+            cell.classList.add('cell-orange');
+          }
         })
         .catch(function (e) { inp.disabled = false; alert(String(e)); inp.value = orig; });
     });
@@ -224,9 +251,95 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
 <?php if (Auth::can('structure.manage')): ?>
 <div class="card" style="margin-top:16px">
   <div class="card-head">
-    <h3><?= h(t('cockpit.date_shift_h3', 'Terminverschiebung')) ?><?= tip('cockpit.date_shift_subtitle') ?></h3>
+    <h3><?= h(t('cockpit.tracker_entry_h3', 'Tracker-Eintrag')) ?><?= tip('cockpit.tracker_entry_subtitle') ?></h3>
   </div>
-  <form method="post" action="<?= h(route('cockpit_date_shift_save')) ?>" class="form-inline">
+
+  <?php
+    // Pro-UI-Paritaet (Felix-Feedback 2026-11-03: "wieder pro variante als
+    // vorlage"): ein Typ-Switcher statt stapelweise Einzel-Cards. Community hat
+    // zwei aktive Typen (Fortschritt + Terminverschiebung), sieben weitere sind
+    // als Pro-Teaser disabled - markiert mit dem Suffix (Pro). So wird die
+    // vollstaendige Palette sichtbar, ohne die kaufmaennischen Backend-Pfade zu
+    // benoetigen.
+    $todayIso = (new DateTimeImmutable('today'))->format('Y-m-d');
+    $moodOptions = function (): string {
+        $labels = [
+            1 => t('cockpit.mood_1', 'sehr schlecht'),
+            2 => t('cockpit.mood_2', 'schlecht'),
+            3 => t('cockpit.mood_3', 'neutral'),
+            4 => t('cockpit.mood_4', 'gut'),
+            5 => t('cockpit.mood_5', 'sehr gut'),
+        ];
+        $out = '';
+        foreach ($labels as $v => $lbl) {
+            $out .= '<option value="' . $v . '">' . $v . ' — ' . h($lbl) . '</option>';
+        }
+        return $out;
+    };
+    $proTypes = [
+        'risk'             => t('cockpit.tt_risk',             'Risiko'),
+        'decision'         => t('cockpit.tt_decision',         'Entscheidung'),
+        'meeting'          => t('cockpit.tt_meeting',          'Meeting-Protokoll'),
+        'cost'             => t('cockpit.tt_cost',             'Kosten'),
+        'budget_increase'  => t('cockpit.tt_budget_increase',  'Budget-Erhoehung'),
+        'invoice_sent'     => t('cockpit.tt_invoice_sent',     'Rechnung versendet'),
+        'invoice_payment'  => t('cockpit.tt_invoice_payment',  'Zahlung erhalten'),
+    ];
+    $proSuffix = ' (' . t('cockpit.tt_pro_suffix', 'Pro') . ')';
+  ?>
+
+  <div class="row tracker-entry-row" style="align-items:flex-end;margin-bottom:.6em">
+    <label><?= h(t('cockpit.booking_type', 'Buchungs-Typ')) ?>
+      <select id="trackerType" class="tracker-type-select">
+        <option value="progress"><?= h(t('cockpit.tt_progress', 'Fortschritt')) ?></option>
+        <option value="date_shift"><?= h(t('cockpit.tt_date_shift', 'Terminverschiebung')) ?></option>
+        <?php foreach ($proTypes as $key => $label): ?>
+          <option value="<?= h($key) ?>" disabled data-pro="1"><?= h($label . $proSuffix) ?></option>
+        <?php endforeach; ?>
+      </select>
+    </label>
+    <p class="muted tracker-pro-hint" style="flex:1 1 20em;margin:0">
+      <?= h(t('cockpit.tracker_pro_hint', 'Weitere Typen (Risiko, Entscheidung, Meeting, Kosten, Rechnungen …) sind in der Pro-Variante verfuegbar.')) ?>
+    </p>
+  </div>
+
+  <?php // === Fortschritts-Meldung (Community: progress) ================= ?>
+  <form method="post" action="<?= h(route('project_tracker_save')) ?>" class="row tracker-form" data-tracker-type="progress" style="flex-wrap:wrap;align-items:flex-end;gap:10px">
+    <?= csrf_field() ?>
+    <input type="hidden" name="project_id" value="<?= (int) $project['id'] ?>">
+    <input type="hidden" name="type" value="progress">
+    <input type="hidden" name="return_to" value="cockpit_project">
+    <label><?= h(t('cockpit.f_date', 'Stand')) ?>
+      <input type="date" name="date_value" value="<?= h($todayIso) ?>">
+    </label>
+    <label><?= h(t('cockpit.f_progress_pct', 'Fortschritt (%)')) ?>
+      <input type="number" name="value" min="0" max="100" step="1" required style="width:6em">
+    </label>
+    <label><?= h(t('cockpit.f_forecast_pct', 'Prognose (%)')) ?>
+      <input type="number" name="value_forecast" min="0" max="100" step="1" style="width:6em" placeholder="<?= h(t('cockpit.f_optional', 'optional')) ?>">
+    </label>
+    <label><?= h(t('cockpit.f_project_mood', 'Projekt-Stimmung')) ?>
+      <select name="project_mood">
+        <option value="">—</option>
+        <?= $moodOptions() ?>
+      </select>
+    </label>
+    <label><?= h(t('cockpit.f_customer_mood', 'Kunden-Stimmung')) ?>
+      <select name="customer_mood">
+        <option value="">—</option>
+        <?= $moodOptions() ?>
+      </select>
+    </label>
+    <label style="flex:1 1 20em"><?= h(t('cockpit.f_comment', 'Kommentar')) ?>
+      <input type="text" name="note" maxlength="4000" placeholder="<?= h(t('cockpit.f_comment_ph', 'optional, kurze Notiz')) ?>">
+    </label>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit"><?= h(t('cockpit.book_progress', 'Fortschritt buchen')) ?></button>
+    </div>
+  </form>
+
+  <?php // === Terminverschiebung (Community: date_shift) =================== ?>
+  <form method="post" action="<?= h(route('cockpit_date_shift_save')) ?>" class="row tracker-form" data-tracker-type="date_shift" hidden style="flex-wrap:wrap;align-items:flex-end;gap:10px">
     <?= csrf_field() ?>
     <input type="hidden" name="project_id" value="<?= (int) $project['id'] ?>">
     <label><?= h(t('cockpit.date_shift_current', 'Aktuell')) ?>:
@@ -241,7 +354,39 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
     </div>
   </form>
 
+  <?php // Pro-only disabled Platzhalter-Panel (nur sichtbar, wenn im Select angewaehlt). ?>
+  <?php foreach ($proTypes as $key => $label): ?>
+    <div class="tracker-form tracker-pro-teaser" data-tracker-type="<?= h($key) ?>" hidden>
+      <p class="muted"><?= h(t('cockpit.tracker_pro_teaser', 'Dieser Buchungs-Typ ist Teil der Pro-Variante und hier nicht verfuegbar.')) ?></p>
+    </div>
+  <?php endforeach; ?>
+
+  <script nonce="<?= h(csp_nonce()) ?>">
+  (function () {
+    var sel = document.getElementById('trackerType');
+    if (!sel) return;
+    var forms = Array.prototype.slice.call(document.querySelectorAll('.tracker-form[data-tracker-type]'));
+    var key = 'tm_tracker_type_<?= (int) $project['id'] ?>';
+    function show(type) {
+      forms.forEach(function (f) { f.hidden = f.getAttribute('data-tracker-type') !== type; });
+    }
+    try {
+      var last = sessionStorage.getItem(key);
+      if (last) {
+        var opt = sel.querySelector('option[value="' + last + '"]');
+        if (opt && !opt.disabled) sel.value = last;
+      }
+    } catch (e) { /* storage unavailable */ }
+    show(sel.value);
+    sel.addEventListener('change', function () {
+      show(sel.value);
+      try { sessionStorage.setItem(key, sel.value); } catch (e) { /* storage unavailable */ }
+    });
+  })();
+  </script>
+
   <?php if ($date_shifts): ?>
+    <h4 style="margin:1.2em 0 .4em"><?= h(t('cockpit.date_shift_history', 'Terminverschiebungen (Historie)')) ?></h4>
     <table class="table" style="margin-top:10px">
       <thead>
         <tr>

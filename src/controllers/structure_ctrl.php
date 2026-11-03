@@ -146,16 +146,34 @@ function ctrl_project_tracker_save(): void
         return is_numeric($norm) ? (float) $norm : null;
     };
 
+    // Weiterleitungs-Ziel: Fortschritts-Meldungen werden im Projekt-Cockpit
+    // eingetragen (Pro-UI-Paritaet) und sollen auch dorthin zurueckkehren; die
+    // klassische status_report-Variante landet weiterhin in der Projekt-Detail-
+    // Ansicht. Via post('return_to') kann die View den Zielnamen ueberschreiben.
+    $returnRoute = (string) post('return_to', '') !== ''
+        ? (string) post('return_to', '')
+        : ($type === 'progress' ? 'cockpit_project' : 'project_show');
+
     $extra = [];
     if ($type === 'progress') {
         $value = $parseNum((string) post('value', ''));
         if ($value === null) {
             flash(t('tracker.err_value_empty', 'Bitte einen Fortschrittswert (0..100) angeben.'), 'err');
-            redirect_route('project_show', ['id' => $projectId]);
+            redirect_route($returnRoute, ['id' => $projectId]);
         }
         $forecast = $parseNum((string) post('value_forecast', ''));
         $extra['value']          = $value;
         $extra['value_forecast'] = $forecast;
+        // Pro-UI-Paritaet: Progress-Meldungen tragen optional ein as_of-Datum
+        // (fuer Nachtraege) + Projekt-/Kunden-Stimmung 1..5.
+        $asOf = trim((string) post('date_value', ''));
+        if ($asOf !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $asOf)) {
+            $extra['date_value'] = $asOf;
+        }
+        $projectMood  = post('project_mood',  '');
+        $customerMood = post('customer_mood', '');
+        if ($projectMood  !== '') $extra['project_mood']  = $projectMood;
+        if ($customerMood !== '') $extra['customer_mood'] = $customerMood;
     } else {
         $extra['status'] = (string) post('status', 'on_plan');
         $extra['date_value'] = trim((string) post('date_value', ''));
@@ -167,7 +185,7 @@ function ctrl_project_tracker_save(): void
     } catch (Throwable $e) {
         flash($e->getMessage(), 'err');
     }
-    redirect_route('project_show', ['id' => $projectId]);
+    redirect_route($returnRoute, ['id' => $projectId]);
 }
 
 /**
