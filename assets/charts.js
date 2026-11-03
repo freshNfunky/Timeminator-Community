@@ -356,6 +356,35 @@ window.TmCharts = (function () {
       }
     });
 
+    // fillBetween (Pro-Vorbild): faerbt die Flaeche UNTER der Ist-Kurve bis zur
+    // Nulllinie der linken Achse - gruen wo Ist <= Soll (im Budget), rot wo Ist
+    // > Soll (Budget ueberschritten). Segmentweise mit linearer Interpolation
+    // am Vorzeichenwechsel, damit die Farbgrenze exakt den Schnittpunkt trifft.
+    // Erwartet spec.fillBetween = { a:[...], b:[...], aboveColor, belowColor }.
+    var fb = spec.fillBetween || null;
+    if (fb && fb.a && fb.b){
+      var zeroY = yAt(0);
+      var fillQuad = function(x0, aY0, x1, aY1, fillColor){
+        ctx.beginPath();
+        ctx.moveTo(x0, aY0); ctx.lineTo(x1, aY1); ctx.lineTo(x1, zeroY); ctx.lineTo(x0, zeroY);
+        ctx.closePath();
+        ctx.fillStyle = fillColor; ctx.globalAlpha = 0.22; ctx.fill(); ctx.globalAlpha = 1;
+      };
+      for (var fj = 0; fj < n - 1; fj++){
+        var a0 = fb.a[fj], a1 = fb.a[fj + 1], b0 = fb.b[fj], b1 = fb.b[fj + 1];
+        if (a0 === null || a0 === undefined || a1 === null || a1 === undefined ||
+            b0 === null || b0 === undefined || b1 === null || b1 === undefined) continue;
+        var d0 = a0 - b0, d1 = a1 - b1, fx0 = xAt(fj), fx1 = xAt(fj + 1);
+        if ((d0 >= 0) === (d1 >= 0)){
+          fillQuad(fx0, yAt(a0), fx1, yAt(a1), d0 >= 0 ? fb.aboveColor : fb.belowColor);
+        } else {
+          var t = d0 / (d0 - d1), xm = fx0 + (fx1 - fx0) * t, ym = yAt(a0 + (a1 - a0) * t);
+          fillQuad(fx0, yAt(a0), xm, ym, d0 >= 0 ? fb.aboveColor : fb.belowColor);
+          fillQuad(xm, ym, fx1, yAt(a1), d1 >= 0 ? fb.aboveColor : fb.belowColor);
+        }
+      }
+    }
+
     series.forEach(function(se){
       ctx.strokeStyle = se.color || '#2563eb'; ctx.lineWidth = 1.5;
       if (se.dashed) { ctx.setLineDash([6, 4]); } else { ctx.setLineDash([]); }
@@ -407,27 +436,49 @@ window.TmCharts = (function () {
     });
 
     if (legendEl){
-      // Alle Eintraege als Linien-Swatch (Pro-Vorbild): der Swatch zeigt denselben
-      // Strich (durchgezogen/gestrichelt) wie die tatsaechlich gezeichnete Linie,
-      // statt eines farbigen Blocks oder Kreises - so entspricht die Legende exakt
-      // dem, was im Chart zu sehen ist.
-      var lineSwatch = function(color, dashed){
-        return '<span class="lg-line' + (dashed ? ' lg-line-dashed' : '') +
-               '" style="border-top-color:' + (color || '#2563eb') + '"></span>';
+      // SVG-Swatch (Pro-Vorbild): zeigt denselben Strich wie im Chart (durchgezogen/
+      // gestrichelt) UND optional den passenden Marker (gefuellter Punkt fuer
+      // Fortschritt-Reports, hohler Kreis fuer Prognose-Endpunkte). Die Legende
+      // ist damit visuell identisch zu dem, was tatsaechlich gezeichnet wird.
+      // marker: 'dot' = gefuellter Punkt mittig (Fortschritt),
+      // marker: 'ring' = hohler Kreis am Linienende (Prognose).
+      var mkSwatch = function(color, dashed, marker){
+        var c = color || '#2563eb';
+        var dashAttr = dashed ? ' stroke-dasharray="4 3"' : '';
+        var line = '<line x1="0" y1="4" x2="22" y2="4" stroke="' + c + '" stroke-width="3"' + dashAttr + '/>';
+        var mk = '';
+        if (marker === 'dot')       mk = '<circle cx="11" cy="4" r="3" fill="' + c + '"/>';
+        else if (marker === 'ring') mk = '<circle cx="22" cy="4" r="3" fill="none" stroke="' + c + '" stroke-width="2"/>';
+        return '<svg class="lg-svg" width="26" height="8" viewBox="0 0 26 8" aria-hidden="true">' + line + mk + '</svg>';
       };
       var items = series.map(function(se){
-        return '<li>' + lineSwatch(se.color, !!se.dashed) +
+        return '<li>' + mkSwatch(se.color, !!se.dashed, se.marker) +
                '<span class="lg-lbl">' + escapeHtml(se.label || '') + '</span></li>';
       });
       (spec.pointLegend || []).forEach(function(pl){
-        items.push('<li>' + lineSwatch(pl.color || '#8b5cf6', !!pl.dashed) +
+        items.push('<li>' + mkSwatch(pl.color || '#8b5cf6', !!pl.dashed, pl.marker) +
                    '<span class="lg-lbl">' + escapeHtml(pl.label || '') + '</span></li>');
       });
       vlines.forEach(function(vl){
         if (!vl.legend) return;
-        items.push('<li>' + lineSwatch(vl.color || '#94a3b8', true) +
+        items.push('<li>' + mkSwatch(vl.color || '#94a3b8', true, null) +
                    '<span class="lg-lbl">' + escapeHtml(vl.legend) + '</span></li>');
       });
+      if (fb && (fb.belowLabel || fb.aboveLabel)){
+        // Flaechenfarben als transparente Rechtecke in der Legende - die Flaeche
+        // im Chart ist semi-transparent, die Legende spiegelt das mit gleicher Alpha.
+        var areaSwatch = function(color){
+          return '<span class="lg-area" style="background:' + color + '"></span>';
+        };
+        if (fb.belowLabel){
+          items.push('<li>' + areaSwatch(fb.belowColor) +
+                     '<span class="lg-lbl">' + escapeHtml(fb.belowLabel) + '</span></li>');
+        }
+        if (fb.aboveLabel){
+          items.push('<li>' + areaSwatch(fb.aboveColor) +
+                     '<span class="lg-lbl">' + escapeHtml(fb.aboveLabel) + '</span></li>');
+        }
+      }
       legendEl.innerHTML = '<ul class="chart-legend">' + items.join('') + '</ul>';
     }
   }

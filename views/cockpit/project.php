@@ -328,14 +328,16 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
   var legend = document.getElementById('cockpitBurnupLegend');
   var url = <?= json_encode(route('cockpit_burnup_data', ['id' => $project['id']])) ?>;
   var i18n = <?= json_encode([
-      'cum_hours' => t('cockpit.burnup_cum_hours', 'Ist (Stunden)'),
-      'target'    => t('cockpit.burnup_target',    'Soll'),
-      'none'      => t('cockpit.burnup_none',      'Noch keine Buchungen auf diesem Projekt.'),
-      'progress'  => t('cockpit.burnup_progress',  'Fortschritt'),
-      'forecast'  => t('cockpit.burnup_forecast',  'Prognose'),
-      'deadline'  => t('cockpit.burnup_deadline',  'Planende'),
-      'delay'     => t('cockpit.burnup_delay',     'Verzoegerung'),
-      'ideal'     => t('cockpit.burnup_ideal',     'Ideal'),
+      'cum_hours'    => t('cockpit.burnup_cum_hours', 'Ist (Stunden)'),
+      'target'       => t('cockpit.burnup_target',    'Soll'),
+      'none'         => t('cockpit.burnup_none',      'Noch keine Buchungen auf diesem Projekt.'),
+      'progress'     => t('cockpit.burnup_progress',  'Fortschritt'),
+      'forecast'     => t('cockpit.burnup_forecast',  'Prognose'),
+      'deadline'     => t('cockpit.burnup_deadline',  'Planende'),
+      'delay'        => t('cockpit.burnup_delay',     'Verzoegerung'),
+      'ideal'        => t('cockpit.burnup_ideal',     'Ideal'),
+      'within'       => t('cockpit.burnup_within',    'im Budget'),
+      'over'         => t('cockpit.burnup_over',      'Budget ueberschritten'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
     if (!d.ok || !d.points.length) {
@@ -374,7 +376,7 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
         if (marks.length >= 1 && i === marks[marks.length - 1].x) return marks[marks.length - 1].y;
         return null;
       });
-      series.push({ label: i18n.progress + ' (%)', color: '#8b5cf6', right: true, data: progressLinear });
+      series.push({ label: i18n.progress + ' (%)', color: '#8b5cf6', right: true, marker: 'dot', data: progressLinear });
     }
     var pts = marks.map(function (m) {
       return { x: m.x, y: m.y, color: '#8b5cf6', right: true };
@@ -384,11 +386,11 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
     var rays = (d.forecast_rays || []).map(function (r) {
       return { x0: r.x0, y0: r.y0, x1: r.x1, y1: r.y1, color: '#d97706', dashed: true, right: true };
     });
-    // Legende: Prognose-Zeile als gestrichelter Linien-Swatch (passt zum tatsaechlich
-    // gezeichneten Strahl), nicht als Kreis-Marker.
+    // Legende: Prognose-Zeile als gestrichelter Linien-Swatch + hohler Kreis-Marker
+    // am Ende (visuell identisch zum tatsaechlich gezeichneten Strahl).
     var pointLegend = [];
     if (rays.length) {
-      pointLegend.push({ label: i18n.forecast + ' (%, +' + (d.review_interval || 30) + ' d)', color: '#d97706', dashed: true });
+      pointLegend.push({ label: i18n.forecast + ' (%, +' + (d.review_interval || 30) + ' d)', color: '#d97706', dashed: true, marker: 'ring' });
     }
     // Ideal-Linie (0-100%): als rechte-Achse-Serie mit grau-gestrichelter Linie.
     var idealLine = d.ideal_line || [];
@@ -410,9 +412,21 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
         legend: i18n.delay + ' ' + d.delay.date,
       });
     }
+    // Flaechen-Integral unter der Ist-Kurve: gruen wo Ist <= Soll, rot wo Ist > Soll
+    // (Pro-Vorbild). Nur wenn target_h gesetzt ist - sonst fehlt der Vergleichswert.
+    var fillBetween = null;
+    if (d.target_h) {
+      var istSeries  = d.points.map(function (p) { return p.h; });
+      var sollSeries = labels.map(function () { return d.target_h; });
+      fillBetween = {
+        a: istSeries, b: sollSeries,
+        belowColor: '#16a34a', aboveColor: '#ef4444',
+        belowLabel: i18n.within, aboveLabel: i18n.over,
+      };
+    }
     TmCharts.lines(canvas, {
       xLabels: labels, series: series, points: pts, rays: rays, vlines: vlines,
-      unit: 'h', rightUnit: '%', pointLegend: pointLegend,
+      unit: 'h', rightUnit: '%', pointLegend: pointLegend, fillBetween: fillBetween,
     }, legend);
   });
 })();

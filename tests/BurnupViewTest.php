@@ -96,32 +96,59 @@ final class BurnupViewTest extends TestCase
         );
     }
 
-    public function testLegendUsesLineSwatchesNotBlocksOrCircles(): void
+    public function testLegendUsesSvgSwatchesWithLineAndMarker(): void
     {
         $js  = file_get_contents($this->root() . '/assets/charts.js');
         $css = file_get_contents($this->root() . '/assets/app.css');
         $this->assertIsString($js);
         $this->assertIsString($css);
 
-        // CSS stellt Linien-Swatch-Klassen bereit.
-        $this->assertStringContainsString('.lg-line{', $css, 'CSS-Klasse .lg-line (Linien-Swatch) fehlt');
-        $this->assertStringContainsString('.lg-line-dashed{', $css, 'CSS-Klasse .lg-line-dashed fehlt');
+        // CSS stellt sowohl die alten Linien-Klassen als auch die SVG-Swatch-Klasse bereit.
+        $this->assertStringContainsString('.lg-svg{', $css, 'CSS-Klasse .lg-svg fehlt');
+        $this->assertStringContainsString('.lg-area{', $css, 'CSS-Klasse .lg-area (Flaechen-Swatch) fehlt');
 
-        // JS verwendet die Linien-Swatch-Klasse in der Legende der Linien-Charts.
-        // Wir checken den Legenden-Render-Block innerhalb der lines()-Funktion.
+        // Legenden-Render-Block der lines()-Funktion grabben.
         $matched = preg_match(
             '/function lines\(canvas, spec, legendEl\).*?legendEl\.innerHTML\s*=\s*.*?chart-legend/s',
             $js,
             $match
         );
         $this->assertSame(1, $matched, 'Legenden-Renderblock der lines()-Funktion nicht gefunden');
-        $this->assertStringContainsString('lg-line', $match[0], 'Linien-Chart-Legende muss .lg-line-Swatches nutzen (Pro-Vorbild)');
+        $block = $match[0];
+
+        // Swatch wird als inline-SVG erzeugt - mit Linie und optionalem Marker (dot/ring).
+        $this->assertStringContainsString('<svg class="lg-svg"', $block, 'Legenden-Swatch muss als SVG (.lg-svg) gerendert werden');
+        $this->assertStringContainsString("marker === 'dot'", $block, 'Marker-Support "dot" (gefuellter Punkt fuer Fortschritt) fehlt');
+        $this->assertStringContainsString("marker === 'ring'", $block, 'Marker-Support "ring" (hohler Kreis fuer Prognose) fehlt');
 
         // Alter Zustand: Kreis-Marker im pointLegend via border-radius:50% - darf nicht mehr vorkommen.
         $this->assertStringNotContainsString(
             "border-radius:50%",
-            $match[0],
-            'Legenden-Swatches duerfen keine runden Kreis-Marker mehr sein (Pro-Vorbild: Linien-Swatches)'
+            $block,
+            'Legenden-Swatches duerfen keine runden CSS-Kreis-Marker mehr sein'
+        );
+    }
+
+    public function testBurnupHasBudgetAreaFill(): void
+    {
+        $view = file_get_contents($this->root() . '/views/cockpit/project.php');
+        $js   = file_get_contents($this->root() . '/assets/charts.js');
+        $this->assertIsString($view);
+        $this->assertIsString($js);
+
+        // View setzt fillBetween mit gruen/rot entsprechend Ist vs. Soll.
+        $this->assertMatchesRegularExpression(
+            '/fillBetween\s*=\s*\{\s*a:\s*istSeries,\s*b:\s*sollSeries,\s*belowColor:\s*\'#16a34a\',\s*aboveColor:\s*\'#ef4444\'/s',
+            $view,
+            'Flaechen-Integral (fillBetween) fehlt in der Burn-Up-View'
+        );
+
+        // Charts-Engine hat fillBetween-Rendering (Pro-Vorbild): quadweise, inkl. Interpolation.
+        $this->assertStringContainsString('spec.fillBetween', $js, 'TmCharts.lines kennt fillBetween nicht');
+        $this->assertMatchesRegularExpression(
+            '/fb\.a.*?fb\.b.*?fb\.aboveColor.*?fb\.belowColor/s',
+            $js,
+            'fillBetween-Renderblock in charts.js fehlt (aboveColor/belowColor)'
         );
     }
 }

@@ -436,6 +436,10 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
    border-top-color wird vom JS inline gesetzt. */
 .lg-line{display:inline-block;width:18px;height:0;border-top:3px solid;flex:none;margin-right:4px;vertical-align:middle}
 .lg-line-dashed{border-top-style:dashed}
+.lg-svg{flex:none;margin-right:4px;vertical-align:middle}
+/* Flaechen-Swatch fuer fillBetween-Eintraege (Pro-Vorbild): halbtransparent wie
+   die eigentliche Chart-Flaeche. */
+.lg-area{display:inline-block;width:18px;height:10px;border-radius:2px;flex:none;margin-right:4px;vertical-align:middle;opacity:.45}
 .chart-tip{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.4;color:var(--ink);pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.08);max-width:220px;z-index:5}
 .chart-tip .muted{color:var(--muted)}
 
