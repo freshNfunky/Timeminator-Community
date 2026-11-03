@@ -352,23 +352,43 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
       series.push({ label: i18n.target + ' ' + d.target_h + ' h', color: '#94a3b8', dashed: true,
         data: labels.map(function () { return d.target_h; }) });
     }
-    // Fortschritts-Linie (step-forward gefuellt) + Marker-Punkte an den Meldeterminen.
-    var progressLine = d.progress_line || [];
-    var hasProgress  = progressLine.some(function (v) { return v !== null && v !== undefined; });
+    // Fortschritts-Linie: linear verbunden zwischen den Meldeterminen (Pro-Vorbild).
+    // Der Backend liefert progress_line step-forward-gefuellt (jeder Timestep traegt
+    // den letzten gemeldeten Wert bis zum naechsten Report) - das zeichnet optisch
+    // Stufen. Fuer die Pro-Optik interpolieren wir hier linear zwischen den
+    // progress_markers: vor dem ersten und nach dem letzten Report bleibt null
+    // (keine Linie), zwischen zwei Reports steigt bzw. faellt die Linie gerade.
+    var marks = (d.progress_markers || []).slice().sort(function (a, b) { return a.x - b.x; });
+    var hasProgress = marks.length > 0;
     if (hasProgress) {
-      series.push({ label: i18n.progress + ' (%)', color: '#8b5cf6', right: true, step: true, data: progressLine });
+      var progressLinear = labels.map(function (_, i) {
+        for (var k = 0; k < marks.length - 1; k++) {
+          if (i >= marks[k].x && i <= marks[k + 1].x) {
+            var span = marks[k + 1].x - marks[k].x;
+            if (span <= 0) return marks[k].y;
+            var t = (i - marks[k].x) / span;
+            return marks[k].y + t * (marks[k + 1].y - marks[k].y);
+          }
+        }
+        if (marks.length === 1 && i === marks[0].x) return marks[0].y;
+        if (marks.length >= 1 && i === marks[marks.length - 1].x) return marks[marks.length - 1].y;
+        return null;
+      });
+      series.push({ label: i18n.progress + ' (%)', color: '#8b5cf6', right: true, data: progressLinear });
     }
-    var pts = (d.progress_markers || []).map(function (m) {
+    var pts = marks.map(function (m) {
       return { x: m.x, y: m.y, color: '#8b5cf6', right: true };
     });
     // Prognose-Strahlen vom Meldepunkt im Review-Turnus-Abstand zum Forecast-Wert.
+    // Pro-Vorbild: hohler Kreis am Ray-Ende (nur Umriss, kein Fill).
     var rays = (d.forecast_rays || []).map(function (r) {
       return { x0: r.x0, y0: r.y0, x1: r.x1, y1: r.y1, color: '#d97706', dashed: true, right: true };
     });
-    // Legende: progress-Serie trimmt schon einen Eintrag ab; nur Prognose extra.
+    // Legende: Prognose-Zeile als gestrichelter Linien-Swatch (passt zum tatsaechlich
+    // gezeichneten Strahl), nicht als Kreis-Marker.
     var pointLegend = [];
     if (rays.length) {
-      pointLegend.push({ label: i18n.forecast + ' (%, +' + (d.review_interval || 30) + ' d)', color: '#d97706' });
+      pointLegend.push({ label: i18n.forecast + ' (%, +' + (d.review_interval || 30) + ' d)', color: '#d97706', dashed: true });
     }
     // Ideal-Linie (0-100%): als rechte-Achse-Serie mit grau-gestrichelter Linie.
     var idealLine = d.ideal_line || [];

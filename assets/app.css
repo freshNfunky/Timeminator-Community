@@ -419,11 +419,23 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .chart-box{position:relative;height:300px}
 .chart-legend{list-style:none;margin:12px 0 0;padding:0;font-size:13px}
 .chart-legend li{display:flex;align-items:center;gap:8px;padding:3px 0}
+/* Chart-Legende horizontal (Pro-Vorbild): Eintraege flossen vorher untereinander,
+   das zog eine Burn-Up-Legende mit 5-6 Serien uebermaessig in die Hoehe und
+   entsprach nicht dem gewohnten Legendenbild. Rastereintraege (chart-legend-grid)
+   bleiben davon ausgenommen. */
+.chart-legend:not(.chart-legend-grid){display:flex;flex-wrap:wrap;column-gap:20px;row-gap:2px}
+.chart-legend:not(.chart-legend-grid) li{flex:none;padding:2px 0}
+.chart-legend:not(.chart-legend-grid) .lg-lbl{flex:none;white-space:nowrap}
 .lg-dot{width:10px;height:10px;border-radius:3px;flex:none}
 .lg-lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lg-val{color:var(--muted);white-space:nowrap}
 .lg-sw{display:inline-block;width:12px;height:12px;border-radius:2px;flex:none;margin-right:4px;vertical-align:middle}
 .lg-dash{display:inline-block;width:18px;height:0;border-top:2px dashed var(--ink);flex:none;margin-right:4px;vertical-align:middle}
+/* Linien-Swatches (Pro-Vorbild): zeigen in der Legende denselben Strich wie die
+   tatsaechlich gezeichnete Kurve - durchgezogen bzw. gestrichelt in der Serienfarbe.
+   border-top-color wird vom JS inline gesetzt. */
+.lg-line{display:inline-block;width:18px;height:0;border-top:3px solid;flex:none;margin-right:4px;vertical-align:middle}
+.lg-line-dashed{border-top-style:dashed}
 .chart-tip{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.4;color:var(--ink);pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.08);max-width:220px;z-index:5}
 .chart-tip .muted{color:var(--muted)}
 

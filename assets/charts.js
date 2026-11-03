@@ -391,10 +391,11 @@ window.TmCharts = (function () {
       ctx.moveTo(xAt(r.x0), y(r.y0));
       ctx.lineTo(xAt(r.x1), y(r.y1));
       ctx.stroke();
-      // Endpunkt-Kreis am Strahl-Ende (Prognosewert am Review-Horizont).
+      // Zielpunkt als hohler Kreis am Review-Horizont (Pro-Vorbild): nur Umriss,
+      // kein fill - signalisiert eine Prognose, keinen gemessenen Wert.
       ctx.setLineDash([]);
-      ctx.fillStyle = r.color || '#d97706';
-      ctx.beginPath(); ctx.arc(xAt(r.x1), y(r.y1), 4, 0, Math.PI * 2); ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(xAt(r.x1), y(r.y1), 4, 0, Math.PI * 2); ctx.stroke();
     });
     ctx.setLineDash([]);
 
@@ -406,18 +407,26 @@ window.TmCharts = (function () {
     });
 
     if (legendEl){
+      // Alle Eintraege als Linien-Swatch (Pro-Vorbild): der Swatch zeigt denselben
+      // Strich (durchgezogen/gestrichelt) wie die tatsaechlich gezeichnete Linie,
+      // statt eines farbigen Blocks oder Kreises - so entspricht die Legende exakt
+      // dem, was im Chart zu sehen ist.
+      var lineSwatch = function(color, dashed){
+        return '<span class="lg-line' + (dashed ? ' lg-line-dashed' : '') +
+               '" style="border-top-color:' + (color || '#2563eb') + '"></span>';
+      };
       var items = series.map(function(se){
-        return '<li>' + (se.dashed
-            ? '<span class="lg-dash" style="border-top-color:' + (se.color || '#2563eb') + '"></span>'
-            : '<span class="lg-sw" style="background:' + (se.color || '#2563eb') + '"></span>')
-          + '<span class="lg-lbl">' + escapeHtml(se.label || '') + '</span></li>';
+        return '<li>' + lineSwatch(se.color, !!se.dashed) +
+               '<span class="lg-lbl">' + escapeHtml(se.label || '') + '</span></li>';
       });
       (spec.pointLegend || []).forEach(function(pl){
-        items.push('<li><span class="lg-sw" style="background:' + (pl.color || '#8b5cf6') + ';border-radius:50%"></span><span class="lg-lbl">' + escapeHtml(pl.label || '') + '</span></li>');
+        items.push('<li>' + lineSwatch(pl.color || '#8b5cf6', !!pl.dashed) +
+                   '<span class="lg-lbl">' + escapeHtml(pl.label || '') + '</span></li>');
       });
       vlines.forEach(function(vl){
         if (!vl.legend) return;
-        items.push('<li><span class="lg-dash" style="border-top-color:' + (vl.color || '#94a3b8') + '"></span><span class="lg-lbl">' + escapeHtml(vl.legend) + '</span></li>');
+        items.push('<li>' + lineSwatch(vl.color || '#94a3b8', true) +
+                   '<span class="lg-lbl">' + escapeHtml(vl.legend) + '</span></li>');
       });
       legendEl.innerHTML = '<ul class="chart-legend">' + items.join('') + '</ul>';
     }
