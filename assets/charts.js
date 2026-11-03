@@ -301,16 +301,31 @@ window.TmCharts = (function () {
   function lines(canvas, spec, legendEl){
     var s = setup(canvas), ctx = s.ctx, th = theme();
     var xs = spec.xLabels || [], series = spec.series || [], unit = spec.unit || '';
+    var points = spec.points || [], rays = spec.rays || [], vlines = spec.vlines || [], rightUnit = spec.rightUnit || '';
     var n = xs.length;
-    var allVals = [];
-    series.forEach(function(se){ (se.data || []).forEach(function(v){ if (v !== null && v !== undefined) allVals.push(v); }); });
-    if (!n || !series.length || !allVals.length){ empty(ctx, s.w, s.h); if (legendEl) legendEl.innerHTML = ''; return; }
-    var yMax = niceMax(Math.max.apply(null, allVals) * 1.05);
+    var leftVals = [], rightVals = [];
+    series.forEach(function(se){ (se.data || []).forEach(function(v){
+      if (v === null || v === undefined) return;
+      (se.right ? rightVals : leftVals).push(v);
+    }); });
+    points.forEach(function(p){ if (p && p.y !== null && p.y !== undefined) (p.right ? rightVals : leftVals).push(p.y); });
+    rays.forEach(function(r){
+      if (!r) return;
+      var arr = r.right ? rightVals : leftVals;
+      if (r.y0 !== null && r.y0 !== undefined) arr.push(r.y0);
+      if (r.y1 !== null && r.y1 !== undefined) arr.push(r.y1);
+    });
+    if (!n || (!leftVals.length && !rightVals.length)){ empty(ctx, s.w, s.h); if (legendEl) legendEl.innerHTML = ''; return; }
+    var yMax  = leftVals.length  ? niceMax(Math.max.apply(null, leftVals)  * 1.05) : 1;
+    var yMaxR = rightVals.length ? niceMax(Math.max.apply(null, rightVals) * 1.05) : 100;
     ctx.font = '11px -apple-system,Segoe UI,Roboto,sans-serif';
-    var padL = Math.ceil(ctx.measureText(yMax + ' ' + unit).width) + 14, padR = 16, padT = 12, padB = 40;
+    var padL = Math.ceil(ctx.measureText(yMax + ' ' + unit).width) + 14;
+    var padR = rightVals.length ? Math.ceil(ctx.measureText(yMaxR + ' ' + rightUnit).width) + 14 : 16;
+    var padT = 12, padB = 40;
     var plotW = s.w - padL - padR, plotH = s.h - padT - padB;
-    var xAt = function(i){ return padL + (n <= 1 ? plotW / 2 : (plotW * i) / (n - 1)); };
-    var yAt = function(v){ return padT + plotH - (v / yMax) * plotH; };
+    var xAt  = function(i){ return padL + (n <= 1 ? plotW / 2 : (plotW * i) / (n - 1)); };
+    var yAt  = function(v){ return padT + plotH - (v / yMax)  * plotH; };
+    var yAtR = function(v){ return padT + plotH - (v / yMaxR) * plotH; };
 
     ctx.strokeStyle = th.line; ctx.fillStyle = th.muted; ctx.lineWidth = 1; ctx.textAlign = 'right';
     for (var g = 0; g <= 4; g++){
@@ -318,31 +333,93 @@ window.TmCharts = (function () {
       ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(padL + plotW, gy); ctx.stroke();
       ctx.fillText((Math.round(gv * 10) / 10) + (unit ? ' ' + unit : ''), padL - 6, gy);
     }
+    if (rightVals.length){
+      ctx.textAlign = 'left';
+      for (var gr = 0; gr <= 4; gr++){
+        var gvr = (yMaxR * gr) / 4;
+        ctx.fillText((Math.round(gvr * 10) / 10) + (rightUnit ? ' ' + rightUnit : ''), padL + plotW + 6, yAtR(gvr));
+      }
+    }
     ctx.textAlign = 'center';
     var step = Math.max(1, Math.ceil(n / Math.max(1, Math.floor(plotW / 60))));
     for (var xi = 0; xi < n; xi += step){ ctx.fillText(xs[xi], xAt(xi), padT + plotH + 16); }
+
+    vlines.forEach(function(vl){
+      if (vl.index === null || vl.index === undefined) return;
+      var vx = Math.round(xAt(vl.index)) + 0.5;
+      ctx.strokeStyle = vl.color || '#94a3b8'; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(vx, padT); ctx.lineTo(vx, padT + plotH); ctx.stroke();
+      ctx.setLineDash([]);
+      if (vl.label){
+        ctx.fillStyle = vl.color || '#94a3b8'; ctx.textAlign = 'left';
+        ctx.fillText(vl.label, vx + 4, padT + 10);
+      }
+    });
 
     series.forEach(function(se){
       ctx.strokeStyle = se.color || '#2563eb'; ctx.lineWidth = 1.5;
       if (se.dashed) { ctx.setLineDash([6, 4]); } else { ctx.setLineDash([]); }
       ctx.beginPath();
-      var started = false;
+      var started = false, lastY = null, y = se.right ? yAtR : yAt;
       (se.data || []).forEach(function(v, i){
-        if (v === null || v === undefined) { started = false; return; }
-        started ? ctx.lineTo(xAt(i), yAt(v)) : ctx.moveTo(xAt(i), yAt(v));
-        started = true;
+        if (v === null || v === undefined) { started = false; lastY = null; return; }
+        var px = xAt(i), py = y(v);
+        if (!started) {
+          ctx.moveTo(px, py);
+        } else if (se.step) {
+          // Stufen: zuerst horizontal (bis zum neuen x), dann vertikal auf den neuen y.
+          ctx.lineTo(px, lastY);
+          ctx.lineTo(px, py);
+        } else {
+          ctx.lineTo(px, py);
+        }
+        started = true; lastY = py;
       });
       ctx.stroke();
     });
     ctx.setLineDash([]);
 
+    // Prognose-Strahlen zuerst (hinter die Marker-Punkte).
+    rays.forEach(function(r){
+      if (r.x0 === null || r.x0 === undefined || r.x1 === null || r.x1 === undefined) return;
+      if (r.y0 === null || r.y0 === undefined || r.y1 === null || r.y1 === undefined) return;
+      var y = r.right ? yAtR : yAt;
+      ctx.strokeStyle = r.color || '#d97706';
+      ctx.setLineDash(r.dashed ? [6, 4] : []);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(xAt(r.x0), y(r.y0));
+      ctx.lineTo(xAt(r.x1), y(r.y1));
+      ctx.stroke();
+      // Endpunkt-Kreis am Strahl-Ende (Prognosewert am Review-Horizont).
+      ctx.setLineDash([]);
+      ctx.fillStyle = r.color || '#d97706';
+      ctx.beginPath(); ctx.arc(xAt(r.x1), y(r.y1), 4, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.setLineDash([]);
+
+    points.forEach(function(p){
+      if (p.x === null || p.x === undefined || p.y === null || p.y === undefined) return;
+      var cx = xAt(p.x), cy = (p.right ? yAtR : yAt)(p.y);
+      ctx.fillStyle = p.color || '#8b5cf6';
+      ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.fill();
+    });
+
     if (legendEl){
-      legendEl.innerHTML = '<ul class="chart-legend">' + series.map(function(se){
+      var items = series.map(function(se){
         return '<li>' + (se.dashed
             ? '<span class="lg-dash" style="border-top-color:' + (se.color || '#2563eb') + '"></span>'
             : '<span class="lg-sw" style="background:' + (se.color || '#2563eb') + '"></span>')
           + '<span class="lg-lbl">' + escapeHtml(se.label || '') + '</span></li>';
-      }).join('') + '</ul>';
+      });
+      (spec.pointLegend || []).forEach(function(pl){
+        items.push('<li><span class="lg-sw" style="background:' + (pl.color || '#8b5cf6') + ';border-radius:50%"></span><span class="lg-lbl">' + escapeHtml(pl.label || '') + '</span></li>');
+      });
+      vlines.forEach(function(vl){
+        if (!vl.legend) return;
+        items.push('<li><span class="lg-dash" style="border-top-color:' + (vl.color || '#94a3b8') + '"></span><span class="lg-lbl">' + escapeHtml(vl.legend) + '</span></li>');
+      });
+      legendEl.innerHTML = '<ul class="chart-legend">' + items.join('') + '</ul>';
     }
   }
 

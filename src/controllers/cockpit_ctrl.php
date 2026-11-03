@@ -286,7 +286,18 @@ function ctrl_cockpit_health_save(): void
         flash(t('cockpit.err_unknown_field', 'Unbekanntes Feld.'), 'err');
         redirect_route('cockpit_project', ['id' => $id]);
     }
-    $value = (bool) post('done') ? (new DateTimeImmutable('today'))->format('Y-m-d H:i:s') : null;
+    if ((bool) post('clear')) {
+        $value = null;
+    } else {
+        $date = trim((string) post('date'));
+        if ($date !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            $value = $date . ' 00:00:00';
+        } elseif ((bool) post('done')) {
+            $value = (new DateTimeImmutable('today'))->format('Y-m-d H:i:s');
+        } else {
+            $value = null;
+        }
+    }
     Repo::setProjectHealthField($id, $field, $value);
     flash(t('common.saved', 'Gespeichert.'));
     redirect_route('cockpit_project', ['id' => $id]);
@@ -464,46 +475,160 @@ function ctrl_cockpit_date_shift_save(): void
     redirect_route('cockpit_project', ['id' => $projectId]);
 }
 
+/**
+ * v1.0 F2.4: Burn-Up Payload (Pure Function, testbar).
+ *
+ * Shape persistiert durch tests/BurnupDataTest.php — Keys/Felder sind
+ * Vertrag zum View-Script in views/cockpit/project.php, das daraus Ist-Linie,
+ * Soll-Dash, Fortschritt/Prognose-Punkte und Planende-Vline rendert.
+ */
+function cockpit_burnup_payload(int $projectId): array
+{
+    $project = Repo::project($projectId);
+    if (!$project) {
+        return ['ok' => false, 'error' => 'not_found'];
+    }
+    $burnup = Repo::projectBurnup($projectId);
+    $points = [];
+    $labels = [];
+    foreach ($burnup as $p) {
+        $d = (string) $p['d'];
+        $labels[] = $d;
+        $points[] = [
+            'd'  => $d,
+            'h'  => round(((int) $p['cumulative_minutes']) / 60, 2),
+        ];
+    }
+    $n = count($labels);
+
+    // Fortschritts-Tracker (type=progress) als Rohdaten; die Frontend-fertigen
+    // Reihen (progress_line + progress_markers + forecast_rays) bauen wir
+    // unten im selben PHP, damit das View nur noch rendert.
+    $trackers = DB::all(
+        "SELECT date_value AS as_of, value AS percent, value_forecast AS forecast, created_at
+           FROM project_trackers
+          WHERE project_id = ? AND type = 'progress' AND value IS NOT NULL
+          ORDER BY (COALESCE(date_value, substr(created_at,1,10))) ASC, created_at ASC",
+        [$projectId]
+    );
+    $trackers = array_map(function ($t) {
+        return [
+            'as_of'    => $t['as_of'] ?: substr((string) $t['created_at'], 0, 10),
+            'percent'  => (float) $t['percent'],
+            'forecast' => $t['forecast'] !== null ? (float) $t['forecast'] : null,
+        ];
+    }, $trackers);
+
+    // Alten Marker-Shape beibehalten (Backwards-Compat fuer BurnupDataTest).
+    $markers = array_map(fn($t) => [
+        'd' => $t['as_of'], 'p' => $t['percent'], 'f' => $t['forecast'],
+    ], $trackers);
+
+    // xIndex zum naechstgelegenen Burnup-Label: letzter Label <= $ymd, sonst 0.
+    $xIndex = function (string $ymd) use ($labels, $n): ?int {
+        if ($n === 0) return null;
+        $idx = -1;
+        for ($i = 0; $i < $n; $i++) {
+            if ($labels[$i] <= $ymd) $idx = $i; else break;
+        }
+        return $idx >= 0 ? $idx : 0;
+    };
+
+    // Progress-Linie: step-forward gefuellt (letzter gemeldeter Wert bleibt bis
+    // zur naechsten Meldung) — konsistent mit Pro (progress_pct), damit zwischen
+    // Meldungen eine durchgehende Linie steht, nicht eine Lineal-Verbindung.
+    $progressLine = array_fill(0, $n, null);
+    foreach ($trackers as $t) {
+        $xi = $xIndex($t['as_of']);
+        if ($xi === null) continue;
+        for ($i = $xi; $i < $n; $i++) $progressLine[$i] = $t['percent'];
+    }
+
+    // Marker-Punkte an den tatsaechlichen Meldeterminen (sitzen auf der Linie).
+    $progressMarkers = [];
+    foreach ($trackers as $t) {
+        $xi = $xIndex($t['as_of']);
+        if ($xi !== null) $progressMarkers[] = ['x' => $xi, 'y' => $t['percent']];
+    }
+
+    // Prognose-Strahlen: jede Meldung mit forecast zeichnet einen EIGENEN,
+    // unverbundenen Strahl von (as_of, percent) nach (as_of + review_interval, forecast).
+    // Review-Interval ist Pro-konform: pro Projekt ueberschreibbar, sonst Default 30 Tage.
+    $interval = $project['review_interval_days'] !== null
+        ? (int) $project['review_interval_days']
+        : COCKPIT_REVIEW_INTERVAL_DEFAULT_DAYS;
+    $forecastRays = [];
+    foreach ($trackers as $t) {
+        if ($t['forecast'] === null) continue;
+        $x0 = $xIndex($t['as_of']);
+        $endDate = (new DateTimeImmutable($t['as_of']))->modify('+' . $interval . ' days')->format('Y-m-d');
+        $x1 = $xIndex($endDate);
+        if ($x0 === null || $x1 === null) continue;
+        $forecastRays[] = ['x0' => $x0, 'y0' => $t['percent'], 'x1' => $x1, 'y1' => $t['forecast']];
+    }
+
+    // Ideal-Linie (0-100%): lineare Trajektorie vom Projektstart bis zur
+    // Deadline. Pro-konform: start-Fallback-Reihenfolge planned_start ->
+    // kickoff_at -> created_at. Ohne Start/Ende/Target bleibt sie leer.
+    $plannedEnd = $project['planned_end'] ?? null;
+    $start = $project['planned_start']
+        ?? ($project['kickoff_at'] ? substr((string) $project['kickoff_at'], 0, 10) : null)
+        ?? ($project['created_at']  ? substr((string) $project['created_at'],  0, 10) : null);
+    $idealLine = array_fill(0, $n, null);
+    if ($start && $plannedEnd && $n > 0) {
+        $tsStart = strtotime($start . ' 00:00:00');
+        $tsEnd   = strtotime($plannedEnd . ' 00:00:00');
+        if ($tsEnd > $tsStart) {
+            foreach ($labels as $i => $ymd) {
+                $tsAt = strtotime($ymd . ' 00:00:00');
+                if ($tsAt < $tsStart || $tsAt > $tsEnd) continue;
+                $idealLine[$i] = round(100.0 * ($tsAt - $tsStart) / ($tsEnd - $tsStart), 2);
+            }
+        }
+    }
+
+    // Deadline (urspruengliches Enddatum) + Delay (aktuelles Enddatum nach
+    // Verschiebung) aus DateShiftRepo. Pro-konform: der aelteste project-Shift
+    // traegt die urspruengliche Deadline in old_end; ohne Shifts ist Deadline
+    // = aktuelles planned_end und es gibt keinen Delay-Marker.
+    $deadlineInfo = null;
+    $delayInfo    = null;
+    if ($plannedEnd) {
+        $shifts = array_values(array_filter(
+            DateShiftRepo::forProject($projectId),
+            fn($s) => $s['kind'] === DateShiftRepo::KIND_PROJECT
+        ));
+        $originalEnd = $shifts ? (string) end($shifts)['old_end'] : $plannedEnd;
+        $deadlineInfo = ['date' => $originalEnd, 'x' => $xIndex($originalEnd)];
+        if ($plannedEnd !== $originalEnd) {
+            $delayInfo = ['date' => $plannedEnd, 'x' => $xIndex($plannedEnd)];
+        }
+    }
+
+    return [
+        'ok'               => true,
+        'points'           => $points,
+        'target_h'         => $project['target_hours'] !== null ? (float) $project['target_hours'] : null,
+        'markers'          => $markers,            // Legacy-Shape (view/tests pre-rays).
+        'progress_line'    => $progressLine,       // Series rechte Achse, step-forward.
+        'progress_markers' => $progressMarkers,    // Punkte auf der Linie.
+        'forecast_rays'    => $forecastRays,       // Strahlen im Review-Turnus-Abstand.
+        'ideal_line'       => $idealLine,          // 0-100% lineare Trajektorie.
+        'review_interval'  => $interval,
+        'planned_end'      => $plannedEnd,         // = Delay-Datum wenn verschoben, sonst = Deadline.
+        'deadline'         => $deadlineInfo,       // urspruengliches Enddatum (grau).
+        'delay'            => $delayInfo,          // aktuelles Enddatum nach Shift (orange).
+    ];
+}
+
 /** v1.0 F2.4: Burn-Up JSON (kumulative Stunden ueber Zeit). */
 function ctrl_cockpit_burnup_data(): void
 {
     require_perm('stats.view');
     $id = (int) get('id');
-    $project = $id ? Repo::project($id) : null;
-    if (!$project) {
-        json_out(['ok' => false, 'error' => 'not_found'], 404);
+    $payload = cockpit_burnup_payload($id);
+    if (!($payload['ok'] ?? false)) {
+        json_out($payload, 404);
     }
-    $burnup = Repo::projectBurnup($id);
-    $target = $project['target_hours'] !== null ? (float) $project['target_hours'] : null;
-    $points = [];
-    foreach ($burnup as $p) {
-        $points[] = [
-            'd'  => (string) $p['d'],
-            'h'  => round(((int) $p['cumulative_minutes']) / 60, 2),
-        ];
-    }
-    // Fortschrittsmarker aus project_trackers (type=progress) fuer Overlay.
-    $trackers = DB::all(
-        "SELECT date_value AS as_of, value AS percent, value_forecast AS forecast, created_at
-           FROM project_trackers
-          WHERE project_id = ? AND type = 'progress' AND value IS NOT NULL
-          ORDER BY created_at ASC",
-        [$id]
-    );
-    $markers = [];
-    foreach ($trackers as $t) {
-        $date = $t['as_of'] ?: substr((string) $t['created_at'], 0, 10);
-        $markers[] = [
-            'd'  => $date,
-            'p'  => (float) $t['percent'],
-            'f'  => $t['forecast'] !== null ? (float) $t['forecast'] : null,
-        ];
-    }
-    json_out([
-        'ok'       => true,
-        'points'   => $points,
-        'target_h' => $target,
-        'markers'  => $markers,
-        'planned_end' => $project['planned_end'] ?? null,
-    ]);
+    json_out($payload);
 }

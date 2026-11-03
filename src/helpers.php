@@ -287,7 +287,7 @@ function send_security_headers(): void
             }
         }
         $csp = "default-src 'self'; "
-             . "script-src 'self'; "
+             . "script-src 'self' 'nonce-" . $nonce . "'; "
              . "style-src 'self' 'nonce-" . $nonce . "'; "
              . "style-src-attr 'none'; "
              . "img-src 'self' data:; "

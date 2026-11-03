@@ -46,35 +46,33 @@ $f = $row['flags'] ?? ['kickoff' => false, 'closeout' => false, 'deadline_overdu
     <h3><?= h(t('cockpit.health_h3', 'Projekt-Health')) ?><?= tip('cockpit.health_subtitle') ?></h3>
   </div>
 
-  <form method="post" action="<?= h(route('cockpit_health_save')) ?>" class="form-inline">
-    <?= csrf_field() ?>
-    <input type="hidden" name="id"    value="<?= (int) $project['id'] ?>">
-    <input type="hidden" name="field" value="kickoff_at">
-    <label class="check">
-      <input type="checkbox" name="done" value="1" <?= $f['kickoff'] ? 'checked' : '' ?> onchange="this.form.submit()">
-      <?= h(t('cockpit.health_kickoff', 'Kickoff erfolgt')) ?>
-      <?php if (!empty($project['kickoff_at'])): ?><span class="muted">(<?= h((new DateTimeImmutable($project['kickoff_at']))->format('d.m.Y')) ?>)</span><?php endif; ?>
-    </label>
-  </form>
+  <?php
+    $renderHealthRow = function (string $field, string $label, ?string $currentIso) use ($project) {
+      $dateVal = $currentIso ? (new DateTimeImmutable($currentIso))->format('Y-m-d') : '';
+  ?>
+    <form method="post" action="<?= h(route('cockpit_health_save')) ?>" class="health-row">
+      <?= csrf_field() ?>
+      <input type="hidden" name="id"    value="<?= (int) $project['id'] ?>">
+      <input type="hidden" name="field" value="<?= h($field) ?>">
+      <span class="health-row-label"><?= h($label) ?></span>
+      <input type="date" name="date" value="<?= h($dateVal) ?>" class="health-row-date">
+      <button class="btn btn-ghost btn-sm" type="submit"><?= h(t('common.save', 'Speichern')) ?></button>
+      <?php if ($currentIso): ?>
+        <button class="btn btn-ghost btn-sm" type="submit" name="clear" value="1"><?= h(t('cockpit.health_clear', 'Zuruecksetzen')) ?></button>
+      <?php endif; ?>
+    </form>
+  <?php }; ?>
 
-  <form method="post" action="<?= h(route('cockpit_health_save')) ?>" class="form-inline">
-    <?= csrf_field() ?>
-    <input type="hidden" name="id"    value="<?= (int) $project['id'] ?>">
-    <input type="hidden" name="field" value="closeout_at">
-    <label class="check">
-      <input type="checkbox" name="done" value="1" <?= $f['closeout'] ? 'checked' : '' ?> onchange="this.form.submit()">
-      <?= h(t('cockpit.health_closeout', 'Abschluss erfolgt')) ?>
-      <?php if (!empty($project['closeout_at'])): ?><span class="muted">(<?= h((new DateTimeImmutable($project['closeout_at']))->format('d.m.Y')) ?>)</span><?php endif; ?>
-    </label>
-  </form>
+  <?php $renderHealthRow('kickoff_at',  t('cockpit.health_kickoff',  'Kickoff'),  $project['kickoff_at']  ?? null); ?>
+  <?php $renderHealthRow('closeout_at', t('cockpit.health_closeout', 'Abschluss'), $project['closeout_at'] ?? null); ?>
 
-  <form method="post" action="<?= h(route('cockpit_review_interval_save')) ?>" class="form-inline" style="margin-top:8px">
+  <form method="post" action="<?= h(route('cockpit_review_interval_save')) ?>" class="health-row health-row-review">
     <?= csrf_field() ?>
     <input type="hidden" name="id" value="<?= (int) $project['id'] ?>">
-    <label>
+    <span class="health-row-label">
       <?= h(t('cockpit.health_review_days', 'Review-Turnus in Tagen (leer = Default')) ?> <?= (int) $default_review_days ?>)
-      <input type="number" name="review_interval_days" value="<?= h((string) ($project['review_interval_days'] ?? '')) ?>" min="1" style="width:6em">
-    </label>
+    </span>
+    <input type="number" name="review_interval_days" class="health-row-days" value="<?= h((string) ($project['review_interval_days'] ?? '')) ?>" min="1">
     <button class="btn btn-ghost btn-sm" type="submit"><?= h(t('common.save')) ?></button>
   </form>
 </div>
@@ -333,6 +331,11 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
       'cum_hours' => t('cockpit.burnup_cum_hours', 'Ist (Stunden)'),
       'target'    => t('cockpit.burnup_target',    'Soll'),
       'none'      => t('cockpit.burnup_none',      'Noch keine Buchungen auf diesem Projekt.'),
+      'progress'  => t('cockpit.burnup_progress',  'Fortschritt'),
+      'forecast'  => t('cockpit.burnup_forecast',  'Prognose'),
+      'deadline'  => t('cockpit.burnup_deadline',  'Planende'),
+      'delay'     => t('cockpit.burnup_delay',     'Verzoegerung'),
+      'ideal'     => t('cockpit.burnup_ideal',     'Ideal'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
     if (!d.ok || !d.points.length) {
@@ -349,7 +352,48 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
       series.push({ label: i18n.target + ' ' + d.target_h + ' h', color: '#94a3b8', dashed: true,
         data: labels.map(function () { return d.target_h; }) });
     }
-    TmCharts.lines(canvas, { xLabels: labels, series: series, unit: 'h' }, legend);
+    // Fortschritts-Linie (step-forward gefuellt) + Marker-Punkte an den Meldeterminen.
+    var progressLine = d.progress_line || [];
+    var hasProgress  = progressLine.some(function (v) { return v !== null && v !== undefined; });
+    if (hasProgress) {
+      series.push({ label: i18n.progress + ' (%)', color: '#8b5cf6', right: true, step: true, data: progressLine });
+    }
+    var pts = (d.progress_markers || []).map(function (m) {
+      return { x: m.x, y: m.y, color: '#8b5cf6', right: true };
+    });
+    // Prognose-Strahlen vom Meldepunkt im Review-Turnus-Abstand zum Forecast-Wert.
+    var rays = (d.forecast_rays || []).map(function (r) {
+      return { x0: r.x0, y0: r.y0, x1: r.x1, y1: r.y1, color: '#d97706', dashed: true, right: true };
+    });
+    // Legende: progress-Serie trimmt schon einen Eintrag ab; nur Prognose extra.
+    var pointLegend = [];
+    if (rays.length) {
+      pointLegend.push({ label: i18n.forecast + ' (%, +' + (d.review_interval || 30) + ' d)', color: '#d97706' });
+    }
+    // Ideal-Linie (0-100%): als rechte-Achse-Serie mit grau-gestrichelter Linie.
+    var idealLine = d.ideal_line || [];
+    var hasIdeal = idealLine.some(function (v) { return v !== null && v !== undefined; });
+    if (hasIdeal) {
+      series.push({ label: i18n.ideal + ' (%)', color: '#64748b', right: true, dashed: true, data: idealLine });
+    }
+    // Deadline (urspruengliches Enddatum, grau) + Delay (aktuelles nach Shift, orange).
+    var vlines = [];
+    if (d.deadline && d.deadline.x !== null && d.deadline.x !== undefined) {
+      vlines.push({
+        index: d.deadline.x, label: '', color: '#94a3b8',
+        legend: i18n.deadline + ' ' + d.deadline.date,
+      });
+    }
+    if (d.delay && d.delay.x !== null && d.delay.x !== undefined) {
+      vlines.push({
+        index: d.delay.x, label: '', color: '#d97706',
+        legend: i18n.delay + ' ' + d.delay.date,
+      });
+    }
+    TmCharts.lines(canvas, {
+      xLabels: labels, series: series, points: pts, rays: rays, vlines: vlines,
+      unit: 'h', rightUnit: '%', pointLegend: pointLegend,
+    }, legend);
   });
 })();
 </script>

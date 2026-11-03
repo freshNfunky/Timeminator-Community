@@ -1173,8 +1173,14 @@ return [
 
     'cockpit.health_h3'           => 'Projekt-Health',
     'cockpit.health_subtitle'     => 'Kickoff, Abschluss und Review-Turnus',
-    'cockpit.health_kickoff'      => 'Kickoff erfolgt',
-    'cockpit.health_closeout'     => 'Abschluss erfolgt',
+    'cockpit.health_kickoff'      => 'Kickoff',
+    'cockpit.health_closeout'     => 'Abschluss',
+    'cockpit.health_clear'        => 'Zuruecksetzen',
+    'cockpit.burnup_progress'     => 'Fortschritt',
+    'cockpit.burnup_forecast'     => 'Prognose',
+    'cockpit.burnup_deadline'     => 'Planende',
+    'cockpit.burnup_delay'        => 'Verzoegerung',
+    'cockpit.burnup_ideal'        => 'Ideal',
     'cockpit.health_review_days'  => 'Review-Turnus in Tagen (leer = Default',
     'cockpit.err_unknown_field'   => 'Unbekanntes Feld.',
 
