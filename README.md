@@ -96,7 +96,7 @@ A quick tour of the app (anonymized demo data).
 Start and stop a timer against a task, or add bookings by hand. The dashboard
 shows today / this week / this month at a glance, plus your latest entries.
 
-![Dashboard with live timer and totals](docs/images/screenshots/01-dashboard.png)
+![Dashboard with live timer and totals](Media/screenshots/01-dashboard.png)
 
 ### Time entries — list and calendar
 
@@ -104,9 +104,9 @@ Every booking lands in a filterable list with durations and running totals, or a
 color-coded **week calendar** you can drag to book. Each entry keeps its origin,
 so history stays stable.
 
-![Time entries list](docs/images/screenshots/02-entries-list.png)
+![Time entries list](Media/screenshots/02-entries-list.png)
 
-![Week calendar with color-coded bookings](docs/images/screenshots/04-calendar.png)
+![Week calendar with color-coded bookings](Media/screenshots/04-calendar.png)
 
 ### Clients → projects → work packages → tasks
 
@@ -114,12 +114,12 @@ A real hierarchy, not free-text tags. Clients hold projects, projects hold work
 packages, work packages and tasks classify each entry — with codes and colors.
 
 <p>
-  <img src="docs/images/screenshots/05-clients.png" width="49%" alt="Clients">
-  <img src="docs/images/screenshots/06-projects.png" width="49%" alt="Projects">
+  <img src="Media/screenshots/05-clients.png" width="49%" alt="Clients">
+  <img src="Media/screenshots/06-projects.png" width="49%" alt="Projects">
 </p>
 <p>
-  <img src="docs/images/screenshots/07-workpackages.png" width="49%" alt="Work packages">
-  <img src="docs/images/screenshots/08-tasks.png" width="49%" alt="Tasks">
+  <img src="Media/screenshots/07-workpackages.png" width="49%" alt="Work packages">
+  <img src="Media/screenshots/08-tasks.png" width="49%" alt="Tasks">
 </p>
 
 ### Statistics, time series and proof views
@@ -130,8 +130,8 @@ rule-based filter with an optional cutover date — that works for any set of
 projects without hardcoding.
 
 <p>
-  <img src="docs/images/screenshots/03-statistics.png" width="49%" alt="Statistics">
-  <img src="docs/images/screenshots/09-proof-views.png" width="49%" alt="Saved proof views">
+  <img src="Media/screenshots/03-statistics.png" width="49%" alt="Statistics">
+  <img src="Media/screenshots/09-proof-views.png" width="49%" alt="Saved proof views">
 </p>
 
 ### CSV import with per-batch rollback
@@ -193,19 +193,19 @@ A quick tour of the app (anonymized demo data).
 ![Dashboard](Media/screenshots/01-dashboard.png)
 
 **Statistics** — hours per project, weekly trend and a two-group comparison
-![Statistics](Media/screenshots/03-statistik.png)
+![Statistics](Media/screenshots/03-statistics.png)
 
 **Time entries** — a filterable list with durations and running totals
-![Time entries](Media/screenshots/02-zeiteintraege.png)
+![Time entries](Media/screenshots/02-entries-list.png)
 
 **Projects** — per-client projects with codes and colors
-![Projects](Media/screenshots/05-projekte.png)
+![Projects](Media/screenshots/06-projects.png)
 
 **Tasks** — typed activities per project and work package
-![Tasks](Media/screenshots/07-aufgaben.png)
+![Tasks](Media/screenshots/08-tasks.png)
 
 **Audit views** — generic, rule-based filtering of entries (optional cutover date)
-![Audit views](Media/screenshots/08-sichten.png)
+![Audit views](Media/screenshots/09-proof-views.png)
 
 ## Requirements
 
