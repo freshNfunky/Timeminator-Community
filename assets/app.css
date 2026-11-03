@@ -134,6 +134,23 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
    setzt aber display:flex und ueberschreibt damit "hidden". Felix-Feedback
    2026-11-03: Switcher wechselte den Typ, Formular blieb gleich. */
 .tracker-form[hidden]{display:none !important}
+
+/* Kalender-Sentiment-Picker (Felix-Feedback 2026-11-04): kompakte Emoji-
+   Zeile pro Tag (daily) bzw. pro Woche (weekly). Keine inline styles -
+   CSP-strict. */
+.cal-sent-day{display:flex;flex-direction:column;gap:2px;padding:4px 2px;border-bottom:1px solid var(--line)}
+.cal-sent-day.is-future{opacity:.45}
+.cal-sent-day-row{display:flex;gap:2px;justify-content:center;flex-wrap:wrap}
+.cal-sent-btn{background:transparent;border:1px solid transparent;border-radius:6px;padding:1px 3px;font-size:15px;line-height:1;cursor:pointer;color:var(--ink);opacity:.55;transition:opacity .15s,background .15s,border-color .15s}
+.cal-sent-btn:hover{opacity:1;background:color-mix(in oklab, var(--panel), var(--brand) 12%)}
+.cal-sent-btn.is-selected{opacity:1;border-color:var(--brand);background:color-mix(in oklab, var(--panel), var(--brand) 18%)}
+.cal-sent-btn[disabled]{cursor:not-allowed;opacity:.25}
+.cal-sent-week{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 14px;background:var(--panel-alt, color-mix(in oklab, var(--panel), var(--brand) 4%));border-bottom:1px solid var(--line);font-size:13px}
+.cal-sent-week-row{display:flex;align-items:center;gap:4px}
+.cal-sent-label{color:var(--muted);margin-right:2px;font-weight:600}
+.cal-sent-hint{margin:0;font-size:12px;flex:1 1 20em}
+.cal-sent-toggle{display:inline-flex;gap:2px;margin-right:6px}
+.cal-sent-toggle .btn.is-active{background:var(--brand);color:#fff}
 .form-actions{display:flex;gap:10px;align-items:center;margin-top:6px}
 
 /* Tables */

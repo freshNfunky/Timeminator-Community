@@ -58,6 +58,25 @@ function ctrl_entries_index(): void
     $absenceCats = AbsenceRepo::categories(true);
     $processCats = ProcessRepo::categories(true);
     $tasks       = Repo::tasks(true);
+
+    // Sentiment-Daten der Woche + aktueller Rhythmus (Felix-Feedback 2026-11-04):
+    // damit der Kalender pro Tag einen Mood-Picker einblenden kann, oder - bei
+    // woechentlichem Rhythmus - einen einzelnen Picker fuer die ganze Woche.
+    $weekSentiment = [];
+    $sentimentGranularity = Sentiment::granularity();
+    if ($view === 'calendar' && isset($weekStart, $weekEnd) && Auth::can('sentiment.record')) {
+        $rows = DB::all(
+            'SELECT as_of, mood, flow FROM sentiment_entries WHERE user_id = ? AND as_of BETWEEN ? AND ?',
+            [$uid, $weekStart->format('Y-m-d'), $weekEnd->format('Y-m-d')]
+        );
+        foreach ($rows as $r) {
+            $weekSentiment[(string) $r['as_of']] = [
+                'mood' => $r['mood'] !== null ? (int) $r['mood'] : null,
+                'flow' => $r['flow'] !== null ? (int) $r['flow'] : null,
+            ];
+        }
+    }
+
     view('entries/index', [
         'entries'     => $entries,
         'clients'     => Repo::clients(),
@@ -73,6 +92,10 @@ function ctrl_entries_index(): void
         'absenceCats' => $absenceCats,
         'processCats' => $processCats,
         'tasks'       => $tasks,
+        'weekSentiment' => $weekSentiment,
+        'sentimentGranularity' => $sentimentGranularity,
+        'canRecordSentiment'   => Auth::can('sentiment.record'),
+        'canAdminSentiment'    => Auth::can('admin.system'),
     ], t('nav.entries'));
 }
 

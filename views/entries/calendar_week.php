@@ -187,11 +187,40 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
       <p class="muted"><?= h($week_start->format('d.m.')) ?> – <?= h($__weekEnd->format('d.m.Y')) ?></p>
     </div>
     <div class="cal-nav">
+      <?php if (!empty($canAdminSentiment)): ?>
+        <?php /* Granularitaets-Toggle (Felix-Feedback 2026-11-04: "optional
+           umschaltbar von tägliche auf wöchentliche meldung."): Admin-only,
+           speichert direkt global ueber die API. */ ?>
+        <span class="cal-sent-toggle" data-current="<?= h($sentimentGranularity ?? 'day') ?>" data-csrf="<?= h(csrf_token()) ?>" role="group" aria-label="<?= h(t('sent.granularity', 'Stimmungs-Rhythmus')) ?>">
+          <button type="button" class="btn btn-sm<?= ($sentimentGranularity ?? 'day') === 'day' ? ' is-active' : '' ?>" data-g="day"><?= h(t('sent.granularity_day', 'Taeglich')) ?></button>
+          <button type="button" class="btn btn-sm<?= ($sentimentGranularity ?? 'day') === 'week' ? ' is-active' : '' ?>" data-g="week"><?= h(t('sent.granularity_week', 'Woechentlich')) ?></button>
+        </span>
+      <?php endif; ?>
       <a class="btn btn-sm" href="<?= h(route('entries', $__weekQp($__prevWeek))) ?>"><?= h(t('cal.prev_week', '← Vorige Woche')) ?></a>
       <a class="btn btn-sm" href="<?= h(route('entries', $__filterQp + ['view' => 'calendar'])) ?>"><?= h(t('dash.today')) ?></a>
       <a class="btn btn-sm" href="<?= h(route('entries', $__weekQp($__nextWeek))) ?>"><?= h(t('cal.next_week', 'Naechste Woche →')) ?></a>
     </div>
   </div>
+
+  <?php if (!empty($canRecordSentiment) && ($sentimentGranularity ?? 'day') === 'week'): ?>
+    <?php /* Wochen-Picker (eine Zeile fuer die ganze Woche; schreibt alle 7
+       Tage mit Sentiment::fillRange - respektiert bereits gesetzte Tage). */ ?>
+    <div class="cal-sent-week" data-monday="<?= h($week_start->format('Y-m-d')) ?>" data-csrf="<?= h(csrf_token()) ?>">
+      <div class="cal-sent-week-row" data-dim="mood">
+        <span class="cal-sent-label"><?= h(t('sent.mood_short', 'Mood')) ?></span>
+        <?php foreach ([1,2,3,4,5] as $__s): ?>
+          <button type="button" class="cal-sent-btn" data-score="<?= $__s ?>" title="<?= h(Sentiment::moodLabel($__s)) ?>"><?= Sentiment::moodEmoji($__s) ?></button>
+        <?php endforeach; ?>
+      </div>
+      <div class="cal-sent-week-row" data-dim="flow">
+        <span class="cal-sent-label"><?= h(t('sent.flow_short', 'Flow')) ?></span>
+        <?php foreach ([1,2,3,4,5] as $__s): ?>
+          <button type="button" class="cal-sent-btn" data-score="<?= $__s ?>" title="<?= h(Sentiment::flowLabel($__s)) ?>"><?= Sentiment::flowEmoji($__s) ?></button>
+        <?php endforeach; ?>
+      </div>
+      <p class="muted cal-sent-hint"><?= h(t('cal.sent_week_hint', 'Setzt die Woche; bereits gesetzte Tage bleiben erhalten.')) ?></p>
+    </div>
+  <?php endif; ?>
 
   <div class="cal-week">
     <div class="cal-hours" aria-hidden="true">
@@ -204,6 +233,24 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
         <?php $__holiday = $holidays[$__day['ymd']] ?? null; ?>
         <div class="cal-day<?= $__day['isToday'] ? ' cal-day-today' : '' ?><?= $__holiday ? ' cal-day-holiday' : '' ?><?= !$__day['isWorkDay'] ? ' cal-day-nonworking' : '' ?>" data-day="<?= h($__day['ymd']) ?>">
           <div class="cal-day-head"><?= h($__day['label']) ?></div>
+          <?php if (!empty($canRecordSentiment) && ($sentimentGranularity ?? 'day') === 'day'):
+            $__dayMood = $weekSentiment[$__day['ymd']]['mood'] ?? null;
+            $__dayFlow = $weekSentiment[$__day['ymd']]['flow'] ?? null;
+            $__isFuture = $__day['date'] > $__today;
+          ?>
+            <div class="cal-sent-day<?= $__isFuture ? ' is-future' : '' ?>" data-day="<?= h($__day['ymd']) ?>" data-csrf="<?= h(csrf_token()) ?>" title="<?= $__isFuture ? h(t('cal.sent_future', 'Zukunft')) : '' ?>">
+              <div class="cal-sent-day-row" data-dim="mood" data-current="<?= $__dayMood ?? '' ?>">
+                <?php foreach ([1,2,3,4,5] as $__s): ?>
+                  <button type="button" class="cal-sent-btn<?= $__dayMood === $__s ? ' is-selected' : '' ?>" data-score="<?= $__s ?>" title="<?= h(t('sent.mood_short', 'Mood')) ?>: <?= h(Sentiment::moodLabel($__s)) ?>" <?= $__isFuture ? 'disabled' : '' ?>><?= Sentiment::moodEmoji($__s) ?></button>
+                <?php endforeach; ?>
+              </div>
+              <div class="cal-sent-day-row" data-dim="flow" data-current="<?= $__dayFlow ?? '' ?>">
+                <?php foreach ([1,2,3,4,5] as $__s): ?>
+                  <button type="button" class="cal-sent-btn<?= $__dayFlow === $__s ? ' is-selected' : '' ?>" data-score="<?= $__s ?>" title="<?= h(t('sent.flow_short', 'Flow')) ?>: <?= h(Sentiment::flowLabel($__s)) ?>" <?= $__isFuture ? 'disabled' : '' ?>><?= Sentiment::flowEmoji($__s) ?></button>
+                <?php endforeach; ?>
+              </div>
+            </div>
+          <?php endif; ?>
           <?php if ($__holiday): ?>
             <div class="cal-day-holiday-badge" title="<?= h(t($__holiday['key'], $__holiday['key'])) ?>">
               <span class="cal-holiday-dot" aria-hidden="true">★</span>
@@ -323,3 +370,99 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
     </a>
   </div>
 </div>
+
+
+<?php /* Sentiment-Picker JS: per-day und per-week Save via JSON-API, plus
+   Granularitaets-Toggle (admin). CSP-strict: nonce + keine inline styles. */ ?>
+<?php if (!empty($canRecordSentiment)): ?>
+<script nonce="<?= h(csp_nonce()) ?>">
+(function () {
+  var daySaveUrl = <?= json_encode(route('sentiment_api_save'))      ?>;
+  var weekSaveUrl= <?= json_encode(route('sentiment_api_fill_week')) ?>;
+  var granUrl    = <?= json_encode(route('sentiment_granularity_api'))?>;
+
+  function postForm(url, body) {
+    return fetch(url, {method: 'POST', body: body, credentials: 'same-origin'})
+      .then(function (r) { return r.json().catch(function(){ return {ok:false}; }); });
+  }
+
+  // === Daily picker: click an emoji -> save for that day + dimension.
+  document.querySelectorAll('.cal-sent-day').forEach(function (cell) {
+    var day  = cell.getAttribute('data-day');
+    var csrf = cell.getAttribute('data-csrf');
+    cell.querySelectorAll('.cal-sent-day-row').forEach(function (row) {
+      var dim = row.getAttribute('data-dim');
+      row.querySelectorAll('.cal-sent-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          if (btn.disabled) return;
+          var score = btn.getAttribute('data-score');
+          // Re-click same button clears the score.
+          var current = row.getAttribute('data-current');
+          var isClear = String(current) === String(score);
+          var body = new URLSearchParams();
+          body.set('_csrf', csrf);
+          body.set('day', day);
+          body.set('dim', dim);
+          body.set('score', isClear ? '' : score);
+          row.querySelectorAll('.cal-sent-btn').forEach(function (b) { b.disabled = true; });
+          postForm(daySaveUrl, body).then(function (res) {
+            row.querySelectorAll('.cal-sent-btn').forEach(function (b) { b.disabled = false; });
+            if (!res.ok) return;
+            var next = isClear ? '' : score;
+            row.setAttribute('data-current', next);
+            row.querySelectorAll('.cal-sent-btn').forEach(function (b) {
+              b.classList.toggle('is-selected', String(b.getAttribute('data-score')) === String(next));
+            });
+          });
+        });
+      });
+    });
+  });
+
+  // === Weekly picker (only visible when granularity = week): bulk-fill the week.
+  document.querySelectorAll('.cal-sent-week').forEach(function (block) {
+    var monday = block.getAttribute('data-monday');
+    var csrf   = block.getAttribute('data-csrf');
+    block.querySelectorAll('.cal-sent-week-row').forEach(function (row) {
+      var dim = row.getAttribute('data-dim');
+      row.querySelectorAll('.cal-sent-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var score = btn.getAttribute('data-score');
+          var body = new URLSearchParams();
+          body.set('_csrf', csrf);
+          body.set('monday', monday);
+          body.set('dim', dim);
+          body.set('score', score);
+          row.querySelectorAll('.cal-sent-btn').forEach(function (b) { b.disabled = true; });
+          postForm(weekSaveUrl, body).then(function (res) {
+            row.querySelectorAll('.cal-sent-btn').forEach(function (b) { b.disabled = false; });
+            if (!res.ok) return;
+            // Visual confirmation: pulse the clicked button briefly.
+            btn.classList.add('is-selected');
+            setTimeout(function () { btn.classList.remove('is-selected'); }, 900);
+          });
+        });
+      });
+    });
+  });
+
+  // === Granularity toggle (admin only): switch day<->week globally.
+  document.querySelectorAll('.cal-sent-toggle').forEach(function (grp) {
+    var csrf = grp.getAttribute('data-csrf');
+    grp.querySelectorAll('button[data-g]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var g = btn.getAttribute('data-g');
+        var body = new URLSearchParams();
+        body.set('_csrf', csrf);
+        body.set('granularity', g);
+        postForm(granUrl, body).then(function (res) {
+          if (!res.ok) return;
+          // Reload so the calendar renders the matching picker layout.
+          window.location.reload();
+        });
+      });
+    });
+  });
+})();
+</script>
+<?php endif; ?>

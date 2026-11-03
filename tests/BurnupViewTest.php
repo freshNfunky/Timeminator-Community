@@ -312,6 +312,39 @@ final class BurnupViewTest extends TestCase
         self::assertSame('2026-06-01', $p['latest']['d']);
     }
 
+    public function testCalendarHasDailyAndWeeklySentimentPickers(): void
+    {
+        // Felix-Feedback 2026-11-04: Sentiment-Tracking auch im Kalender,
+        // umschaltbar zwischen taeglich und woechentlich.
+        $cal   = file_get_contents($this->root() . '/views/entries/calendar_week.php');
+        $ctrl  = file_get_contents($this->root() . '/src/controllers/sentiment_ctrl.php');
+        $index = file_get_contents($this->root() . '/index.php');
+        $this->assertIsString($cal);
+        $this->assertIsString($ctrl);
+        $this->assertIsString($index);
+
+        // Daily-Picker pro Tag (nur sichtbar bei granularity='day').
+        $this->assertStringContainsString('class="cal-sent-day', $cal, 'Daily Mood-Picker im Kalender fehlt');
+        $this->assertStringContainsString("data-dim=\"mood\"", $cal, 'Mood-Dimension fehlt im Daily-Picker');
+        $this->assertStringContainsString("data-dim=\"flow\"", $cal, 'Flow-Dimension fehlt im Daily-Picker');
+
+        // Weekly-Picker (eine Zeile fuer die ganze Woche, Bulk-Fill).
+        $this->assertStringContainsString('class="cal-sent-week"', $cal, 'Weekly Mood-Picker im Kalender fehlt');
+
+        // Toggle Daily/Weekly (admin-only).
+        $this->assertStringContainsString('class="cal-sent-toggle"', $cal, 'Granularitaets-Toggle Daily/Weekly fehlt');
+        $this->assertStringContainsString('data-g="day"',  $cal, 'Toggle-Option "day" fehlt');
+        $this->assertStringContainsString('data-g="week"', $cal, 'Toggle-Option "week" fehlt');
+
+        // Controller + Routes.
+        $this->assertStringContainsString('ctrl_sentiment_api_save', $ctrl, 'API-Controller fuer Daily-Save fehlt');
+        $this->assertStringContainsString('ctrl_sentiment_api_fill_week', $ctrl, 'API-Controller fuer Weekly-Fill fehlt');
+        $this->assertStringContainsString('ctrl_sentiment_granularity_api', $ctrl, 'API-Controller fuer Granularitaet-Toggle fehlt');
+        $this->assertStringContainsString("'sentiment_api_save'", $index, 'Route sentiment_api_save fehlt');
+        $this->assertStringContainsString("'sentiment_api_fill_week'", $index, 'Route sentiment_api_fill_week fehlt');
+        $this->assertStringContainsString("'sentiment_granularity_api'", $index, 'Route sentiment_granularity_api fehlt');
+    }
+
     public function testCockpitHasSentimentCardAndRoute(): void
     {
         $view  = file_get_contents($this->root() . '/views/cockpit/project.php');
