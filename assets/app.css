@@ -135,20 +135,34 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
    2026-11-03: Switcher wechselte den Typ, Formular blieb gleich. */
 .tracker-form[hidden]{display:none !important}
 
-/* Kalender-Sentiment-Picker (Felix-Feedback 2026-11-04): kompakte Emoji-
-   Zeile pro Tag (daily) bzw. pro Woche (weekly). Keine inline styles -
-   CSP-strict. */
-.cal-sent-day{display:flex;flex-direction:column;gap:2px;padding:4px 2px;border-bottom:1px solid var(--line)}
+/* Kalender-Sentiment-Picker (Felix-Feedback 2026-11-04): Pro-Style, je
+   Dimension nur EIN Emoji-Button im day-head - Klick oeffnet ein kompaktes
+   horizontales Popover mit allen 5 Optionen. So spart der Kalender Platz. */
+.cal-sent-day{display:flex;gap:6px;justify-content:center;padding:3px 2px 2px;border-bottom:1px solid var(--line)}
 .cal-sent-day.is-future{opacity:.45}
-.cal-sent-day-row{display:flex;gap:2px;justify-content:center;flex-wrap:wrap}
-.cal-sent-btn{background:transparent;border:1px solid transparent;border-radius:6px;padding:1px 3px;font-size:15px;line-height:1;cursor:pointer;color:var(--ink);opacity:.55;transition:opacity .15s,background .15s,border-color .15s}
-.cal-sent-btn:hover{opacity:1;background:color-mix(in oklab, var(--panel), var(--brand) 12%)}
-.cal-sent-btn.is-selected{opacity:1;border-color:var(--brand);background:color-mix(in oklab, var(--panel), var(--brand) 18%)}
-.cal-sent-btn[disabled]{cursor:not-allowed;opacity:.25}
+.cal-sent-cell{position:relative;display:inline-block}
+.cal-sent-current{background:transparent;border:1px solid transparent;border-radius:6px;padding:1px 4px;font-size:17px;line-height:1;cursor:pointer;color:var(--ink);transition:background .15s,border-color .15s}
+.cal-sent-current:hover{background:color-mix(in oklab, var(--panel), var(--brand) 12%);border-color:color-mix(in oklab, var(--line), var(--brand) 20%)}
+.cal-sent-current.is-empty{opacity:.4}
+.cal-sent-current[disabled]{cursor:not-allowed;opacity:.25}
+.cal-sent-current.is-open{background:color-mix(in oklab, var(--panel), var(--brand) 18%);border-color:var(--brand)}
+/* Popover: horizontale 5-Button-Reihe, absolut unter dem Current-Button. */
+.cal-sent-popover{position:absolute;top:calc(100% + 2px);left:50%;transform:translateX(-50%);display:flex;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:3px 4px;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:5;white-space:nowrap}
+.cal-sent-popover[hidden]{display:none}
+.cal-sent-opt{background:transparent;border:1px solid transparent;border-radius:5px;padding:1px 3px;font-size:17px;line-height:1;cursor:pointer;color:var(--ink);opacity:.65}
+.cal-sent-opt:hover{opacity:1;background:color-mix(in oklab, var(--panel), var(--brand) 12%)}
+.cal-sent-opt.is-selected{opacity:1;border-color:var(--brand);background:color-mix(in oklab, var(--panel), var(--brand) 18%)}
+
+/* Weekly-Picker: kompakte horizontale Zeile ueber der Wochenuebersicht. */
 .cal-sent-week{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 14px;background:var(--panel-alt, color-mix(in oklab, var(--panel), var(--brand) 4%));border-bottom:1px solid var(--line);font-size:13px}
 .cal-sent-week-row{display:flex;align-items:center;gap:4px}
 .cal-sent-label{color:var(--muted);margin-right:2px;font-weight:600}
 .cal-sent-hint{margin:0;font-size:12px;flex:1 1 20em}
+.cal-sent-week .cal-sent-btn{background:transparent;border:1px solid transparent;border-radius:6px;padding:1px 4px;font-size:16px;line-height:1;cursor:pointer;color:var(--ink);opacity:.7}
+.cal-sent-week .cal-sent-btn:hover{opacity:1;background:color-mix(in oklab, var(--panel), var(--brand) 12%)}
+.cal-sent-week .cal-sent-btn.is-selected{opacity:1;border-color:var(--brand);background:color-mix(in oklab, var(--panel), var(--brand) 18%)}
+
+/* Granularitaets-Toggle Daily/Weekly (admin-only, Kalender-Navi). */
 .cal-sent-toggle{display:inline-flex;gap:2px;margin-right:6px}
 .cal-sent-toggle .btn.is-active{background:var(--brand);color:#fff}
 .form-actions{display:flex;gap:10px;align-items:center;margin-top:6px}

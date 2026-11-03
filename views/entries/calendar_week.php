@@ -188,12 +188,13 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
     </div>
     <div class="cal-nav">
       <?php if (!empty($canAdminSentiment)): ?>
-        <?php /* Granularitaets-Toggle (Felix-Feedback 2026-11-04: "optional
-           umschaltbar von tägliche auf wöchentliche meldung."): Admin-only,
-           speichert direkt global ueber die API. */ ?>
-        <span class="cal-sent-toggle" data-current="<?= h($sentimentGranularity ?? 'day') ?>" data-csrf="<?= h(csrf_token()) ?>" role="group" aria-label="<?= h(t('sent.granularity', 'Stimmungs-Rhythmus')) ?>">
-          <button type="button" class="btn btn-sm<?= ($sentimentGranularity ?? 'day') === 'day' ? ' is-active' : '' ?>" data-g="day"><?= h(t('sent.granularity_day', 'Taeglich')) ?></button>
-          <button type="button" class="btn btn-sm<?= ($sentimentGranularity ?? 'day') === 'week' ? ' is-active' : '' ?>" data-g="week"><?= h(t('sent.granularity_week', 'Woechentlich')) ?></button>
+        <?php /* Granularitaets-Toggle (Felix-Feedback 2026-11-04): Admin-only,
+           Default = woechentlich (Felix-Feedback "default habe ich gesagt ist
+           nicht die tägliche meldung. die bleibt im hintergrund."). */ ?>
+        <?php $__g = $sentimentGranularity ?: 'week'; ?>
+        <span class="cal-sent-toggle" data-current="<?= h($__g) ?>" data-csrf="<?= h(csrf_token()) ?>" role="group" aria-label="<?= h(t('sent.granularity', 'Stimmungs-Rhythmus')) ?>">
+          <button type="button" class="btn btn-sm<?= $__g === 'week' ? ' is-active' : '' ?>" data-g="week"><?= h(t('sent.granularity_week', 'Woechentlich')) ?></button>
+          <button type="button" class="btn btn-sm<?= $__g === 'day'  ? ' is-active' : '' ?>" data-g="day"><?= h(t('sent.granularity_day',  'Taeglich')) ?></button>
         </span>
       <?php endif; ?>
       <a class="btn btn-sm" href="<?= h(route('entries', $__weekQp($__prevWeek))) ?>"><?= h(t('cal.prev_week', '← Vorige Woche')) ?></a>
@@ -202,7 +203,7 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
     </div>
   </div>
 
-  <?php if (!empty($canRecordSentiment) && ($sentimentGranularity ?? 'day') === 'week'): ?>
+  <?php if (!empty($canRecordSentiment) && ($sentimentGranularity ?: 'week') === 'week'): ?>
     <?php /* Wochen-Picker (eine Zeile fuer die ganze Woche; schreibt alle 7
        Tage mit Sentiment::fillRange - respektiert bereits gesetzte Tage). */ ?>
     <div class="cal-sent-week" data-monday="<?= h($week_start->format('Y-m-d')) ?>" data-csrf="<?= h(csrf_token()) ?>">
@@ -233,21 +234,30 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
         <?php $__holiday = $holidays[$__day['ymd']] ?? null; ?>
         <div class="cal-day<?= $__day['isToday'] ? ' cal-day-today' : '' ?><?= $__holiday ? ' cal-day-holiday' : '' ?><?= !$__day['isWorkDay'] ? ' cal-day-nonworking' : '' ?>" data-day="<?= h($__day['ymd']) ?>">
           <div class="cal-day-head"><?= h($__day['label']) ?></div>
-          <?php if (!empty($canRecordSentiment) && ($sentimentGranularity ?? 'day') === 'day'):
+          <?php if (!empty($canRecordSentiment) && ($sentimentGranularity ?? 'week') === 'day'):
             $__dayMood = $weekSentiment[$__day['ymd']]['mood'] ?? null;
             $__dayFlow = $weekSentiment[$__day['ymd']]['flow'] ?? null;
             $__isFuture = $__day['date'] > $__today;
+            // Default-Emojis, wenn noch nichts gesetzt: neutrales "—" als Placeholder.
+            $__moodCur = $__dayMood !== null ? Sentiment::moodEmoji($__dayMood) : '—';
+            $__flowCur = $__dayFlow !== null ? Sentiment::flowEmoji($__dayFlow) : '—';
           ?>
-            <div class="cal-sent-day<?= $__isFuture ? ' is-future' : '' ?>" data-day="<?= h($__day['ymd']) ?>" data-csrf="<?= h(csrf_token()) ?>" title="<?= $__isFuture ? h(t('cal.sent_future', 'Zukunft')) : '' ?>">
-              <div class="cal-sent-day-row" data-dim="mood" data-current="<?= $__dayMood ?? '' ?>">
-                <?php foreach ([1,2,3,4,5] as $__s): ?>
-                  <button type="button" class="cal-sent-btn<?= $__dayMood === $__s ? ' is-selected' : '' ?>" data-score="<?= $__s ?>" title="<?= h(t('sent.mood_short', 'Mood')) ?>: <?= h(Sentiment::moodLabel($__s)) ?>" <?= $__isFuture ? 'disabled' : '' ?>><?= Sentiment::moodEmoji($__s) ?></button>
-                <?php endforeach; ?>
+            <div class="cal-sent-day<?= $__isFuture ? ' is-future' : '' ?>" data-day="<?= h($__day['ymd']) ?>" data-csrf="<?= h(csrf_token()) ?>" <?= $__isFuture ? 'title="' . h(t('cal.sent_future', 'Zukunft')) . '"' : '' ?>>
+              <div class="cal-sent-cell" data-dim="mood" data-current="<?= $__dayMood ?? '' ?>">
+                <button type="button" class="cal-sent-current<?= $__dayMood === null ? ' is-empty' : '' ?>" <?= $__isFuture ? 'disabled' : '' ?> title="<?= h(t('sent.mood_short', 'Mood')) . ($__dayMood !== null ? ': ' . h(Sentiment::moodLabel($__dayMood)) : '') ?>" aria-label="<?= h(t('sent.mood_short', 'Mood')) ?>"><?= $__moodCur ?></button>
+                <div class="cal-sent-popover" hidden role="listbox" aria-label="<?= h(t('sent.mood_short', 'Mood')) ?>">
+                  <?php foreach ([1,2,3,4,5] as $__s): ?>
+                    <button type="button" class="cal-sent-opt<?= $__dayMood === $__s ? ' is-selected' : '' ?>" data-score="<?= $__s ?>" role="option" aria-selected="<?= $__dayMood === $__s ? 'true' : 'false' ?>" title="<?= h(Sentiment::moodLabel($__s)) ?>"><?= Sentiment::moodEmoji($__s) ?></button>
+                  <?php endforeach; ?>
+                </div>
               </div>
-              <div class="cal-sent-day-row" data-dim="flow" data-current="<?= $__dayFlow ?? '' ?>">
-                <?php foreach ([1,2,3,4,5] as $__s): ?>
-                  <button type="button" class="cal-sent-btn<?= $__dayFlow === $__s ? ' is-selected' : '' ?>" data-score="<?= $__s ?>" title="<?= h(t('sent.flow_short', 'Flow')) ?>: <?= h(Sentiment::flowLabel($__s)) ?>" <?= $__isFuture ? 'disabled' : '' ?>><?= Sentiment::flowEmoji($__s) ?></button>
-                <?php endforeach; ?>
+              <div class="cal-sent-cell" data-dim="flow" data-current="<?= $__dayFlow ?? '' ?>">
+                <button type="button" class="cal-sent-current<?= $__dayFlow === null ? ' is-empty' : '' ?>" <?= $__isFuture ? 'disabled' : '' ?> title="<?= h(t('sent.flow_short', 'Flow')) . ($__dayFlow !== null ? ': ' . h(Sentiment::flowLabel($__dayFlow)) : '') ?>" aria-label="<?= h(t('sent.flow_short', 'Flow')) ?>"><?= $__flowCur ?></button>
+                <div class="cal-sent-popover" hidden role="listbox" aria-label="<?= h(t('sent.flow_short', 'Flow')) ?>">
+                  <?php foreach ([1,2,3,4,5] as $__s): ?>
+                    <button type="button" class="cal-sent-opt<?= $__dayFlow === $__s ? ' is-selected' : '' ?>" data-score="<?= $__s ?>" role="option" aria-selected="<?= $__dayFlow === $__s ? 'true' : 'false' ?>" title="<?= h(Sentiment::flowLabel($__s)) ?>"><?= Sentiment::flowEmoji($__s) ?></button>
+                  <?php endforeach; ?>
+                </div>
               </div>
             </div>
           <?php endif; ?>
@@ -386,38 +396,72 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
       .then(function (r) { return r.json().catch(function(){ return {ok:false}; }); });
   }
 
-  // === Daily picker: click an emoji -> save for that day + dimension.
+  // === Daily picker: Pro-Style. Current-Button oeffnet ein Popover mit 5
+  // horizontalen Optionen; Klick auf eine Option speichert, schliesst, und
+  // ersetzt das angezeigte Emoji. Re-Klick auf die aktuell gewaehlte Option
+  // leert den Wert.
+  function closeOpenPopover(except) {
+    document.querySelectorAll('.cal-sent-popover').forEach(function (p) {
+      if (except && p === except) return;
+      p.hidden = true;
+    });
+    document.querySelectorAll('.cal-sent-current.is-open').forEach(function (b) {
+      b.classList.remove('is-open');
+    });
+  }
+  // Emoji-Lookup synchron zu Sentiment::moodEmoji / flowEmoji.
+  var EMOJI = {
+    mood: {1:'\u{1F61E}',2:'\u{1F615}',3:'\u{1F610}',4:'\u{1F642}',5:'\u{1F604}'},
+    flow: {1:'\u{1F6D1}',2:'\u{1F422}',3:'\u{1F610}',4:'\u{1F3C3}',5:'\u{1F680}'}
+  };
   document.querySelectorAll('.cal-sent-day').forEach(function (cell) {
     var day  = cell.getAttribute('data-day');
     var csrf = cell.getAttribute('data-csrf');
-    cell.querySelectorAll('.cal-sent-day-row').forEach(function (row) {
-      var dim = row.getAttribute('data-dim');
-      row.querySelectorAll('.cal-sent-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          if (btn.disabled) return;
-          var score = btn.getAttribute('data-score');
-          // Re-click same button clears the score.
-          var current = row.getAttribute('data-current');
+    cell.querySelectorAll('.cal-sent-cell').forEach(function (dimCell) {
+      var dim  = dimCell.getAttribute('data-dim');
+      var cur  = dimCell.querySelector('.cal-sent-current');
+      var pop  = dimCell.querySelector('.cal-sent-popover');
+      if (!cur || !pop) return;
+      cur.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        if (cur.disabled) return;
+        var open = !pop.hidden;
+        closeOpenPopover();
+        if (!open) { pop.hidden = false; cur.classList.add('is-open'); }
+      });
+      pop.querySelectorAll('.cal-sent-opt').forEach(function (opt) {
+        opt.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          var score = opt.getAttribute('data-score');
+          var current = dimCell.getAttribute('data-current');
           var isClear = String(current) === String(score);
           var body = new URLSearchParams();
           body.set('_csrf', csrf);
           body.set('day', day);
           body.set('dim', dim);
           body.set('score', isClear ? '' : score);
-          row.querySelectorAll('.cal-sent-btn').forEach(function (b) { b.disabled = true; });
+          pop.querySelectorAll('.cal-sent-opt').forEach(function (b) { b.disabled = true; });
           postForm(daySaveUrl, body).then(function (res) {
-            row.querySelectorAll('.cal-sent-btn').forEach(function (b) { b.disabled = false; });
+            pop.querySelectorAll('.cal-sent-opt').forEach(function (b) { b.disabled = false; });
             if (!res.ok) return;
             var next = isClear ? '' : score;
-            row.setAttribute('data-current', next);
-            row.querySelectorAll('.cal-sent-btn').forEach(function (b) {
-              b.classList.toggle('is-selected', String(b.getAttribute('data-score')) === String(next));
+            dimCell.setAttribute('data-current', next);
+            pop.querySelectorAll('.cal-sent-opt').forEach(function (b) {
+              var match = String(b.getAttribute('data-score')) === String(next);
+              b.classList.toggle('is-selected', match);
+              b.setAttribute('aria-selected', match ? 'true' : 'false');
             });
+            // Current-Emoji aktualisieren: Wert = "—" wenn leer.
+            cur.textContent = next ? (EMOJI[dim][next] || '—') : '—';
+            cur.classList.toggle('is-empty', !next);
+            closeOpenPopover();
           });
         });
       });
     });
   });
+  // Klick ausserhalb schliesst offenes Popover.
+  document.addEventListener('click', function () { closeOpenPopover(); });
 
   // === Weekly picker (only visible when granularity = week): bulk-fill the week.
   document.querySelectorAll('.cal-sent-week').forEach(function (block) {

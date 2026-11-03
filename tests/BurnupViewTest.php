@@ -323,10 +323,16 @@ final class BurnupViewTest extends TestCase
         $this->assertIsString($ctrl);
         $this->assertIsString($index);
 
-        // Daily-Picker pro Tag (nur sichtbar bei granularity='day').
+        // Daily-Picker pro Tag (Pro-Style: ein Current-Emoji-Button + Popover mit 5 Optionen).
         $this->assertStringContainsString('class="cal-sent-day', $cal, 'Daily Mood-Picker im Kalender fehlt');
+        $this->assertStringContainsString('class="cal-sent-current', $cal, 'Pro-Style Current-Emoji-Button fehlt (statt stacked buttons)');
+        $this->assertStringContainsString('class="cal-sent-popover"', $cal, 'Popover mit 5 Optionen fehlt (Pro-Style)');
         $this->assertStringContainsString("data-dim=\"mood\"", $cal, 'Mood-Dimension fehlt im Daily-Picker');
         $this->assertStringContainsString("data-dim=\"flow\"", $cal, 'Flow-Dimension fehlt im Daily-Picker');
+
+        // Default-Granularitaet ist WEEK (Felix-Feedback 2026-11-04: "default
+        // habe ich gesagt ist nicht die tägliche meldung").
+        $this->assertStringContainsString("sentimentGranularity ?: 'week'", $cal, 'Default-Granularitaet muss "week" sein, nicht "day"');
 
         // Weekly-Picker (eine Zeile fuer die ganze Woche, Bulk-Fill).
         $this->assertStringContainsString('class="cal-sent-week"', $cal, 'Weekly Mood-Picker im Kalender fehlt');
