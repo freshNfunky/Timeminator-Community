@@ -334,6 +334,8 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
       'progress'  => t('cockpit.burnup_progress',  'Fortschritt'),
       'forecast'  => t('cockpit.burnup_forecast',  'Prognose'),
       'deadline'  => t('cockpit.burnup_deadline',  'Planende'),
+      'delay'     => t('cockpit.burnup_delay',     'Verzoegerung'),
+      'ideal'     => t('cockpit.burnup_ideal',     'Ideal'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
     if (!d.ok || !d.points.length) {
@@ -350,39 +352,46 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
       series.push({ label: i18n.target + ' ' + d.target_h + ' h', color: '#94a3b8', dashed: true,
         data: labels.map(function () { return d.target_h; }) });
     }
-    // Finde zu jedem Marker-Datum den naechstgelegenen x-Index in points[].
-    function xIndex(ymd) {
-      if (!ymd) return null;
-      var idx = -1;
-      for (var i = 0; i < labels.length; i++) {
-        if (labels[i] <= ymd) idx = i; else break;
-      }
-      return idx >= 0 ? idx : (labels[0] >= ymd ? 0 : null);
+    // Fortschritts-Linie (step-forward gefuellt) + Marker-Punkte an den Meldeterminen.
+    var progressLine = d.progress_line || [];
+    var hasProgress  = progressLine.some(function (v) { return v !== null && v !== undefined; });
+    if (hasProgress) {
+      series.push({ label: i18n.progress + ' (%)', color: '#8b5cf6', right: true, step: true, data: progressLine });
     }
-    var pts = [], pointLegend = [];
-    var markers = d.markers || [];
-    var hasProgress = false, hasForecast = false;
-    markers.forEach(function (m) {
-      var xi = xIndex(m.d);
-      if (xi === null) return;
-      if (m.p !== null && m.p !== undefined) {
-        pts.push({ x: xi, y: m.p, color: '#8b5cf6', right: true });
-        hasProgress = true;
-      }
-      if (m.f !== null && m.f !== undefined) {
-        pts.push({ x: xi, y: m.f, color: '#d97706', right: true });
-        hasForecast = true;
-      }
+    var pts = (d.progress_markers || []).map(function (m) {
+      return { x: m.x, y: m.y, color: '#8b5cf6', right: true };
     });
-    if (hasProgress) pointLegend.push({ label: i18n.progress + ' (%)', color: '#8b5cf6' });
-    if (hasForecast) pointLegend.push({ label: i18n.forecast + ' (%)', color: '#d97706' });
+    // Prognose-Strahlen vom Meldepunkt im Review-Turnus-Abstand zum Forecast-Wert.
+    var rays = (d.forecast_rays || []).map(function (r) {
+      return { x0: r.x0, y0: r.y0, x1: r.x1, y1: r.y1, color: '#d97706', dashed: true, right: true };
+    });
+    // Legende: progress-Serie trimmt schon einen Eintrag ab; nur Prognose extra.
+    var pointLegend = [];
+    if (rays.length) {
+      pointLegend.push({ label: i18n.forecast + ' (%, +' + (d.review_interval || 30) + ' d)', color: '#d97706' });
+    }
+    // Ideal-Linie (0-100%): als rechte-Achse-Serie mit grau-gestrichelter Linie.
+    var idealLine = d.ideal_line || [];
+    var hasIdeal = idealLine.some(function (v) { return v !== null && v !== undefined; });
+    if (hasIdeal) {
+      series.push({ label: i18n.ideal + ' (%)', color: '#64748b', right: true, dashed: true, data: idealLine });
+    }
+    // Deadline (urspruengliches Enddatum, grau) + Delay (aktuelles nach Shift, orange).
     var vlines = [];
-    var deadlineIdx = xIndex(d.planned_end);
-    if (deadlineIdx !== null) {
-      vlines.push({ index: deadlineIdx, label: '', color: '#94a3b8', legend: i18n.deadline + ' ' + d.planned_end });
+    if (d.deadline && d.deadline.x !== null && d.deadline.x !== undefined) {
+      vlines.push({
+        index: d.deadline.x, label: '', color: '#94a3b8',
+        legend: i18n.deadline + ' ' + d.deadline.date,
+      });
+    }
+    if (d.delay && d.delay.x !== null && d.delay.x !== undefined) {
+      vlines.push({
+        index: d.delay.x, label: '', color: '#d97706',
+        legend: i18n.delay + ' ' + d.delay.date,
+      });
     }
     TmCharts.lines(canvas, {
-      xLabels: labels, series: series, points: pts, vlines: vlines,
+      xLabels: labels, series: series, points: pts, rays: rays, vlines: vlines,
       unit: 'h', rightUnit: '%', pointLegend: pointLegend,
     }, legend);
   });

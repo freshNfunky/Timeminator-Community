@@ -1179,6 +1179,8 @@ return [
     'cockpit.burnup_progress'     => 'Fortschritt',
     'cockpit.burnup_forecast'     => 'Prognose',
     'cockpit.burnup_deadline'     => 'Planende',
+    'cockpit.burnup_delay'        => 'Verzoegerung',
+    'cockpit.burnup_ideal'        => 'Ideal',
     'cockpit.health_review_days'  => 'Review-Turnus in Tagen (leer = Default',
     'cockpit.err_unknown_field'   => 'Unbekanntes Feld.',
 
