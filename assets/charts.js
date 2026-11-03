@@ -465,10 +465,13 @@ window.TmCharts = (function () {
                    '<span class="lg-lbl">' + escapeHtml(vl.legend) + '</span></li>');
       });
       if (fb && (fb.belowLabel || fb.aboveLabel)){
-        // Flaechenfarben als transparente Rechtecke in der Legende - die Flaeche
-        // im Chart ist semi-transparent, die Legende spiegelt das mit gleicher Alpha.
+        // Flaechen-Swatch als Inline-SVG mit fill-Attribut - KEIN inline style="...",
+        // sonst blockiert style-src-attr 'none' die Farbe komplett (CSP). Die
+        // theme-abhaengige Deckkraft kommt ueber die CSS-Klasse .lg-area-rect.
         var areaSwatch = function(color){
-          return '<span class="lg-area" style="background:' + color + '"></span>';
+          return '<svg class="lg-svg" width="20" height="12" viewBox="0 0 20 12" aria-hidden="true">' +
+                 '<rect class="lg-area-rect" x="0" y="0" width="20" height="12" rx="2" fill="' + color + '"/>' +
+                 '</svg>';
         };
         if (fb.belowLabel){
           items.push('<li>' + areaSwatch(fb.belowColor) +

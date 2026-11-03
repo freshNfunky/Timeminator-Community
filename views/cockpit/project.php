@@ -176,7 +176,10 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
       if (inp.value === orig) return;
       inp.disabled = true;
       var body = new URLSearchParams();
-      body.set('csrf_token', token);
+      // CSRF-Feldname: Server (csrf_check) erwartet "_csrf" - frueher stand hier
+      // "csrf_token", was still zu 419 fuehrte und die Matrix nicht persistieren
+      // liess (Felix-Feedback 2026-11-03).
+      body.set('_csrf', token);
       body.set('project_id', pid);
       body.set('user_id', row.getAttribute('data-user-id'));
       body.set('week', cell.getAttribute('data-week'));

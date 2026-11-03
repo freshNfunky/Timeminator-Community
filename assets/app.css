@@ -437,9 +437,17 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .lg-line{display:inline-block;width:18px;height:0;border-top:3px solid;flex:none;margin-right:4px;vertical-align:middle}
 .lg-line-dashed{border-top-style:dashed}
 .lg-svg{flex:none;margin-right:4px;vertical-align:middle}
-/* Flaechen-Swatch fuer fillBetween-Eintraege (Pro-Vorbild): halbtransparent wie
-   die eigentliche Chart-Flaeche. */
-.lg-area{display:inline-block;width:18px;height:10px;border-radius:2px;flex:none;margin-right:4px;vertical-align:middle;opacity:.45}
+/* Flaechen-Swatch fuer fillBetween-Eintraege: als SVG-Rect gerendert (CSP-clean -
+   style-src-attr 'none' blockiert inline style="background:..."). Theme-abhaengige
+   Deckkraft ueber fill-opacity: im Light-Mode halbtransparent wie die eigentliche
+   Chart-Flaeche, im Dark-Mode voll deckend, sonst verschwindet das kleine
+   Rechteck vor dunklem Panel optisch komplett (Felix-Feedback 2026-11-03). */
+.lg-area-rect{fill-opacity:.55}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .lg-area-rect{fill-opacity:1}
+}
+:root[data-theme="dark"] .lg-area-rect{fill-opacity:1}
+:root[data-theme="light"] .lg-area-rect{fill-opacity:.55}
 .chart-tip{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.4;color:var(--ink);pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.08);max-width:220px;z-index:5}
 .chart-tip .muted{color:var(--muted)}
 
