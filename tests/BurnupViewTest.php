@@ -219,6 +219,22 @@ final class BurnupViewTest extends TestCase
         );
     }
 
+    public function testTrackerFormHiddenRuleBeatsRowFlex(): void
+    {
+        // Historische Regression (Felix-Feedback 2026-11-03: "terminverschiebung
+        // geklickt. die maske veraendert sich nicht"): das Umschalten setzte
+        // zwar das [hidden]-Attribut, die .row-Klasse erzwang aber display:flex
+        // mit hoeherer Specificity - die versteckten Forms blieben sichtbar.
+        // Fix: explizite CSS-Regel mit !important fuer .tracker-form[hidden].
+        $css = file_get_contents($this->root() . '/assets/app.css');
+        $this->assertIsString($css);
+        $this->assertMatchesRegularExpression(
+            '/\.tracker-form\[hidden\]\{display\s*:\s*none\s*!important\}/',
+            $css,
+            'Fehlende CSS-Regel: .tracker-form[hidden] muss display:none !important sein, sonst beisst .row{display:flex} das native hidden'
+        );
+    }
+
     public function testTrackerEntryExposesProTypesAsDisabledOptions(): void
     {
         // Kaufmaennische und PM-Typen aus der Pro-Variante muessen im
@@ -265,6 +281,49 @@ final class BurnupViewTest extends TestCase
             "\$extra['date_value'] = \$asOf",
             $src,
             'ctrl_project_tracker_save reicht date_value (as_of) nicht durch'
+        );
+    }
+
+    public function testPlanMatrixWeekRangeSpansSinceProjectStart(): void
+    {
+        // Historische Regression (Felix-Feedback 2026-11-03: "muss alle wochen
+        // bearbeiten koennen seit beginn"): die Matrix zeigte nur 13 Wochen
+        // rueckwaerts - aeltere Wochen waren nicht erreichbar. Fix: der
+        // Controller leitet $from aus dem frueheren von Buchung / planned_start /
+        // kickoff_at ab (statt fix today-12w), und $to aus max(today+4w,
+        // planned_end).
+        $src = file_get_contents($this->root() . '/src/controllers/cockpit_ctrl.php');
+        $this->assertIsString($src);
+
+        // Fruehestes Startdatum wird aus Buchungen + planned_start + kickoff_at zusammengefuehrt.
+        $this->assertMatchesRegularExpression(
+            '/\$firstBooking\s*=\s*DB::scalar\([^;]*MIN\(DATE\(start_ts\)\)/s',
+            $src,
+            'Matrix-Bereich muss das frueheste Buchungsdatum ermitteln'
+        );
+        $this->assertMatchesRegularExpression(
+            '/\$starts\s*=\s*array_filter\(\[\s*\$firstBooking,\s*\$project\[\'planned_start\'\]/s',
+            $src,
+            'Matrix-Startkandidaten (Buchung + planned_start + kickoff_at) fehlen'
+        );
+        $this->assertStringContainsString(
+            'kickoff_at',
+            $src,
+            'kickoff_at als Startkandidat fehlt'
+        );
+
+        // Der Horizont voraus muss mindestens planned_end erreichen.
+        $this->assertMatchesRegularExpression(
+            '/if\s*\(!empty\(\$project\[\'planned_end\'\]\).*\$to\s*=\s*\(string\)\s*\$project\[\'planned_end\'\]/s',
+            $src,
+            'Matrix-Ende muss planned_end abdecken'
+        );
+
+        // Der alte Fix-13-Wochen-Rueckblick ist nicht mehr der einzige Startpunkt.
+        $this->assertDoesNotMatchRegularExpression(
+            '/\$from\s*=\s*\$today->modify\(\'monday this week\'\)->modify\(\'-12 weeks\'\)/',
+            $src,
+            'Fixer 13-Wochen-Rueckblick darf nicht mehr der einzige Startpunkt der Matrix sein'
         );
     }
 

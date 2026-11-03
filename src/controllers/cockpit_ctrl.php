@@ -171,10 +171,32 @@ function ctrl_cockpit_project(): void
         if ($r['project_id'] === $id) { $row = $r; break; }
     }
 
-    // Soll/Ist-Matrix: 13 Wochen rueckwaerts bis +4 Wochen voraus.
+    // Soll/Ist-Matrix: ab Projektstart (= frueheste Buchung bzw. planned_start/
+    // kickoff_at, welches davon zuerst liegt) bis +4 Wochen nach heute, mindestens
+    // aber bis planned_end. Felix-Feedback 2026-11-03: "muss alle wochen
+    // bearbeiten koennen seit beginn" - frueher waren es nur 13 Wochen rueckwaerts,
+    // man kam gar nicht an den Projektanfang zurueck.
     $today    = new DateTimeImmutable('today');
-    $from     = $today->modify('monday this week')->modify('-12 weeks')->format('Y-m-d');
-    $to       = $today->modify('monday this week')->modify('+4 weeks')->format('Y-m-d');
+    $thisMon  = $today->modify('monday this week');
+    $firstBooking = DB::scalar(
+        'SELECT MIN(DATE(start_ts)) FROM time_entries WHERE project_id = ? AND duration_min IS NOT NULL',
+        [$id]
+    );
+    $starts = array_filter([
+        $firstBooking,
+        $project['planned_start'] ?? null,
+        !empty($project['kickoff_at']) ? substr((string) $project['kickoff_at'], 0, 10) : null,
+    ]);
+    $earliest = $starts ? min($starts) : $thisMon->modify('-12 weeks')->format('Y-m-d');
+    // Horizont rueckwaerts: nicht weiter als bis zum frueheren Datum - aber auch
+    // mindestens 4 Wochen rueckwaerts, falls das Projekt juenger ist.
+    $fallbackBack = $thisMon->modify('-4 weeks')->format('Y-m-d');
+    $from     = min($earliest, $fallbackBack);
+    // Horizont voraus: +4 Wochen nach heute, mindestens bis planned_end.
+    $to       = $thisMon->modify('+4 weeks')->format('Y-m-d');
+    if (!empty($project['planned_end']) && (string) $project['planned_end'] > $to) {
+        $to = (string) $project['planned_end'];
+    }
     $members  = PlanRepo::projectMembers($id);
     $weekKeys = PlanRepo::weekKeys($from, $to);
     $istMap   = PlanRepo::istByProjectUserWeek($from, $to)[$id] ?? [];
