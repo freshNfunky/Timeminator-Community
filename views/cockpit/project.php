@@ -276,10 +276,13 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
         }
         return $out;
     };
+    // Pro-Teaser-Typen (deaktiviert in Community, aktiv in Pro).
+    // Meeting-Protokolle gehoeren NICHT dazu (Felix-Feedback 2026-11-03:
+    // "kundenmeeting ist nicht pro") - Projektmeetings mit Kunde/Team sind
+    // eine Grundfunktion und bleiben in Community aktiv (s.u.).
     $proTypes = [
         'risk'             => t('cockpit.tt_risk',             'Risiko'),
         'decision'         => t('cockpit.tt_decision',         'Entscheidung'),
-        'meeting'          => t('cockpit.tt_meeting',          'Meeting-Protokoll'),
         'cost'             => t('cockpit.tt_cost',             'Kosten'),
         'budget_increase'  => t('cockpit.tt_budget_increase',  'Budget-Erhoehung'),
         'invoice_sent'     => t('cockpit.tt_invoice_sent',     'Rechnung versendet'),
@@ -298,6 +301,7 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
       <select id="trackerType" class="tracker-type-select">
         <option value="progress"><?= h(t('cockpit.tt_progress', 'Fortschritt')) ?></option>
         <option value="date_shift"><?= h(t('cockpit.tt_date_shift', 'Terminverschiebung')) ?></option>
+        <option value="meeting"><?= h(t('cockpit.tt_meeting', 'Meeting-Protokoll')) ?></option>
         <?php foreach ($proTypes as $key => $label): ?>
           <option value="<?= h($key) ?>" disabled data-pro="1"><?= h($label . $proSuffix) ?></option>
         <?php endforeach; ?>
@@ -353,6 +357,33 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
       ?> <input type="text" name="reason" maxlength="500" required></label>
     <div class="form-actions">
       <button class="btn btn-primary" type="submit"><?= h(t('cockpit.date_shift_save', 'Verschiebung speichern')) ?></button>
+    </div>
+  </form>
+
+  <?php // === Meeting-Protokoll (Community: meeting) =================== ?>
+  <?php /* Felix-Feedback 2026-11-03: "kundenmeeting ist nicht pro / fehlt zudem
+          hier in der community variante" - Projektmeetings bleiben Grund-
+          funktion. Kompakte 2-Spalten-Form: Datum + Titel, dann frei-text
+          Teilnehmer + Notizen/Beschluesse (als Note-Feld). */ ?>
+  <form method="post" action="<?= h(route('project_tracker_save')) ?>" class="row tracker-form" data-tracker-type="meeting" hidden style="flex-wrap:wrap;align-items:flex-end;gap:10px">
+    <?= csrf_field() ?>
+    <input type="hidden" name="project_id" value="<?= (int) $project['id'] ?>">
+    <input type="hidden" name="type" value="meeting">
+    <input type="hidden" name="return_to" value="cockpit_project">
+    <label><?= h(t('cockpit.f_meeting_date', 'Meeting-Datum')) ?>
+      <input type="date" name="date_value" value="<?= h($todayIso) ?>" required>
+    </label>
+    <label><?= h(t('cockpit.f_meeting_title', 'Titel')) ?>
+      <input type="text" name="meeting_title" maxlength="255" placeholder="<?= h(t('cockpit.f_meeting_title_ph', 'z. B. Kundentermin KW 45')) ?>">
+    </label>
+    <label class="grow"><?= h(t('cockpit.f_meeting_participants', 'Teilnehmer')) ?>
+      <input type="text" name="meeting_participants" maxlength="500" placeholder="<?= h(t('cockpit.f_meeting_participants_ph', 'optional, z. B. Max Mustermann, Erika Beispiel')) ?>">
+    </label>
+    <label class="grow"><?= h(t('cockpit.f_meeting_notes', 'Notizen / Beschluesse')) ?>
+      <textarea name="note" rows="4" required placeholder="<?= h(t('cockpit.f_meeting_notes_ph', 'Wesentliche Punkte, Beschluesse, Action Items …')) ?>"></textarea>
+    </label>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit"><?= h(t('cockpit.book_meeting', 'Meeting protokollieren')) ?></button>
     </div>
   </form>
 
@@ -439,6 +470,7 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
             <?php switch ((string) $t['type']) {
               case 'progress':      echo h(t('cockpit.tt_progress',   'Fortschritt')); break;
               case 'date_shift':    echo h(t('cockpit.tt_date_shift', 'Terminverschiebung')); break;
+              case 'meeting':       echo h(t('cockpit.tt_meeting',    'Meeting-Protokoll')); break;
               case 'status_report': echo h(t('cockpit.tt_status',     'Status')); break;
               default:              echo h((string) $t['type']);
             } ?>

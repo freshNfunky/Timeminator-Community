@@ -240,11 +240,13 @@ final class BurnupViewTest extends TestCase
         // Kaufmaennische und PM-Typen aus der Pro-Variante muessen im
         // Switcher sichtbar aber deaktiviert sein, damit User wissen, was
         // in Pro verfuegbar ist - ohne die Backend-Pfade ausbauen zu muessen.
+        // Felix-Feedback 2026-11-03: Meeting-Protokolle gehoeren NICHT zur
+        // Pro-Variante - Kundenmeetings sind eine Community-Grundfunktion.
         $view = file_get_contents($this->root() . '/views/cockpit/project.php');
         $this->assertIsString($view);
 
-        // Alle sieben Pro-Typen sind im $proTypes-Array der View enthalten.
-        foreach (['risk', 'decision', 'meeting', 'cost', 'budget_increase', 'invoice_sent', 'invoice_payment'] as $proType) {
+        // Die sechs tatsaechlichen Pro-Typen sind im $proTypes-Array.
+        foreach (['risk', 'decision', 'cost', 'budget_increase', 'invoice_sent', 'invoice_payment'] as $proType) {
             $this->assertMatchesRegularExpression(
                 "/'" . preg_quote($proType, '/') . "'\s*=>\s*t\(/",
                 $view,
@@ -256,6 +258,52 @@ final class BurnupViewTest extends TestCase
             'disabled data-pro="1"',
             $view,
             'Pro-Typen muessen im Switcher als disabled mit data-pro="1" gerendert werden'
+        );
+        // Meeting darf NICHT im Pro-Array stehen - es ist ein aktiver Community-Typ.
+        $this->assertDoesNotMatchRegularExpression(
+            "/'meeting'\s*=>\s*t\(/",
+            $view,
+            'Meeting-Protokoll darf nicht im Pro-Teaser-Array stehen - es ist Community-Grundfunktion'
+        );
+    }
+
+    public function testMeetingTrackerIsActiveCommunityType(): void
+    {
+        // Felix-Feedback 2026-11-03: "kundenmeeting ist nicht pro / fehlt zudem
+        // hier in der community variante" - Meeting-Protokoll muss als aktives
+        // Formular im Switcher auftauchen und ueber den normalen tracker-save-
+        // Endpoint persistieren.
+        $view = file_get_contents($this->root() . '/views/cockpit/project.php');
+        $src  = file_get_contents($this->root() . '/src/Repo.php');
+        $this->assertIsString($view);
+        $this->assertIsString($src);
+
+        // Switcher-Option fuer meeting (aktiv, NICHT disabled).
+        $this->assertMatchesRegularExpression(
+            '/<option\s+value="meeting">/',
+            $view,
+            'Meeting-Switcher-Option fehlt oder ist nicht aktiv'
+        );
+
+        // Aktives Meeting-Formular mit data-tracker-type="meeting".
+        $this->assertStringContainsString(
+            'data-tracker-type="meeting"',
+            $view,
+            'Meeting-Formular (data-tracker-type="meeting") fehlt'
+        );
+        $this->assertStringContainsString(
+            'name="type" value="meeting"',
+            $view,
+            'Meeting-Formular braucht hidden type="meeting"'
+        );
+        $this->assertStringContainsString('name="meeting_title"',        $view, 'Meeting-Titel-Feld fehlt');
+        $this->assertStringContainsString('name="meeting_participants"', $view, 'Meeting-Teilnehmer-Feld fehlt');
+
+        // Repo erlaubt 'meeting' als Community-Tracker-Typ, sonst wuerde es auf status_report fallen.
+        $this->assertMatchesRegularExpression(
+            "/TRACKER_TYPES_COMMUNITY\s*=\s*\[[^\]]*'meeting'/",
+            $src,
+            'meeting fehlt in TRACKER_TYPES_COMMUNITY'
         );
     }
 

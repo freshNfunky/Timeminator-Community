@@ -146,13 +146,26 @@ function ctrl_project_tracker_save(): void
         return is_numeric($norm) ? (float) $norm : null;
     };
 
-    // Weiterleitungs-Ziel: Fortschritts-Meldungen werden im Projekt-Cockpit
+    // Weiterleitungs-Ziel: Fortschritt + Meeting werden im Projekt-Cockpit
     // eingetragen (Pro-UI-Paritaet) und sollen auch dorthin zurueckkehren; die
     // klassische status_report-Variante landet weiterhin in der Projekt-Detail-
     // Ansicht. Via post('return_to') kann die View den Zielnamen ueberschreiben.
     $returnRoute = (string) post('return_to', '') !== ''
         ? (string) post('return_to', '')
-        : ($type === 'progress' ? 'cockpit_project' : 'project_show');
+        : (in_array($type, ['progress', 'meeting'], true) ? 'cockpit_project' : 'project_show');
+
+    // Meeting-Protokoll (Community-light): Titel + Teilnehmer wandern als
+    // Praefix in die Note - die Repo-Insert hat keine eigenen Spalten dafuer,
+    // Pro's volle Form mit action_items/approvers bleibt der Pro-Variante
+    // vorbehalten.
+    if ($type === 'meeting') {
+        $title  = trim((string) post('meeting_title', ''));
+        $parts  = trim((string) post('meeting_participants', ''));
+        $prefix = '';
+        if ($title !== '') $prefix .= $title . "\n";
+        if ($parts !== '') $prefix .= t('cockpit.meeting_participants_prefix', 'Teilnehmer') . ': ' . $parts . "\n";
+        if ($prefix !== '') $note = $prefix . "\n" . $note;
+    }
 
     $extra = [];
     if ($type === 'progress') {

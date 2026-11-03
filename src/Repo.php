@@ -182,7 +182,7 @@ final class Repo
      * delay / extension) + optionales neues Datum. `progress` bleibt
      * eigener Typ wegen der 0..100-Zahl.
      */
-    public const TRACKER_TYPES_COMMUNITY = ['status_report', 'progress', 'date_shift'];
+    public const TRACKER_TYPES_COMMUNITY = ['status_report', 'progress', 'date_shift', 'meeting'];
     public const TRACKER_STATUSES = ['on_plan', 'delay', 'extension'];
 
     /**
@@ -277,6 +277,14 @@ final class Repo
         } elseif ($type === 'date_shift') {
             // v1.0 F2: Terminverschiebung — note = Begruendung,
             // date_value = neues Enddatum.
+            $d = $extra['date_value'] ?? null;
+            if (is_string($d) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) {
+                $dateValue = $d;
+            }
+        } elseif ($type === 'meeting') {
+            // Meeting-Protokoll (Community-light, Felix-Feedback 2026-11-03):
+            // note = Titel+Teilnehmer+Notizen (vom Controller zusammengebaut),
+            // date_value = Meeting-Datum. Kein status noetig.
             $d = $extra['date_value'] ?? null;
             if (is_string($d) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) {
                 $dateValue = $d;
