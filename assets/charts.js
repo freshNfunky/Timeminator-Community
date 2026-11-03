@@ -48,11 +48,27 @@ window.TmCharts = (function () {
     return { ctx: ctx, w: w, h: h };
   }
 
+  // Rundet v auf den naechst-hoeheren "schoenen" Wert fuer die Achsen-Max-Marke.
+  // Feingranularer Schritt-Katalog, damit ein Max knapp ueber 100 nicht gleich auf
+  // 200 springt (Felix-Feedback 2026-11-03: "legende nicht viel hoeher als der
+  // max wert"). Die Aufrufer kalkulieren vorher v = dataMax * 1.05, der niedrigste
+  // Schritt (1.2) legt also ~15 % Headroom ueber den eigentlichen Datenwert.
   function niceMax(v){
     if (v <= 0) return 1;
     var pow = Math.pow(10, Math.floor(Math.log10(v)));
     var n = v / pow;
-    var step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+    var step;
+    if      (n <= 1)   step = 1;
+    else if (n <= 1.2) step = 1.2;
+    else if (n <= 1.5) step = 1.5;
+    else if (n <= 2)   step = 2;
+    else if (n <= 2.5) step = 2.5;
+    else if (n <= 3)   step = 3;
+    else if (n <= 4)   step = 4;
+    else if (n <= 5)   step = 5;
+    else if (n <= 6)   step = 6;
+    else if (n <= 8)   step = 8;
+    else               step = 10;
     return step * pow;
   }
 
