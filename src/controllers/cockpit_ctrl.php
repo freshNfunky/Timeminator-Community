@@ -499,7 +499,6 @@ function cockpit_burnup_payload(int $projectId): array
             'h'  => round(((int) $p['cumulative_minutes']) / 60, 2),
         ];
     }
-    $n = count($labels);
 
     // Fortschritts-Tracker (type=progress) als Rohdaten; die Frontend-fertigen
     // Reihen (progress_line + progress_markers + forecast_rays) bauen wir
@@ -518,6 +517,41 @@ function cockpit_burnup_payload(int $projectId): array
             'forecast' => $t['forecast'] !== null ? (float) $t['forecast'] : null,
         ];
     }, $trackers);
+
+    // Review-Interval (fuer Prognose-Ray-Enden) brauchen wir schon beim Ausdehnen
+    // der Labels bis zum Horizont, damit kein Marker am rechten Rand klemmt.
+    $interval = $project['review_interval_days'] !== null
+        ? (int) $project['review_interval_days']
+        : COCKPIT_REVIEW_INTERVAL_DEFAULT_DAYS;
+
+    // Horizont ueber "heute" hinaus (Pro-Vorbild): mindestens planned_end, plus
+    // die am weitesten in die Zukunft reichende Prognose-Ray-Spitze. Sonst klemmt
+    // die Deadline-vline direkt am rechten Rand und die Ideal-Linie kann ihre
+    // 100% nicht mehr erreichen (Felix-Feedback 2026-11-03: "ideal muss am
+    // projektstart beginnen und bei der deadline mit 100% schneiden").
+    if ($labels) {
+        $today    = (new DateTimeImmutable('today'))->format('Y-m-d');
+        $horizon  = $labels[count($labels) - 1];
+        if ($today > $horizon) $horizon = $today;
+        if (!empty($project['planned_end']) && (string) $project['planned_end'] > $horizon) {
+            $horizon = (string) $project['planned_end'];
+        }
+        foreach ($trackers as $t) {
+            if ($t['forecast'] === null) continue;
+            $rayEnd = (new DateTimeImmutable($t['as_of']))->modify('+' . $interval . ' days')->format('Y-m-d');
+            if ($rayEnd > $horizon) $horizon = $rayEnd;
+        }
+        $last = new DateTimeImmutable($labels[count($labels) - 1]);
+        $horD = new DateTimeImmutable($horizon);
+        // Zukunfts-Tage auffuellen: h bleibt null (Ist-Linie endet bei today),
+        // die Serien fuer Ideal/Deadline/Rays koennen aber darauf landen.
+        while ($last < $horD) {
+            $last     = $last->modify('+1 day');
+            $labels[] = $last->format('Y-m-d');
+            $points[] = ['d' => $last->format('Y-m-d'), 'h' => null];
+        }
+    }
+    $n = count($labels);
 
     // Alten Marker-Shape beibehalten (Backwards-Compat fuer BurnupDataTest).
     $markers = array_map(fn($t) => [
@@ -553,10 +587,7 @@ function cockpit_burnup_payload(int $projectId): array
 
     // Prognose-Strahlen: jede Meldung mit forecast zeichnet einen EIGENEN,
     // unverbundenen Strahl von (as_of, percent) nach (as_of + review_interval, forecast).
-    // Review-Interval ist Pro-konform: pro Projekt ueberschreibbar, sonst Default 30 Tage.
-    $interval = $project['review_interval_days'] !== null
-        ? (int) $project['review_interval_days']
-        : COCKPIT_REVIEW_INTERVAL_DEFAULT_DAYS;
+    // $interval ist oben schon fuer die Horizont-Berechnung ermittelt worden.
     $forecastRays = [];
     foreach ($trackers as $t) {
         if ($t['forecast'] === null) continue;
@@ -567,13 +598,15 @@ function cockpit_burnup_payload(int $projectId): array
         $forecastRays[] = ['x0' => $x0, 'y0' => $t['percent'], 'x1' => $x1, 'y1' => $t['forecast']];
     }
 
-    // Ideal-Linie (0-100%): lineare Trajektorie vom Projektstart bis zur
-    // Deadline. Pro-konform: start-Fallback-Reihenfolge planned_start ->
-    // kickoff_at -> created_at. Ohne Start/Ende/Target bleibt sie leer.
+    // Ideal-Linie (0-100%): lineare Trajektorie von der ersten gezeichneten
+    // Woche (labels[0] = erste Buchung bzw. Projekt-Start im Chart) bis zur
+    // Deadline bei 100 %. Felix-Feedback 2026-11-03: die Linie muss am
+    // Projektstart beginnen und bei der Deadline exakt 100 % schneiden, auch
+    // wenn kickoff_at nachtraeglich auf ein spaeteres Datum gesetzt wurde -
+    // sonst beginnt die Ideal-Kurve mitten im Chart und erreicht am rechten
+    // Rand nicht die 100-%-Linie.
     $plannedEnd = $project['planned_end'] ?? null;
-    $start = $project['planned_start']
-        ?? ($project['kickoff_at'] ? substr((string) $project['kickoff_at'], 0, 10) : null)
-        ?? ($project['created_at']  ? substr((string) $project['created_at'],  0, 10) : null);
+    $start = $n > 0 ? $labels[0] : null;
     $idealLine = array_fill(0, $n, null);
     if ($start && $plannedEnd && $n > 0) {
         $tsStart = strtotime($start . ' 00:00:00');
@@ -581,7 +614,10 @@ function cockpit_burnup_payload(int $projectId): array
         if ($tsEnd > $tsStart) {
             foreach ($labels as $i => $ymd) {
                 $tsAt = strtotime($ymd . ' 00:00:00');
-                if ($tsAt < $tsStart || $tsAt > $tsEnd) continue;
+                if ($tsAt < $tsStart) continue;
+                // Nach dem Deadline-Datum bleibt die Linie auf 100 % stehen,
+                // damit sie sichtbar bis zum rechten Chart-Rand durchlaeuft.
+                if ($tsAt >= $tsEnd) { $idealLine[$i] = 100.0; continue; }
                 $idealLine[$i] = round(100.0 * ($tsAt - $tsStart) / ($tsEnd - $tsStart), 2);
             }
         }

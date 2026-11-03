@@ -257,6 +257,58 @@ final class BurnupDataTest extends TestCase
         }
     }
 
+    public function testLabelsExtendToPlannedEndSoIdealReaches100AtDeadline(): void
+    {
+        // Historische Regression (Felix-Feedback 2026-11-03): die Burn-Up-Labels
+        // endeten immer bei "today", die Ideal-Linie konnte deshalb nie ihre
+        // 100 %-Marke erreichen und die Deadline-vline klemmte am rechten Rand.
+        // Fix: Labels werden bis zum spaetesten relevanten Datum (planned_end,
+        // Prognose-Ray-Enden) ausgedehnt - h bleibt ab "today" null.
+        $cid = DB::insert('INSERT INTO clients (name, code, created_at) VALUES (?,?,?)',
+            ['Acme', 'c-' . uniqid(), '2026-01-01 00:00:00']);
+        $future = (new DateTimeImmutable('today'))->modify('+60 days')->format('Y-m-d');
+        $pid = DB::insert(
+            'INSERT INTO projects (client_id, name, code, planned_end, target_hours, created_at) VALUES (?,?,?,?,?,?)',
+            [$cid, 'P', 'p-' . uniqid(), $future, 100.0, '2026-01-01 00:00:00']
+        );
+        // Eine Buchung, damit projectBurnup Labels generiert.
+        $this->seedBookingDay($pid, (new DateTimeImmutable('today'))->modify('-30 days')->format('Y-m-d'), 60);
+        $p = cockpit_burnup_payload($pid);
+        $lastLabel = $p['points'][count($p['points']) - 1]['d'];
+        self::assertSame($future, $lastLabel, 'Letztes Label muss das planned_end sein, damit Deadline/Ideal am rechten Rand ankommen');
+        // Die Ist-Linie endet frueher: Punkte in der Zukunft tragen h = null.
+        $future1 = (new DateTimeImmutable('today'))->modify('+10 days')->format('Y-m-d');
+        $futurePoint = null;
+        foreach ($p['points'] as $pt) if ($pt['d'] === $future1) { $futurePoint = $pt; break; }
+        self::assertNotNull($futurePoint);
+        self::assertNull($futurePoint['h'], 'Ist-Stunden-Reihe bleibt in der Zukunft null (keine Extrapolation)');
+        // Ideal-Linie trifft genau am Deadline-Datum 100 %.
+        $lastIdeal = $p['ideal_line'][count($p['ideal_line']) - 1];
+        self::assertSame(100.0, $lastIdeal, 'Ideal-Linie muss am planned_end genau 100 % erreichen');
+        // Erstes Label = Ideal startet bei 0 %.
+        self::assertSame(0.0, $p['ideal_line'][0], 'Ideal-Linie muss am ersten Label bei 0 % starten');
+    }
+
+    public function testIdealStartsAtFirstLabelNotKickoff(): void
+    {
+        // Felix-Feedback 2026-11-03: die Ideal-Linie beginnt am sichtbaren
+        // Projektstart (= labels[0] = erster gebuchter Tag), nicht am
+        // kickoff_at - sonst startet die Linie mitten im Chart, wenn kickoff
+        // nachtraeglich auf ein spaeteres Datum gesetzt wurde.
+        $cid = DB::insert('INSERT INTO clients (name, code, created_at) VALUES (?,?,?)',
+            ['Acme', 'c-' . uniqid(), '2026-01-01 00:00:00']);
+        $firstBookingDay = '2026-03-01';
+        $lateKickoff     = '2026-08-01';
+        $pid = DB::insert(
+            'INSERT INTO projects (client_id, name, code, kickoff_at, planned_end, target_hours, created_at) VALUES (?,?,?,?,?,?,?)',
+            [$cid, 'P', 'p-' . uniqid(), $lateKickoff, '2026-12-31', 100.0, '2026-01-01 00:00:00']
+        );
+        $this->seedBookingDay($pid, $firstBookingDay, 60);
+        $p = cockpit_burnup_payload($pid);
+        self::assertSame(0.0, $p['ideal_line'][0], 'Ideal startet bei 0 % am ersten Label (nicht erst am Kickoff-Datum)');
+        self::assertSame($firstBookingDay, $p['points'][0]['d']);
+    }
+
     public function testDeadlineEqualsCurrentPlannedEndWhenNoShift(): void
     {
         $pid = $this->seedProject(100.0, '2026-11-15');
