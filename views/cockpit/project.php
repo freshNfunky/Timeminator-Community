@@ -248,6 +248,71 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
   <div id="cockpitBurnupLegend"></div>
 </div>
 
+<?php // ============== Projekt-Sentiment (Mood-Trend) ================ ?>
+<?php /* Felix-Feedback 2026-11-03/04: komplettes Sentiment-Tracking (Mood-
+        Trend-Chart aus den Fortschrittsmeldungen). Eigene Card, damit die
+        zwei Mood-Skalen (Projekt + Kunde) ueber Zeit sichtbar werden - sonst
+        verstecken sich die Werte nur in der Timeline-Textzeile. */ ?>
+<div class="card" style="margin-top:16px">
+  <div class="card-head">
+    <h3><?= h(t('cockpit.sentiment_h3', 'Projekt-Sentiment')) ?><?= tip('cockpit.sentiment_subtitle') ?></h3>
+  </div>
+  <p class="muted" id="cockpitSentimentEmpty" hidden><?= h(t('cockpit.sentiment_empty', 'Noch keine Stimmung erfasst. Beim Buchen einer Fortschrittsmeldung Projekt-/Kunden-Stimmung mit angeben.')) ?></p>
+  <div class="chart-box" style="height:220px"><canvas id="cockpitSentiment"></canvas></div>
+  <div id="cockpitSentimentLegend"></div>
+  <div class="sentiment-latest" id="cockpitSentimentLatest" hidden style="margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;font-size:14px">
+    <span><strong><?= h(t('cockpit.sentiment_latest', 'Zuletzt')) ?>:</strong></span>
+    <span id="cockpitSentimentPm" class="tt-mood"></span>
+    <span id="cockpitSentimentCm" class="tt-mood"></span>
+  </div>
+</div>
+
+<script src="<?= h(asset('charts.js')) ?>"></script>
+<script nonce="<?= h(csp_nonce()) ?>">
+(function () {
+  var canvas = document.getElementById('cockpitSentiment');
+  if (!canvas || !window.TmCharts || !TmCharts.lines) return;
+  var legend = document.getElementById('cockpitSentimentLegend');
+  var empty  = document.getElementById('cockpitSentimentEmpty');
+  var latest = document.getElementById('cockpitSentimentLatest');
+  var pmEl   = document.getElementById('cockpitSentimentPm');
+  var cmEl   = document.getElementById('cockpitSentimentCm');
+  var url = <?= json_encode(route('cockpit_sentiment_data', ['id' => $project['id']])) ?>;
+  var i18n = <?= json_encode([
+      'pm'    => t('cockpit.tt_proj_mood', 'Projekt-Mood'),
+      'cm'    => t('cockpit.tt_cust_mood', 'Kunden-Mood'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
+  // Mood-Emoji-Lookup (muss mit Sentiment::moodEmoji synchron bleiben).
+  var moodEmoji = {1:'\u{1F61E}',2:'\u{1F615}',3:'\u{1F610}',4:'\u{1F642}',5:'\u{1F604}'};
+  fetch(url, {credentials: 'same-origin'}).then(function (r) { return r.json(); }).then(function (d) {
+    if (!d.ok || !d.points || !d.points.length) {
+      empty.hidden = false;
+      canvas.parentNode.style.display = 'none';
+      return;
+    }
+    var labels = d.points.map(function (p) { return p.d; });
+    var pmData = d.points.map(function (p) { return p.pm === null || p.pm === undefined ? null : p.pm; });
+    var cmData = d.points.map(function (p) { return p.cm === null || p.cm === undefined ? null : p.cm; });
+    var series = [
+      {label: i18n.pm, color: '#8b5cf6', data: pmData},
+      {label: i18n.cm, color: '#06b6d4', data: cmData, dashed: true},
+    ];
+    var pts = [];
+    d.points.forEach(function (p, i) {
+      if (p.pm !== null && p.pm !== undefined) pts.push({x: i, y: p.pm, color: '#8b5cf6'});
+      if (p.cm !== null && p.cm !== undefined) pts.push({x: i, y: p.cm, color: '#06b6d4'});
+    });
+    TmCharts.lines(canvas, {xLabels: labels, series: series, points: pts, unit: '/5'}, legend);
+    if (d.latest) {
+      latest.hidden = false;
+      var pmV = d.latest.pm, cmV = d.latest.cm;
+      pmEl.textContent = (pmV !== null && pmV !== undefined) ? (moodEmoji[pmV] + ' ' + i18n.pm + ' ' + pmV + '/5') : '';
+      cmEl.textContent = (cmV !== null && cmV !== undefined) ? (moodEmoji[cmV] + ' ' + i18n.cm + ' ' + cmV + '/5') : '';
+    }
+  });
+})();
+</script>
+
 <?php if (Auth::can('structure.manage')): ?>
 <div class="card" style="margin-top:16px">
   <div class="card-head">
@@ -263,6 +328,7 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
     // benoetigen.
     $todayIso = (new DateTimeImmutable('today'))->format('Y-m-d');
     $moodOptions = function (): string {
+        // Emoji-Paritaet zur Pro-Variante: 1=😞 bis 5=😄 (Sentiment::moodEmoji).
         $labels = [
             1 => t('cockpit.mood_1', 'sehr schlecht'),
             2 => t('cockpit.mood_2', 'schlecht'),
@@ -272,7 +338,7 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
         ];
         $out = '';
         foreach ($labels as $v => $lbl) {
-            $out .= '<option value="' . $v . '">' . $v . ' — ' . h($lbl) . '</option>';
+            $out .= '<option value="' . $v . '">' . Sentiment::moodEmoji($v) . ' ' . $v . ' — ' . h($lbl) . '</option>';
         }
         return $out;
     };
@@ -483,8 +549,8 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
               <span class="muted">(<?= h(t('cockpit.tt_forecast', 'Prognose')) ?>: <?= h(number_format((float) $t['value_forecast'], 0, ',', '.')) ?>%)</span>
             <?php endif; ?>
             <?php if ($t['date_value']): ?><span class="muted"> · <?= h(t('cockpit.tt_as_of', 'Stand')) ?> <?= h((new DateTimeImmutable($t['date_value']))->format('d.m.Y')) ?></span><?php endif; ?>
-            <?php if (!empty($t['project_mood'])):  ?><span class="muted"> · <?= h(t('cockpit.tt_proj_mood', 'Projekt-Mood')) ?> <?= (int) $t['project_mood'] ?>/5</span><?php endif; ?>
-            <?php if (!empty($t['customer_mood'])): ?><span class="muted"> · <?= h(t('cockpit.tt_cust_mood', 'Kunde')) ?> <?= (int) $t['customer_mood'] ?>/5</span><?php endif; ?>
+            <?php if (!empty($t['project_mood'])):  ?><span class="tt-mood" title="<?= h(t('cockpit.tt_proj_mood', 'Projekt-Mood')) ?> <?= (int) $t['project_mood'] ?>/5 (<?= h(Sentiment::moodLabel((int) $t['project_mood'])) ?>)"> · <?= Sentiment::moodEmoji((int) $t['project_mood']) ?> <span class="muted"><?= h(t('cockpit.tt_proj_mood', 'Projekt-Mood')) ?> <?= (int) $t['project_mood'] ?>/5</span></span><?php endif; ?>
+            <?php if (!empty($t['customer_mood'])): ?><span class="tt-mood" title="<?= h(t('cockpit.tt_cust_mood', 'Kunde')) ?> <?= (int) $t['customer_mood'] ?>/5 (<?= h(Sentiment::moodLabel((int) $t['customer_mood'])) ?>)"> · <?= Sentiment::moodEmoji((int) $t['customer_mood']) ?> <span class="muted"><?= h(t('cockpit.tt_cust_mood', 'Kunde')) ?> <?= (int) $t['customer_mood'] ?>/5</span></span><?php endif; ?>
           <?php elseif ($t['type'] === 'date_shift'): ?>
             <?= h(t('cockpit.tt_shift_to', 'Neues Enddatum')) ?>:
             <strong><?= $t['date_value'] ? h((new DateTimeImmutable($t['date_value']))->format('d.m.Y')) : '—' ?></strong>

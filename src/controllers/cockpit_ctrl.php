@@ -690,3 +690,52 @@ function ctrl_cockpit_burnup_data(): void
     }
     json_out($payload);
 }
+
+/**
+ * Projekt-Sentiment-Payload (Felix-Feedback 2026-11-03/04): Projekt-/Kunden-
+ * Stimmung je Fortschrittsmeldung als zwei Linien ueber die Zeit, mit Markern
+ * an den Meldungs-Punkten. Skala 1..5. Rohdaten kommen aus project_trackers.
+ *
+ * @return array{ok:bool,points?:list<array{d:string,pm:int|null,cm:int|null,note:string}>,latest?:array}
+ */
+function cockpit_sentiment_payload(int $projectId): array
+{
+    $project = Repo::project($projectId);
+    if (!$project) {
+        return ['ok' => false, 'error' => 'not_found'];
+    }
+    $rows = DB::all(
+        "SELECT date_value AS as_of, created_at, project_mood, customer_mood, note
+           FROM project_trackers
+          WHERE project_id = ? AND type = 'progress'
+            AND (project_mood IS NOT NULL OR customer_mood IS NOT NULL)
+          ORDER BY (COALESCE(date_value, substr(created_at,1,10))) ASC, created_at ASC",
+        [$projectId]
+    );
+    $points = array_map(static function (array $r): array {
+        return [
+            'd'    => (string) ($r['as_of'] ?: substr((string) $r['created_at'], 0, 10)),
+            'pm'   => $r['project_mood']  !== null ? (int) $r['project_mood']  : null,
+            'cm'   => $r['customer_mood'] !== null ? (int) $r['customer_mood'] : null,
+            'note' => (string) ($r['note'] ?? ''),
+        ];
+    }, $rows);
+    $latest = null;
+    if ($points) {
+        $last = $points[count($points) - 1];
+        $latest = ['d' => $last['d'], 'pm' => $last['pm'], 'cm' => $last['cm']];
+    }
+    return ['ok' => true, 'points' => $points, 'latest' => $latest];
+}
+
+/** JSON-Endpunkt fuer den Sentiment-Trend-Chart im Projekt-Cockpit. */
+function ctrl_cockpit_sentiment_data(): void
+{
+    require_perm('stats.view');
+    $id = (int) get('id');
+    $payload = cockpit_sentiment_payload($id);
+    if (!($payload['ok'] ?? false)) {
+        json_out($payload, 404);
+    }
+    json_out($payload);
+}

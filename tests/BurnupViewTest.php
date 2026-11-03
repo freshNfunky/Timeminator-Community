@@ -267,6 +267,70 @@ final class BurnupViewTest extends TestCase
         );
     }
 
+    public function testSentimentPayloadReturnsMoodTrend(): void
+    {
+        // Felix-Feedback 2026-11-03/04: "DAS KOMPLETTE SENTIMENT TRACKING WURDE
+        // VORHER HAARKLEIN ERWÄHNT UND GEBETEN ES SO UMZUSETZEN WIE IN DER PRO
+        // VARIANTE. ES FEHLT IMMERNOCH KOMPLETT!!!"
+        // Backend-Payload fuer den Projekt-Sentiment-Trend: Punkte je Progress-
+        // Meldung mit project_mood + customer_mood, plus "latest"-Snapshot.
+        $cid = DB::insert('INSERT INTO clients (name, code, created_at) VALUES (?,?,?)',
+            ['Acme', 'c-' . uniqid(), '2026-01-01 00:00:00']);
+        $pid = DB::insert(
+            'INSERT INTO projects (client_id, name, code, created_at) VALUES (?,?,?,?)',
+            [$cid, 'P', 'p-' . uniqid(), '2026-01-01 00:00:00']
+        );
+        Repo::saveProjectTracker($pid, 'progress', 'Start', [
+            'value'          => 10.0,
+            'date_value'     => '2026-03-01',
+            'project_mood'   => 3,
+            'customer_mood'  => 4,
+        ], null);
+        Repo::saveProjectTracker($pid, 'progress', 'Zwischenstand', [
+            'value'          => 50.0,
+            'date_value'     => '2026-06-01',
+            'project_mood'   => 2,
+            'customer_mood'  => 2,
+        ], null);
+        // Meldung ohne Moods wird NICHT in den Sentiment-Punkten auftauchen.
+        Repo::saveProjectTracker($pid, 'progress', 'Ohne Mood', [
+            'value'      => 80.0,
+            'date_value' => '2026-09-01',
+        ], null);
+
+        $p = cockpit_sentiment_payload($pid);
+        self::assertTrue($p['ok']);
+        self::assertCount(2, $p['points'], 'Nur Fortschrittsmeldungen mit Mood zaehlen');
+        self::assertSame('2026-03-01', $p['points'][0]['d']);
+        self::assertSame(3, $p['points'][0]['pm']);
+        self::assertSame(4, $p['points'][0]['cm']);
+        self::assertSame('2026-06-01', $p['points'][1]['d']);
+        self::assertSame(2, $p['points'][1]['pm']);
+        self::assertSame(2, $p['points'][1]['cm']);
+        // latest-Snapshot zeigt den juengsten Datenpunkt.
+        self::assertNotNull($p['latest']);
+        self::assertSame('2026-06-01', $p['latest']['d']);
+    }
+
+    public function testCockpitHasSentimentCardAndRoute(): void
+    {
+        $view  = file_get_contents($this->root() . '/views/cockpit/project.php');
+        $index = file_get_contents($this->root() . '/index.php');
+        $this->assertIsString($view);
+        $this->assertIsString($index);
+
+        // Chart-Canvas + Fetch-Route in der View.
+        $this->assertStringContainsString('id="cockpitSentiment"', $view, 'Sentiment-Chart-Canvas fehlt');
+        $this->assertStringContainsString("cockpit_sentiment_data", $view, 'Sentiment-Endpoint-Route in der View nicht gewired');
+        // Timeline nutzt Emojis statt nur "4/5" (Pro-Paritaet).
+        $this->assertStringContainsString('Sentiment::moodEmoji((int) $t[\'project_mood\'])', $view, 'Timeline muss Projekt-Mood als Emoji rendern');
+        $this->assertStringContainsString('Sentiment::moodEmoji((int) $t[\'customer_mood\'])', $view, 'Timeline muss Kunden-Mood als Emoji rendern');
+
+        // Route registriert.
+        $this->assertStringContainsString("'cockpit_sentiment_data'", $index, 'Sentiment-Route nicht in index.php registriert');
+        $this->assertStringContainsString("ctrl_cockpit_sentiment_data", $index, 'Sentiment-Controller nicht in index.php verdrahtet');
+    }
+
     public function testMeetingTrackerIsActiveCommunityType(): void
     {
         // Felix-Feedback 2026-11-03: "kundenmeeting ist nicht pro / fehlt zudem

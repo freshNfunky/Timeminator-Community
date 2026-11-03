@@ -1219,6 +1219,11 @@ return [
     'cockpit.f_meeting_notes_ph'       => 'Key points, decisions, action items …',
     'cockpit.book_meeting'             => 'Save meeting minutes',
     'cockpit.meeting_participants_prefix' => 'Participants',
+    // Project sentiment (mood trend from progress reports)
+    'cockpit.sentiment_h3'          => 'Project sentiment',
+    'cockpit.sentiment_subtitle'    => 'Project / customer mood per progress report (1..5).',
+    'cockpit.sentiment_empty'       => 'No mood recorded yet. Include project / customer mood when booking a progress report.',
+    'cockpit.sentiment_latest'      => 'Latest',
     'cockpit.mood_1'                => 'very bad',
     'cockpit.mood_2'                => 'bad',
     'cockpit.mood_3'                => 'neutral',

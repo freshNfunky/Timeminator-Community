@@ -1216,6 +1216,11 @@ return [
     'cockpit.f_meeting_notes_ph'       => 'Wesentliche Punkte, Beschluesse, Action Items …',
     'cockpit.book_meeting'             => 'Meeting protokollieren',
     'cockpit.meeting_participants_prefix' => 'Teilnehmer',
+    // Projekt-Sentiment (Mood-Trend aus Fortschrittsmeldungen)
+    'cockpit.sentiment_h3'          => 'Projekt-Sentiment',
+    'cockpit.sentiment_subtitle'    => 'Projekt-/Kunden-Stimmung je Fortschrittsmeldung (1..5).',
+    'cockpit.sentiment_empty'       => 'Noch keine Stimmung erfasst. Beim Buchen einer Fortschrittsmeldung Projekt-/Kunden-Stimmung mit angeben.',
+    'cockpit.sentiment_latest'      => 'Zuletzt',
     'cockpit.mood_1'                => 'sehr schlecht',
     'cockpit.mood_2'                => 'schlecht',
     'cockpit.mood_3'                => 'neutral',

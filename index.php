@@ -131,6 +131,7 @@ $routes = [
     'cockpit_plan_delete'          => 'ctrl_cockpit_plan_delete',
     'cockpit_date_shift_save'      => 'ctrl_cockpit_date_shift_save',
     'cockpit_burnup_data'          => 'ctrl_cockpit_burnup_data',
+    'cockpit_sentiment_data'       => 'ctrl_cockpit_sentiment_data',
 
     // v1.0 F3: Firmen-Cockpit (teaser-heavy)
     'cockpit_company'              => 'ctrl_cockpit_company',
