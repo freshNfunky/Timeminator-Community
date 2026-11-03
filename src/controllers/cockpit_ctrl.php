@@ -475,17 +475,20 @@ function ctrl_cockpit_date_shift_save(): void
     redirect_route('cockpit_project', ['id' => $projectId]);
 }
 
-/** v1.0 F2.4: Burn-Up JSON (kumulative Stunden ueber Zeit). */
-function ctrl_cockpit_burnup_data(): void
+/**
+ * v1.0 F2.4: Burn-Up Payload (Pure Function, testbar).
+ *
+ * Shape persistiert durch tests/BurnupDataTest.php — Keys/Felder sind
+ * Vertrag zum View-Script in views/cockpit/project.php, das daraus Ist-Linie,
+ * Soll-Dash, Fortschritt/Prognose-Punkte und Planende-Vline rendert.
+ */
+function cockpit_burnup_payload(int $projectId): array
 {
-    require_perm('stats.view');
-    $id = (int) get('id');
-    $project = $id ? Repo::project($id) : null;
+    $project = Repo::project($projectId);
     if (!$project) {
-        json_out(['ok' => false, 'error' => 'not_found'], 404);
+        return ['ok' => false, 'error' => 'not_found'];
     }
-    $burnup = Repo::projectBurnup($id);
-    $target = $project['target_hours'] !== null ? (float) $project['target_hours'] : null;
+    $burnup = Repo::projectBurnup($projectId);
     $points = [];
     foreach ($burnup as $p) {
         $points[] = [
@@ -499,7 +502,7 @@ function ctrl_cockpit_burnup_data(): void
            FROM project_trackers
           WHERE project_id = ? AND type = 'progress' AND value IS NOT NULL
           ORDER BY created_at ASC",
-        [$id]
+        [$projectId]
     );
     $markers = [];
     foreach ($trackers as $t) {
@@ -510,11 +513,23 @@ function ctrl_cockpit_burnup_data(): void
             'f'  => $t['forecast'] !== null ? (float) $t['forecast'] : null,
         ];
     }
-    json_out([
-        'ok'       => true,
-        'points'   => $points,
-        'target_h' => $target,
-        'markers'  => $markers,
+    return [
+        'ok'          => true,
+        'points'      => $points,
+        'target_h'    => $project['target_hours'] !== null ? (float) $project['target_hours'] : null,
+        'markers'     => $markers,
         'planned_end' => $project['planned_end'] ?? null,
-    ]);
+    ];
+}
+
+/** v1.0 F2.4: Burn-Up JSON (kumulative Stunden ueber Zeit). */
+function ctrl_cockpit_burnup_data(): void
+{
+    require_perm('stats.view');
+    $id = (int) get('id');
+    $payload = cockpit_burnup_payload($id);
+    if (!($payload['ok'] ?? false)) {
+        json_out($payload, 404);
+    }
+    json_out($payload);
 }

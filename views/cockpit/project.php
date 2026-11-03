@@ -331,6 +331,9 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
       'cum_hours' => t('cockpit.burnup_cum_hours', 'Ist (Stunden)'),
       'target'    => t('cockpit.burnup_target',    'Soll'),
       'none'      => t('cockpit.burnup_none',      'Noch keine Buchungen auf diesem Projekt.'),
+      'progress'  => t('cockpit.burnup_progress',  'Fortschritt'),
+      'forecast'  => t('cockpit.burnup_forecast',  'Prognose'),
+      'deadline'  => t('cockpit.burnup_deadline',  'Planende'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
     if (!d.ok || !d.points.length) {
@@ -347,7 +350,41 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
       series.push({ label: i18n.target + ' ' + d.target_h + ' h', color: '#94a3b8', dashed: true,
         data: labels.map(function () { return d.target_h; }) });
     }
-    TmCharts.lines(canvas, { xLabels: labels, series: series, unit: 'h' }, legend);
+    // Finde zu jedem Marker-Datum den naechstgelegenen x-Index in points[].
+    function xIndex(ymd) {
+      if (!ymd) return null;
+      var idx = -1;
+      for (var i = 0; i < labels.length; i++) {
+        if (labels[i] <= ymd) idx = i; else break;
+      }
+      return idx >= 0 ? idx : (labels[0] >= ymd ? 0 : null);
+    }
+    var pts = [], pointLegend = [];
+    var markers = d.markers || [];
+    var hasProgress = false, hasForecast = false;
+    markers.forEach(function (m) {
+      var xi = xIndex(m.d);
+      if (xi === null) return;
+      if (m.p !== null && m.p !== undefined) {
+        pts.push({ x: xi, y: m.p, color: '#8b5cf6', right: true });
+        hasProgress = true;
+      }
+      if (m.f !== null && m.f !== undefined) {
+        pts.push({ x: xi, y: m.f, color: '#d97706', right: true });
+        hasForecast = true;
+      }
+    });
+    if (hasProgress) pointLegend.push({ label: i18n.progress + ' (%)', color: '#8b5cf6' });
+    if (hasForecast) pointLegend.push({ label: i18n.forecast + ' (%)', color: '#d97706' });
+    var vlines = [];
+    var deadlineIdx = xIndex(d.planned_end);
+    if (deadlineIdx !== null) {
+      vlines.push({ index: deadlineIdx, label: '', color: '#94a3b8', legend: i18n.deadline + ' ' + d.planned_end });
+    }
+    TmCharts.lines(canvas, {
+      xLabels: labels, series: series, points: pts, vlines: vlines,
+      unit: 'h', rightUnit: '%', pointLegend: pointLegend,
+    }, legend);
   });
 })();
 </script>

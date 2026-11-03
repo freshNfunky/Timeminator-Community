@@ -1179,6 +1179,9 @@ return [
     'cockpit.health_kickoff'      => 'Kickoff',
     'cockpit.health_closeout'     => 'Close-out',
     'cockpit.health_clear'        => 'Clear',
+    'cockpit.burnup_progress'     => 'Progress',
+    'cockpit.burnup_forecast'     => 'Forecast',
+    'cockpit.burnup_deadline'     => 'Planned end',
     'cockpit.health_review_days'  => 'Review cadence in days (empty = default',
     'cockpit.err_unknown_field'   => 'Unknown field.',
 
