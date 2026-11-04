@@ -29,7 +29,13 @@ final class Banners
     // a fresh install - without this, a config missing the banners block would
     // silently fall back to the bundled offline SVG set forever. Served from
     // an ad-blocker-neutral subdomain (not `banner.*`).
-    private const DEFAULT_ENDPOINT = 'https://assets.felixschaller.com/feed.json';
+    //
+    // The REST endpoint (feed.php) serves every locale from one URL via a
+    // `?lang=xx` query (feed.php?lang=en), so there is no per-language file to
+    // publish or discover; it also lets the operator see roughly how many
+    // Community instances are live. Older installs that still point at the
+    // static `feed.json` keep working unchanged - the server publishes both.
+    private const DEFAULT_ENDPOINT = 'https://assets.felixschaller.com/feed.php';
 
     // ---------- Visibility / configuration ----------
 
@@ -107,6 +113,46 @@ final class Banners
         return $path . (isset($parts[1]) ? '?' . $parts[1] : '');
     }
 
+    /**
+     * Ordered feed URLs to try for a locale, most specific first. Two endpoint
+     * styles are supported so the consumer stays backwards-compatible with both
+     * the dynamic REST endpoint and plain static hosting:
+     *
+     *   feed.php   -> [ feed.php?lang=xx , feed.php ]   (REST: the server picks
+     *                 the language and falls back to international itself)
+     *   feed.json  -> [ feed-xx.json , feed.json ]      (static per-language
+     *                 files, international base as the fallback)
+     *
+     * The base endpoint is always tried last, so a missing or empty locale feed
+     * degrades to the international one. With no active locale, only the base is
+     * returned. The `?lang` query rides alongside the telemetry query that
+     * fetchRemote() appends.
+     *
+     * @return list<string>
+     */
+    public static function feedCandidates(string $base, string $lang): array
+    {
+        if ($base === '') {
+            return [];
+        }
+        $lang = substr(strtolower($lang), 0, 2);
+        $out  = [];
+        if (preg_match('/^[a-z]{2}$/', $lang)) {
+            if (preg_match('~\.json($|\?)~i', $base)) {
+                // Static hosting: feed.json -> feed-xx.json.
+                $loc = self::localeEndpoint($base, $lang);
+                if ($loc !== '' && $loc !== $base) {
+                    $out[] = $loc;
+                }
+            } else {
+                // REST endpoint (feed.php or any non-.json URL): ?lang=xx.
+                $out[] = $base . (strpos($base, '?') === false ? '?' : '&') . 'lang=' . $lang;
+            }
+        }
+        $out[] = $base;
+        return $out;
+    }
+
     public static function cacheTtl(): int
     {
         return max(60, (int) (self::conf()['cache_ttl'] ?? self::DEFAULT_TTL));
@@ -159,16 +205,10 @@ final class Banners
 
         $base = self::endpoint();
         if ($base !== '') {
-            // Try the locale feed first (feed-<lang>.json), then fall back to the
-            // base feed (feed.json) when the localization is absent or empty.
-            $candidates = [];
-            if ($lang !== '') {
-                $loc = self::localeEndpoint($base, $lang);
-                if ($loc !== '' && $loc !== $base) {
-                    $candidates[] = $loc;
-                }
-            }
-            $candidates[] = $base;
+            // Try the locale feed first, then fall back to the international
+            // base feed when the localization is absent or empty. feed.php
+            // takes ?lang=xx; a static feed.json uses feed-xx.json files.
+            $candidates = self::feedCandidates($base, $lang);
 
             foreach ($candidates as $url) {
                 $items = self::fetchRemote($url);
