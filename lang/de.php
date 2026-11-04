@@ -1229,6 +1229,8 @@ return [
     'sent.flow_short'       => 'Flow',
     'cal.sent_future'       => 'Zukunft - kein Eintrag moeglich',
     'cal.sent_week_hint'    => 'Setzt die Woche; bereits gesetzte Tage bleiben erhalten.',
+    // Overlap-Guard (Pro-PR #444): verstaendliche Meldung mit Zeitfenster.
+    'bk.err_overlap' => 'Ueberlappt mit :what (:date, :from-:to). Bitte Buchungen nicht parallel anlegen.',
     'cockpit.mood_1'                => 'sehr schlecht',
     'cockpit.mood_2'                => 'schlecht',
     'cockpit.mood_3'                => 'neutral',

@@ -1232,6 +1232,8 @@ return [
     'sent.flow_short'       => 'Flow',
     'cal.sent_future'       => 'Future - no entry possible',
     'cal.sent_week_hint'    => 'Sets the week; days already filled stay as-is.',
+    // Overlap guard (ported from Pro PR #444).
+    'bk.err_overlap' => 'Overlaps with :what (:date, :from-:to). Please do not book in parallel.',
     'cockpit.mood_1'                => 'very bad',
     'cockpit.mood_2'                => 'bad',
     'cockpit.mood_3'                => 'neutral',

@@ -282,9 +282,17 @@ function ctrl_entry_save(): void
         if (!$existing || ((int) $existing['user_id'] !== Auth::id() && !Auth::isAdmin())) {
             redirect_route('entries');
         }
+        if ($msg = Repo::bookingConflict((int) $existing['user_id'], $start, $end, $id)) {
+            flash($msg, 'err');
+            redirect_route('entry_form', ['id' => $id]);
+        }
         Repo::updateEntry($id, $taskId, $start, $end, $note);
         flash(t('entries.flash_updated', 'Eintrag aktualisiert.'));
     } else {
+        if ($msg = Repo::bookingConflict(Auth::id(), $start, $end)) {
+            flash($msg, 'err');
+            redirect_route('entry_form');
+        }
         Repo::createEntry(Auth::id(), $taskId, $start, $end, $note, 'manual');
         flash(t('entries.flash_saved', 'Eintrag gespeichert.'));
     }
@@ -328,12 +336,20 @@ function ctrl_entry_api_save(): void
         exit;
     }
     try {
+        $uidForCheck = $id ? null : Auth::id();
         if ($id) {
             $existing = Repo::entry($id);
             if (!$existing || ((int) $existing['user_id'] !== Auth::id() && !Auth::isAdmin())) {
                 echo json_encode(['ok' => false, 'error' => 'forbidden']);
                 exit;
             }
+            $uidForCheck = (int) $existing['user_id'];
+        }
+        if ($msg = Repo::bookingConflict((int) $uidForCheck, $start, $end, $id ?: null)) {
+            echo json_encode(['ok' => false, 'error' => $msg]);
+            exit;
+        }
+        if ($id) {
             Repo::updateEntry($id, $taskId, $start, $end, $note);
             echo json_encode(['ok' => true, 'entry' => Repo::entry($id)]);
             exit;
@@ -370,6 +386,14 @@ function ctrl_timer_start(): void
     $taskId = post_int('task_id');
     if (!$taskId) {
         flash(t('entries.err_pick_task', 'Bitte eine Aufgabe waehlen.'), 'err');
+        redirect_route('dashboard');
+    }
+    // Overlap-Check: Timer-Start darf nicht in eine andere Buchung fallen.
+    // Ein laufender Timer wird von startTimer() vorher gestoppt - er darf
+    // nicht als Konflikt zaehlen (Pro-PR #444).
+    $running = Repo::running(Auth::id());
+    if ($msg = Repo::bookingConflict(Auth::id(), now(), null, $running ? (int) $running['id'] : null)) {
+        flash($msg, 'err');
         redirect_route('dashboard');
     }
     Repo::startTimer(Auth::id(), $taskId, trim((string) post('note')));

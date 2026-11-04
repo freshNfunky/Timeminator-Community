@@ -642,6 +642,92 @@ final class Repo
         return $t;
     }
 
+    /**
+     * Eine Person hat zu jedem Zeitpunkt genau eine Buchung: Zeitbuchungen und
+     * interne Prozesse duerfen sich nicht ueberlappen (Aneinanderstossen ist
+     * erlaubt). Ein laufender Timer zaehlt bis jetzt. Externe Kalendertermine
+     * sind keine Buchungen und duerfen parallel liegen. Abwesenheiten sind
+     * tageweise und hier nicht betroffen. Portiert aus Pro-PR #444 (Felix-
+     * Feedback 2026-11-04: "keine parallel-buchung möglich").
+     *
+     * Liefert die fertige Fehlermeldung oder null.
+     * @param ?int $exceptEntryId Zeitbuchung, die beim Bearbeiten ausgenommen ist
+     * @param ?int $exceptProcessId Prozess-Eintrag, der beim Bearbeiten ausgenommen ist
+     */
+    public static function bookingConflict(int $userId, string $start, ?string $end, ?int $exceptEntryId = null, ?int $exceptProcessId = null): ?string
+    {
+        $c = self::conflictingBooking($userId, $start, $end, $exceptEntryId, $exceptProcessId);
+        if ($c === null) {
+            return null;
+        }
+        $when = (string) $c['start_ts'];
+        $fromHm = substr($when, 11, 5);
+        $toHm   = substr((string) $c['end_ts'], 11, 5);
+        $date   = substr($when, 0, 10);
+        try {
+            $date = (new DateTimeImmutable($date))->format('d.m.Y');
+        } catch (Throwable) {
+            // keep ISO
+        }
+        // Community t() hat keinen Platzhalter-Support - deshalb strtr nach dem
+        // Resolve. Fallback-Text landet unten als Default im t().
+        return strtr(
+            t('bk.err_overlap', 'Ueberlappt mit :what (:date, :from-:to). Bitte Buchungen nicht parallel anlegen.'),
+            [
+                ':what' => (string) $c['label'],
+                ':date' => $date,
+                ':from' => $fromHm,
+                ':to'   => $toHm,
+            ]
+        );
+    }
+
+    /**
+     * Fruehestes Buchungsintervall, das [$start, $end) schneidet (Zeitbuchung
+     * oder Prozess), oder null. Ein laufender Timer zaehlt bis jetzt.
+     * @return ?array{kind:string,id:int,start_ts:string,end_ts:string,label:string}
+     */
+    public static function conflictingBooking(int $userId, string $start, ?string $end, ?int $exceptEntryId = null, ?int $exceptProcessId = null): ?array
+    {
+        if ($end === null || $end <= $start) {
+            $end = (new DateTimeImmutable($start))->modify('+1 minute')->format('Y-m-d H:i:s');
+        }
+        $now = now();
+        $time = DB::one(
+            'SELECT e.id, e.start_ts, COALESCE(e.end_ts, ?) AS end_ts, p.name AS label
+               FROM time_entries e JOIN projects p ON p.id = e.project_id
+              WHERE e.user_id = ? AND e.id <> ? AND e.start_ts < ? AND COALESCE(e.end_ts, ?) > ?
+              ORDER BY e.start_ts LIMIT 1',
+            [$now, $userId, (int) $exceptEntryId, $end, $now, $start]
+        );
+        $proc = DB::one(
+            'SELECT pe.id, pe.start_ts, pe.end_ts, c.label AS label
+               FROM process_entries pe JOIN process_categories c ON c.id = pe.category_id
+              WHERE pe.user_id = ? AND pe.id <> ? AND pe.start_ts < ? AND pe.end_ts > ?
+              ORDER BY pe.start_ts LIMIT 1',
+            [$userId, (int) $exceptProcessId, $end, $start]
+        );
+        if ($time && (!$proc || (string) $time['start_ts'] <= (string) $proc['start_ts'])) {
+            return [
+                'kind'     => 'time',
+                'id'       => (int) $time['id'],
+                'start_ts' => (string) $time['start_ts'],
+                'end_ts'   => (string) $time['end_ts'],
+                'label'    => (string) $time['label'],
+            ];
+        }
+        if (!$proc) {
+            return null;
+        }
+        return [
+            'kind'     => 'process',
+            'id'       => (int) $proc['id'],
+            'start_ts' => (string) $proc['start_ts'],
+            'end_ts'   => (string) $proc['end_ts'],
+            'label'    => (string) $proc['label'],
+        ];
+    }
+
     public static function createEntry(int $userId, int $taskId, string $start, ?string $end, string $note, string $source = 'manual'): int
     {
         $ctx = self::taskContext($taskId);
@@ -728,6 +814,12 @@ final class Repo
             return false;
         }
         $end = now();
+        // Wurde waehrend des Laufs eine spaetere Buchung eingetragen, endet der
+        // Timer dort - keine Parallelbuchung (Pro-PR #444).
+        $next = self::conflictingBooking($userId, (string) $run['start_ts'], $end, (int) $run['id']);
+        if ($next !== null && (string) $next['start_ts'] > (string) $run['start_ts']) {
+            $end = (string) $next['start_ts'];
+        }
         $dur = self::minutesBetween((string) $run['start_ts'], $end);
         DB::run(
             'UPDATE time_entries SET end_ts=?, duration_min=?, updated_at=? WHERE id=?',
