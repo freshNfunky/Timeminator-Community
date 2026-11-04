@@ -143,7 +143,10 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .cal-sent-cell{position:relative;display:inline-block}
 .cal-sent-current{background:transparent;border:1px solid transparent;border-radius:6px;padding:1px 4px;font-size:17px;line-height:1;cursor:pointer;color:var(--ink);transition:background .15s,border-color .15s}
 .cal-sent-current:hover{background:color-mix(in oklab, var(--panel), var(--brand) 12%);border-color:color-mix(in oklab, var(--line), var(--brand) 20%)}
-.cal-sent-current.is-empty{opacity:.4}
+/* is-empty = kein Wert gesetzt, Placeholder-Emoji wird abgegraut dargestellt
+   (Pro-Vorbild). Grayscale + reduzierte Opacity macht das Score-3-Emoji
+   deutlich erkennbar als "noch nicht erfasst". */
+.cal-sent-current.is-empty{opacity:.35;filter:grayscale(1)}
 .cal-sent-current[disabled]{cursor:not-allowed;opacity:.25}
 .cal-sent-current.is-open{background:color-mix(in oklab, var(--panel), var(--brand) 18%);border-color:var(--brand)}
 /* Popover: horizontale 5-Button-Reihe, absolut unter dem Current-Button. */

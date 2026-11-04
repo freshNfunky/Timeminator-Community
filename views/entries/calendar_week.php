@@ -209,10 +209,13 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
        Button, Klick oeffnet Popover mit 5 Optionen - identisch zum
        Daily-Picker, nur dass der Click alle leeren Tage der Woche fuellt.
        Prosa "Setzt die Woche …" sitzt als Tooltip am ⓘ-Badge. */ ?>
+    <?php /* Default-Placeholder: das NEUTRAL-Emoji (Score 3), abgegraut durch
+       is-empty. Pro-Vorbild (Felix-Feedback 2026-11-04: "in der pro ist ein
+       ausgegrautes emojii.") - "—" war zu nichtssagend. */ ?>
     <div class="cal-sent-week" data-monday="<?= h($week_start->format('Y-m-d')) ?>" data-csrf="<?= h(csrf_token()) ?>">
       <div class="cal-sent-week-row cal-sent-cell" data-dim="mood">
         <span class="cal-sent-label"><?= h(t('sent.mood_short', 'Mood')) ?></span>
-        <button type="button" class="cal-sent-current is-empty" aria-label="<?= h(t('sent.mood_short', 'Mood')) ?>">—</button>
+        <button type="button" class="cal-sent-current is-empty" aria-label="<?= h(t('sent.mood_short', 'Mood')) ?>"><?= Sentiment::moodEmoji(3) ?></button>
         <div class="cal-sent-popover" hidden role="listbox" aria-label="<?= h(t('sent.mood_short', 'Mood')) ?>">
           <?php foreach ([1,2,3,4,5] as $__s): ?>
             <button type="button" class="cal-sent-opt" data-score="<?= $__s ?>" role="option" title="<?= h(Sentiment::moodLabel($__s)) ?>"><?= Sentiment::moodEmoji($__s) ?></button>
@@ -221,7 +224,7 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
       </div>
       <div class="cal-sent-week-row cal-sent-cell" data-dim="flow">
         <span class="cal-sent-label"><?= h(t('sent.flow_short', 'Flow')) ?></span>
-        <button type="button" class="cal-sent-current is-empty" aria-label="<?= h(t('sent.flow_short', 'Flow')) ?>">—</button>
+        <button type="button" class="cal-sent-current is-empty" aria-label="<?= h(t('sent.flow_short', 'Flow')) ?>"><?= Sentiment::flowEmoji(3) ?></button>
         <div class="cal-sent-popover" hidden role="listbox" aria-label="<?= h(t('sent.flow_short', 'Flow')) ?>">
           <?php foreach ([1,2,3,4,5] as $__s): ?>
             <button type="button" class="cal-sent-opt" data-score="<?= $__s ?>" role="option" title="<?= h(Sentiment::flowLabel($__s)) ?>"><?= Sentiment::flowEmoji($__s) ?></button>
@@ -247,9 +250,11 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
             $__dayMood = $weekSentiment[$__day['ymd']]['mood'] ?? null;
             $__dayFlow = $weekSentiment[$__day['ymd']]['flow'] ?? null;
             $__isFuture = $__day['date'] > $__today;
-            // Default-Emojis, wenn noch nichts gesetzt: neutrales "—" als Placeholder.
-            $__moodCur = $__dayMood !== null ? Sentiment::moodEmoji($__dayMood) : '—';
-            $__flowCur = $__dayFlow !== null ? Sentiment::flowEmoji($__dayFlow) : '—';
+            // Default-Placeholder: neutrales Emoji (Score 3), abgegraut via
+            // is-empty (Pro-Vorbild, Felix-Feedback 2026-11-04). "—" war zu
+            // nichtssagend - ein grauen Emoji signalisiert "noch nichts gesetzt".
+            $__moodCur = Sentiment::moodEmoji($__dayMood !== null ? $__dayMood : 3);
+            $__flowCur = Sentiment::flowEmoji($__dayFlow !== null ? $__dayFlow : 3);
           ?>
             <div class="cal-sent-day<?= $__isFuture ? ' is-future' : '' ?>" data-day="<?= h($__day['ymd']) ?>" data-csrf="<?= h(csrf_token()) ?>" <?= $__isFuture ? 'title="' . h(t('cal.sent_future', 'Zukunft')) . '"' : '' ?>>
               <div class="cal-sent-cell" data-dim="mood" data-current="<?= $__dayMood ?? '' ?>">
@@ -460,8 +465,9 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
               b.classList.toggle('is-selected', match);
               b.setAttribute('aria-selected', match ? 'true' : 'false');
             });
-            // Current-Emoji aktualisieren: Wert = "—" wenn leer.
-            cur.textContent = next ? (EMOJI[dim][next] || '—') : '—';
+            // Current-Emoji aktualisieren: Wert, sonst neutrales Score-3-Emoji
+            // als Placeholder, abgegraut via .is-empty (Pro-Vorbild).
+            cur.textContent = next ? EMOJI[dim][next] : EMOJI[dim][3];
             cur.classList.toggle('is-empty', !next);
             closeOpenPopover();
           });
