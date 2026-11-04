@@ -170,6 +170,23 @@ final class BannersTest extends TestCase
         self::assertSame([], Banners::feedCandidates('', 'de'));
     }
 
+    public function testJsonFallbackEndpointSwapsPhpForJson(): void
+    {
+        // feed.php -> feed.json (international baseline older servers still serve).
+        self::assertSame(
+            'https://assets.felixschaller.com/feed.json',
+            Banners::jsonFallbackEndpoint('https://assets.felixschaller.com/feed.php')
+        );
+        // The ?lang query is dropped - the baseline is the international feed.
+        self::assertSame(
+            'https://assets.felixschaller.com/feed.json',
+            Banners::jsonFallbackEndpoint('https://assets.felixschaller.com/feed.php?lang=en')
+        );
+        // A static .json endpoint needs no fallback -> empty.
+        self::assertSame('', Banners::jsonFallbackEndpoint('https://assets.felixschaller.com/feed.json'));
+        self::assertSame('', Banners::jsonFallbackEndpoint('https://host/feed'));
+    }
+
     public function testImageAllowsRelativeDataUriAndHttpsFirstParty(): void
     {
         self::assertTrue(Banners::isAllowedImage('banners/xixum-maturity.svg'));
