@@ -204,22 +204,31 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
   </div>
 
   <?php if (!empty($canRecordSentiment) && ($sentimentGranularity ?: 'week') === 'week'): ?>
-    <?php /* Wochen-Picker (eine Zeile fuer die ganze Woche; schreibt alle 7
-       Tage mit Sentiment::fillRange - respektiert bereits gesetzte Tage). */ ?>
+    <?php /* Wochen-Picker (Pro-Style, Felix-Feedback 2026-11-04: "schau's
+       dir in der pro variante an"): je Dimension nur ein Current-Emoji-
+       Button, Klick oeffnet Popover mit 5 Optionen - identisch zum
+       Daily-Picker, nur dass der Click alle leeren Tage der Woche fuellt.
+       Prosa "Setzt die Woche …" sitzt als Tooltip am ⓘ-Badge. */ ?>
     <div class="cal-sent-week" data-monday="<?= h($week_start->format('Y-m-d')) ?>" data-csrf="<?= h(csrf_token()) ?>">
-      <div class="cal-sent-week-row" data-dim="mood">
+      <div class="cal-sent-week-row cal-sent-cell" data-dim="mood">
         <span class="cal-sent-label"><?= h(t('sent.mood_short', 'Mood')) ?></span>
-        <?php foreach ([1,2,3,4,5] as $__s): ?>
-          <button type="button" class="cal-sent-btn" data-score="<?= $__s ?>" title="<?= h(Sentiment::moodLabel($__s)) ?>"><?= Sentiment::moodEmoji($__s) ?></button>
-        <?php endforeach; ?>
+        <button type="button" class="cal-sent-current is-empty" aria-label="<?= h(t('sent.mood_short', 'Mood')) ?>">—</button>
+        <div class="cal-sent-popover" hidden role="listbox" aria-label="<?= h(t('sent.mood_short', 'Mood')) ?>">
+          <?php foreach ([1,2,3,4,5] as $__s): ?>
+            <button type="button" class="cal-sent-opt" data-score="<?= $__s ?>" role="option" title="<?= h(Sentiment::moodLabel($__s)) ?>"><?= Sentiment::moodEmoji($__s) ?></button>
+          <?php endforeach; ?>
+        </div>
       </div>
-      <div class="cal-sent-week-row" data-dim="flow">
+      <div class="cal-sent-week-row cal-sent-cell" data-dim="flow">
         <span class="cal-sent-label"><?= h(t('sent.flow_short', 'Flow')) ?></span>
-        <?php foreach ([1,2,3,4,5] as $__s): ?>
-          <button type="button" class="cal-sent-btn" data-score="<?= $__s ?>" title="<?= h(Sentiment::flowLabel($__s)) ?>"><?= Sentiment::flowEmoji($__s) ?></button>
-        <?php endforeach; ?>
+        <button type="button" class="cal-sent-current is-empty" aria-label="<?= h(t('sent.flow_short', 'Flow')) ?>">—</button>
+        <div class="cal-sent-popover" hidden role="listbox" aria-label="<?= h(t('sent.flow_short', 'Flow')) ?>">
+          <?php foreach ([1,2,3,4,5] as $__s): ?>
+            <button type="button" class="cal-sent-opt" data-score="<?= $__s ?>" role="option" title="<?= h(Sentiment::flowLabel($__s)) ?>"><?= Sentiment::flowEmoji($__s) ?></button>
+          <?php endforeach; ?>
+        </div>
       </div>
-      <p class="muted cal-sent-hint"><?= h(t('cal.sent_week_hint', 'Setzt die Woche; bereits gesetzte Tage bleiben erhalten.')) ?></p>
+      <?= tip('cal.sent_week_hint') ?>
     </div>
   <?php endif; ?>
 
@@ -463,27 +472,44 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
   // Klick ausserhalb schliesst offenes Popover.
   document.addEventListener('click', function () { closeOpenPopover(); });
 
-  // === Weekly picker (only visible when granularity = week): bulk-fill the week.
+  // === Weekly picker (Pro-Style, nur sichtbar bei granularity='week'):
+  // Current-Emoji-Button + Popover mit 5 Optionen (gleiches Muster wie
+  // Daily). Click auf eine Option fuellt die ganze Woche ueber die API.
   document.querySelectorAll('.cal-sent-week').forEach(function (block) {
     var monday = block.getAttribute('data-monday');
     var csrf   = block.getAttribute('data-csrf');
-    block.querySelectorAll('.cal-sent-week-row').forEach(function (row) {
-      var dim = row.getAttribute('data-dim');
-      row.querySelectorAll('.cal-sent-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var score = btn.getAttribute('data-score');
+    block.querySelectorAll('.cal-sent-cell').forEach(function (dimCell) {
+      var dim  = dimCell.getAttribute('data-dim');
+      var cur  = dimCell.querySelector('.cal-sent-current');
+      var pop  = dimCell.querySelector('.cal-sent-popover');
+      if (!cur || !pop) return;
+      cur.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var open = !pop.hidden;
+        closeOpenPopover();
+        if (!open) { pop.hidden = false; cur.classList.add('is-open'); }
+      });
+      pop.querySelectorAll('.cal-sent-opt').forEach(function (opt) {
+        opt.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          var score = opt.getAttribute('data-score');
           var body = new URLSearchParams();
           body.set('_csrf', csrf);
           body.set('monday', monday);
           body.set('dim', dim);
           body.set('score', score);
-          row.querySelectorAll('.cal-sent-btn').forEach(function (b) { b.disabled = true; });
+          pop.querySelectorAll('.cal-sent-opt').forEach(function (b) { b.disabled = true; });
           postForm(weekSaveUrl, body).then(function (res) {
-            row.querySelectorAll('.cal-sent-btn').forEach(function (b) { b.disabled = false; });
+            pop.querySelectorAll('.cal-sent-opt').forEach(function (b) { b.disabled = false; });
             if (!res.ok) return;
-            // Visual confirmation: pulse the clicked button briefly.
-            btn.classList.add('is-selected');
-            setTimeout(function () { btn.classList.remove('is-selected'); }, 900);
+            // Current-Emoji aktualisieren + Popover schliessen. Visuelle
+            // Bestaetigung: der Current-Button bekommt den Wert angezeigt.
+            cur.textContent = EMOJI[dim][score] || '—';
+            cur.classList.remove('is-empty');
+            closeOpenPopover();
+            // Daily-Picker, falls sichtbar waren (sollte nicht sein in week-mode),
+            // werden bei naechstem Reload aktualisiert - hier reicht die Popover-
+            // Bestaetigung.
           });
         });
       });

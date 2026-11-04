@@ -334,8 +334,17 @@ final class BurnupViewTest extends TestCase
         // habe ich gesagt ist nicht die tägliche meldung").
         $this->assertStringContainsString("sentimentGranularity ?: 'week'", $cal, 'Default-Granularitaet muss "week" sein, nicht "day"');
 
-        // Weekly-Picker (eine Zeile fuer die ganze Woche, Bulk-Fill).
+        // Weekly-Picker: Pro-Style wie Daily - EIN Current-Button pro Dimension
+        // + Popover, Prosa-Hinweis als ⓘ-Tooltip (Felix-Feedback 2026-11-04:
+        // "dann haben wir prosatexte hier. das muss in tootltips rein").
         $this->assertStringContainsString('class="cal-sent-week"', $cal, 'Weekly Mood-Picker im Kalender fehlt');
+        $this->assertMatchesRegularExpression(
+            '/cal-sent-week.*?cal-sent-current/s',
+            $cal,
+            'Weekly-Picker braucht Pro-Style Current-Button (nicht 5 nebeneinander)'
+        );
+        $this->assertStringContainsString("tip('cal.sent_week_hint')", $cal, 'Prosa "Setzt die Woche …" muss als ⓘ-Tooltip sitzen, nicht als Text');
+        $this->assertStringNotContainsString('class="muted cal-sent-hint"', $cal, 'Alter Prosa-Absatz (.cal-sent-hint) muss weg - Pro-Vorgabe: Tooltip');
 
         // Toggle Daily/Weekly (admin-only).
         $this->assertStringContainsString('class="cal-sent-toggle"', $cal, 'Granularitaets-Toggle Daily/Weekly fehlt');
