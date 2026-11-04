@@ -19,14 +19,40 @@ function ctrl_entries_index(): void
     require_perm('entries.manage');
     // Calendar is the default; the flat list is an opt-in via ?view=list.
     $view = get('view') === 'list' ? 'list' : 'calendar';
+    // Within the calendar view, span=month switches from the week grid to a
+    // month overview (Felix-Feedback 2026-11-04: Monatsansicht muss drin sein).
+    $calendarSpan = 'week';
     $f    = entries_filter_from_request();
 
     if ($view === 'calendar') {
-        $weekStart = entries_week_start_from_request();
-        $weekEnd   = $weekStart->modify('+6 days');
-        // In the calendar view the from/to filter follows the visible week.
-        $f['from'] = $weekStart->format('Y-m-d');
-        $f['to']   = $weekEnd->format('Y-m-d');
+        $spanParam = (string) get('span', '');
+        $calendarSpan = $spanParam === 'month' ? 'month' : 'week';
+
+        if ($calendarSpan === 'month') {
+            // Monatsbereich leiten wir aus ?month=YYYY-MM ab (sonst aktueller Monat).
+            $monthParam = trim((string) get('month', ''));
+            try {
+                $monthStart = $monthParam !== '' && preg_match('/^\d{4}-\d{2}$/', $monthParam)
+                    ? new DateTimeImmutable($monthParam . '-01')
+                    : new DateTimeImmutable('first day of this month');
+            } catch (Throwable) {
+                $monthStart = new DateTimeImmutable('first day of this month');
+            }
+            $monthEnd = $monthStart->modify('last day of this month');
+            // Filter deckt den sichtbaren Bereich (ggf. mit Rand-Padding zu
+            // Mo/So) ab, damit Zellen aus dem Vor-/Folgemonat ebenfalls
+            // Buchungen zeigen.
+            $padStart = $monthStart->modify('monday this week');
+            $padEnd   = $monthEnd->modify('sunday this week');
+            $f['from'] = $padStart->format('Y-m-d');
+            $f['to']   = $padEnd->format('Y-m-d');
+        } else {
+            $weekStart = entries_week_start_from_request();
+            $weekEnd   = $weekStart->modify('+6 days');
+            // In the calendar view the from/to filter follows the visible week.
+            $f['from'] = $weekStart->format('Y-m-d');
+            $f['to']   = $weekEnd->format('Y-m-d');
+        }
     }
 
     $entries = Repo::entries($f);
@@ -96,6 +122,8 @@ function ctrl_entries_index(): void
         'sentimentGranularity' => $sentimentGranularity,
         'canRecordSentiment'   => Auth::can('sentiment.record'),
         'canAdminSentiment'    => Auth::can('admin.system'),
+        'calendarSpan'         => $calendarSpan,
+        'month_start'          => $view === 'calendar' && $calendarSpan === 'month' ? ($monthStart ?? null) : null,
     ], t('nav.entries'));
 }
 

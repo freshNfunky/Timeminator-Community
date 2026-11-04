@@ -1234,6 +1234,14 @@ return [
     'cal.sent_week_hint'    => 'Sets the week; days already filled stay as-is.',
     // Overlap guard (ported from Pro PR #444).
     'bk.err_overlap' => 'Overlaps with :what (:date, :from-:to). Please do not book in parallel.',
+    // Month view (parity with Pro)
+    'cal.span_toggle'    => 'View',
+    'cal.span_week'      => 'Week',
+    'cal.span_month'     => 'Month',
+    'cal.month_heading'  => 'Month %s',
+    'cal.prev_month'     => '← Previous month',
+    'cal.next_month'     => 'Next month →',
+    'cal.month_grid_aria'=> 'Month grid',
     'cockpit.mood_1'                => 'very bad',
     'cockpit.mood_2'                => 'bad',
     'cockpit.mood_3'                => 'neutral',

@@ -1231,6 +1231,14 @@ return [
     'cal.sent_week_hint'    => 'Setzt die Woche; bereits gesetzte Tage bleiben erhalten.',
     // Overlap-Guard (Pro-PR #444): verstaendliche Meldung mit Zeitfenster.
     'bk.err_overlap' => 'Ueberlappt mit :what (:date, :from-:to). Bitte Buchungen nicht parallel anlegen.',
+    // Monatsansicht (Pro-Paritaet)
+    'cal.span_toggle'    => 'Ansicht',
+    'cal.span_week'      => 'Woche',
+    'cal.span_month'     => 'Monat',
+    'cal.month_heading'  => 'Monat %s',
+    'cal.prev_month'     => '← Vormonat',
+    'cal.next_month'     => 'Folgemonat →',
+    'cal.month_grid_aria'=> 'Monatsraster',
     'cockpit.mood_1'                => 'sehr schlecht',
     'cockpit.mood_2'                => 'schlecht',
     'cockpit.mood_3'                => 'neutral',

@@ -187,6 +187,11 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
       <p class="muted"><?= h($week_start->format('d.m.')) ?> – <?= h($__weekEnd->format('d.m.Y')) ?></p>
     </div>
     <div class="cal-nav">
+      <?php /* Toggle Woche|Monat (Pro-Paritaet, Felix-Feedback 2026-11-04). */ ?>
+      <span class="cal-span-toggle" role="group" aria-label="<?= h(t('cal.span_toggle', 'Ansicht')) ?>">
+        <a class="btn btn-sm is-active" aria-current="page" href="<?= h(route('entries', $__filterQp + ['view' => 'calendar'])) ?>"><?= h(t('cal.span_week', 'Woche')) ?></a>
+        <a class="btn btn-sm" href="<?= h(route('entries', $__filterQp + ['view' => 'calendar', 'span' => 'month'])) ?>"><?= h(t('cal.span_month', 'Monat')) ?></a>
+      </span>
       <?php if (!empty($canAdminSentiment)): ?>
         <?php /* Granularitaets-Toggle (Felix-Feedback 2026-11-04): Admin-only,
            Default = woechentlich (Felix-Feedback "default habe ich gesagt ist

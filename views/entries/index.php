@@ -60,7 +60,12 @@ if ($__isCalendar) {
 </form>
 
 <?php if ($__isCalendar): ?>
-  <?php require __DIR__ . '/calendar_week.php'; ?>
+  <?php $__span = ($calendarSpan ?? 'week') === 'month' ? 'month' : 'week'; ?>
+  <?php if ($__span === 'month'): ?>
+    <?php require __DIR__ . '/calendar_month.php'; ?>
+  <?php else: ?>
+    <?php require __DIR__ . '/calendar_week.php'; ?>
+  <?php endif; ?>
 <?php else: ?>
 <?php
 // v1.0: Liste zeigt alle 3 Typen gemischt, nach Datum sortiert, mit Typ-Pill.
