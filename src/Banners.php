@@ -29,7 +29,13 @@ final class Banners
     // a fresh install - without this, a config missing the banners block would
     // silently fall back to the bundled offline SVG set forever. Served from
     // an ad-blocker-neutral subdomain (not `banner.*`).
-    private const DEFAULT_ENDPOINT = 'https://assets.felixschaller.com/feed.json';
+    //
+    // The REST endpoint (feed.php) serves every locale from one URL via a
+    // `?lang=xx` query (feed.php?lang=en), so there is no per-language file to
+    // publish or discover; it also lets the operator see roughly how many
+    // Community instances are live. Older installs that still point at the
+    // static `feed.json` keep working unchanged - the server publishes both.
+    private const DEFAULT_ENDPOINT = 'https://assets.felixschaller.com/feed.php';
 
     // ---------- Visibility / configuration ----------
 
@@ -107,6 +113,46 @@ final class Banners
         return $path . (isset($parts[1]) ? '?' . $parts[1] : '');
     }
 
+    /**
+     * Ordered feed URLs to try for a locale, most specific first. Two endpoint
+     * styles are supported so the consumer stays backwards-compatible with both
+     * the dynamic REST endpoint and plain static hosting:
+     *
+     *   feed.php   -> [ feed.php?lang=xx , feed.php ]   (REST: the server picks
+     *                 the language and falls back to international itself)
+     *   feed.json  -> [ feed-xx.json , feed.json ]      (static per-language
+     *                 files, international base as the fallback)
+     *
+     * The base endpoint is always tried last, so a missing or empty locale feed
+     * degrades to the international one. With no active locale, only the base is
+     * returned. The `?lang` query rides alongside the telemetry query that
+     * fetchRemote() appends.
+     *
+     * @return list<string>
+     */
+    public static function feedCandidates(string $base, string $lang): array
+    {
+        if ($base === '') {
+            return [];
+        }
+        $lang = substr(strtolower($lang), 0, 2);
+        $out  = [];
+        if (preg_match('/^[a-z]{2}$/', $lang)) {
+            if (preg_match('~\.json($|\?)~i', $base)) {
+                // Static hosting: feed.json -> feed-xx.json.
+                $loc = self::localeEndpoint($base, $lang);
+                if ($loc !== '' && $loc !== $base) {
+                    $out[] = $loc;
+                }
+            } else {
+                // REST endpoint (feed.php or any non-.json URL): ?lang=xx.
+                $out[] = $base . (strpos($base, '?') === false ? '?' : '&') . 'lang=' . $lang;
+            }
+        }
+        $out[] = $base;
+        return $out;
+    }
+
     public static function cacheTtl(): int
     {
         return max(60, (int) (self::conf()['cache_ttl'] ?? self::DEFAULT_TTL));
@@ -159,24 +205,40 @@ final class Banners
 
         $base = self::endpoint();
         if ($base !== '') {
-            // Try the locale feed first (feed-<lang>.json), then fall back to the
-            // base feed (feed.json) when the localization is absent or empty.
-            $candidates = [];
-            if ($lang !== '') {
-                $loc = self::localeEndpoint($base, $lang);
-                if ($loc !== '' && $loc !== $base) {
-                    $candidates[] = $loc;
-                }
-            }
-            $candidates[] = $base;
-
-            foreach ($candidates as $url) {
-                $items = self::fetchRemote($url);
+            // Try the locale feed first, then fall back to the international
+            // base feed when the localization is absent or empty. feed.php
+            // takes ?lang=xx; a static feed.json uses feed-xx.json files.
+            $endpointMissing = false;
+            foreach (self::feedCandidates($base, $lang) as $url) {
+                $status = 0;
+                $items = self::fetchRemote($url, $status);
                 if ($items !== null && $items !== []) {
                     Settings::set($cacheKey, ['fetched_at' => $now, 'items' => $items]);
                     return ['source' => 'remote', 'items' => self::sanitizeItems($items)];
                 }
+                if (self::isEndpointMissing($status)) {
+                    $endpointMissing = true;
+                }
             }
+
+            // The dynamic endpoint is absent on an otherwise-reachable server -
+            // e.g. an older banner server that still publishes only the static
+            // feed.json, not feed.php. Fall back to that JSON baseline, but
+            // ONLY on a 404/410/501 (endpoint missing, host up): never on a
+            // timeout or connection error, where the JSON is just as
+            // unreachable and a stale cache is the better answer.
+            if ($endpointMissing) {
+                $jsonBase = self::jsonFallbackEndpoint($base);
+                if ($jsonBase !== '' && $jsonBase !== $base) {
+                    $status = 0;
+                    $items = self::fetchRemote($jsonBase, $status);
+                    if ($items !== null && $items !== []) {
+                        Settings::set($cacheKey, ['fetched_at' => $now, 'items' => $items]);
+                        return ['source' => 'remote', 'items' => self::sanitizeItems($items)];
+                    }
+                }
+            }
+
             // All fetches failed: keep serving a stale per-locale cache if we have one.
             if (is_array($cache) && !empty($cache['items'])) {
                 return ['source' => 'cache', 'items' => self::sanitizeItems($cache['items'])];
@@ -198,12 +260,37 @@ final class Banners
         return self::sanitizeItems(is_array($items) ? $items : []);
     }
 
+    /** 404-style statuses: the endpoint is missing but the host answered, so a
+     *  fall back from feed.php to the static feed.json makes sense. */
+    private static function isEndpointMissing(int $status): bool
+    {
+        return in_array($status, [404, 410, 501], true);
+    }
+
+    /**
+     * The static JSON baseline for a dynamic .php endpoint (feed.php ->
+     * feed.json), international. Returns '' when the endpoint is not a .php URL
+     * (a configured static feed.json needs no such fallback). The query string
+     * is dropped - the baseline is the international feed older servers serve.
+     */
+    public static function jsonFallbackEndpoint(string $endpoint): string
+    {
+        $path = explode('?', $endpoint, 2)[0];
+        if (!preg_match('/\.php$/i', $path)) {
+            return '';
+        }
+        return preg_replace('/\.php$/i', '.json', $path);
+    }
+
     /**
      * Fetch + decode the remote feed, attaching the anonymized usage signal.
      * Returns the raw item list, or null on any failure (caller falls back).
+     * $status is set to the HTTP status code (0 when the host was unreachable),
+     * so the caller can tell "endpoint missing" from "server down".
      */
-    private static function fetchRemote(string $endpoint): ?array
+    private static function fetchRemote(string $endpoint, ?int &$status = null): ?array
     {
+        $status = 0;
         $url = $endpoint;
         $tele = self::telemetry();
         if ($tele !== []) {
@@ -211,7 +298,7 @@ final class Banners
         }
 
         try {
-            $body = self::httpGet($url);
+            $body = self::httpGet($url, $status);
             if ($body === null) {
                 return null;
             }
@@ -225,9 +312,14 @@ final class Banners
         }
     }
 
-    /** Minimal, short-timeout GET. Returns the body or null. */
-    private static function httpGet(string $url): ?string
+    /**
+     * Minimal, short-timeout GET. Returns the body or null; sets $status to the
+     * HTTP status code, or 0 when the host could not be reached at all (DNS,
+     * connect, TLS or timeout) - which the caller must not treat as a 404.
+     */
+    private static function httpGet(string $url, ?int &$status = null): ?string
     {
+        $status = 0;
         if (function_exists('curl_init')) {
             $ch = curl_init($url);
             curl_setopt_array($ch, [
@@ -252,7 +344,24 @@ final class Banners
             'ssl'  => ['verify_peer' => true, 'verify_peer_name' => true],
         ]);
         $body = @file_get_contents($url, false, $ctx);
-        return $body === false ? null : (string) $body;
+        // Recover the status from the response headers (set even on a 4xx/5xx,
+        // where $body is false). http_get_last_response_headers() is PHP 8.4+;
+        // on older runtimes the status stays 0 here - the curl branch above is
+        // the real path in every shipped deployment and reports it fully.
+        if (function_exists('http_get_last_response_headers')) {
+            $hdrs = http_get_last_response_headers();
+            if (is_array($hdrs)) {
+                foreach ($hdrs as $h) {
+                    if (preg_match('~^HTTP/\S+\s+(\d{3})~', (string) $h, $m)) {
+                        $status = (int) $m[1]; // last status line wins (after redirects)
+                    }
+                }
+            }
+        }
+        if ($body === false || $status >= 400) {
+            return null;
+        }
+        return (string) $body;
     }
 
     // ---------- Telemetry (Community-only, opt-outable) ----------
