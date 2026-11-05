@@ -110,7 +110,7 @@ function ctrl_entries_index(): void
         'filter'      => $f,
         'total'       => Stats::totalMinutes($entries),
         'view'        => $view,
-        'pro_url'     => (string) cfg('pro_url', 'https://timeminator.felixschaller.com'),
+        'pro_url'     => (string) cfg('pro_url', 'https://timeminator.com'),
         'week_start'  => $view === 'calendar' ? ($weekStart ?? null) : null,
         'holidays'    => $holidays,
         'absences'    => $absences,

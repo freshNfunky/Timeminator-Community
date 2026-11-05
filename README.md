@@ -96,7 +96,7 @@ A quick tour of the app (anonymized demo data).
 Start and stop a timer against a task, or add bookings by hand. The dashboard
 shows today / this week / this month at a glance, plus your latest entries.
 
-![Dashboard with live timer and totals](docs/images/screenshots/01-dashboard.png)
+![Dashboard with live timer and totals](Media/screenshots/01-dashboard.png)
 
 ### Time entries — list, week and month calendar
 
@@ -107,9 +107,7 @@ that one person has exactly one booking at any moment — manual entries, timers
 and internal processes all share the same check — and the dashboard's 8h bracket
 keeps the day counter honest. Each entry keeps its origin, so history stays stable.
 
-![Time entries list](docs/images/screenshots/02-entries-list.png)
-
-![Week calendar with color-coded bookings](docs/images/screenshots/04-calendar.png)
+![Time entries list and calendar](Media/screenshots/02-zeiteintraege.png)
 
 ### Clients → projects → work packages → tasks
 
@@ -117,12 +115,12 @@ A real hierarchy, not free-text tags. Clients hold projects, projects hold work
 packages, work packages and tasks classify each entry — with codes and colors.
 
 <p>
-  <img src="docs/images/screenshots/05-clients.png" width="49%" alt="Clients">
-  <img src="docs/images/screenshots/06-projects.png" width="49%" alt="Projects">
+  <img src="Media/screenshots/04-kunden.png" width="49%" alt="Clients">
+  <img src="Media/screenshots/05-projekte.png" width="49%" alt="Projects">
 </p>
 <p>
-  <img src="docs/images/screenshots/07-workpackages.png" width="49%" alt="Work packages">
-  <img src="docs/images/screenshots/08-tasks.png" width="49%" alt="Tasks">
+  <img src="Media/screenshots/06-arbeitspakete.png" width="49%" alt="Work packages">
+  <img src="Media/screenshots/07-aufgaben.png" width="49%" alt="Tasks">
 </p>
 
 ### Statistics, time series and proof views
@@ -133,8 +131,8 @@ rule-based filter with an optional cutover date — that works for any set of
 projects without hardcoding.
 
 <p>
-  <img src="docs/images/screenshots/03-statistics.png" width="49%" alt="Statistics">
-  <img src="docs/images/screenshots/09-proof-views.png" width="49%" alt="Saved proof views">
+  <img src="Media/screenshots/03-statistik.png" width="49%" alt="Statistics">
+  <img src="Media/screenshots/08-sichten.png" width="49%" alt="Saved proof views">
 </p>
 
 ### CSV import with per-batch rollback
@@ -203,30 +201,6 @@ commercial-workflow features on top.
 | External calendar sources (CalDAV, iCal subscriptions) | — | ✓ |
 
 See the Pro feature list and pricing at **<https://timeminator.com>**.
-
----
-
-## Screenshots
-
-A quick tour of the app (anonymized demo data).
-
-**Dashboard** — live timer, today / week / month totals and your latest bookings
-![Dashboard](Media/screenshots/01-dashboard.png)
-
-**Statistics** — hours per project, weekly trend and a two-group comparison
-![Statistics](Media/screenshots/03-statistik.png)
-
-**Time entries** — a filterable list with durations and running totals
-![Time entries](Media/screenshots/02-zeiteintraege.png)
-
-**Projects** — per-client projects with codes and colors
-![Projects](Media/screenshots/05-projekte.png)
-
-**Tasks** — typed activities per project and work package
-![Tasks](Media/screenshots/07-aufgaben.png)
-
-**Audit views** — generic, rule-based filtering of entries (optional cutover date)
-![Audit views](Media/screenshots/08-sichten.png)
 
 ## Requirements
 
@@ -392,4 +366,4 @@ Composer" constraint so the tool stays trivial to self-host.
 
 <sub>The Timeminator mascot and product art are shared with
 <a href="https://timeminator.com">Timeminator Pro</a>.
-Made by <a href="https://felixschaller.com">FelixSchallerCOM</a>.</sub>
+Made by FelixSchallerCOM.</sub>

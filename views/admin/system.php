@@ -158,7 +158,7 @@
           <?= h(t('system.banner_telemetry', 'Anonymisiertes Nutzungssignal senden (Telemetrie)')) ?>
         </label>
         <label><?= h(t('system.banner_endpoint', 'Banner-Endpoint')) ?>
-          <input type="url" name="banner_endpoint_override" value="<?= h($banner_endpoint_override) ?>" placeholder="<?= h($banner_endpoint_default ?: 'https://assets.felixschaller.com/feed.json') ?>" <?= $banner_config_off ? 'disabled' : '' ?>>
+          <input type="url" name="banner_endpoint_override" value="<?= h($banner_endpoint_override) ?>" placeholder="<?= h($banner_endpoint_default ?: 'https://your-feed-host.example.com/feed.json') ?>" <?= $banner_config_off ? 'disabled' : '' ?>>
         </label>
         <p class="muted"><?= h(t('system.banner_active_endpoint', 'Aktiver Endpoint:')) ?> <code><?= h($banner_endpoint ?: '—') ?></code></p>
         <p class="muted"><?= h(t('system.banner_install_id', 'Installations-ID:')) ?> <code><?= h($install_id) ?></code></p>

@@ -125,4 +125,4 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
 <?php endif; ?>
 
 <span class="nav-sep"></span>
-<a href="<?= h(cfg('pro_url', 'https://timeminator.felixschaller.com')) ?>" target="_blank" rel="noopener" class="nav-pro"><?= h(t('nav.pro_link')) ?></a>
+<a href="<?= h(cfg('pro_url', 'https://timeminator.com')) ?>" target="_blank" rel="noopener" class="nav-pro"><?= h(t('nav.pro_link')) ?></a>

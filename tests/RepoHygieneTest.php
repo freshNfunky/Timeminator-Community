@@ -6,16 +6,10 @@ use PHPUnit\Framework\TestCase;
 /**
  * Regressionstest: keine privaten/internen URLs im oeffentlichen Repository.
  *
- * Felix-Feedback 2026-11-05: "sensible inhalte in der readme. ganz am ende:
- * 'See the Pro feature list and pricing at https://timeminator.felixschaller.com.'
- * das ist meine eigene instanz. raus. domain ist 'timeminator.com'"
- *
- * Die Timeminator-Pro-Produktseite liegt auf timeminator.com; die
- * Subdomain timeminator.felixschaller.com ist Felix' PRIVATE interne
- * Instanz und darf im Community-Code / in der README nicht auftauchen -
- * ebensowenig eine eigenmaechtig verschobene public.felixschaller.com-
- * URL. Lizenz-Server/Asset-Server sind erlaubt (license.felixschaller.com,
- * assets.felixschaller.com, banner.felixschaller.com).
+ * Felix-Feedback 2026-11-05: Erstrunde entfernte timeminator.felixschaller.com
+ * (private Instanz). Zweite Runde: "alles was URL hat: *.felixschaller.com
+ * raus" - gilt fuer README, Beispiel-Config, Installer, oeffentliche Docs
+ * und Tests. Die oeffentliche Pro-Produktseite liegt auf timeminator.com.
  */
 final class RepoHygieneTest extends TestCase
 {
@@ -24,24 +18,50 @@ final class RepoHygieneTest extends TestCase
         return dirname(__DIR__);
     }
 
-    /** @return list<string> */
-    private function userFacingTextFiles(): array
+    /** @return list<string> Dateien, die oeffentlich sichtbar sind oder Installations-Defaults setzen. */
+    private function publicFacingFiles(): array
     {
         return [
             $this->root() . '/README.md',
             $this->root() . '/config.sample.php',
             $this->root() . '/install.php',
+            $this->root() . '/docs/BANNERS.md',
+            $this->root() . '/docs/Umfrage/README.md',
+            $this->root() . '/src/Banners.php',
+            $this->root() . '/tests/BannersTest.php',
         ];
     }
 
     public function testPrivateInstanceUrlIsNotMentionedPublicly(): void
     {
-        foreach ($this->userFacingTextFiles() as $file) {
+        foreach ($this->publicFacingFiles() as $file) {
+            if (!is_file($file)) {
+                continue;
+            }
             $body = (string) file_get_contents($file);
             self::assertStringNotContainsString(
                 'timeminator.felixschaller.com',
                 $body,
                 "{$file} darf die private Instanz-URL timeminator.felixschaller.com nicht enthalten"
+            );
+        }
+    }
+
+    public function testNoFelixschallerDotComUrlInPublicFiles(): void
+    {
+        // Zweite Runde (Felix-Feedback 2026-11-05): "alles was URL hat:
+        // *.felixschaller.com raus". Betrifft Infrastruktur-Subdomains
+        // (assets., banner., license., public., cdn., demo.) genauso wie
+        // die nackte Domain und die private Timeminator-Instanz.
+        foreach ($this->publicFacingFiles() as $file) {
+            if (!is_file($file)) {
+                continue;
+            }
+            $body = (string) file_get_contents($file);
+            self::assertDoesNotMatchRegularExpression(
+                '/[A-Za-z0-9.-]*felixschaller\.com/',
+                $body,
+                "{$file} darf keine *.felixschaller.com-URL mehr nennen"
             );
         }
     }

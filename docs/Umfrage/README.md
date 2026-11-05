@@ -10,7 +10,7 @@ Feedback-Formular führt. Stand: 2026-10-13 · Timeminator Community v0.9.0.
 |---|---|---|
 | **Quest-Seite** (self-hosted) | `https://umfrage.timeminator.com/01/` | Öffentliches Attention-Vehikel für LinkedIn/Sales Navigator. 4 Mini-Quests, anonym, kein Login. |
 | **Feedback-Formular** | Google Forms (xixum.ai) `…/1FAIpQLScLMOFUT7dmyNqQcQ_rhmPJ5m5U24kXTnF6NyEOEuo6xk2Gtw` | Sammelt die eigentlichen Antworten anonym ein. |
-| **Demo** | `https://demo.felixschaller.com` | Live-Instanz zum Ausprobieren. |
+| **Demo** | `https://demo.timeminator.com` | Live-Instanz zum Ausprobieren. |
 
 > Die Quest-Seite ist self-hosted unter `umfrage.timeminator.com/01/` (eigene Domain → seriöser für Kaltakquise). Die claude.ai-Artifact-Version diente als Vorlage/Preview.
 
@@ -28,6 +28,6 @@ Feedback-Formular führt. Stand: 2026-10-13 · Timeminator Community v0.9.0.
 ## Status / offen
 
 - [x] Quest-Seite live (self-hosted) unter `umfrage.timeminator.com/01/`.
-- [ ] In-App-Banner-Creative auf `assets.felixschaller.com` hochladen + Feed-JSON ergänzen (siehe `banner-deploy.md`).
+- [ ] In-App-Banner-Creative auf den konfigurierten Feed-Host hochladen + Feed-JSON ergänzen (siehe `banner-deploy.md`).
 - [ ] Release ausliefern, damit die erweiterte Allowlist (`timeminator.com`) bei bestehenden Nutzern greift (steht an; bis dahin wird der Banner-Link auf älteren Instanzen gestrippt — bewusst in Kauf genommen). Generischer Redirect-Dienst als Future Work: Issue #117.
 - [ ] Optional: Kanal-Shortlinks für Quellen-Tracking.
