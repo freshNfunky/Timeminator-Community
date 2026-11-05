@@ -86,7 +86,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             'secure_cookies' => (($_SERVER['HTTPS'] ?? '') === 'on'),
             'app_name' => trim((string) ($_POST['app_name'] ?? 'Timeminator Community')) ?: 'Timeminator Community',
             'debug' => false,
-            'pro_url' => 'https://timeminator.felixschaller.com',
+            'pro_url' => 'https://timeminator.com',
             'update_manifest_url' => $manifestUrl,
             'registration_endpoint' => $registrationUrl,
         ];

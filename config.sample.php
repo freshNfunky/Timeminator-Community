@@ -49,7 +49,7 @@ return [
 
     // Link shown in the nav bar / footer pointing to the Pro edition
     // (Planung/Budget/Report, Angebote, Rechnungen + Buchhaltungs-Konnektoren).
-    'pro_url' => 'https://timeminator.felixschaller.com',
+    'pro_url' => 'https://timeminator.com',
 
     // --- Updates / registration (Issue #2) ---
     // Release channel for the update check. GitHub Releases API by default.

@@ -98,11 +98,14 @@ shows today / this week / this month at a glance, plus your latest entries.
 
 ![Dashboard with live timer and totals](docs/images/screenshots/01-dashboard.png)
 
-### Time entries — list and calendar
+### Time entries — list, week and month calendar
 
 Every booking lands in a filterable list with durations and running totals, or a
-color-coded **week calendar** you can drag to book. Each entry keeps its origin,
-so history stays stable.
+color-coded **week calendar** you can drag to book. The calendar also has a
+**month view** with a project breakdown per day. A single overlap guard enforces
+that one person has exactly one booking at any moment — manual entries, timers
+and internal processes all share the same check — and the dashboard's 8h bracket
+keeps the day counter honest. Each entry keeps its origin, so history stays stable.
 
 ![Time entries list](docs/images/screenshots/02-entries-list.png)
 
@@ -142,10 +145,21 @@ a single batch if something was wrong.
 
 ### Team sentiment tracking
 
-Each user records a daily mood on a five-point scale with an optional note. The
+Each user records a **mood and flow score** on a five-point scale, either
+**daily** or in a single **weekly** take (admin choice). The picker lives right
+in the calendar as a compact emoji drop — same look as in Pro — and the
 **Stimmung** page shows a 60-day personal history as a colored sparkline and a
 team summary (average, response count, contributor count) over a 30-day window —
 aggregated only, with no individual rows and no names.
+
+### Project cockpit
+
+A dedicated **cockpit per project** shows a **Burn-Up** chart (actual vs. target
+hours, progress and forecast rays, ideal line to the deadline, and a budget-ok /
+over-budget area fill), a **Soll/Ist matrix** per team member × week with
+green/orange/red cells, a **tracker timeline** with progress, date-shift and
+meeting entries, and a **project-sentiment trend** (project vs. customer mood
+across progress reports).
 
 ### Roles, permissions, installer and updates
 
@@ -161,27 +175,34 @@ aggregated only, with no individual rows and no names.
 ## Community vs Pro
 
 The **Community Edition** is free, open source (MIT) and fully usable on its own.
-**[Timeminator Pro](https://timeminator.felixschaller.com)** is a separate,
-privately licensed codebase built on the same data model — so you are never
-locked in — that adds commercial-workflow features on top.
+**[Timeminator Pro](https://timeminator.com)** is a separate, privately licensed
+codebase built on the same data model — so you are never locked in — that adds
+commercial-workflow features on top.
 
 | | Community (free, MIT) | Pro |
 |---|:---:|:---:|
-| Live timer + manual bookings | ✓ | ✓ |
+| Live timer + manual bookings (no parallel bookings, 8h bracket) | ✓ | ✓ |
+| Week **and** month calendar views | ✓ | ✓ |
 | Clients → projects → work packages → tasks | ✓ | ✓ |
-| Time entries: filterable list + week calendar | ✓ | ✓ |
+| Time entries: filterable list + calendar | ✓ | ✓ |
 | Statistics, time series, two-group comparison | ✓ | ✓ |
 | Saved proof / "Nachweis" views | ✓ | ✓ |
 | CSV import with per-batch rollback | ✓ | ✓ |
-| Team sentiment tracking | ✓ | ✓ |
+| Team sentiment tracking (daily / weekly mood + flow) | ✓ | ✓ |
+| Project cockpit: burn-up, soll/ist matrix, tracker timeline | ✓ | ✓ |
+| Progress + date-shift + meeting tracker entries | ✓ | ✓ |
 | Roles & permissions (admin, user, custom roles) | ✓ | ✓ |
 | MySQL + SQLite, web installer, in-app updater | ✓ | ✓ |
-| Target/budget (Soll) planning + live progress report | — | ✓ |
+| Target/budget (Soll) planning + live progress reporting | — | ✓ |
 | Offer / quote calculator (reusable blocks, Typst output) | — | ✓ |
-| Invoicing + accounting connectors (lexoffice) | — | ✓ |
+| Invoicing + receivables / accounts management | — | ✓ |
+| Accounting connectors (lexoffice and partners) | — | ✓ |
+| Employee cockpit (contracts, overtime, carryovers) | — | ✓ |
+| Company cockpit (portfolio heatmap, resource conflicts) | — | ✓ |
 | Extended role management (Rollen Pro) | — | ✓ |
+| External calendar sources (CalDAV, iCal subscriptions) | — | ✓ |
 
-See the Pro feature list and pricing at **<https://timeminator.felixschaller.com>**.
+See the Pro feature list and pricing at **<https://timeminator.com>**.
 
 ---
 
@@ -370,5 +391,5 @@ Composer" constraint so the tool stays trivial to self-host.
 ---
 
 <sub>The Timeminator mascot and product art are shared with
-<a href="https://timeminator.felixschaller.com">Timeminator Pro</a>.
+<a href="https://timeminator.com">Timeminator Pro</a>.
 Made by <a href="https://felixschaller.com">FelixSchallerCOM</a>.</sub>
