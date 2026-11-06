@@ -47,31 +47,35 @@ final class BannerLayoutTest extends TestCase
         }
     }
 
-    public function testSidepanelImageRuleUsesContainNotCoverAndKeepsAspectRatio(): void
+    public function testSidepanelRotatorKeepsBannerAspectRatioAndFillsFully(): void
     {
         $css = (string) file_get_contents($this->root() . '/assets/app.css');
 
-        // aspect-ratio 1/2 am Container-Element - damit wird sp-item.is-image
-        // nicht mehr ueber die gesamte Spaltenhoehe gestreckt.
+        // aspect-ratio 1/2 am Rotator-Container (Felix-Feedback 2026-11-06,
+        // Runde 2): dadurch ist der Container immer 180 px breit x 360 px
+        // hoch und das 300x600-Banner darin fuellt die Box zu 100 % ohne
+        // Overlap/Crop. Vorher an sp-item.is-image → nur halbe Box genutzt.
         self::assertMatchesRegularExpression(
-            '/\.sp-item\.is-image\{[^}]*aspect-ratio\s*:\s*1\s*\/\s*2/',
+            '/\.sp-rotator\{[^}]*aspect-ratio\s*:\s*1\s*\/\s*2/',
             $css,
-            '.sp-item.is-image braucht aspect-ratio 1/2, sonst streckt das Sidepanel die 300x600-Banner'
+            '.sp-rotator braucht aspect-ratio 1/2, sonst streckt das Sidepanel die 300x600-Banner oder laesst die Box halb leer'
         );
 
-        // object-fit:contain am Bild (vorher cover) - damit sieht man das
-        // komplette Banner, nicht einen gecroppten Ausschnitt.
-        self::assertMatchesRegularExpression(
-            '/\.sp-item\.is-image img\{[^}]*object-fit\s*:\s*contain/',
-            $css,
-            '.sp-item.is-image img muss object-fit:contain haben (nicht cover), sonst werden Banner verzerrt gecroppt'
-        );
-
-        // Den alten cover-Fehler ausschliessen.
+        // sp-rotator darf nicht wieder die volle Restspalte via flex:1 1 auto
+        // einnehmen (alter Zustand, der den Verzerrungsbug ausloeste).
         self::assertDoesNotMatchRegularExpression(
-            '/\.sp-item\.is-image img\{[^}]*object-fit\s*:\s*cover/',
+            '/\.sp-rotator\{[^}]*flex\s*:\s*1\s+1\s+auto/',
             $css,
-            '.sp-item.is-image img darf nicht wieder object-fit:cover bekommen - das war der eingangs gemeldete Bug'
+            '.sp-rotator darf nicht flex:1 1 auto sein - das waere der alte Zustand, in dem Banner ueber die ganze Spalte gestreckt wurden'
+        );
+
+        // sp-item.is-image fuellt den (jetzt proportional korrekten) Rotator
+        // zu 100 % mit object-fit:cover - bei identischen Verhaeltnissen
+        // ohne Crop, aber Rundungsspalten bleiben zu.
+        self::assertMatchesRegularExpression(
+            '/\.sp-item\.is-image img\{[^}]*width\s*:\s*100%[^}]*height\s*:\s*100%[^}]*object-fit\s*:\s*cover/',
+            $css,
+            '.sp-item.is-image img muss 100% x 100% mit object-fit:cover sein, damit es die Box ohne Overlap fuellt'
         );
     }
 }
