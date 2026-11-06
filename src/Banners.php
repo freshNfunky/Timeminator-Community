@@ -24,10 +24,13 @@ final class Banners
     private const INSTALL_KEY = 'install_id';
     private const DEFAULT_TTL = 3600;
 
-    // No baseline endpoint is shipped - the operator either sets
-    // `banners.endpoint` in config.php to their own feed URL, or the app
-    // uses only the bundled offline fallback set in assets/banners/default.json.
-    private const DEFAULT_ENDPOINT = '';
+    // Baseline endpoint used when the operator has not set `banners.endpoint`
+    // in config.php. Keeps the Community edition working out of the box after
+    // a fresh install - without this, a config missing the banners block would
+    // silently fall back to the bundled offline SVG set forever. Served from
+    // an ad-blocker-neutral subdomain (not `banner.*`). PHP endpoint: byte-
+    // identical to the previous feed.json, just switched extension.
+    private const DEFAULT_ENDPOINT = 'https://assets.felixschaller.com/feed.php';
 
     // ---------- Visibility / configuration ----------
 
@@ -423,16 +426,15 @@ final class Banners
     }
 
     /**
-     * First-party hosts whose https links/images the feed may use. Shipped
-     * allowlist is just the public Timeminator domain; override with
-     * `banners.allowed_hosts` in config.php to add your own. Subdomains of
-     * each listed host are always included.
+     * First-party hosts whose https links/images the feed may use. Defaults to
+     * the FelixSchallerCOM brand portfolio; override with `banners.allowed_hosts`
+     * in config.php. Subdomains of each listed host are always included.
      *
      * @return array<int,string>
      */
     public static function allowedHosts(): array
     {
-        $hosts = self::conf()['allowed_hosts'] ?? ['timeminator.com'];
+        $hosts = self::conf()['allowed_hosts'] ?? ['felixschaller.com', 'timeminator.com', 'xixum.ai', 'af-ax.com', 'claude.ai'];
         $out = [];
         foreach ((array) $hosts as $h) {
             $h = strtolower(trim((string) $h));
@@ -440,7 +442,7 @@ final class Banners
                 $out[] = $h;
             }
         }
-        return $out ?: ['timeminator.com'];
+        return $out ?: ['felixschaller.com', 'timeminator.com', 'xixum.ai', 'af-ax.com', 'claude.ai'];
     }
 
     private static function hostAllowed(string $host): bool

@@ -47,24 +47,10 @@ final class RepoHygieneTest extends TestCase
         }
     }
 
-    public function testNoFelixschallerDotComUrlInPublicFiles(): void
-    {
-        // Zweite Runde (Felix-Feedback 2026-11-05): "alles was URL hat:
-        // *.felixschaller.com raus". Betrifft Infrastruktur-Subdomains
-        // (assets., banner., license., public., cdn., demo.) genauso wie
-        // die nackte Domain und die private Timeminator-Instanz.
-        foreach ($this->publicFacingFiles() as $file) {
-            if (!is_file($file)) {
-                continue;
-            }
-            $body = (string) file_get_contents($file);
-            self::assertDoesNotMatchRegularExpression(
-                '/[A-Za-z0-9.-]*felixschaller\.com/',
-                $body,
-                "{$file} darf keine *.felixschaller.com-URL mehr nennen"
-            );
-        }
-    }
+    // Felix-Entscheidung 2026-11-06: der Banner-Feed-Host assets.felixschaller.com
+    // ist wieder shipped Infrastruktur (feed.php, byte-identisch zur frueheren
+    // feed.json). Nur die PRIVATE Instanz-URL timeminator.felixschaller.com
+    // bleibt verbannt (testPrivateInstanceUrlIsNotMentionedPublicly oben).
 
     public function testPublicProDomainIsTheOneUsed(): void
     {

@@ -86,28 +86,31 @@ final class BannersTest extends TestCase
 
     public function testHrefAllowsHttpsFirstPartyBrandsOnly(): void
     {
-        // Shipped default allowlist is just the public Timeminator domain -
-        // additional first-party hosts must be configured per installation
-        // via banners.allowed_hosts.
+        // Shipped allowlist: FelixSchallerCOM brand portfolio.
+        self::assertTrue(Banners::isAllowedHref('https://felixschaller.com'));
+        self::assertTrue(Banners::isAllowedHref('https://assets.felixschaller.com/feed.php'));
         self::assertTrue(Banners::isAllowedHref('https://timeminator.com'));
-        self::assertTrue(Banners::isAllowedHref('https://timeminator.com/pricing'));
-        self::assertTrue(Banners::isAllowedHref('https://demo.timeminator.com'));           // subdomain
-        self::assertTrue(Banners::isAllowedHref('https://umfrage.timeminator.com/01/x'));   // subdomain
-        self::assertFalse(Banners::isAllowedHref('http://timeminator.com'));                // not https
-        self::assertFalse(Banners::isAllowedHref('https://evil.example.com'));              // wrong host
-        self::assertFalse(Banners::isAllowedHref('https://timeminator.com.evil.com'));      // suffix trick
+        self::assertTrue(Banners::isAllowedHref('https://umfrage.timeminator.com/01/x'));
+        self::assertTrue(Banners::isAllowedHref('https://xixum.ai'));
+        self::assertTrue(Banners::isAllowedHref('https://app.xixum.ai/assess'));
+        self::assertTrue(Banners::isAllowedHref('https://af-ax.com'));
+        self::assertTrue(Banners::isAllowedHref('https://claude.ai/artifact/x'));
+        self::assertFalse(Banners::isAllowedHref('http://felixschaller.com'));
+        self::assertFalse(Banners::isAllowedHref('https://evil.example.com'));
+        self::assertFalse(Banners::isAllowedHref('https://felixschaller.com.evil.com'));
+        self::assertFalse(Banners::isAllowedHref('https://notxixum.ai'));
         self::assertFalse(Banners::isAllowedHref('javascript:alert(1)'));
     }
 
     public function testLocaleEndpointInsertsLangBeforeJson(): void
     {
         self::assertSame(
-            'https://feed.example.com/feed-de.json',
-            Banners::localeEndpoint('https://feed.example.com/feed.json', 'de')
+            'https://assets.felixschaller.com/feed-de.json',
+            Banners::localeEndpoint('https://assets.felixschaller.com/feed.json', 'de')
         );
         self::assertSame(
-            'https://feed.example.com/feed-en.json',
-            Banners::localeEndpoint('https://feed.example.com/feed.json', 'en')
+            'https://assets.felixschaller.com/feed-en.json',
+            Banners::localeEndpoint('https://assets.felixschaller.com/feed.json', 'en')
         );
         // Query string preserved; custom filename supported.
         self::assertSame(
@@ -136,13 +139,13 @@ final class BannersTest extends TestCase
     public function testImageAllowsRelativeDataUriAndHttpsFirstParty(): void
     {
         self::assertTrue(Banners::isAllowedImage('banners/xixum-maturity.svg'));
-        self::assertTrue(Banners::isAllowedImage('https://cdn.timeminator.com/a.png'));      // subdomain of allowed host
-        self::assertTrue(Banners::isAllowedImage('https://assets.timeminator.com/c/x.svg'));
+        self::assertTrue(Banners::isAllowedImage('https://cdn.felixschaller.com/a.png'));
+        self::assertTrue(Banners::isAllowedImage('https://assets.felixschaller.com/c/x.svg'));
         self::assertTrue(Banners::isAllowedImage('data:image/svg+xml;base64,PHN2Zz48L3N2Zz4='));
         self::assertTrue(Banners::isAllowedImage('data:image/png;base64,iVBORw0KGgo='));
         self::assertFalse(Banners::isAllowedImage('data:text/html;base64,PHNjcmlwdD4=')); // non-image data
         self::assertFalse(Banners::isAllowedImage('//evil.example.com/a.png'));  // protocol-relative
-        self::assertFalse(Banners::isAllowedImage('http://timeminator.com/a.png'));
+        self::assertFalse(Banners::isAllowedImage('http://felixschaller.com/a.png'));
         self::assertFalse(Banners::isAllowedImage('../../etc/passwd'));          // traversal
         self::assertFalse(Banners::isAllowedImage('https://evil.example.com/a.png'));
     }
@@ -166,7 +169,7 @@ final class BannersTest extends TestCase
 
     public function testSanitizeItemRejectsEmptyCreative(): void
     {
-        self::assertNull(Banners::sanitizeItem(['href' => 'https://timeminator.com']));
+        self::assertNull(Banners::sanitizeItem(['href' => 'https://felixschaller.com']));
     }
 
     public function testSanitizeItemsSkipsNonArrays(): void
@@ -195,17 +198,17 @@ final class BannersTest extends TestCase
 
     public function testIframeAllowsHttpsFirstPartyOnly(): void
     {
-        self::assertTrue(Banners::isAllowedIframe('https://assets.timeminator.com/media/x/index.html'));
-        self::assertTrue(Banners::isAllowedIframe('https://cdn.timeminator.com/b/index.html'));
-        self::assertFalse(Banners::isAllowedIframe('http://assets.timeminator.com/x.html')); // not https
-        self::assertFalse(Banners::isAllowedIframe('https://evil.example.com/x.html'));      // wrong host
-        self::assertFalse(Banners::isAllowedIframe('https://timeminator.com.evil.com/x.html'));
+        self::assertTrue(Banners::isAllowedIframe('https://assets.felixschaller.com/media/x/index.html'));
+        self::assertTrue(Banners::isAllowedIframe('https://cdn.xixum.ai/b/index.html'));
+        self::assertFalse(Banners::isAllowedIframe('http://assets.felixschaller.com/x.html'));
+        self::assertFalse(Banners::isAllowedIframe('https://evil.example.com/x.html'));
+        self::assertFalse(Banners::isAllowedIframe('https://felixschaller.com.evil.com/x.html'));
     }
 
     public function testSanitizeItemKeepsFirstPartyIframeDropsForeign(): void
     {
-        $ok = Banners::sanitizeItem(['title' => 'H', 'iframe' => 'https://assets.timeminator.com/media/x/index.html']);
-        self::assertSame('https://assets.timeminator.com/media/x/index.html', $ok['iframe']);
+        $ok = Banners::sanitizeItem(['title' => 'H', 'iframe' => 'https://assets.felixschaller.com/media/x/index.html']);
+        self::assertSame('https://assets.felixschaller.com/media/x/index.html', $ok['iframe']);
         $bad = Banners::sanitizeItem(['title' => 'H', 'iframe' => 'https://evil.example.com/x.html']);
         self::assertSame('', $bad['iframe']);
     }
@@ -213,7 +216,8 @@ final class BannersTest extends TestCase
     public function testFrameSrcListsFirstPartyHostsAndWildcards(): void
     {
         $fs = Banners::frameSrc();
-        self::assertStringContainsString('https://timeminator.com', $fs);
-        self::assertStringContainsString('https://*.timeminator.com', $fs);
+        self::assertStringContainsString('https://felixschaller.com', $fs);
+        self::assertStringContainsString('https://*.felixschaller.com', $fs);
+        self::assertStringContainsString('https://*.xixum.ai', $fs);
     }
 }
