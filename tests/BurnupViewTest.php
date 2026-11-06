@@ -136,26 +136,15 @@ final class BurnupViewTest extends TestCase
         $this->assertIsString($view);
         $this->assertIsString($js);
 
-        // View setzt fillBetween mit gruen/rot entsprechend Ist vs. Soll.
-        // Felix-Feedback 2026-11-06: Soll ist primaer die Plan-Matrix-Kurve
-        // (sollCurve, Integral), erst wenn die leer ist fallen wir auf die
-        // horizontale target_h-Linie zurueck - beide Formen sind gueltig.
-        $hasSollCurveFill = (bool) preg_match(
-            '/fillBetween\s*=\s*\{\s*a:\s*istSeries,\s*b:\s*sollCurve/s',
-            $view
-        );
-        $hasTargetFill = (bool) preg_match(
-            '/fillBetween\s*=\s*\{\s*a:\s*istSeries,\s*b:\s*labels\.map/s',
-            $view
-        );
-        $this->assertTrue(
-            $hasSollCurveFill && $hasTargetFill,
-            'Flaechen-Integral muss BEIDE Vergleichsgrundlagen kennen: Soll-Kurve (bevorzugt) + Target-Fallback'
-        );
+        // View setzt fillBetween mit gruen/rot entsprechend Ist vs. Budget.
+        // Felix-Feedback 2026-11-06 ("rot nur wenn ueber budget"): der
+        // Ampel-Fill vergleicht ausschliesslich gegen target_h (Budget), nicht
+        // gegen die Plan-Matrix-Soll-Kurve. Die Plan-Matrix bleibt als eigene
+        // Linie (cyan) sichtbar, faerbt aber die Flaeche nicht ein.
         $this->assertMatchesRegularExpression(
-            '/belowColor:\s*\'#16a34a\',\s*aboveColor:\s*\'#ef4444\'/',
+            '/fillBetween\s*=\s*\{\s*a:\s*istSeries,\s*b:\s*sollSeries,\s*belowColor:\s*\'#16a34a\',\s*aboveColor:\s*\'#ef4444\'/s',
             $view,
-            'Ampel-Farben (gruen im Plan / rot ueber Plan) fehlen im fillBetween'
+            'Flaechen-Integral (fillBetween) muss Ist gegen Budget (target_h) rendern'
         );
 
         // Charts-Engine hat fillBetween-Rendering (Pro-Vorbild): quadweise, inkl. Interpolation.
@@ -608,17 +597,44 @@ final class BurnupViewTest extends TestCase
             $view,
             'Chart-JS muss d.soll_curve lesen (Soll-Kurve kommt aus der Burn-Up-Payload)'
         );
+        // Soll-Kurve-Farbe: cyan (#06b6d4), NICHT orange (#f59e0b / #d97706).
+        // Orange ist fuer die Prognose-Strahlen reserviert - gleiche Farbe fuer
+        // zwei verschiedene Semantiken verwirrt (Felix-Feedback 2026-11-06).
         $this->assertMatchesRegularExpression(
-            '/label:\s*i18n\.soll,\s*color:\s*\'#[0-9a-f]{6}\'.*?dashed:\s*true.*?data:\s*sollCurve/s',
+            '/label:\s*i18n\.soll,\s*color:\s*\'#06b6d4\'.*?dashed:\s*true.*?data:\s*sollCurve/s',
             $view,
-            'Soll-Kurve muss als eigene gestrichelte Serie mit i18n.soll gepusht werden'
+            'Soll-Kurve muss cyan (#06b6d4) gestrichelt gerendert werden - orange kollidiert mit der Prognose'
         );
-        // fillBetween vergleicht Ist gegen die Soll-Kurve, wenn sie da ist -
-        // Pro-Vorbild: gruen im Plan, rot ueber Plan.
-        $this->assertMatchesRegularExpression(
-            '/if\s*\(hasSoll\)\s*\{\s*fillBetween\s*=\s*\{\s*a:\s*istSeries,\s*b:\s*sollCurve/s',
+        $this->assertStringNotContainsString(
+            "label: i18n.soll, color: '#f59e0b'",
             $view,
-            'fillBetween muss Ist gegen die Soll-Kurve setzen, wenn eine Plan-Matrix vorhanden ist'
+            'Soll-Kurve darf nicht orange sein (reserviert fuer Prognose-Strahlen)'
+        );
+    }
+
+    public function testBurnupXAxisLabelsAreRotated45Degrees(): void
+    {
+        // Felix-Feedback 2026-11-06: "regressions test fuer achsen labels.
+        // waren mal 45 grad muessen immer 45 grad bleiben". Mit horizontalen
+        // Datums-Labels ueberlappen sich die Beschriftungen bei langen
+        // Projekten; -45 Grad erlaubt dichte Staffelung ohne Kollision.
+        $js = (string) file_get_contents($this->root() . '/assets/charts.js');
+
+        // function lines() (= TmCharts.lines) ist der Chart-Typ hinter dem
+        // Cockpit-Burn-Up. Der X-Label-Block darin MUSS -Math.PI/4
+        // (= -45 Grad) nutzen.
+        $this->assertMatchesRegularExpression(
+            '/function\s+lines\s*\(.*?ctx\.rotate\(-Math\.PI\s*\/\s*4\)/s',
+            $js,
+            'TmCharts.lines X-Axis-Labels muessen um -Math.PI/4 (= -45 Grad) rotiert sein'
+        );
+        // Der Label-Block nutzt save()/translate()/rotate()/fillText()/restore()
+        // - Canvas-Rotation braucht den Zustands-Push, sonst rotiert der Rest
+        // des Charts mit.
+        $this->assertMatchesRegularExpression(
+            '/ctx\.save\(\);\s*ctx\.translate\(xAt\(xi\),\s*padT\s*\+\s*plotH[^)]*\);\s*ctx\.rotate\(-Math\.PI\s*\/\s*4\)/s',
+            $js,
+            'X-Label-Rotation muss korrekt in save/translate/rotate gewrappt sein'
         );
     }
 

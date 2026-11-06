@@ -1184,8 +1184,8 @@ return [
     'cockpit.burnup_deadline'     => 'Planned end',
     'cockpit.burnup_delay'        => 'Delay',
     'cockpit.burnup_ideal'        => 'Ideal',
-    'cockpit.burnup_within'       => 'on plan',
-    'cockpit.burnup_over'         => 'over plan',
+    'cockpit.burnup_within'       => 'within budget',
+    'cockpit.burnup_over'         => 'over budget',
     'cockpit.burnup_soll'         => 'Plan (from matrix)',
     // --- Tracker-Entry card (Pro-UI parity) ---
     'cockpit.tracker_entry_h3'      => 'Tracker entry',

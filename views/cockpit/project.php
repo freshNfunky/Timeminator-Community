@@ -618,10 +618,13 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
     // Felix-Feedback 2026-11-06: Soll-Kurve = Integral der Plan-Matrix. Steigt
     // je Woche um die geplanten Stunden - ermoeglicht Woche-fuer-Woche-Vergleich
     // mit der Ist-Linie und endet rechts auf dem Projekt-Gesamt-Soll (target_h).
+    // Farbe cyan (#06b6d4) statt orange, weil orange schon fuer die Prognose-
+    // Strahlen belegt ist (Felix-Feedback 2026-11-06: "nicht orange wie die
+    // prognose, sondern eher gruen oder cyan").
     var sollCurve = d.soll_curve || [];
     var hasSoll = sollCurve.some(function (v) { return v !== null && v !== undefined && v > 0; });
     if (hasSoll) {
-      series.push({ label: i18n.soll, color: '#f59e0b', dashed: true, data: sollCurve });
+      series.push({ label: i18n.soll, color: '#06b6d4', dashed: true, data: sollCurve });
     }
     if (d.target_h) {
       series.push({ label: i18n.target + ' ' + d.target_h + ' h', color: '#94a3b8', dashed: true,
@@ -685,23 +688,17 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
         legend: i18n.delay + ' ' + d.delay.date,
       });
     }
-    // Flaechen-Integral zwischen Ist und Soll-Plan-Kurve: gruen wo Ist <= Soll
-    // (im Plan), rot wo Ist > Soll (ueber Plan). Felix-Feedback 2026-11-06:
-    // bevorzugt die Plan-Matrix-Soll-Kurve als Vergleichsbasis statt der
-    // horizontalen target_h-Linie - sonst kann man nicht Woche-fuer-Woche
-    // sehen, wo im Plan man steht. Fallback bleibt target_h (fuer Projekte
-    // ohne gefuellte Plan-Matrix).
+    // Flaechen-Integral zwischen Ist und BUDGET (target_h): gruen wo Ist
+    // <= Budget, rot wo Ist > Budget. Felix-Feedback 2026-11-06: "rot nur
+    // wenn ueber budget" - die Plan-Matrix-Soll-Kurve ist als eigene cyan-
+    // Linie sichtbar, aber der Ampel-Fill vergleicht ausschliesslich gegen
+    // das Projekt-Gesamt-Soll (target_h). Kein Fill, wenn target_h fehlt.
     var fillBetween = null;
-    var istSeries = d.points.map(function (p) { return p.h; });
-    if (hasSoll) {
+    if (d.target_h) {
+      var istSeries  = d.points.map(function (p) { return p.h; });
+      var sollSeries = labels.map(function () { return d.target_h; });
       fillBetween = {
-        a: istSeries, b: sollCurve,
-        belowColor: '#16a34a', aboveColor: '#ef4444',
-        belowLabel: i18n.within, aboveLabel: i18n.over,
-      };
-    } else if (d.target_h) {
-      fillBetween = {
-        a: istSeries, b: labels.map(function () { return d.target_h; }),
+        a: istSeries, b: sollSeries,
         belowColor: '#16a34a', aboveColor: '#ef4444',
         belowLabel: i18n.within, aboveLabel: i18n.over,
       };

@@ -337,7 +337,9 @@ window.TmCharts = (function () {
     ctx.font = '11px -apple-system,Segoe UI,Roboto,sans-serif';
     var padL = Math.ceil(ctx.measureText(yMax + ' ' + unit).width) + 14;
     var padR = rightVals.length ? Math.ceil(ctx.measureText(yMaxR + ' ' + rightUnit).width) + 14 : 16;
-    var padT = 12, padB = 40;
+    // padB vergroessert: die 45-Grad-rotierten X-Labels brauchen vertikal
+    // mehr Platz als ein horizontaler Datumslabel (Felix-Feedback 2026-11-06).
+    var padT = 12, padB = 56;
     var plotW = s.w - padL - padR, plotH = s.h - padT - padB;
     var xAt  = function(i){ return padL + (n <= 1 ? plotW / 2 : (plotW * i) / (n - 1)); };
     var yAt  = function(v){ return padT + plotH - (v / yMax)  * plotH; };
@@ -356,9 +358,21 @@ window.TmCharts = (function () {
         ctx.fillText((Math.round(gvr * 10) / 10) + (rightUnit ? ' ' + rightUnit : ''), padL + plotW + 6, yAtR(gvr));
       }
     }
-    ctx.textAlign = 'center';
-    var step = Math.max(1, Math.ceil(n / Math.max(1, Math.floor(plotW / 60))));
-    for (var xi = 0; xi < n; xi += step){ ctx.fillText(xs[xi], xAt(xi), padT + plotH + 16); }
+    // X-Achsen-Labels um -45 Grad rotieren (Felix-Feedback 2026-11-06:
+    // "lassen sich nicht stapeln"): horizontal gerendert kollidieren eng
+    // beieinander liegende Datumslabels sofort, mit 45 Grad passen sie
+    // dicht gestaffelt und ohne Ueberlapp uebereinander.
+    ctx.fillStyle = th.muted;
+    var step = Math.max(1, Math.ceil(n / Math.max(1, Math.floor(plotW / 48))));
+    for (var xi = 0; xi < n; xi += step){
+      ctx.save();
+      ctx.translate(xAt(xi), padT + plotH + 8);
+      ctx.rotate(-Math.PI / 4);
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(xs[xi], 0, 6);
+      ctx.restore();
+    }
 
     vlines.forEach(function(vl){
       if (vl.index === null || vl.index === undefined) return;
