@@ -110,18 +110,24 @@ final class TrackerEditTest extends TestCase
     {
         $view = (string) file_get_contents($this->root() . '/views/cockpit/project.php');
 
-        // <details class="tt-edit"> umhuellt das Edit-Formular, <summary>
-        // traegt den Bearbeiten-Button.
+        // Head-Layout: .tt-actions gruppiert Bearbeiten-Button + X-Loeschen
+        // rechts im Head; der Inhalt (Datum/User/Pill) bleibt linksbuendig.
         self::assertStringContainsString(
-            '<details class="tt-edit">',
+            'class="tt-actions"',
             $view,
-            'Jeder Timeline-Eintrag muss ein <details class="tt-edit"> Container haben (Pro-Vorbild)'
+            'Head braucht eine .tt-actions-Box fuer Bearbeiten + Loeschen'
         );
         self::assertMatchesRegularExpression(
-            '/<summary class="btn btn-ghost btn-sm">.*?cockpit\.edit/s',
+            '/<button[^>]*class="btn btn-ghost btn-sm tt-edit-toggle"[^>]*aria-controls="tt-edit-/s',
             $view,
-            'Bearbeiten-Summary muss den cockpit.edit-Label-Key nutzen'
+            'Bearbeiten-Button muss als .tt-edit-toggle mit aria-controls im Head stehen'
         );
+        self::assertMatchesRegularExpression(
+            '/<div class="tt-edit"\s+id="tt-edit-[^"]+"\s+hidden>/',
+            $view,
+            'Edit-Panel ist ein <div class=tt-edit> hidden mit ID unter dem Body'
+        );
+
         // Form postet an project_tracker_update mit id, project_id, CSRF
         // und einem expliziten return_to=cockpit_project.
         self::assertMatchesRegularExpression(
@@ -134,39 +140,27 @@ final class TrackerEditTest extends TestCase
             $view,
             'return_to=cockpit_project sorgt dafuer, dass der Save zurueck in die Timeline fuehrt'
         );
-        self::assertStringContainsString(
-            'name="created_at"',
-            $view,
-            'created_at-Input fuer Backdate darf nicht fehlen'
-        );
-        self::assertStringContainsString(
-            'name="project_mood"',
-            $view,
-            'project_mood-Select muss im Edit-Form sein (Pro-UI-Paritaet)'
-        );
-        self::assertStringContainsString(
-            'name="customer_mood"',
-            $view,
-            'customer_mood-Select muss im Edit-Form sein'
-        );
+        self::assertStringContainsString('name="created_at"',    $view, 'created_at fehlt');
+        self::assertStringContainsString('name="project_mood"',  $view, 'project_mood fehlt');
+        self::assertStringContainsString('name="customer_mood"', $view, 'customer_mood fehlt');
 
-        // Felix-Feedback 2026-11-06: Abbrechen-Button neben Speichern, der
-        // das <details> ohne POST wieder schliesst.
+        // Abbrechen-Button neben Speichern, der das Panel ohne POST schliesst
+        // (openEdit(li, false)).
         self::assertMatchesRegularExpression(
             '/<button[^>]*class="btn btn-ghost btn-sm tt-edit-cancel"[^>]*type="button"[^>]*>.*?common\.cancel/s',
             $view,
             'Abbrechen-Button neben Speichern fehlt'
         );
         self::assertMatchesRegularExpression(
-            '/\.tt-edit-cancel.*?det\.open\s*=\s*false/s',
+            '/tt-edit-cancel.*?openEdit\(li,\s*false\)/s',
             $view,
-            'Abbrechen-Handler muss das umgebende <details> schliessen'
+            'Abbrechen-Handler muss openEdit(li, false) aufrufen'
         );
 
         // Loeschen bleibt als "x" im .tt-head (Felix-Feedback 2026-11-06:
         // "alle Eintraege bekommen ein Bearbeiten und ein Loeschenkreuz").
-        // Im Edit-Dialog ist bewusst KEIN Loeschen-Button - dort nur
-        // Speichern + Abbrechen.
+        // Im Edit-Panel bewusst KEIN Loeschen-Button - dort nur Speichern +
+        // Abbrechen.
         self::assertMatchesRegularExpression(
             '/<form[^>]*action="[^"]*project_tracker_delete[^"]*"[^>]*class="tt-del-form"/s',
             $view,
@@ -177,37 +171,22 @@ final class TrackerEditTest extends TestCase
             $view,
             'X-Loeschen-Button (Klasse tt-del) im Head fehlt'
         );
-        self::assertStringContainsString(
-            'return confirm(',
-            $view,
-            'Delete braucht confirm()-Dialog (sonst versehentlich geloescht)'
-        );
-        // Im Edit-Dialog darf kein Loeschen-Button mehr sein (Felix-Feedback
-        // Runde X 2026-11-06: der gehoert dort nicht hin, nur Speichern +
-        // Abbrechen).
-        self::assertStringNotContainsString(
-            'tt-del-form-inline',
-            $view,
-            'Loeschen-Button im Edit-Dialog muss raus - dort nur Speichern + Abbrechen'
-        );
-        self::assertStringNotContainsString(
-            'btn-danger',
-            $view,
-            'Roter Loeschen-Button im Edit-Dialog darf nicht mehr vorkommen'
-        );
+        self::assertStringContainsString('return confirm(', $view, 'Delete braucht confirm()');
+        self::assertStringNotContainsString('tt-del-form-inline', $view, 'Delete im Edit-Dialog weg');
+        self::assertStringNotContainsString('btn-danger',         $view, 'Roter Delete im Dialog weg');
     }
 
     public function testCockpitCssHidesDeleteXWhileEditOpen(): void
     {
         // Felix-Feedback 2026-11-06: nur die Zeile, die gerade bearbeitet
-        // wird, soll ihr x-Loeschen ausblenden - alle anderen behalten es.
-        // :has() ist noetig, weil die tt-del-form im Head VOR dem details
-        // steht (klassische Sibling-Selektoren zielen nur nach hinten).
+        // wird, soll ihr x-Loeschen ausblenden. Realisiert ueber die
+        // .is-editing-Klasse an der <li>, die vom tt-edit-toggle-Script
+        // gesetzt wird.
         $css = (string) file_get_contents($this->root() . '/assets/app.css');
         self::assertMatchesRegularExpression(
-            '/\.tracker-timeline \.tt-item:has\(details\.tt-edit\[open\]\) \.tt-del-form\s*\{\s*visibility\s*:\s*hidden/',
+            '/\.tracker-timeline \.tt-item\.is-editing \.tt-del-form\s*\{\s*visibility\s*:\s*hidden/',
             $css,
-            'CSS muss das tt-del-form ausblenden, solange die Zeile im Edit-Modus offen ist (:has()-Regel)'
+            'CSS muss das tt-del-form ausblenden, solange die Zeile .is-editing traegt'
         );
     }
 

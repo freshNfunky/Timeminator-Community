@@ -563,14 +563,17 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
             } ?>
           </span>
           <?php if ($editable): ?>
-            <form method="post" action="<?= h(route('project_tracker_delete')) ?>" class="tt-del-form"
-                  onsubmit="return confirm('<?= h(t('cockpit.delete_entry_confirm', 'Eintrag wirklich loeschen?')) ?>')">
-              <?= csrf_field() ?>
-              <input type="hidden" name="id" value="<?= $tid ?>">
-              <input type="hidden" name="project_id" value="<?= (int) $project['id'] ?>">
-              <input type="hidden" name="return_to" value="cockpit_project">
-              <button class="tt-del" type="submit" title="<?= h(t('cockpit.delete', 'Loeschen')) ?>" aria-label="<?= h(t('cockpit.delete', 'Loeschen')) ?>">&times;</button>
-            </form>
+            <div class="tt-actions">
+              <button type="button" class="btn btn-ghost btn-sm tt-edit-toggle" aria-expanded="false" aria-controls="tt-edit-<?= $tid ?>"><?= h(t('cockpit.edit', 'Bearbeiten')) ?></button>
+              <form method="post" action="<?= h(route('project_tracker_delete')) ?>" class="tt-del-form"
+                    onsubmit="return confirm('<?= h(t('cockpit.delete_entry_confirm', 'Eintrag wirklich loeschen?')) ?>')">
+                <?= csrf_field() ?>
+                <input type="hidden" name="id" value="<?= $tid ?>">
+                <input type="hidden" name="project_id" value="<?= (int) $project['id'] ?>">
+                <input type="hidden" name="return_to" value="cockpit_project">
+                <button class="tt-del" type="submit" title="<?= h(t('cockpit.delete', 'Loeschen')) ?>" aria-label="<?= h(t('cockpit.delete', 'Loeschen')) ?>">&times;</button>
+              </form>
+            </div>
           <?php endif; ?>
         </div>
         <div class="tt-body">
@@ -594,8 +597,7 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
           <?php endif; ?>
         </div>
         <?php if ($editable): ?>
-          <details class="tt-edit">
-            <summary class="btn btn-ghost btn-sm"><?= h(t('cockpit.edit', 'Bearbeiten')) ?></summary>
+          <div class="tt-edit" id="tt-edit-<?= $tid ?>" hidden>
             <form method="post" action="<?= h(route('project_tracker_update')) ?>" class="tt-edit-form">
               <?= csrf_field() ?>
               <input type="hidden" name="id" value="<?= $tid ?>">
@@ -651,7 +653,7 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
                 <button class="btn btn-ghost btn-sm tt-edit-cancel" type="button"><?= h(t('common.cancel', 'Abbrechen')) ?></button>
               </div>
             </form>
-          </details>
+          </div>
         <?php endif; ?>
       </li>
     <?php endforeach; ?>
@@ -659,14 +661,33 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
     <?php if ($canEditTracker): ?>
     <script nonce="<?= h(csp_nonce()) ?>">
     (function () {
-      // Abbrechen-Button im Tracker-Edit-Form: schliesst das umgebende
-      // <details> ohne POST. Felix-Feedback 2026-11-06: "wir muessen auch
-      // immer die Moeglichkeit haben, die Bearbeitung abbrechen zu koennen".
+      // Tracker-Edit-Toggle (Felix-Feedback 2026-11-06): Bearbeiten-Button
+      // + X-Loeschen liegen rechts im Head (.tt-actions), das Edit-Panel
+      // laeuft unter dem Body in voller Breite. Klick auf "Bearbeiten"
+      // setzt .is-editing an der <li> (CSS versteckt dann das X in genau
+      // dieser Zeile und zeigt das .tt-edit-Panel). "Abbrechen" setzt
+      // alles zurueck.
+      var openEdit = function (li, open) {
+        var panel = li.querySelector('.tt-edit');
+        var btn   = li.querySelector('.tt-edit-toggle');
+        if (!panel || !btn) return;
+        li.classList.toggle('is-editing', open);
+        panel.hidden = !open;
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      };
+      document.querySelectorAll('.tracker-timeline .tt-edit-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          var li = btn.closest('.tt-item');
+          if (!li) return;
+          openEdit(li, !li.classList.contains('is-editing'));
+        });
+      });
       document.querySelectorAll('.tracker-timeline .tt-edit-cancel').forEach(function (btn) {
         btn.addEventListener('click', function (ev) {
           ev.preventDefault();
-          var det = btn.closest('details.tt-edit');
-          if (det) { det.open = false; }
+          var li = btn.closest('.tt-item');
+          if (li) { openEdit(li, false); }
         });
       });
     })();
