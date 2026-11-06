@@ -673,8 +673,16 @@ body:has(.sidepanel) .foot{padding-right:200px}
 .sp-item:hover{text-decoration:none;border-color:var(--brand)}
 .sp-item img{width:100%;height:auto;border-radius:9px;display:block;background:var(--soft)}
 .sp-item.hidden{display:none}
-.sp-item.is-image{padding:0;border:0;background:transparent;box-shadow:none;overflow:hidden;border-radius:var(--radius)}
-.sp-item.is-image img{width:100%;height:100%;object-fit:cover;border-radius:var(--radius)}
+/* Image-Banner (Felix-Feedback 2026-11-06: "warum passen die banner nicht
+   mehr in den frame?"). Shipped SVGs sind 300x600 (1:2 Portrait). Das
+   Sidepanel ist ~180 px breit und streckt sich ueber die gesamte Restspalte
+   - mit height:100% + object-fit:cover wurde das SVG massiv verzerrt bzw.
+   links/rechts aus dem Frame gecropped. Fix: aspect-ratio 1/2 am Image-
+   Container + object-fit:contain, damit das Banner immer als Ganzes mit
+   korrektem Proportionen sichtbar ist. */
+.sp-item.is-image{padding:0;border:0;background:transparent;box-shadow:none;overflow:hidden;border-radius:var(--radius);
+  bottom:auto;height:auto;aspect-ratio:1 / 2;max-height:calc(100% - 22px)}
+.sp-item.is-image img{width:100%;height:100%;object-fit:contain;border-radius:var(--radius);background:transparent}
 .sp-item.is-image:hover{opacity:.94}
 .sp-item.is-iframe{padding:0;border:0;background:transparent;box-shadow:none;overflow:hidden;border-radius:var(--radius)}
 .sp-item.is-iframe iframe{display:block;width:100%;height:100%;border:0;border-radius:var(--radius);background:var(--panel)}
