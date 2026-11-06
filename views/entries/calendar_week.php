@@ -170,10 +170,30 @@ $__weekQp = static function (DateTimeImmutable $m) use ($__filterQp): array {
 
 $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0) * 24));
 ?>
+<?php
+// Felix-Feedback 2026-11-06: helle Hintergrundfarben (gelb/orange) mit
+// weissem Default-Text sind unlesbar. Luminanz pro Block berechnen und
+// Textfarbe auf schwarz oder weiss setzen - WCAG-konforme relative
+// Luminanz (approx. 0.299*R + 0.587*G + 0.114*B), Schwelle 150 passt fuer
+// die typischen Block-Hintergruende (dunkles Blau -> weiss,
+// Gelb/Orange/Hellgruen -> schwarz).
+$__calInk = static function (string $hex): string {
+    $h = ltrim(trim($hex), '#');
+    if (strlen($h) === 3) { $h = $h[0].$h[0].$h[1].$h[1].$h[2].$h[2]; }
+    if (!preg_match('/^[0-9a-fA-F]{6}$/', $h)) { return '#ffffff'; }
+    $r = hexdec(substr($h, 0, 2));
+    $g = hexdec(substr($h, 2, 2));
+    $b = hexdec(substr($h, 4, 2));
+    $lum = 0.299 * $r + 0.587 * $g + 0.114 * $b;
+    return $lum > 150 ? '#1f2937' : '#ffffff';
+};
+?>
 <style nonce="<?= h(csp_nonce()) ?>">
 .cal-week { --cal-scroll: <?= $__earliestHour * 56 ?>px; }
-<?php foreach ($__perDay as $__dayOffset => $__events): foreach ($__events as $__ev): ?>
-.cal-event-<?= (int) $__ev['id'] ?>{top:<?= $__ev['top'] ?>%;height:<?= $__ev['height'] ?>%;<?= $__ev['color'] !== '' ? 'background-color:' . $__ev['color'] . ';' : '' ?>}
+<?php foreach ($__perDay as $__dayOffset => $__events): foreach ($__events as $__ev):
+    $__ink = $__ev['color'] !== '' ? $__calInk((string) $__ev['color']) : '';
+?>
+.cal-event-<?= (int) $__ev['id'] ?>{top:<?= $__ev['top'] ?>%;height:<?= $__ev['height'] ?>%;<?= $__ev['color'] !== '' ? 'background-color:' . $__ev['color'] . ';color:' . $__ink . ';' : '' ?>}
 <?php endforeach; endforeach; ?>
 <?php foreach ($__procPerDay as $__dayOffset => $__events): foreach ($__events as $__ev): ?>
 .cal-process-<?= (int) $__ev['id'] ?>{top:<?= $__ev['top'] ?>%;height:<?= $__ev['height'] ?>%}
