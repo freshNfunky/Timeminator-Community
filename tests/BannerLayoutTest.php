@@ -24,25 +24,36 @@ final class BannerLayoutTest extends TestCase
         return dirname(__DIR__);
     }
 
-    public function testDefaultFallbackHasNoCroppedImageBanners(): void
+    public function testDefaultFallbackListsTheExpectedImageAndTextCards(): void
     {
-        // Felix-Entscheidung 2026-11-06 Runde 4: der Banner-Feed liefert HTML,
-        // die lokalen Default-Fallbacks sind reine Text-Cards. Damit croppt
-        // nie wieder ein 300x600-SVG an einer 1:4-Sidebar - die Text-Cards
-        // fuellen den Container mit Titel/Text/CTA, kein Bildformat-Konflikt.
+        // Felix-Rueckkehr 2026-11-06 Runde 5: die Bild-Banner (XIXUM, AF-AX,
+        // AF-AX VTOL, Timeminator Pro) BLEIBEN im default-Set - sie waren
+        // kurzzeitig geloescht, sind aber gewollt. Jedes Default-Item hat
+        // einen Titel, und Image-Items zeigen auf eine SVG-Datei unter
+        // assets/banners/ die tatsaechlich existiert.
         $json = json_decode((string) file_get_contents($this->root() . '/assets/banners/default.json'), true);
         self::assertIsArray($json);
         self::assertNotEmpty($json['items'] ?? []);
 
+        $ids = [];
         foreach ($json['items'] as $item) {
-            self::assertArrayNotHasKey(
-                'image',
-                $item,
-                "Default-Item '" . ($item['id'] ?? '?') . "' darf keinen 'image'-Pfad mehr tragen - Bilder croppen in der 1:4-Sidebar"
-            );
             self::assertNotEmpty(
                 $item['title'] ?? '',
-                "Default-Item '" . ($item['id'] ?? '?') . "' braucht einen Titel als Text-Card"
+                "Default-Item '" . ($item['id'] ?? '?') . "' braucht einen Titel"
+            );
+            $ids[] = $item['id'] ?? '';
+            if (!empty($item['image']) && !str_starts_with((string) $item['image'], 'http')) {
+                $svgPath = $this->root() . '/assets/' . $item['image'];
+                self::assertFileExists($svgPath, "Image-Default verweist auf nicht existierende Datei: {$item['image']}");
+            }
+        }
+
+        // Die vier Bild-Banner duerfen nie wieder stillschweigend verschwinden.
+        foreach (['default-xixum-hallucination', 'default-af-ax', 'default-af-ax-vtol', 'default-timeminator-pro'] as $expected) {
+            self::assertContains(
+                $expected,
+                $ids,
+                "Default-Item '{$expected}' fehlt - die Bild-Banner duerfen nicht geloescht werden"
             );
         }
     }

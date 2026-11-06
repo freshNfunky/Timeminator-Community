@@ -1,19 +1,33 @@
 {
-  "_comment": "Bundled default banner set - offline fallback when the configured banner feed is unreachable (isolated server, blocked outbound, CSP block, timeout). The live feed delivers HTML banners that fill the sidepanel's portrait box natively; the fallbacks here are plain text cards (title + text + CTA) so they always render cleanly regardless of sidepanel height, with no cropping. Links must stay on an allowed first-party host configured in banners.allowed_hosts or they are stripped.",
+  "_comment": "Bundled default banner set - offline fallback when the configured banner feed is unreachable (isolated server, blocked outbound, CSP block, timeout). An operator-configured feed uses the same shape and overrides this set when reachable. Links must stay on an allowed first-party host configured in banners.allowed_hosts or they are stripped.",
   "items": [
     {
-      "id": "default-timeminator-pro",
-      "title": "Timeminator Pro",
-      "text": "Planung, Budget, Live-Report, Angebote und Rechnungen - all in one fuer KMUs.",
-      "cta": "Pro entdecken",
-      "href": "https://timeminator.com"
+      "id": "default-xixum-hallucination",
+      "title": "XIXUM - hallucination-free AI by design.",
+      "cta": "Learn more",
+      "href": "https://xixum.ai",
+      "image": "banners/xixum-hallucination.svg"
     },
     {
-      "id": "default-timeminator-demo",
-      "title": "Demo ausprobieren",
-      "text": "Timeminator Pro live mit Demo-Daten testen - ohne Anmeldung.",
-      "cta": "Zur Demo",
-      "href": "https://demo.timeminator.com"
+      "id": "default-af-ax",
+      "title": "AF-AX - the wing that doesn't stall. Bird-feather surface, no stall to ~50 degrees angle of attack.",
+      "cta": "See the simulation",
+      "href": "https://af-ax.com",
+      "image": "banners/af-ax.svg"
+    },
+    {
+      "id": "default-af-ax-vtol",
+      "title": "AF-AX - the wing that doesn't stall. eVTOL with bird-feather wings, no stall to ~50 degrees angle of attack.",
+      "cta": "See the simulation",
+      "href": "https://af-ax.com",
+      "image": "banners/af-ax-vtol.svg"
+    },
+    {
+      "id": "default-timeminator-pro",
+      "title": "Timeminator Pro - Planung, Budget, Live-Report, Angebote und Rechnungen in einem Tool.",
+      "cta": "Pro entdecken",
+      "href": "https://timeminator.com",
+      "image": "banners/timeminator-pro.svg"
     }
   ]
 }
