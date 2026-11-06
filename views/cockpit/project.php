@@ -307,17 +307,25 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
       return;
     }
     function render() {
-      var labels = d.points.map(function (p) { return p.d; });
-      var pmData = d.points.map(function (p) { return p.pm === null || p.pm === undefined ? null : p.pm; });
-      var cmData = d.points.map(function (p) { return p.cm === null || p.cm === undefined ? null : p.cm; });
+      // Felix-Feedback 2026-11-06: echte Zeitachse. Backend liefert labels
+      // Tag-fuer-Tag von der ersten bis zur letzten Meldung + linear
+      // interpolierte pm_series/cm_series; markers sitzen an den echten
+      // Meldetagen (x=Index in labels).
+      var labels = d.labels && d.labels.length ? d.labels : d.points.map(function (p) { return p.d; });
+      var pmData = d.pm_series && d.pm_series.length ? d.pm_series
+                 : d.points.map(function (p) { return p.pm === null || p.pm === undefined ? null : p.pm; });
+      var cmData = d.cm_series && d.cm_series.length ? d.cm_series
+                 : d.points.map(function (p) { return p.cm === null || p.cm === undefined ? null : p.cm; });
       var series = [
         {label: i18n.pm, color: '#8b5cf6', data: pmData},
         {label: i18n.cm, color: '#06b6d4', data: cmData, dashed: true},
       ];
       var pts = [];
-      d.points.forEach(function (p, i) {
-        if (p.pm !== null && p.pm !== undefined) pts.push({x: i, y: p.pm, color: '#8b5cf6'});
-        if (p.cm !== null && p.cm !== undefined) pts.push({x: i, y: p.cm, color: '#06b6d4'});
+      (d.markers && d.markers.length ? d.markers : d.points.map(function (p, i) {
+        return {x: i, d: p.d, pm: p.pm, cm: p.cm};
+      })).forEach(function (m) {
+        if (m.pm !== null && m.pm !== undefined) pts.push({x: m.x, y: m.pm, color: '#8b5cf6'});
+        if (m.cm !== null && m.cm !== undefined) pts.push({x: m.x, y: m.cm, color: '#06b6d4'});
       });
       TmCharts.lines(canvas, {xLabels: labels, series: series, points: pts, unit: '/5'}, legend);
     }

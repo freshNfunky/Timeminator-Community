@@ -774,7 +774,86 @@ function cockpit_sentiment_payload(int $projectId): array
         $last = $points[count($points) - 1];
         $latest = ['d' => $last['d'], 'pm' => $last['pm'], 'cm' => $last['cm']];
     }
-    return ['ok' => true, 'points' => $points, 'latest' => $latest];
+
+    // Felix-Feedback 2026-11-06: der Chart darf Meldungen nicht gleichmaessig
+    // auf der X-Achse stapeln - ein ausgelassener Meldetag muss als tatsaech-
+    // liche Zeit-Luecke sichtbar werden, zwischen vorangegangenem und nach-
+    // folgendem Wert wird linear interpoliert. Dafuer fuellen wir labels
+    // Tag-fuer-Tag von der ersten bis zur letzten Meldung und berechnen
+    // interpolierte pm_series/cm_series. Marker-Punkte sitzen weiterhin nur
+    // an den echten Meldetagen.
+    $labels = [];
+    $pmSeries = [];
+    $cmSeries = [];
+    $markers = [];
+    if (count($points) >= 1) {
+        // Bei Mehrfachmeldungen am gleichen Tag gewinnt die zuletzt gespeicherte
+        // (die Query sortiert aufsteigend nach date, created_at). Interpolation
+        // auf dem Tages-Bucket.
+        $byDate = [];
+        foreach ($points as $p) { $byDate[$p['d']] = $p; }
+        ksort($byDate);
+        $dates = array_keys($byDate);
+        $start = new DateTimeImmutable($dates[0]);
+        $end   = new DateTimeImmutable($dates[count($dates) - 1]);
+        $span  = (int) $start->diff($end)->days;
+        // Harter Cap, damit ein 5-Jahres-Projekt nicht tausende Punkte serialisiert.
+        if ($span > 1095) {
+            $start = $end->modify('-1095 days');
+            $span  = 1095;
+        }
+        $labelIdx = [];
+        for ($i = 0; $i <= $span; $i++) {
+            $d = $start->modify('+' . $i . ' days')->format('Y-m-d');
+            $labels[]       = $d;
+            $labelIdx[$d]   = $i;
+            $pmSeries[]     = null;
+            $cmSeries[]     = null;
+        }
+        $interpolate = static function (array $knownX, array $knownY, int $i): ?float {
+            // Linear zwischen den Known-Punkten; vor dem ersten und nach dem
+            // letzten Known-Punkt: null (Linie bricht).
+            $n = count($knownX);
+            if ($n === 0) { return null; }
+            if ($i < $knownX[0] || $i > $knownX[$n - 1]) { return null; }
+            // Finde Segment [knownX[k], knownX[k+1]] mit knownX[k] <= $i <= knownX[k+1]
+            for ($k = 0; $k < $n - 1; $k++) {
+                $x0 = $knownX[$k]; $x1 = $knownX[$k + 1];
+                if ($i >= $x0 && $i <= $x1) {
+                    $span = $x1 - $x0;
+                    if ($span === 0) { return (float) $knownY[$k]; }
+                    $t = ($i - $x0) / $span;
+                    return $knownY[$k] + $t * ($knownY[$k + 1] - $knownY[$k]);
+                }
+            }
+            return (float) $knownY[$n - 1];
+        };
+        $pmKnownX = []; $pmKnownY = [];
+        $cmKnownX = []; $cmKnownY = [];
+        foreach ($dates as $d) {
+            $idx = $labelIdx[$d];
+            $p   = $byDate[$d];
+            if ($p['pm'] !== null) { $pmKnownX[] = $idx; $pmKnownY[] = (float) $p['pm']; }
+            if ($p['cm'] !== null) { $cmKnownX[] = $idx; $cmKnownY[] = (float) $p['cm']; }
+            $markers[] = ['x' => $idx, 'd' => $d, 'pm' => $p['pm'], 'cm' => $p['cm']];
+        }
+        for ($i = 0; $i <= $span; $i++) {
+            $pm = $interpolate($pmKnownX, $pmKnownY, $i);
+            $cm = $interpolate($cmKnownX, $cmKnownY, $i);
+            $pmSeries[$i] = $pm !== null ? round($pm, 2) : null;
+            $cmSeries[$i] = $cm !== null ? round($cm, 2) : null;
+        }
+    }
+
+    return [
+        'ok'        => true,
+        'points'    => $points,       // Legacy-Shape: Meldungen in Rohform.
+        'latest'    => $latest,
+        'labels'    => $labels,       // Tagesraster von der ersten bis zur letzten Meldung.
+        'pm_series' => $pmSeries,     // linear interpoliert pro Tag, null ausserhalb.
+        'cm_series' => $cmSeries,
+        'markers'   => $markers,      // {x: Index in labels, d, pm, cm} nur an echten Meldetagen.
+    ];
 }
 
 /** JSON-Endpunkt fuer den Sentiment-Trend-Chart im Projekt-Cockpit. */

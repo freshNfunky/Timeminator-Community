@@ -320,6 +320,65 @@ final class BurnupViewTest extends TestCase
         self::assertSame('2026-06-01', $p['latest']['d']);
     }
 
+    public function testSentimentPayloadUsesAbsoluteTimeAxisAndInterpolatesGaps(): void
+    {
+        // Felix-Feedback 2026-11-06: der Sentiment-Verlauf darf Meldungen
+        // nicht gleichmaessig stapeln. Backend fuellt labels Tag-fuer-Tag
+        // von erster bis letzter Meldung + liefert pm_series/cm_series
+        // linear interpoliert und markers an echten Meldetagen.
+        $cid = DB::insert('INSERT INTO clients (name, code, created_at) VALUES (?,?,?)',
+            ['Acme', 'c-' . uniqid(), '2026-01-01 00:00:00']);
+        $pid = DB::insert(
+            'INSERT INTO projects (client_id, name, code, created_at) VALUES (?,?,?,?)',
+            [$cid, 'P', 'p-' . uniqid(), '2026-01-01 00:00:00']
+        );
+        // 3 Meldungen mit Abstaenden: 10 Tage, dann 20 Tage. Die mittlere
+        // wird ausgelassen (hier: keine Meldung in Tag 11..20), damit die
+        // Interpolation sichtbar wird.
+        Repo::saveProjectTracker($pid, 'progress', 'A', [
+            'value' => 10.0, 'date_value' => '2026-05-01',
+            'project_mood' => 5, 'customer_mood' => 5,
+        ], null);
+        Repo::saveProjectTracker($pid, 'progress', 'B', [
+            'value' => 20.0, 'date_value' => '2026-05-11',
+            'project_mood' => 1, 'customer_mood' => 3,
+        ], null);
+        Repo::saveProjectTracker($pid, 'progress', 'C', [
+            'value' => 30.0, 'date_value' => '2026-05-31',
+            'project_mood' => 5, 'customer_mood' => 1,
+        ], null);
+
+        $p = cockpit_sentiment_payload($pid);
+        self::assertTrue($p['ok']);
+        self::assertArrayHasKey('labels',    $p);
+        self::assertArrayHasKey('pm_series', $p);
+        self::assertArrayHasKey('cm_series', $p);
+        self::assertArrayHasKey('markers',   $p);
+
+        // 31 Tage inkl.: 2026-05-01 .. 2026-05-31
+        self::assertCount(31, $p['labels']);
+        self::assertSame('2026-05-01', $p['labels'][0]);
+        self::assertSame('2026-05-31', $p['labels'][30]);
+        self::assertCount(31, $p['pm_series']);
+        self::assertCount(31, $p['cm_series']);
+
+        // Marker nur an den drei echten Meldetagen, mit x=Index in labels.
+        self::assertCount(3, $p['markers']);
+        self::assertSame(0,  $p['markers'][0]['x']);
+        self::assertSame(10, $p['markers'][1]['x']);
+        self::assertSame(30, $p['markers'][2]['x']);
+
+        // pm_series an den Meldeindizes trifft exakt, an einem Tag dazwischen
+        // ist linear interpoliert.
+        self::assertSame(5.0, $p['pm_series'][0]);
+        self::assertSame(1.0, $p['pm_series'][10]);
+        self::assertSame(5.0, $p['pm_series'][30]);
+        // Tag 5 (Mitte zwischen 0 und 10): pm = 5 + 0.5 * (1 - 5) = 3
+        self::assertEqualsWithDelta(3.0, $p['pm_series'][5], 0.01);
+        // Tag 20 (Mitte zwischen 10 und 30): pm = 1 + 0.5 * (5 - 1) = 3
+        self::assertEqualsWithDelta(3.0, $p['pm_series'][20], 0.01);
+    }
+
     public function testCalendarHasDailyAndWeeklySentimentPickers(): void
     {
         // Felix-Feedback 2026-11-04: Sentiment-Tracking auch im Kalender,
