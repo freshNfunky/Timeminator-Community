@@ -163,22 +163,51 @@ final class TrackerEditTest extends TestCase
             'Abbrechen-Handler muss das umgebende <details> schliessen'
         );
 
-        // Loeschen jetzt im Edit-Dialog (INSIDE <details>), nicht mehr als
-        // X im Head. Eigenes Form mit Confirm-Dialog und tt-del-form-inline.
+        // Loeschen bleibt als "x" im .tt-head (Felix-Feedback 2026-11-06:
+        // "alle Eintraege bekommen ein Bearbeiten und ein Loeschenkreuz").
+        // Im Edit-Dialog ist bewusst KEIN Loeschen-Button - dort nur
+        // Speichern + Abbrechen.
         self::assertMatchesRegularExpression(
-            '/<form[^>]*action="[^"]*project_tracker_delete[^"]*"[^>]*class="tt-del-form tt-del-form-inline"/s',
+            '/<form[^>]*action="[^"]*project_tracker_delete[^"]*"[^>]*class="tt-del-form"/s',
             $view,
-            'Delete-Form muss im Edit-Dialog liegen und tt-del-form-inline tragen'
+            'X-Loeschen-Form muss im Head jedes Eintrags vorhanden sein'
+        );
+        self::assertStringContainsString(
+            'class="tt-del"',
+            $view,
+            'X-Loeschen-Button (Klasse tt-del) im Head fehlt'
         );
         self::assertStringContainsString(
             'return confirm(',
             $view,
             'Delete braucht confirm()-Dialog (sonst versehentlich geloescht)'
         );
+        // Im Edit-Dialog darf kein Loeschen-Button mehr sein (Felix-Feedback
+        // Runde X 2026-11-06: der gehoert dort nicht hin, nur Speichern +
+        // Abbrechen).
         self::assertStringNotContainsString(
-            'class="tt-del"',
+            'tt-del-form-inline',
             $view,
-            'Das alte x-Loeschen-Symbol im Head ist weg (Felix-Feedback 2026-11-06)'
+            'Loeschen-Button im Edit-Dialog muss raus - dort nur Speichern + Abbrechen'
+        );
+        self::assertStringNotContainsString(
+            'btn-danger',
+            $view,
+            'Roter Loeschen-Button im Edit-Dialog darf nicht mehr vorkommen'
+        );
+    }
+
+    public function testCockpitCssHidesDeleteXWhileEditOpen(): void
+    {
+        // Felix-Feedback 2026-11-06: nur die Zeile, die gerade bearbeitet
+        // wird, soll ihr x-Loeschen ausblenden - alle anderen behalten es.
+        // :has() ist noetig, weil die tt-del-form im Head VOR dem details
+        // steht (klassische Sibling-Selektoren zielen nur nach hinten).
+        $css = (string) file_get_contents($this->root() . '/assets/app.css');
+        self::assertMatchesRegularExpression(
+            '/\.tracker-timeline \.tt-item:has\(details\.tt-edit\[open\]\) \.tt-del-form\s*\{\s*visibility\s*:\s*hidden/',
+            $css,
+            'CSS muss das tt-del-form ausblenden, solange die Zeile im Edit-Modus offen ist (:has()-Regel)'
         );
     }
 

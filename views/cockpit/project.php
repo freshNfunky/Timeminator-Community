@@ -562,6 +562,16 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
               default:              echo h($ttype);
             } ?>
           </span>
+          <?php if ($editable): ?>
+            <form method="post" action="<?= h(route('project_tracker_delete')) ?>" class="tt-del-form"
+                  onsubmit="return confirm('<?= h(t('cockpit.delete_entry_confirm', 'Eintrag wirklich loeschen?')) ?>')">
+              <?= csrf_field() ?>
+              <input type="hidden" name="id" value="<?= $tid ?>">
+              <input type="hidden" name="project_id" value="<?= (int) $project['id'] ?>">
+              <input type="hidden" name="return_to" value="cockpit_project">
+              <button class="tt-del" type="submit" title="<?= h(t('cockpit.delete', 'Loeschen')) ?>" aria-label="<?= h(t('cockpit.delete', 'Loeschen')) ?>">&times;</button>
+            </form>
+          <?php endif; ?>
         </div>
         <div class="tt-body">
           <?php if ($ttype === 'progress'): ?>
@@ -639,16 +649,7 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
               <div class="tt-edit-actions">
                 <button class="btn btn-primary btn-sm" type="submit"><?= h(t('common.save', 'Speichern')) ?></button>
                 <button class="btn btn-ghost btn-sm tt-edit-cancel" type="button"><?= h(t('common.cancel', 'Abbrechen')) ?></button>
-                <span class="tt-edit-actions-spacer"></span>
               </div>
-            </form>
-            <form method="post" action="<?= h(route('project_tracker_delete')) ?>" class="tt-del-form tt-del-form-inline"
-                  onsubmit="return confirm('<?= h(t('cockpit.delete_entry_confirm', 'Eintrag wirklich loeschen?')) ?>')">
-              <?= csrf_field() ?>
-              <input type="hidden" name="id" value="<?= $tid ?>">
-              <input type="hidden" name="project_id" value="<?= (int) $project['id'] ?>">
-              <input type="hidden" name="return_to" value="cockpit_project">
-              <button class="btn btn-danger btn-sm" type="submit"><?= h(t('cockpit.delete', 'Loeschen')) ?></button>
             </form>
           </details>
         <?php endif; ?>
