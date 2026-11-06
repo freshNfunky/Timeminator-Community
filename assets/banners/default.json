@@ -1,25 +1,33 @@
 {
-  "_comment": "Bundled default banner set - offline fallback when the configured banner feed is unreachable. Each item is a same-origin HTML page under /assets/banners/ that the rotator embeds in a sandboxed <iframe>. The iframe is fluid (100% x 100%) and has its own clickable CTA link, so the banner fills the sidepanel box regardless of height. Links inside each HTML must stay on an allowed first-party host configured in banners.allowed_hosts.",
+  "_comment": "Bundled default banner set - offline fallback when the configured banner feed is unreachable (isolated server, blocked outbound, CSP block, timeout). An operator-configured feed uses the same shape and overrides this set when reachable. Links must stay on an allowed first-party host configured in banners.allowed_hosts or they are stripped.",
   "items": [
     {
       "id": "default-xixum-hallucination",
       "title": "XIXUM - hallucination-free AI by design.",
-      "iframe": "/assets/banners/xixum-hallucination.html"
+      "cta": "Learn more",
+      "href": "https://xixum.ai",
+      "image": "banners/xixum-hallucination.svg"
     },
     {
       "id": "default-af-ax",
-      "title": "AF-AX - the wing that doesn't stall.",
-      "iframe": "/assets/banners/af-ax.html"
+      "title": "AF-AX - the wing that doesn't stall. Bird-feather surface, no stall to ~50 degrees angle of attack.",
+      "cta": "See the simulation",
+      "href": "https://af-ax.com",
+      "image": "banners/af-ax.svg"
     },
     {
       "id": "default-af-ax-vtol",
-      "title": "AF-AX - eVTOL with bird-feather wings.",
-      "iframe": "/assets/banners/af-ax-vtol.html"
+      "title": "AF-AX - the wing that doesn't stall. eVTOL with bird-feather wings, no stall to ~50 degrees angle of attack.",
+      "cta": "See the simulation",
+      "href": "https://af-ax.com",
+      "image": "banners/af-ax-vtol.svg"
     },
     {
       "id": "default-timeminator-pro",
-      "title": "Timeminator Pro - Planung, Budget, Live-Report, Angebote und Rechnungen.",
-      "iframe": "/assets/banners/timeminator-pro.html"
+      "title": "Timeminator Pro - Planung, Budget, Live-Report, Angebote und Rechnungen in einem Tool.",
+      "cta": "Pro entdecken",
+      "href": "https://timeminator.com",
+      "image": "banners/timeminator-pro.svg"
     }
   ]
 }
