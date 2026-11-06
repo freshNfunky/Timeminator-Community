@@ -37,8 +37,10 @@ final class BurnupViewTest extends TestCase
         );
 
         // Exakt der Push-Aufruf fuer die Fortschritts-Serie darf kein step:true tragen.
+        // Felix-Feedback 2026-11-06: nach Einfuehrung der Legend-Toggles heisst
+        // die Sammlung allSeries (series ist die gefilterte Teilmenge).
         $matched = preg_match(
-            '/series\.push\(\{\s*label:\s*i18n\.progress[^}]*\}\);/s',
+            '/(?:allSeries|series)\.push\(\{\s*(?:key:\s*\'progress\',\s*)?label:\s*i18n\.progress[^}]*\}\);/s',
             $view,
             $match
         );
@@ -141,8 +143,10 @@ final class BurnupViewTest extends TestCase
         // Ampel-Fill vergleicht ausschliesslich gegen target_h (Budget), nicht
         // gegen die Plan-Matrix-Soll-Kurve. Die Plan-Matrix bleibt als eigene
         // Linie (cyan) sichtbar, faerbt aber die Flaeche nicht ein.
+        // Toleriert zwischen b: und belowColor zusaetzliche Legend-Toggle-Keys
+        // (belowKey/aboveKey), die mit #71 eingefuehrt wurden.
         $this->assertMatchesRegularExpression(
-            '/fillBetween\s*=\s*\{\s*a:\s*istSeries,\s*b:\s*sollSeries,\s*belowColor:\s*\'#16a34a\',\s*aboveColor:\s*\'#ef4444\'/s',
+            '/fillBetween\s*=\s*\{\s*a:\s*istSeries,\s*b:\s*sollSeries,[^}]*belowColor:\s*\'#16a34a\'[^}]*aboveColor:\s*\'#ef4444\'/s',
             $view,
             'Flaechen-Integral (fillBetween) muss Ist gegen Budget (target_h) rendern'
         );
@@ -609,6 +613,69 @@ final class BurnupViewTest extends TestCase
             "label: i18n.soll, color: '#f59e0b'",
             $view,
             'Soll-Kurve darf nicht orange sein (reserviert fuer Prognose-Strahlen)'
+        );
+    }
+
+    public function testBurnupLegendEntriesAreClickableTogglesPersistedToLocalStorage(): void
+    {
+        // Felix-Feedback 2026-11-06: der Burn-Up braucht klickbare Legend-
+        // Eintraege, mit denen man einzelne Kurven ein- und ausblenden kann
+        // (Pro-Vorbild). Der Zustand muss ueber Reloads hinweg bleiben -
+        // Persistierung ueber localStorage.
+        $view = (string) file_get_contents($this->root() . '/views/cockpit/project.php');
+        $js   = (string) file_get_contents($this->root() . '/assets/charts.js');
+        $css  = (string) file_get_contents($this->root() . '/assets/app.css');
+
+        // charts.js macht Legend-Items zu klickbaren Chips mit data-k=<key>.
+        $this->assertMatchesRegularExpression(
+            '/class="lg-chip[^"]*"\s*data-k="/s',
+            $js,
+            'Legend-Items muessen klickbare .lg-chip-Buttons mit data-k sein'
+        );
+
+        // CSS kennt den is-off-Zustand (opacity + line-through) und erlaubt
+        // Hover-Feedback auf dem Chip.
+        $this->assertStringContainsString(
+            '.chart-legend .lg-chip.is-off',
+            $css,
+            'CSS muss den ausgeschalteten Legend-Chip visuell darstellen'
+        );
+        $this->assertMatchesRegularExpression(
+            '/\.chart-legend \.lg-chip\.is-off \.lg-lbl\s*\{\s*text-decoration\s*:\s*line-through/',
+            $css,
+            'Ausgeschaltete Chips brauchen line-through am Label'
+        );
+
+        // View persistiert den hidden-Set in localStorage.
+        $this->assertStringContainsString(
+            "'tm.cockpit.burnup.hidden'",
+            $view,
+            'Burn-Up-Legend-Toggle muss ueber den localStorage-Key tm.cockpit.burnup.hidden persistieren'
+        );
+        $this->assertMatchesRegularExpression(
+            '/legend\.addEventListener\(\'click\'.*?lg-chip.*?hidden\.(?:has|add|delete)/s',
+            $view,
+            'View muss Klicks auf .lg-chip auf toggle(hidden) mappen'
+        );
+
+        // Jede Haupt-Serie bekommt einen stabilen Toggle-Key.
+        foreach (['ist', 'soll', 'budget', 'progress', 'ideal'] as $k) {
+            $this->assertMatchesRegularExpression(
+                "/key:\\s*'" . preg_quote($k, '/') . "'/",
+                $view,
+                "Legend-Toggle-Key '$k' fehlt in der View"
+            );
+        }
+        // fillBetween-Chips (within/over) sind eigene Keys.
+        $this->assertStringContainsString("belowKey: 'within'", $view, 'fillBetween braucht belowKey=within');
+        $this->assertStringContainsString("aboveKey: 'over'",   $view, 'fillBetween braucht aboveKey=over');
+
+        // charts.js respektiert spec.hidden beim Zeichnen der fillBetween-
+        // Flaechen (sonst klickt man den Chip, aber die Flaeche bleibt da).
+        $this->assertMatchesRegularExpression(
+            '/spec\.hidden.*?hiddenHas\(fb\.(?:belowKey|aboveKey)\)/s',
+            $js,
+            'charts.js fillBetween-Rendering muss hidden-Set per belowKey/aboveKey respektieren'
         );
     }
 

@@ -695,6 +695,19 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
       'within'       => t('cockpit.burnup_within',    'im Budget'),
       'over'         => t('cockpit.burnup_over',      'Budget ueberschritten'),
   ], JSON_UNESCAPED_UNICODE) ?>;
+  // Felix-Feedback 2026-11-06: jeder Legend-Eintrag togglet die zugehoerige
+  // Kurve/Area/Marker-Gruppe. Keys sind stabil und persistieren in
+  // localStorage, damit der Zustand ueber Reloads hinweg bleibt.
+  var HIDDEN_KEY = 'tm.cockpit.burnup.hidden';
+  var hidden = new Set();
+  try {
+    var raw = localStorage.getItem(HIDDEN_KEY);
+    if (raw) { JSON.parse(raw).forEach(function (k) { hidden.add(k); }); }
+  } catch (e) {}
+  var saveHidden = function () {
+    try { localStorage.setItem(HIDDEN_KEY, JSON.stringify(Array.from(hidden))); } catch (e) {}
+  };
+
   fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
     if (!d.ok || !d.points.length) {
       var ctx = canvas.getContext('2d');
@@ -704,100 +717,119 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
       ctx.fillText(i18n.none, canvas.width / 2, canvas.height / 2);
       return;
     }
-    var labels = d.points.map(function (p) { return p.d; });
-    var series = [{ label: i18n.cum_hours, color: '#2563eb', data: d.points.map(function (p) { return p.h; }) }];
-    // Felix-Feedback 2026-11-06: Soll-Kurve = Integral der Plan-Matrix. Steigt
-    // je Woche um die geplanten Stunden - ermoeglicht Woche-fuer-Woche-Vergleich
-    // mit der Ist-Linie und endet rechts auf dem Projekt-Gesamt-Soll (target_h).
-    // Farbe cyan (#06b6d4) statt orange, weil orange schon fuer die Prognose-
-    // Strahlen belegt ist (Felix-Feedback 2026-11-06: "nicht orange wie die
-    // prognose, sondern eher gruen oder cyan").
-    var sollCurve = d.soll_curve || [];
-    var hasSoll = sollCurve.some(function (v) { return v !== null && v !== undefined && v > 0; });
-    if (hasSoll) {
-      series.push({ label: i18n.soll, color: '#06b6d4', dashed: true, data: sollCurve });
-    }
-    if (d.target_h) {
-      series.push({ label: i18n.target + ' ' + d.target_h + ' h', color: '#94a3b8', dashed: true,
-        data: labels.map(function () { return d.target_h; }) });
-    }
-    // Fortschritts-Linie: linear verbunden zwischen den Meldeterminen (Pro-Vorbild).
-    // Der Backend liefert progress_line step-forward-gefuellt (jeder Timestep traegt
-    // den letzten gemeldeten Wert bis zum naechsten Report) - das zeichnet optisch
-    // Stufen. Fuer die Pro-Optik interpolieren wir hier linear zwischen den
-    // progress_markers: vor dem ersten und nach dem letzten Report bleibt null
-    // (keine Linie), zwischen zwei Reports steigt bzw. faellt die Linie gerade.
-    var marks = (d.progress_markers || []).slice().sort(function (a, b) { return a.x - b.x; });
-    var hasProgress = marks.length > 0;
-    if (hasProgress) {
-      var progressLinear = labels.map(function (_, i) {
-        for (var k = 0; k < marks.length - 1; k++) {
-          if (i >= marks[k].x && i <= marks[k + 1].x) {
-            var span = marks[k + 1].x - marks[k].x;
-            if (span <= 0) return marks[k].y;
-            var t = (i - marks[k].x) / span;
-            return marks[k].y + t * (marks[k + 1].y - marks[k].y);
+
+    function render() {
+      var labels = d.points.map(function (p) { return p.d; });
+      // Alle Kandidaten mit stabilem Key definieren, danach die hidden-Keys
+      // ausfiltern (statt pro Zweig zu verzweigen).
+      var allSeries = [];
+      allSeries.push({ key: 'ist', label: i18n.cum_hours, color: '#2563eb', data: d.points.map(function (p) { return p.h; }) });
+      // Soll-Kurve = Integral der Plan-Matrix, cyan statt orange (orange ist
+      // fuer die Prognose reserviert).
+      var sollCurve = d.soll_curve || [];
+      var hasSoll = sollCurve.some(function (v) { return v !== null && v !== undefined && v > 0; });
+      if (hasSoll) {
+        allSeries.push({ key: 'soll', label: i18n.soll, color: '#06b6d4', dashed: true, data: sollCurve });
+      }
+      if (d.target_h) {
+        allSeries.push({ key: 'budget', label: i18n.target + ' ' + d.target_h + ' h', color: '#94a3b8', dashed: true,
+          data: labels.map(function () { return d.target_h; }) });
+      }
+      // Fortschritts-Linie: linear zwischen Meldeterminen.
+      var marks = (d.progress_markers || []).slice().sort(function (a, b) { return a.x - b.x; });
+      var hasProgress = marks.length > 0;
+      if (hasProgress) {
+        var progressLinear = labels.map(function (_, i) {
+          for (var k = 0; k < marks.length - 1; k++) {
+            if (i >= marks[k].x && i <= marks[k + 1].x) {
+              var span = marks[k + 1].x - marks[k].x;
+              if (span <= 0) return marks[k].y;
+              var t = (i - marks[k].x) / span;
+              return marks[k].y + t * (marks[k + 1].y - marks[k].y);
+            }
           }
-        }
-        if (marks.length === 1 && i === marks[0].x) return marks[0].y;
-        if (marks.length >= 1 && i === marks[marks.length - 1].x) return marks[marks.length - 1].y;
-        return null;
+          if (marks.length === 1 && i === marks[0].x) return marks[0].y;
+          if (marks.length >= 1 && i === marks[marks.length - 1].x) return marks[marks.length - 1].y;
+          return null;
+        });
+        allSeries.push({ key: 'progress', label: i18n.progress + ' (%)', color: '#8b5cf6', right: true, marker: 'dot', data: progressLinear });
+      }
+      // Ideal-Linie (0-100%): rechte Achse, grau gestrichelt.
+      var idealLine = d.ideal_line || [];
+      var hasIdeal = idealLine.some(function (v) { return v !== null && v !== undefined; });
+      if (hasIdeal) {
+        allSeries.push({ key: 'ideal', label: i18n.ideal + ' (%)', color: '#64748b', right: true, dashed: true, data: idealLine });
+      }
+
+      // Alle Serien gehen als series rein (nicht vorgefiltert): das Chart-
+      // Lib skippt das Zeichnen hidden-markierter Keys, laesst die Chips aber
+      // in der Legende und markiert sie als "aus". Ohne diesen Trick wuerde
+      // ein ausgeschalteter Chip komplett aus der Legende verschwinden und
+      // der Nutzer koennte ihn nicht mehr einschalten.
+      var series = allSeries;
+
+      // Progress-Marker + Prognose-Strahlen fahren an ihren eigenen Keys.
+      var pts = marks.map(function (m) {
+        return { x: m.x, y: m.y, color: '#8b5cf6', right: true, key: 'progress' };
       });
-      series.push({ label: i18n.progress + ' (%)', color: '#8b5cf6', right: true, marker: 'dot', data: progressLinear });
+      var rays = (d.forecast_rays || []).map(function (r) {
+        return { x0: r.x0, y0: r.y0, x1: r.x1, y1: r.y1, color: '#d97706', dashed: true, right: true, key: 'forecast' };
+      });
+      var pointLegend = [];
+      if ((d.forecast_rays || []).length) {
+        pointLegend.push({ key: 'forecast', label: i18n.forecast + ' (%, +' + (d.review_interval || 30) + ' d)',
+          color: '#d97706', dashed: true, marker: 'ring' });
+      }
+
+      // Deadline + Delay vlines: eigene Keys.
+      var vlines = [];
+      if (d.deadline && d.deadline.x !== null && d.deadline.x !== undefined) {
+        vlines.push({ key: 'deadline', index: d.deadline.x, label: '', color: '#94a3b8',
+          legend: i18n.deadline + ' ' + d.deadline.date });
+      }
+      if (d.delay && d.delay.x !== null && d.delay.x !== undefined) {
+        vlines.push({ key: 'delay', index: d.delay.x, label: '', color: '#d97706',
+          legend: i18n.delay + ' ' + d.delay.date });
+      }
+
+      // fillBetween Ist vs. Budget: gruen im Plan / rot ueber Plan. Die Labels
+      // bleiben immer gesetzt (Chips gehoeren zur Legende), das Verstecken
+      // passiert in TmCharts via spec.hidden - Kurve wird nicht mehr gefaerbt,
+      // Chip bleibt klickbar.
+      var fillBetween = null;
+      if (d.target_h) {
+        var istSeries  = d.points.map(function (p) { return p.h; });
+        var sollSeries = labels.map(function () { return d.target_h; });
+        fillBetween = {
+          a: istSeries, b: sollSeries,
+          belowKey: 'within', aboveKey: 'over',
+          belowColor: '#16a34a', aboveColor: '#ef4444',
+          belowLabel: i18n.within, aboveLabel: i18n.over,
+        };
+      }
+
+      TmCharts.lines(canvas, {
+        xLabels: labels, series: series, points: pts, rays: rays, vlines: vlines,
+        unit: 'h', rightUnit: '%', pointLegend: pointLegend, fillBetween: fillBetween,
+        hidden: hidden,
+      }, legend);
     }
-    var pts = marks.map(function (m) {
-      return { x: m.x, y: m.y, color: '#8b5cf6', right: true };
-    });
-    // Prognose-Strahlen vom Meldepunkt im Review-Turnus-Abstand zum Forecast-Wert.
-    // Pro-Vorbild: hohler Kreis am Ray-Ende (nur Umriss, kein Fill).
-    var rays = (d.forecast_rays || []).map(function (r) {
-      return { x0: r.x0, y0: r.y0, x1: r.x1, y1: r.y1, color: '#d97706', dashed: true, right: true };
-    });
-    // Legende: Prognose-Zeile als gestrichelter Linien-Swatch + hohler Kreis-Marker
-    // am Ende (visuell identisch zum tatsaechlich gezeichneten Strahl).
-    var pointLegend = [];
-    if (rays.length) {
-      pointLegend.push({ label: i18n.forecast + ' (%, +' + (d.review_interval || 30) + ' d)', color: '#d97706', dashed: true, marker: 'ring' });
-    }
-    // Ideal-Linie (0-100%): als rechte-Achse-Serie mit grau-gestrichelter Linie.
-    var idealLine = d.ideal_line || [];
-    var hasIdeal = idealLine.some(function (v) { return v !== null && v !== undefined; });
-    if (hasIdeal) {
-      series.push({ label: i18n.ideal + ' (%)', color: '#64748b', right: true, dashed: true, data: idealLine });
-    }
-    // Deadline (urspruengliches Enddatum, grau) + Delay (aktuelles nach Shift, orange).
-    var vlines = [];
-    if (d.deadline && d.deadline.x !== null && d.deadline.x !== undefined) {
-      vlines.push({
-        index: d.deadline.x, label: '', color: '#94a3b8',
-        legend: i18n.deadline + ' ' + d.deadline.date,
+
+    render();
+
+    // Klick-Delegation auf die Legende: Chip-Klick togglet den zugehoerigen
+    // Key in der hidden-Menge und re-rendert den Chart.
+    if (legend) {
+      legend.addEventListener('click', function (ev) {
+        var chip = ev.target.closest('.lg-chip');
+        if (!chip || !legend.contains(chip)) return;
+        var k = chip.getAttribute('data-k');
+        if (!k) return;
+        if (hidden.has(k)) { hidden.delete(k); } else { hidden.add(k); }
+        saveHidden();
+        render();
       });
     }
-    if (d.delay && d.delay.x !== null && d.delay.x !== undefined) {
-      vlines.push({
-        index: d.delay.x, label: '', color: '#d97706',
-        legend: i18n.delay + ' ' + d.delay.date,
-      });
-    }
-    // Flaechen-Integral zwischen Ist und BUDGET (target_h): gruen wo Ist
-    // <= Budget, rot wo Ist > Budget. Felix-Feedback 2026-11-06: "rot nur
-    // wenn ueber budget" - die Plan-Matrix-Soll-Kurve ist als eigene cyan-
-    // Linie sichtbar, aber der Ampel-Fill vergleicht ausschliesslich gegen
-    // das Projekt-Gesamt-Soll (target_h). Kein Fill, wenn target_h fehlt.
-    var fillBetween = null;
-    if (d.target_h) {
-      var istSeries  = d.points.map(function (p) { return p.h; });
-      var sollSeries = labels.map(function () { return d.target_h; });
-      fillBetween = {
-        a: istSeries, b: sollSeries,
-        belowColor: '#16a34a', aboveColor: '#ef4444',
-        belowLabel: i18n.within, aboveLabel: i18n.over,
-      };
-    }
-    TmCharts.lines(canvas, {
-      xLabels: labels, series: series, points: pts, rays: rays, vlines: vlines,
-      unit: 'h', rightUnit: '%', pointLegend: pointLegend, fillBetween: fillBetween,
-    }, legend);
   });
 })();
 </script>

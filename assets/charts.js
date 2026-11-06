@@ -376,6 +376,8 @@ window.TmCharts = (function () {
 
     vlines.forEach(function(vl){
       if (vl.index === null || vl.index === undefined) return;
+      // Hidden-Chip: Legend-Chip bleibt sichtbar, Linie nicht.
+      if (vl.key && hiddenSetSeries && ((hiddenSetSeries.has && hiddenSetSeries.has(vl.key)) || hiddenSetSeries[vl.key])) return;
       var vx = Math.round(xAt(vl.index)) + 0.5;
       ctx.strokeStyle = vl.color || '#94a3b8'; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(vx, padT); ctx.lineTo(vx, padT + plotH); ctx.stroke();
@@ -393,8 +395,17 @@ window.TmCharts = (function () {
     // Erwartet spec.fillBetween = { a:[...], b:[...], aboveColor, belowColor }.
     var fb = spec.fillBetween || null;
     if (fb && fb.a && fb.b){
+      // Felix-Feedback 2026-11-06: Legend-Toggle unterscheidet zwischen
+      // "im Plan" und "ueber Plan". Jeder Teil darf einzeln ausgeschaltet
+      // werden; die Chips bleiben in der Legende sichtbar (via hidden-Set
+      // + is-off-Klasse), rendern aber keine Flaeche mehr.
+      var hiddenSet = spec.hidden || null;
+      var hiddenHas = function(k){ return !!(k && hiddenSet && (hiddenSet.has ? hiddenSet.has(k) : hiddenSet[k])); };
+      var showBelow = !hiddenHas(fb.belowKey);
+      var showAbove = !hiddenHas(fb.aboveKey);
       var zeroY = yAt(0);
       var fillQuad = function(x0, aY0, x1, aY1, fillColor){
+        if (!fillColor) return;
         ctx.beginPath();
         ctx.moveTo(x0, aY0); ctx.lineTo(x1, aY1); ctx.lineTo(x1, zeroY); ctx.lineTo(x0, zeroY);
         ctx.closePath();
@@ -405,17 +416,31 @@ window.TmCharts = (function () {
         if (a0 === null || a0 === undefined || a1 === null || a1 === undefined ||
             b0 === null || b0 === undefined || b1 === null || b1 === undefined) continue;
         var d0 = a0 - b0, d1 = a1 - b1, fx0 = xAt(fj), fx1 = xAt(fj + 1);
+        var pickColor = function(above){
+          if (above  && !showAbove) return null;
+          if (!above && !showBelow) return null;
+          return above ? fb.aboveColor : fb.belowColor;
+        };
         if ((d0 >= 0) === (d1 >= 0)){
-          fillQuad(fx0, yAt(a0), fx1, yAt(a1), d0 >= 0 ? fb.aboveColor : fb.belowColor);
+          fillQuad(fx0, yAt(a0), fx1, yAt(a1), pickColor(d0 >= 0));
         } else {
           var t = d0 / (d0 - d1), xm = fx0 + (fx1 - fx0) * t, ym = yAt(a0 + (a1 - a0) * t);
-          fillQuad(fx0, yAt(a0), xm, ym, d0 >= 0 ? fb.aboveColor : fb.belowColor);
-          fillQuad(xm, ym, fx1, yAt(a1), d1 >= 0 ? fb.aboveColor : fb.belowColor);
+          fillQuad(fx0, yAt(a0), xm, ym, pickColor(d0 >= 0));
+          fillQuad(xm, ym, fx1, yAt(a1), pickColor(d1 >= 0));
         }
       }
     }
 
+    // Felix-Feedback 2026-11-06: Legend-Toggle. Serien, deren Key im
+    // spec.hidden-Set steht, bleiben in series stehen (damit die Legende
+    // sie listet + als "aus" markiert), werden aber NICHT gezeichnet.
+    var hiddenSetSeries = spec.hidden || null;
+    var seriesHidden = function(se){
+      var k = se && (se.key || se.label);
+      return !!(k && hiddenSetSeries && (hiddenSetSeries.has ? hiddenSetSeries.has(k) : hiddenSetSeries[k]));
+    };
     series.forEach(function(se){
+      if (seriesHidden(se)) return;
       ctx.strokeStyle = se.color || '#2563eb'; ctx.lineWidth = 1.5;
       if (se.dashed) { ctx.setLineDash([6, 4]); } else { ctx.setLineDash([]); }
       ctx.beginPath();
@@ -438,8 +463,15 @@ window.TmCharts = (function () {
     });
     ctx.setLineDash([]);
 
+    // Helper fuer den Hidden-Check auf einzelne Punkt-/Ray-Keys (Teil des
+    // Legend-Toggle-Mechanismus, Felix-Feedback 2026-11-06).
+    var itemHidden = function(it){
+      var k = it && it.key;
+      return !!(k && hiddenSetSeries && (hiddenSetSeries.has ? hiddenSetSeries.has(k) : hiddenSetSeries[k]));
+    };
     // Prognose-Strahlen zuerst (hinter die Marker-Punkte).
     rays.forEach(function(r){
+      if (itemHidden(r)) return;
       if (r.x0 === null || r.x0 === undefined || r.x1 === null || r.x1 === undefined) return;
       if (r.y0 === null || r.y0 === undefined || r.y1 === null || r.y1 === undefined) return;
       var y = r.right ? yAtR : yAt;
@@ -459,6 +491,7 @@ window.TmCharts = (function () {
     ctx.setLineDash([]);
 
     points.forEach(function(p){
+      if (itemHidden(p)) return;
       if (p.x === null || p.x === undefined || p.y === null || p.y === undefined) return;
       var cx = xAt(p.x), cy = (p.right ? yAtR : yAt)(p.y);
       ctx.fillStyle = p.color || '#8b5cf6';
@@ -481,18 +514,31 @@ window.TmCharts = (function () {
         else if (marker === 'ring') mk = '<circle cx="22" cy="4" r="3" fill="none" stroke="' + c + '" stroke-width="2"/>';
         return '<svg class="lg-svg" width="26" height="8" viewBox="0 0 26 8" aria-hidden="true">' + line + mk + '</svg>';
       };
+      // Legend-Items sind klickbare Chips (Pro-Vorbild, Felix-Feedback
+      // 2026-11-06: "dass die ein- und ausschaltbar sind"). Jeder Chip
+      // traegt einen data-k-Key (bevorzugt se.key, sonst se.label). Der
+      // Caller haengt den Toggle-Handler per Delegation auf legendEl und
+      // rendert den Chart mit gefilterten Serien neu - die Klickbarkeit
+      // allein macht noch nichts; sie ist das Transport-Protokoll.
+      var keyOf = function(x, fallback){ return (x && (x.key || x.label)) || fallback || ''; };
+      var isOff = function(k){
+        var set = spec.hidden || null;
+        return !!(k && set && (set.has ? set.has(k) : set[k]));
+      };
+      var chip = function(k, swatch, label){
+        var off = isOff(k) ? ' is-off' : '';
+        return '<li><button type="button" class="lg-chip' + off + '" data-k="' + escapeHtml(k) + '">' +
+               swatch + '<span class="lg-lbl">' + escapeHtml(label || '') + '</span></button></li>';
+      };
       var items = series.map(function(se){
-        return '<li>' + mkSwatch(se.color, !!se.dashed, se.marker) +
-               '<span class="lg-lbl">' + escapeHtml(se.label || '') + '</span></li>';
+        return chip(keyOf(se), mkSwatch(se.color, !!se.dashed, se.marker), se.label);
       });
       (spec.pointLegend || []).forEach(function(pl){
-        items.push('<li>' + mkSwatch(pl.color || '#8b5cf6', !!pl.dashed, pl.marker) +
-                   '<span class="lg-lbl">' + escapeHtml(pl.label || '') + '</span></li>');
+        items.push(chip(keyOf(pl), mkSwatch(pl.color || '#8b5cf6', !!pl.dashed, pl.marker), pl.label));
       });
       vlines.forEach(function(vl){
         if (!vl.legend) return;
-        items.push('<li>' + mkSwatch(vl.color || '#94a3b8', true, null) +
-                   '<span class="lg-lbl">' + escapeHtml(vl.legend) + '</span></li>');
+        items.push(chip(keyOf(vl, vl.legend), mkSwatch(vl.color || '#94a3b8', true, null), vl.legend));
       });
       if (fb && (fb.belowLabel || fb.aboveLabel)){
         // Flaechen-Swatch als Inline-SVG mit fill-Attribut - KEIN inline style="...",
@@ -504,12 +550,10 @@ window.TmCharts = (function () {
                  '</svg>';
         };
         if (fb.belowLabel){
-          items.push('<li>' + areaSwatch(fb.belowColor) +
-                     '<span class="lg-lbl">' + escapeHtml(fb.belowLabel) + '</span></li>');
+          items.push(chip(fb.belowKey || fb.belowLabel, areaSwatch(fb.belowColor), fb.belowLabel));
         }
         if (fb.aboveLabel){
-          items.push('<li>' + areaSwatch(fb.aboveColor) +
-                     '<span class="lg-lbl">' + escapeHtml(fb.aboveLabel) + '</span></li>');
+          items.push(chip(fb.aboveKey || fb.aboveLabel, areaSwatch(fb.aboveColor), fb.aboveLabel));
         }
       }
       legendEl.innerHTML = '<ul class="chart-legend">' + items.join('') + '</ul>';
