@@ -501,6 +501,7 @@ return [
     'stats.scope_tile'          => 'View',
     'stats.range_tile'          => 'Range',
     'stats.distribution_h2'     => 'Distribution',
+    'stats.distribution_hint'   => 'The donut and legend show the distribution of hours across the selected grouping (project, client or track). The timeline and track comparison next to it do NOT depend on the grouping.',
     'stats.series_h2'           => 'Time series',
     'stats.tracks_h2'           => 'Track comparison',
     'stats.tracks_hint'         => '(groups side by side)',

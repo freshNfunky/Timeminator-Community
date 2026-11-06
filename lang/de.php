@@ -493,6 +493,7 @@ return [
     'stats.scope_tile'          => 'Sicht',
     'stats.range_tile'          => 'Zeitraum',
     'stats.distribution_h2'     => 'Verteilung',
+    'stats.distribution_hint'   => 'Diese Donut-Grafik und die Legende zeigen die Verteilung der Stunden auf die oben gewaehlte Gruppierung (Projekt, Kunde oder Gleis/Gruppe). Zeitverlauf und Gleis-Vergleich daneben haengen NICHT an der Gruppierung.',
     'stats.series_h2'           => 'Zeitverlauf',
     'stats.tracks_h2'           => 'Gleis-Vergleich',
     'stats.tracks_hint'         => '(Gruppen gegenuebergestellt)',

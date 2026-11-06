@@ -59,7 +59,11 @@ $from = (new DateTimeImmutable('now'))->modify('-90 days')->format('Y-m-d');
 
 <div class="chart-grid">
   <div class="card">
-    <h2><?= h(t('stats.distribution_h2', 'Verteilung')) ?> <span class="muted" id="distGroupLbl"></span></h2>
+    <h2>
+      <?= h(t('stats.distribution_h2', 'Verteilung')) ?>
+      <span class="dist-group-lbl" id="distGroupLbl"><?= h(t('stats.by_project', 'nach Projekt')) ?></span>
+      <?= tip('stats.distribution_hint') ?>
+    </h2>
     <div class="chart-box"><canvas id="chartDist"></canvas></div>
     <div id="distLegend"></div>
   </div>

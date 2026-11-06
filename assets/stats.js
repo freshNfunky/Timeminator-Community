@@ -44,6 +44,12 @@
   }
 
   form.addEventListener('submit', function(e){ e.preventDefault(); load(); });
+  // Auto-reload bei "Gruppieren nach"-Wechsel (Felix-Feedback 2026-11-06:
+  // "gruppiert nichts" - war in Wahrheit nur nicht sofort sichtbar, weil
+  // ein manueller Klick auf "Auswerten" noetig war, um die Wirkung zu
+  // sehen).
+  var groupSel = form.querySelector('[name=group]');
+  if (groupSel) { groupSel.addEventListener('change', load); }
   window.addEventListener('resize', function(){
     clearTimeout(window.__tmr); window.__tmr = setTimeout(load, 250);
   });
