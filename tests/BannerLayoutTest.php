@@ -24,14 +24,14 @@ final class BannerLayoutTest extends TestCase
         return dirname(__DIR__);
     }
 
-    public function testDefaultFallbackListsTheExpectedImageAndTextCards(): void
+    public function testDefaultFallbackUsesHtmlIframesAndTheyExist(): void
     {
-        // Felix-Rueckkehr 2026-11-06 Runde 5: die Bild-Banner (XIXUM, AF-AX,
-        // AF-AX VTOL, Timeminator Pro) BLEIBEN im default-Set - sie waren
-        // kurzzeitig geloescht, sind aber gewollt. Jedes Default-Item hat
-        // einen Titel, und Image-Items zeigen auf eine SVG-Datei unter
-        // assets/banners/ die tatsaechlich existiert.
-        $json = json_decode((string) file_get_contents($this->root() . '/assets/banners/default.json'), true);
+        // Felix-Entscheidung 2026-11-06: die Default-Fallbacks liefern wieder
+        // HTML-Banner (nicht gecroppte SVG-Images), jeweils als same-origin
+        // iframe-Pfad unter /assets/banners/*.html. Jede referenzierte Datei
+        // muss existieren und einen klickbaren CTA-Anchor enthalten.
+        $root = $this->root();
+        $json = json_decode((string) file_get_contents($root . '/assets/banners/default.json'), true);
         self::assertIsArray($json);
         self::assertNotEmpty($json['items'] ?? []);
 
@@ -41,19 +41,29 @@ final class BannerLayoutTest extends TestCase
                 $item['title'] ?? '',
                 "Default-Item '" . ($item['id'] ?? '?') . "' braucht einen Titel"
             );
+            self::assertNotEmpty(
+                $item['iframe'] ?? '',
+                "Default-Item '" . ($item['id'] ?? '?') . "' muss ein 'iframe'-Feld tragen (nicht mehr 'image')"
+            );
+            $iframe = (string) $item['iframe'];
+            self::assertStringStartsWith('/assets/banners/', $iframe, 'Default-Iframe muss same-origin unter /assets/banners/ liegen');
+            self::assertFileExists($root . $iframe, "Iframe-Default verweist auf nicht existierende Datei: {$iframe}");
+            // Jede HTML muss einen klickbaren CTA-Anchor haben (Felix: "buttons
+            // lassen sich nicht anklicken" - mit iframe + <a> funktioniert's).
+            $body = (string) file_get_contents($root . $iframe);
+            self::assertMatchesRegularExpression(
+                '/<a\\b[^>]*\\bhref=/',
+                $body,
+                "Banner-HTML {$iframe} braucht einen klickbaren CTA-Link"
+            );
             $ids[] = $item['id'] ?? '';
-            if (!empty($item['image']) && !str_starts_with((string) $item['image'], 'http')) {
-                $svgPath = $this->root() . '/assets/' . $item['image'];
-                self::assertFileExists($svgPath, "Image-Default verweist auf nicht existierende Datei: {$item['image']}");
-            }
         }
 
-        // Die vier Bild-Banner duerfen nie wieder stillschweigend verschwinden.
         foreach (['default-xixum-hallucination', 'default-af-ax', 'default-af-ax-vtol', 'default-timeminator-pro'] as $expected) {
             self::assertContains(
                 $expected,
                 $ids,
-                "Default-Item '{$expected}' fehlt - die Bild-Banner duerfen nicht geloescht werden"
+                "Default-Item '{$expected}' fehlt - die vier Banner duerfen nicht geloescht werden"
             );
         }
     }
