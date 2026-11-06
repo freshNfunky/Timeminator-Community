@@ -666,26 +666,20 @@ body:has(.sidepanel) .foot{padding-right:200px}
   -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
   opacity:.9;transition:opacity .15s}
 .sp-brand:hover{opacity:1}
-/* Rotator-Container (Felix-Feedback 2026-11-06 Runde 2: "warum füllt
-   das jetzt nur die halbe box aus?? mach das wieder so wie früher. 100%
-   box ohne overlap"). Die gebundelten Portrait-Banner sind 300x600 (1:2).
-   Statt den rotator ueber flex die gesamte Restspalte nehmen zu lassen
-   und das SVG darin zu verzerren/croppen, setzt sich der rotator SELBST
-   auf aspect-ratio 1/2: bei 180 px Breite ist er genau 360 px hoch - das
-   Banner fuellt 100 % der Box ohne Overlap, weil Container-Verhaeltnis
-   und Banner-Verhaeltnis identisch sind. */
-.sp-rotator{position:relative;flex:0 0 auto;width:100%;aspect-ratio:1 / 2;max-height:calc(100vh - 160px)}
+/* Rotator-Container: flext ueber die gesamte Restspalte des Sidepanels
+   (Felix-Feedback 2026-11-06 Runde 3: Banner soll wieder die ganze Box
+   ausfuellen). Die sp-item.is-image-Bilder fuellen diese Flaeche komplett
+   mit object-fit:cover; dass das 300x600-Portrait-Banner dabei links/
+   rechts beschnitten wird, ist bewusst akzeptiert. */
+.sp-rotator{position:relative;flex:1 1 auto;min-height:0}
 .sp-item{position:absolute;inset:0 0 22px 0;display:flex;flex-direction:column;gap:10px;
   background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
   padding:16px;box-shadow:var(--shadow-card);color:var(--ink);text-decoration:none}
 .sp-item:hover{text-decoration:none;border-color:var(--brand)}
 .sp-item img{width:100%;height:auto;border-radius:9px;display:block;background:var(--soft)}
 .sp-item.hidden{display:none}
-/* Image-Banner: der rotator hat schon das korrekte Verhaeltnis, deshalb
-   reicht width/height 100% + object-fit:cover - bei identischen Verhaelt-
-   nissen wird nichts gecroppt, cover schuetzt nur gegen Rundungsspalten. */
 .sp-item.is-image{padding:0;border:0;background:transparent;box-shadow:none;overflow:hidden;border-radius:var(--radius)}
-.sp-item.is-image img{width:100%;height:100%;object-fit:cover;border-radius:var(--radius);background:transparent}
+.sp-item.is-image img{width:100%;height:100%;object-fit:cover;border-radius:var(--radius)}
 .sp-item.is-image:hover{opacity:.94}
 .sp-item.is-iframe{padding:0;border:0;background:transparent;box-shadow:none;overflow:hidden;border-radius:var(--radius)}
 .sp-item.is-iframe iframe{display:block;width:100%;height:100%;border:0;border-radius:var(--radius);background:var(--panel)}

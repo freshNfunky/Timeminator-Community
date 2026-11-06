@@ -47,35 +47,26 @@ final class BannerLayoutTest extends TestCase
         }
     }
 
-    public function testSidepanelRotatorKeepsBannerAspectRatioAndFillsFully(): void
+    public function testSidepanelRotatorFillsFullHeightAndImageFillsBox(): void
     {
+        // Felix-Entscheidung 2026-11-06 Runde 3 ("mach es wie es vorher war.
+        // keine diskussion jetzt. es hat vorher die ganze box ausgefüllt."):
+        // der Rotator nimmt die gesamte Restspalte via flex:1 1 auto, das
+        // sp-item.is-image img fuellt die Box mit object-fit:cover. Dass das
+        // 1:2-Portrait-Banner dabei links/rechts beschnitten wird, ist
+        // bewusst akzeptiert.
         $css = (string) file_get_contents($this->root() . '/assets/app.css');
 
-        // aspect-ratio 1/2 am Rotator-Container (Felix-Feedback 2026-11-06,
-        // Runde 2): dadurch ist der Container immer 180 px breit x 360 px
-        // hoch und das 300x600-Banner darin fuellt die Box zu 100 % ohne
-        // Overlap/Crop. Vorher an sp-item.is-image → nur halbe Box genutzt.
         self::assertMatchesRegularExpression(
-            '/\.sp-rotator\{[^}]*aspect-ratio\s*:\s*1\s*\/\s*2/',
-            $css,
-            '.sp-rotator braucht aspect-ratio 1/2, sonst streckt das Sidepanel die 300x600-Banner oder laesst die Box halb leer'
-        );
-
-        // sp-rotator darf nicht wieder die volle Restspalte via flex:1 1 auto
-        // einnehmen (alter Zustand, der den Verzerrungsbug ausloeste).
-        self::assertDoesNotMatchRegularExpression(
             '/\.sp-rotator\{[^}]*flex\s*:\s*1\s+1\s+auto/',
             $css,
-            '.sp-rotator darf nicht flex:1 1 auto sein - das waere der alte Zustand, in dem Banner ueber die ganze Spalte gestreckt wurden'
+            '.sp-rotator muss flex:1 1 auto sein - fuellt die gesamte Restspalte des Sidepanels'
         );
 
-        // sp-item.is-image fuellt den (jetzt proportional korrekten) Rotator
-        // zu 100 % mit object-fit:cover - bei identischen Verhaeltnissen
-        // ohne Crop, aber Rundungsspalten bleiben zu.
         self::assertMatchesRegularExpression(
             '/\.sp-item\.is-image img\{[^}]*width\s*:\s*100%[^}]*height\s*:\s*100%[^}]*object-fit\s*:\s*cover/',
             $css,
-            '.sp-item.is-image img muss 100% x 100% mit object-fit:cover sein, damit es die Box ohne Overlap fuellt'
+            '.sp-item.is-image img muss width/height 100% + object-fit:cover haben, damit das Banner die komplette Box fuellt'
         );
     }
 }
