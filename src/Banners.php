@@ -87,9 +87,12 @@ final class Banners
     }
 
     /**
-     * Locale-scoped feed URL for a base endpoint: feed.json -> feed-<lang>.json
-     * (the suffix is inserted before the .json extension; any query string is
-     * preserved). Returns '' when the endpoint has no .json to localize.
+     * Locale-scoped feed URL for a base endpoint: inserts the language code
+     * before the file extension. Supports both .json and .php endpoints (feed.
+     * json -> feed-de.json, feed.php -> feed-de.php). Any query string is
+     * preserved. Returns '' when the endpoint has no supported extension.
+     * Felix-Feedback 2026-11-06: der Feed darf auch feed.php heissen; vorher
+     * wurde nur .json erkannt und der Locale-Aufruf still verworfen.
      */
     public static function localeEndpoint(string $endpoint, string $lang): string
     {
@@ -98,10 +101,11 @@ final class Banners
             return '';
         }
         $parts = explode('?', $endpoint, 2);
-        if (!preg_match('/\.json$/i', $parts[0])) {
+        if (!preg_match('/\.(json|php)$/i', $parts[0], $m)) {
             return '';
         }
-        $path = preg_replace('/\.json$/i', '-' . $lang . '.json', $parts[0]);
+        $ext  = strtolower($m[1]);
+        $path = preg_replace('/\.(json|php)$/i', '-' . $lang . '.' . $ext, $parts[0]);
         return $path . (isset($parts[1]) ? '?' . $parts[1] : '');
     }
 

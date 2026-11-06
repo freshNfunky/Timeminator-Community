@@ -122,6 +122,15 @@ final class BannersTest extends TestCase
         // Not localizable -> empty (caller uses the base feed).
         self::assertSame('', Banners::localeEndpoint('https://host/feed', 'de'));
         self::assertSame('', Banners::localeEndpoint('https://host/feed.json', 'x'));
+        // Felix-Feedback 2026-11-06: feed.php ist ebenfalls lokalisierbar.
+        self::assertSame(
+            'https://feed.example.com/feed-de.php',
+            Banners::localeEndpoint('https://feed.example.com/feed.php', 'de')
+        );
+        self::assertSame(
+            'https://feed.example.com/feed-en.php?v=1',
+            Banners::localeEndpoint('https://feed.example.com/feed.php?v=1', 'en')
+        );
     }
 
     public function testImageAllowsRelativeDataUriAndHttpsFirstParty(): void
