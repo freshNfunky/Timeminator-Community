@@ -1,6 +1,12 @@
 <?php /** @var array $clients @var array $projects @var array $scopes @var array $tracks */
-$from = (new DateTimeImmutable('first day of this month'))->format('Y-m-d');
-$to = (new DateTimeImmutable('now'))->format('Y-m-d');
+// Felix-Feedback 2026-11-06: der alte Monatsbeginn-Default zeigte am
+// Monatsanfang nichts, wenn (noch) keine Buchungen fuer den laufenden
+// Monat existierten - der Chart zeigte dann "Keine Daten" obwohl aus
+// den Vorwochen genug Buchungen vorhanden waren. Pragmatischer Default:
+// letzte 90 Tage; deckt Monatsgrenzen ab und zeigt auch nach einer
+// mehrwoechigen Buchungs-Pause noch den Trend.
+$to   = (new DateTimeImmutable('now'))->format('Y-m-d');
+$from = (new DateTimeImmutable('now'))->modify('-90 days')->format('Y-m-d');
 ?>
 <?php
   // Translations handed to stats.js so the client renders localised labels.

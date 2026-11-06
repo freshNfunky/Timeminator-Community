@@ -98,4 +98,39 @@ final class StatsTest extends TestCase
         self::assertSame(['2026-09-27', '2026-09-28'], $out['labels']);
         self::assertSame([15, 25], $out['minutes']);
     }
+
+    public function testStatsDefaultRangeIsLast90DaysInViewAndController(): void
+    {
+        // Felix-Feedback 2026-11-06: der alte Default "first day of this month"
+        // zeigte am Monatsanfang nichts, wenn die aktuelle Monatshaelfte noch
+        // keine Buchungen enthielt - Verteilungs-Chart erschien "kaputt".
+        // Fix: beide Stellen (View + Controller) nutzen jetzt "letzte 90 Tage",
+        // damit auch nach Buchungs-Pausen (bis zu drei Monate) der Chart
+        // etwas zeigt. Die zwei Default-Quellen muessen synchron bleiben,
+        // sonst weicht der Controller-Default vom View-Default ab und der
+        // JSON-Endpoint liefert einen anderen Zeitraum als die Formular-Vorbefuellung.
+        $view = (string) file_get_contents(dirname(__DIR__) . '/views/stats/index.php');
+        $ctrl = (string) file_get_contents(dirname(__DIR__) . '/src/controllers/stats_ctrl.php');
+
+        self::assertMatchesRegularExpression(
+            "/\\\$from\\s*=\\s*\\(new DateTimeImmutable\\('now'\\)\\)->modify\\('-90 days'\\)/",
+            $view,
+            'View-Default-Range muss "letzte 90 Tage" sein (nicht first day of this month)'
+        );
+        self::assertStringNotContainsString(
+            "first day of this month",
+            $view,
+            'Alter Default "first day of this month" darf nicht wieder auftauchen - der Chart war am Monatsanfang leer'
+        );
+        self::assertMatchesRegularExpression(
+            "/\\(new DateTimeImmutable\\('now'\\)\\)->modify\\('-90 days'\\)/",
+            $ctrl,
+            'Controller ctrl_stats_data muss denselben -90-Tage-Default liefern wie die View'
+        );
+        self::assertStringNotContainsString(
+            "first day of this month",
+            $ctrl,
+            'Controller-Default darf nicht auf "first day of this month" zurueckfallen'
+        );
+    }
 }
