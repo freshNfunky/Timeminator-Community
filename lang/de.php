@@ -1206,6 +1206,8 @@ return [
     'cockpit.f_comment'             => 'Kommentar',
     'cockpit.f_comment_ph'          => 'optional, kurze Notiz',
     'cockpit.f_optional'            => 'optional',
+    // Mitarbeiter-Cockpit: Verteilung-je-Woche percent-Mode (Pro-Parity 2026-11-06)
+    'cockpit.chart_percent'         => 'anteilig (%)',
     // Tracker-Timeline Inline-Edit (Felix-Feedback 2026-11-06)
     'cockpit.edit'                  => 'Bearbeiten',
     'cockpit.delete'                => 'Loeschen',

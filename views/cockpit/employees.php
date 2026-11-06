@@ -89,6 +89,9 @@ $signed = fn(float $n) => ($n > 0 ? '+' : '') . number_format($n, 1, ',', '.');
           <option value="52">52 <?= h(t('cockpit.weeks_unit', 'Wochen')) ?></option>
         </select>
       </label>
+      <label class="check" style="margin:0">
+        <input type="checkbox" id="empWeeksPercent"> <?= h(t('cockpit.chart_percent', 'anteilig (%)')) ?>
+      </label>
     </div>
   </div>
   <div class="chart-box"><canvas id="chartEmpWeeks"></canvas></div>
@@ -100,6 +103,7 @@ $signed = fn(float $n) => ($n > 0 ? '+' : '') . number_format($n, 1, ',', '.');
 (function () {
   var canvas = document.getElementById('chartEmpWeeks'), legend = document.getElementById('legendEmpWeeks');
   var userSel = document.getElementById('empWeeksUser'), rangeSel = document.getElementById('empWeeksRange');
+  var percentChk = document.getElementById('empWeeksPercent');
   var i18n = <?= json_encode([
       'target'   => t('cockpit.chart_target',    'Wochensoll'),
       'total'    => t('cockpit.chart_total',     'gesamt'),
@@ -111,6 +115,7 @@ $signed = fn(float $n) => ($n > 0 ? '+' : '') . number_format($n, 1, ',', '.');
     if (!last) return;
     TmCharts.stackedArea(canvas, {
       xLabels: last.weeks, weekStarts: last.week_starts, target: last.target, unit: 'h',
+      percent: !!(percentChk && percentChk.checked),
       targetLabel: i18n.target, totalLabel: i18n.total, ofLabel: i18n.of, weekFromLabel: i18n.weekFrom,
       series: last.series.map(function (s) { return { label: s.label, color: s.color, data: s.values }; })
     }, legend);
@@ -121,6 +126,7 @@ $signed = fn(float $n) => ($n > 0 ? '+' : '') . number_format($n, 1, ',', '.');
   }
   if (userSel) userSel.addEventListener('change', load);
   rangeSel.addEventListener('change', load);
+  if (percentChk) percentChk.addEventListener('change', draw);
   window.addEventListener('resize', draw);
   load();
 })();

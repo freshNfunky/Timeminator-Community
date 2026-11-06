@@ -213,6 +213,25 @@ window.TmCharts = (function () {
     var s = setup(canvas), ctx = s.ctx, th = theme();
     var xs = spec.xLabels || [], series = spec.series || [], target = spec.target || [];
     var n = xs.length, unit = spec.unit || 'h';
+    // Pro-Vorbild percent-Mode: jede Woche wird auf 100 % normiert; die
+    // Oberkante ist dann immer flach, nur die prozentuale Verteilung
+    // zwischen den Kategorien wechselt. Target-Linie macht in diesem Modus
+    // keinen Sinn - sie entfaellt mit.
+    if (spec.percent && n && series.length) {
+      var colTotal = [];
+      for (var ci = 0; ci < n; ci++) {
+        var tt = 0;
+        series.forEach(function(se){ tt += Number(se.data[ci] || 0); });
+        colTotal.push(tt);
+      }
+      series = series.map(function(se){
+        return {
+          key: se.key, label: se.label, color: se.color,
+          data: se.data.map(function(v, i){ return colTotal[i] > 0 ? (Number(v || 0) / colTotal[i]) * 100 : 0; })
+        };
+      });
+      target = []; unit = '%';
+    }
     if (!n || !series.length){ empty(ctx, s.w, s.h); if (legendEl) legendEl.innerHTML = ''; return; }
     var totals = [];
     for (var i = 0; i < n; i++){
@@ -221,7 +240,7 @@ window.TmCharts = (function () {
       totals.push(sum);
     }
     var maxV = Math.max.apply(null, totals.concat(target.filter(function(v){ return v !== null && v !== undefined; })));
-    var yMax = niceMax(maxV * 1.05);
+    var yMax = spec.percent ? 100 : niceMax(maxV * 1.05);
     ctx.font = '11px -apple-system,Segoe UI,Roboto,sans-serif';
     var padL = Math.ceil(ctx.measureText(yMax + ' ' + unit).width) + 14, padR = 16, padT = 12, padB = 40;
     var plotW = s.w - padL - padR, plotH = s.h - padT - padB;

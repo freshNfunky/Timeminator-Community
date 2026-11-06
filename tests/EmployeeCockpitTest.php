@@ -139,6 +139,100 @@ final class EmployeeCockpitTest extends TestCase
         self::assertIsArray($out['series']);
     }
 
+    public function testWeeklyStatsStacksMultipleCategoriesAndKeepsTargetLine(): void
+    {
+        // Felix-Feedback 2026-11-06: der Chart soll mehrere Serien
+        // (Projektkategorien, interne Prozesse, Urlaub, Feiertag etc.) als
+        // Stapel zeigen, mit einer gestrichelten Soll-Linie auf dem
+        // Wochensoll - bei vollstaendiger Buchung liegt der Stapel-Top flach
+        // auf der Soll-Linie.
+        $uid = TestSupport::seedUser('monty');
+        EmployeeRepo::saveTerms($uid, '2026-01-01', EmployeeRepo::TYPE_EMPLOYEE, 40.0, 25.0);
+
+        // Zwei Projektkategorien: Kundenprojekt + Internes Projekt
+        $cidCustomer = DB::insert(
+            'INSERT INTO project_categories (ckey, label, position, needs_client, created_at) VALUES (?,?,?,?,?)',
+            ['customer', 'Kundenprojekt', 10, 1, '2026-01-01 00:00:00']
+        );
+        $cidInternal = DB::insert(
+            'INSERT INTO project_categories (ckey, label, position, needs_client, created_at) VALUES (?,?,?,?,?)',
+            ['internal', 'Internes Projekt', 20, 0, '2026-01-01 00:00:00']
+        );
+        $clientId = DB::insert('INSERT INTO clients (name, code, created_at) VALUES (?,?,?)',
+            ['Acme', 'acme-' . uniqid(), '2026-01-01 00:00:00']);
+        $projCustomer = DB::insert(
+            'INSERT INTO projects (client_id, category_id, name, code, created_at) VALUES (?,?,?,?,?)',
+            [$clientId, $cidCustomer, 'Pilot', 'p-cust-' . uniqid(), '2026-01-01 00:00:00']
+        );
+        $projInternal = DB::insert(
+            'INSERT INTO projects (client_id, category_id, name, code, created_at) VALUES (?,?,?,?,?)',
+            [$clientId, $cidInternal, 'HQ-Umbau', 'p-int-' . uniqid(), '2026-01-01 00:00:00']
+        );
+        $wpC = DB::insert('INSERT INTO work_packages (project_id, code, name, created_at) VALUES (?,?,?,?)',
+            [$projCustomer, 'wp-c', 'WP', '2026-01-01 00:00:00']);
+        $wpI = DB::insert('INSERT INTO work_packages (project_id, code, name, created_at) VALUES (?,?,?,?)',
+            [$projInternal, 'wp-i', 'WP', '2026-01-01 00:00:00']);
+        $tC = DB::insert('INSERT INTO tasks (project_id, work_package_id, name, created_at) VALUES (?,?,?,?)',
+            [$projCustomer, $wpC, 'T', '2026-01-01 00:00:00']);
+        $tI = DB::insert('INSERT INTO tasks (project_id, work_package_id, name, created_at) VALUES (?,?,?,?)',
+            [$projInternal, $wpI, 'T', '2026-01-01 00:00:00']);
+        // 2 Buchungen in KW 43/2026 (26.10.-30.10.) - je 6 h kundenseitig + 2 h intern
+        DB::insert(
+            'INSERT INTO time_entries (user_id, project_id, task_id, client_id, start_ts, end_ts, duration_min, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)',
+            [$uid, $projCustomer, $tC, $clientId, '2026-10-26 09:00:00', '2026-10-26 15:00:00', 360, '2026-10-26 09:00:00', '2026-10-26 09:00:00']
+        );
+        DB::insert(
+            'INSERT INTO time_entries (user_id, project_id, task_id, client_id, start_ts, end_ts, duration_min, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)',
+            [$uid, $projInternal, $tI, $clientId, '2026-10-26 15:00:00', '2026-10-26 17:00:00', 120, '2026-10-26 15:00:00', '2026-10-26 15:00:00']
+        );
+
+        $out = EmployeeStats::weekly($uid, 13, '2026-10-28');
+        $labels = array_map(fn($s) => $s['label'], $out['series']);
+        self::assertContains('Kundenprojekt',    $labels, 'Projekt-Kategorie Kundenprojekt muss als eigene Serie geliefert werden');
+        self::assertContains('Internes Projekt', $labels, 'Projekt-Kategorie Internes Projekt muss als eigene Serie geliefert werden');
+        // Target bleibt 40h in allen Wochen (Vollzeit).
+        foreach ($out['target'] as $t) {
+            self::assertSame(40.0, $t, 'Wochensoll muss trotz mehrerer Serien erhalten bleiben');
+        }
+        // Reihenfolge nach project_categories.position (Kundenprojekt pos=10 < Internes pos=20).
+        $projSeries = array_values(array_filter($out['series'], fn($s) => in_array($s['label'], ['Kundenprojekt', 'Internes Projekt'], true)));
+        self::assertSame('Kundenprojekt',    $projSeries[0]['label']);
+        self::assertSame('Internes Projekt', $projSeries[1]['label']);
+    }
+
+    public function testStackedAreaChartHasPercentModeAndTargetDashedLine(): void
+    {
+        // Felix-Feedback 2026-11-06: Pro-Parity fuer TmCharts.stackedArea.
+        // Percent-Mode normiert jede Woche auf 100 %, Target-Linie wird in
+        // dem Modus ausgeblendet. View haengt eine Checkbox an die
+        // Chart-Controls und reicht spec.percent weiter.
+        $js  = (string) file_get_contents(dirname(__DIR__) . '/assets/charts.js');
+        $vw  = (string) file_get_contents(dirname(__DIR__) . '/views/cockpit/employees.php');
+
+        // charts.js: percent-Mode-Block in stackedArea.
+        self::assertMatchesRegularExpression(
+            '/function stackedArea.*?if\s*\(spec\.percent.*?target\s*=\s*\[\].*?unit\s*=\s*\'%\'/s',
+            $js,
+            'stackedArea muss im percent-Mode auf 100% normieren, target entfaellt'
+        );
+        // yMax == 100 im percent-Mode.
+        self::assertMatchesRegularExpression(
+            '/yMax\s*=\s*spec\.percent\s*\?\s*100/',
+            $js,
+            'yMax muss im percent-Mode fix 100 sein'
+        );
+        // Target bleibt als gestrichelte Linie gerendert (ohne percent-Mode).
+        self::assertStringContainsString('setLineDash([6, 4])', $js, 'gestrichelte Soll-Linie fehlt');
+
+        // View: Checkbox + percent-Wire-up in draw().
+        self::assertStringContainsString('id="empWeeksPercent"', $vw, 'percent-Checkbox im Mitarbeiter-Cockpit fehlt');
+        self::assertMatchesRegularExpression(
+            '/percent:\s*!!\(percentChk\s*&&\s*percentChk\.checked\)/',
+            $vw,
+            'draw() muss spec.percent aus der Checkbox weiterreichen'
+        );
+    }
+
     // -------- fixtures --------
 
     private function seedAbsenceCategory(string $ckey, string $account): void
