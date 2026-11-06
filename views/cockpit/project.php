@@ -109,20 +109,22 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
   <?php if (!$matrix_members): ?>
     <p class="muted"><?= h(t('cockpit.plan_no_members', 'Noch keine Buchungen oder Planungen auf diesem Projekt. Mitarbeiter erscheinen hier nach der ersten Buchung bzw. Wochen-Planung.')) ?></p>
   <?php else: ?>
-    <div style="overflow-x:auto">
+    <?php $todayWeekKey = (new DateTimeImmutable('today'))->format('o-\WW'); ?>
+    <div class="plan-matrix-scroll">
       <table class="table" id="planMatrix" data-project-id="<?= (int) $project['id'] ?>"
              data-save-url="<?= h(route('cockpit_plan_cell_save')) ?>"
              data-csrf="<?= h(csrf_token()) ?>">
         <thead>
           <tr>
-            <th><?= h(t('cockpit.plan_col_member', 'Mitarbeiter')) ?></th>
+            <th class="plan-col-name"><?= h(t('cockpit.plan_col_member', 'Mitarbeiter')) ?></th>
             <?php foreach ($matrix_weeks as $wk):
               $wkStart = $weekMonday($wk);
-              $isCurrent = $wk === (new DateTimeImmutable('today'))->format('o-\WW');
+              $isCurrent = $wk === $todayWeekKey;
+              $thClass = 'r plan-wk' . ($isCurrent ? ' is-current-week' : '');
             ?>
-              <th class="r" title="ab <?= h($wkStart) ?>" <?= $isCurrent ? 'style="background:var(--panel-alt,#f0f0f0)"' : '' ?>>
-                <?= h(substr($wk, -2)) ?>
-                <br><span class="muted" style="font-weight:normal;font-size:11px"><?= h((new DateTimeImmutable($wkStart))->format('d.m.')) ?></span>
+              <th class="<?= $thClass ?>" title="<?= h(t('cockpit.plan_wk_tooltip', 'ab')) ?> <?= h($wkStart) ?>">
+                KW<?= h(substr($wk, -2)) ?>
+                <br><span class="plan-wk-date"><?= h((new DateTimeImmutable($wkStart))->format('d.m.')) ?></span>
               </th>
             <?php endforeach; ?>
           </tr>
@@ -133,11 +135,12 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
           $name = $u['display_name'] ?: $u['username'];
         ?>
           <tr data-user-id="<?= $uid ?>">
-            <td><strong><?= h($name) ?></strong></td>
+            <td class="plan-col-name"><strong><?= h($name) ?></strong></td>
             <?php foreach ($matrix_weeks as $wk):
               $ist  = $matrix_ist[$uid][$wk]  ?? 0;
               $soll = $matrix_soll[$uid][$wk] ?? 0;
               $wkStart = $weekMonday($wk);
+              $isCurrent = $wk === $todayWeekKey;
               // Farbkodierung analog Pro-Variante (Felix-Feedback 2026-11-03):
               //   Ist > 1.15 * Soll → rot     (deutlich ueberbucht)
               //   Ist > 1.00 * Soll → orange  (leichte Ueberbuchung)
@@ -152,13 +155,14 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
               } elseif ($ist > 0) {
                   $cellClass = 'cell-orange';
               }
+              $tdClass = 'r plan-cell' . ($cellClass ? ' ' . $cellClass : '') . ($isCurrent ? ' is-current-week' : '');
             ?>
-              <td class="r plan-cell <?= $cellClass ?>" data-week="<?= h($wkStart) ?>" data-ist="<?= (int) $ist ?>" data-soll="<?= (int) $soll ?>">
+              <td class="<?= $tdClass ?>" data-week="<?= h($wkStart) ?>" data-ist="<?= (int) $ist ?>" data-soll="<?= (int) $soll ?>">
                 <div class="plan-ist"><?= h($minToHr((int) $ist)) ?: '—' ?></div>
                 <?php if (Auth::can('structure.manage')): ?>
                   <input class="plan-soll-input" type="text" inputmode="decimal"
                          value="<?= h($minToHr((int) $soll)) ?>"
-                         placeholder="—" style="width:4.5em;text-align:right">
+                         placeholder="—">
                 <?php else: ?>
                   <div class="plan-soll"><?= h($minToHr((int) $soll)) ?: '—' ?></div>
                 <?php endif; ?>
@@ -169,6 +173,18 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
         </tbody>
       </table>
     </div>
+    <script nonce="<?= h(csp_nonce()) ?>">
+    (function () {
+      // Felix-Feedback 2026-11-06: die Matrix zeigt viele Wochen; die aktuelle
+      // KW ist meistens irgendwo in der Mitte. Beim Laden dorthin scrollen,
+      // damit der senkrechte Rahmen (brand-farbig) im Sichtfeld landet.
+      var scroll = document.querySelector('.plan-matrix-scroll');
+      var cur = scroll && scroll.querySelector('thead th.is-current-week');
+      if (!scroll || !cur) return;
+      var left = cur.offsetLeft - (scroll.clientWidth - cur.offsetWidth) / 2;
+      scroll.scrollLeft = Math.max(0, left);
+    })();
+    </script>
   <?php endif; ?>
 </div>
 

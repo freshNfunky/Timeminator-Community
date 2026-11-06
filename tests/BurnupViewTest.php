@@ -578,4 +578,66 @@ final class BurnupViewTest extends TestCase
             'Alter Feldname "csrf_token" darf nicht mehr verwendet werden - Server ignoriert ihn'
         );
     }
+
+    public function testPlanMatrixScrollsHorizontallyAndMarksCurrentWeek(): void
+    {
+        // Felix-Feedback 2026-11-06: die Matrix ist breiter als die Card -
+        // sie muss horizontal (und begrenzt vertikal) scrollen, der Header
+        // mit "KW"-Prefix tragen, und die aktuelle Kalenderwoche senkrecht
+        // eingerahmt sein. Der frueher benutzte Inline-Style
+        // style="overflow-x:auto" wurde vom CSP (style-src-attr 'none')
+        // blockiert, dadurch lief die Matrix sichtbar ueber den Kartenrand.
+        $view = (string) file_get_contents($this->root() . '/views/cockpit/project.php');
+        $css  = (string) file_get_contents($this->root() . '/assets/app.css');
+
+        // KW-Prefix im Header (nicht nur die nackte Wochennummer).
+        $this->assertMatchesRegularExpression(
+            '/KW<\?=\s*h\(substr\(\$wk,\s*-2\)\)\s*\?>/',
+            $view,
+            'Matrix-Header muss "KW" vor die Wochennummer stellen'
+        );
+
+        // Wrapper per Klasse, kein inline overflow-x:auto (CSP blockt das).
+        $this->assertStringContainsString(
+            'class="plan-matrix-scroll"',
+            $view,
+            'Matrix braucht einen .plan-matrix-scroll-Wrapper (statt inline style="overflow-x:auto")'
+        );
+        $this->assertStringNotContainsString(
+            'style="overflow-x:auto"',
+            $view,
+            'Inline style="overflow-x:auto" ist tot - CSP style-src-attr \'none\' blockt es'
+        );
+
+        // CSS gibt dem Wrapper horizontalen UND vertikalen Scroll + Max-Hoehe
+        // (Felix: "vertikal vielleicht auch auf 5 zeilen begrenzen").
+        $this->assertMatchesRegularExpression(
+            '/\.plan-matrix-scroll\{[^}]*overflow\s*:\s*auto[^}]*max-height\s*:/',
+            $css,
+            '.plan-matrix-scroll muss overflow:auto + max-height setzen'
+        );
+
+        // Aktuelle Kalenderwoche wird per .is-current-week an Header-Zelle
+        // UND jeder Body-Zelle markiert, damit die gesamte Spalte visuell
+        // zusammenhaengt.
+        $this->assertMatchesRegularExpression(
+            '/\$isCurrent\s*\?\s*\' is-current-week\'/',
+            $view,
+            'th in der aktuellen KW muss Klasse is-current-week tragen'
+        );
+        $this->assertMatchesRegularExpression(
+            '/\$tdClass\s*=\s*\'r plan-cell\'.*?\$isCurrent\s*\?\s*\' is-current-week\'/s',
+            $view,
+            'td in der aktuellen KW muss Klasse is-current-week tragen'
+        );
+
+        // CSS zieht vertikale Schienen links+rechts durch die Spalte - inset
+        // box-shadow in --brand ueber die gesamte Zelle (Header + Body-TDs
+        // erben das durch den gleichen Klassennamen).
+        $this->assertMatchesRegularExpression(
+            '/#planMatrix \.is-current-week\{[^}]*box-shadow\s*:\s*inset\s+2px\s+0[^}]*var\(--brand\)/',
+            $css,
+            '.is-current-week braucht inset box-shadow links+rechts in --brand (vertikaler Rahmen)'
+        );
+    }
 }
