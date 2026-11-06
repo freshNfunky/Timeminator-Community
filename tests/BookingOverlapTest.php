@@ -103,9 +103,12 @@ final class BookingOverlapTest extends TestCase
     public function testRunningTimerCountsAsOngoingUntilNow(): void
     {
         // Ein laufender Timer mit end_ts=NULL muss gegen spaeteren Buchungen
-        // greifen, die VOR "now" liegen - in-vitro simulieren wir "laeuft seit heute".
-        $start = (new DateTimeImmutable('today'))->format('Y-m-d') . ' 00:00:00';
-        $later = (new DateTimeImmutable('today'))->format('Y-m-d') . ' 12:00:00';
+        // greifen, die VOR "now" liegen. Timer-Start = vor 2 Stunden, Konflikt-
+        // Buchung = vor 1 Stunde (beides sicher vor jetzt, unabhaengig von
+        // der Testlaufzeit - frueher stand hier "today 12:00", das brach
+        // morgens, wenn now() noch vor 12:00 lag).
+        $start = (new DateTimeImmutable('-2 hours'))->format('Y-m-d H:i:s');
+        $later = (new DateTimeImmutable('-1 hour'))->format('Y-m-d H:i:s');
         DB::insert(
             'INSERT INTO time_entries (user_id, task_id, project_id, client_id, start_ts, end_ts, duration_min, note, source, created_at, updated_at)
              VALUES (?,?,?,?,?,?,?,?,?,?,?)',
