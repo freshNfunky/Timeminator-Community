@@ -55,18 +55,24 @@ $currentWeek = (new DateTimeImmutable('today'))->format('o-\WW');
     <span class="muted"><?= h(t('cockpit.company_kpis_subtitle', 'Angebote, Rechnungen, Kosten und Ergebnis liegen in Timeminator Pro.')) ?></span>
   </div>
   <div class="row" style="gap:12px;flex-wrap:wrap;margin:0">
-    <?php foreach ([
-      ['co.tile_offers_won',   'Angebote gewonnen',   'pro_offers'],
-      ['co.tile_invoiced',     'Rechnungsstellung',   'pro_invoices'],
-      ['co.tile_paid',         'Bezahlt',             'pro_invoices'],
-      ['co.tile_open',         'Offen',               'pro_invoices'],
-      ['co.tile_cost_external','Kosten extern',       'pro_budget'],
-      ['co.tile_cost_internal','Kosten intern',       'pro_budget'],
-      ['co.tile_result',       'Ergebnis',            'pro_budget'],
-    ] as [$key, $default, $target]): ?>
-      <a class="pro-teaser-tile" href="<?= h(route($target)) ?>">
+    <?php
+    // Felix-Feedback 2026-11-06: ausgegraute, deutlich als Beispiel markierte
+    // Zahlen statt "— €" - macht den Teaser visuell konkret, ohne dass die
+    // Zahlen mit echten Daten verwechselt werden koennten. Die .pro-teaser-
+    // tile-Klasse rendert die Werte bereits in var(--muted), also bleiben
+    // die Zahlen klar ausgegraut.
+    foreach ([
+      ['co.tile_offers_won',    'Angebote gewonnen', 'pro_offers',   '142.800 €'],
+      ['co.tile_invoiced',      'Rechnungsstellung', 'pro_invoices', '98.650 €'],
+      ['co.tile_paid',          'Bezahlt',           'pro_invoices', '76.400 €'],
+      ['co.tile_open',          'Offen',             'pro_invoices', '22.250 €'],
+      ['co.tile_cost_external', 'Kosten extern',     'pro_budget',   '18.300 €'],
+      ['co.tile_cost_internal', 'Kosten intern',     'pro_budget',   '42.100 €'],
+      ['co.tile_result',        'Ergebnis',          'pro_budget',   '+ 38.250 €'],
+    ] as [$key, $default, $target, $demo]): ?>
+      <a class="pro-teaser-tile" href="<?= h(route($target)) ?>" title="<?= h(t('cockpit.tile_demo_tooltip', 'Beispielzahl - in Timeminator Pro mit den echten Werten aus Angeboten, Rechnungen und Budget verbunden.')) ?>">
         <div class="tile-label"><?= h(t($key, $default)) ?></div>
-        <div class="tile-value">— €</div>
+        <div class="tile-value tile-value-demo"><?= h($demo) ?></div>
         <div class="tile-cta"><?= h(t('cockpit.in_pro', 'in Pro verfuegbar &rarr;')) ?></div>
       </a>
     <?php endforeach; ?>
@@ -147,12 +153,19 @@ $currentWeek = (new DateTimeImmutable('today'))->format('o-\WW');
         </tr>
       </thead>
       <tbody>
-      <?php foreach ($by_category as $cat): ?>
+      <?php
+      // Felix-Feedback 2026-11-06: fiktive Beispielumsaetze, die zu den
+      // realen Stunden passen - ein durchschnittlicher Satz von 95 EUR/h
+      // multipliziert die vorhandenen Stunden. Reine Demozahl, als
+      // "pro"-Pill markiert.
+      foreach ($by_category as $cat):
+        $demoEur = number_format(((float) $cat['hours']) * 95, 0, ',', '.');
+      ?>
         <tr>
           <td><?= h((string) $cat['cat_label']) ?></td>
           <td class="r"><?= (int) $cat['project_count'] ?></td>
           <td class="r"><?= $fmtHr((float) $cat['hours']) ?></td>
-          <td><span class="muted">— €</span> <span class="pill pill-pro"><?= h(t('nav.pro_pill')) ?></span></td>
+          <td><span class="muted tile-value-demo"><?= h($demoEur) ?> €</span> <span class="pill pill-pro"><?= h(t('nav.pro_pill')) ?></span></td>
         </tr>
       <?php endforeach; ?>
       </tbody>

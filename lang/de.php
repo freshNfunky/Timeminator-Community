@@ -1208,6 +1208,7 @@ return [
     'cockpit.f_optional'            => 'optional',
     // Mitarbeiter-Cockpit: Verteilung-je-Woche percent-Mode (Pro-Parity 2026-11-06)
     'cockpit.chart_percent'         => 'anteilig (%)',
+    'cockpit.tile_demo_tooltip'     => 'Beispielzahl - in Timeminator Pro mit den echten Werten aus Angeboten, Rechnungen und Budget verbunden.',
     // Tracker-Timeline Inline-Edit (Felix-Feedback 2026-11-06)
     'cockpit.edit'                  => 'Bearbeiten',
     'cockpit.delete'                => 'Loeschen',

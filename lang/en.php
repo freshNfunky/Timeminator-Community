@@ -1211,6 +1211,7 @@ return [
     'cockpit.f_optional'            => 'optional',
     // Employee cockpit: percent-mode for the weekly distribution chart (Pro parity 2026-11-06)
     'cockpit.chart_percent'         => 'share (%)',
+    'cockpit.tile_demo_tooltip'     => 'Example number - in Timeminator Pro linked to the real offers, invoices and budget.',
     // Tracker-Timeline inline edit (Felix-Feedback 2026-11-06)
     'cockpit.edit'                  => 'Edit',
     'cockpit.delete'                => 'Delete',

@@ -605,6 +605,10 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .pro-teaser-tile .tile-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .pro-teaser-tile .tile-value{font-size:22px;font-weight:700;margin:4px 0;color:var(--muted)}
 .pro-teaser-tile .tile-cta{font-size:11px;color:var(--brand)}
+/* Felix-Feedback 2026-11-06: fiktive Demozahlen in Pro-Teaser-Tiles
+   visuell deutlich als Beispiel markieren - ausgegraut + gestrichelte
+   Unterstreichung, damit niemand sie mit echten Zahlen verwechselt. */
+.tile-value-demo{text-decoration:underline dashed var(--line);text-underline-offset:3px;opacity:.6}
 
 /* Dashboard: Zeitaufzeichnung-Titel ueber dem Timer, dezent */
 .timer-card .timer-card-title{font-size:15px;margin:0 0 10px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px}
