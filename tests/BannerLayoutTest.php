@@ -93,4 +93,72 @@ final class BannerLayoutTest extends TestCase
         self::assertFalse(Banners::isAllowedIframe('http://timeminator.com/a.html'));
         self::assertFalse(Banners::isAllowedIframe('https://evil.example.com/x.html'));
     }
+
+    public function testIframeBannerBoxFillsTheFullRotator(): void
+    {
+        // Felix-Feedback 2026-11-06 Runde X: der Sidepanel-Feed liefert
+        // HTML-Banner (iframe-Items). Damit das Portraet-Creative die gesamte
+        // Sidepanel-Box ausfuellt (kein halb-leeres Feld rechts/links), muss
+        // .sp-item.is-iframe padding:0 + overflow:hidden haben und das darin
+        // liegende <iframe> width/height 100% ohne Border.
+        $css = (string) file_get_contents($this->root() . '/assets/app.css');
+
+        self::assertMatchesRegularExpression(
+            '/\.sp-item\.is-iframe\{[^}]*padding\s*:\s*0[^}]*overflow\s*:\s*hidden/',
+            $css,
+            '.sp-item.is-iframe muss padding:0 + overflow:hidden setzen, sonst erscheint der Rahmen um das HTML-Creative'
+        );
+
+        self::assertMatchesRegularExpression(
+            '/\.sp-item\.is-iframe iframe\{[^}]*width\s*:\s*100%[^}]*height\s*:\s*100%[^}]*border\s*:\s*0/',
+            $css,
+            '.sp-item.is-iframe iframe muss width/height 100% + border:0 haben - sonst fuellt es die Box nicht aus'
+        );
+    }
+
+    public function testSidepanelJsRendersIframeItemsAsSandboxedIframe(): void
+    {
+        // Wenn ein Feed-Item `iframe` traegt, baut app.js buildCard() einen
+        // sandboxed <iframe> statt ein <img>/Text-Fallback. Dieser Pfad darf
+        // nicht wegrefactored werden - sonst zeigt der Carousel wieder nur
+        // das (gebundelte) SVG-Fallback-Set statt des HTML-Feeds.
+        $js = (string) file_get_contents($this->root() . '/assets/app.js');
+
+        self::assertStringContainsString(
+            "if (it.iframe)",
+            $js,
+            'buildCard() muss iframe-Items vor image/text-Items behandeln'
+        );
+        self::assertStringContainsString(
+            "sp-item is-iframe",
+            $js,
+            'iframe-Container muss die Klasse .sp-item.is-iframe tragen (CSS-Vertrag)'
+        );
+        self::assertStringContainsString(
+            "allow-scripts allow-popups allow-popups-to-escape-sandbox",
+            $js,
+            'Banner-iframe muss sandboxed sein, aber Scripts und Target-Popups erlauben (sonst keine CTA-Klicks)'
+        );
+    }
+
+    public function testDefaultBannerEndpointUsesFeedPhp(): void
+    {
+        // Felix-Entscheidung 2026-11-06: der Feed laeuft jetzt ueber feed.php
+        // (byte-identisch zur frueheren feed.json, aber server-seitig steuerbar).
+        // Weder die Klassen-Default-Konstante noch die Sample-Config duerfen
+        // stillschweigend auf .json zurueckkippen.
+        $banners = (string) file_get_contents($this->root() . '/src/Banners.php');
+        self::assertMatchesRegularExpression(
+            "#DEFAULT_ENDPOINT\s*=\s*'https://assets\.felixschaller\.com/feed\.php'#",
+            $banners,
+            'Banners::DEFAULT_ENDPOINT muss auf assets.felixschaller.com/feed.php zeigen'
+        );
+
+        $sample = (string) file_get_contents($this->root() . '/config.sample.php');
+        self::assertStringContainsString(
+            "'endpoint' => 'https://assets.felixschaller.com/feed.php'",
+            $sample,
+            'config.sample.php muss banners.endpoint auf feed.php setzen - sonst bekommt jede frische Installation den alten Default'
+        );
+    }
 }
