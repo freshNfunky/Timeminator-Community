@@ -306,24 +306,40 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
       canvas.parentNode.style.display = 'none';
       return;
     }
-    var labels = d.points.map(function (p) { return p.d; });
-    var pmData = d.points.map(function (p) { return p.pm === null || p.pm === undefined ? null : p.pm; });
-    var cmData = d.points.map(function (p) { return p.cm === null || p.cm === undefined ? null : p.cm; });
-    var series = [
-      {label: i18n.pm, color: '#8b5cf6', data: pmData},
-      {label: i18n.cm, color: '#06b6d4', data: cmData, dashed: true},
-    ];
-    var pts = [];
-    d.points.forEach(function (p, i) {
-      if (p.pm !== null && p.pm !== undefined) pts.push({x: i, y: p.pm, color: '#8b5cf6'});
-      if (p.cm !== null && p.cm !== undefined) pts.push({x: i, y: p.cm, color: '#06b6d4'});
-    });
-    TmCharts.lines(canvas, {xLabels: labels, series: series, points: pts, unit: '/5'}, legend);
+    function render() {
+      var labels = d.points.map(function (p) { return p.d; });
+      var pmData = d.points.map(function (p) { return p.pm === null || p.pm === undefined ? null : p.pm; });
+      var cmData = d.points.map(function (p) { return p.cm === null || p.cm === undefined ? null : p.cm; });
+      var series = [
+        {label: i18n.pm, color: '#8b5cf6', data: pmData},
+        {label: i18n.cm, color: '#06b6d4', data: cmData, dashed: true},
+      ];
+      var pts = [];
+      d.points.forEach(function (p, i) {
+        if (p.pm !== null && p.pm !== undefined) pts.push({x: i, y: p.pm, color: '#8b5cf6'});
+        if (p.cm !== null && p.cm !== undefined) pts.push({x: i, y: p.cm, color: '#06b6d4'});
+      });
+      TmCharts.lines(canvas, {xLabels: labels, series: series, points: pts, unit: '/5'}, legend);
+    }
+    render();
     if (d.latest) {
       latest.hidden = false;
       var pmV = d.latest.pm, cmV = d.latest.cm;
       pmEl.textContent = (pmV !== null && pmV !== undefined) ? (moodEmoji[pmV] + ' ' + i18n.pm + ' ' + pmV + '/5') : '';
       cmEl.textContent = (cmV !== null && cmV !== undefined) ? (moodEmoji[cmV] + ' ' + i18n.cm + ' ' + cmV + '/5') : '';
+    }
+    // Container-Resize: Chart neu zeichnen (Felix-Feedback 2026-11-06).
+    var chartBox = canvas.parentNode;
+    if (chartBox && typeof ResizeObserver !== 'undefined') {
+      var lastW = chartBox.clientWidth, resizeT = null;
+      var ro = new ResizeObserver(function () {
+        var w = chartBox.clientWidth;
+        if (w === lastW) return;
+        lastW = w;
+        if (resizeT) clearTimeout(resizeT);
+        resizeT = setTimeout(render, 80);
+      });
+      ro.observe(chartBox);
     }
   });
 })();
@@ -850,6 +866,25 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
         saveHidden();
         render();
       });
+    }
+
+    // Felix-Feedback 2026-11-06: der Canvas verankert seine Pixel-Groesse
+    // beim ersten setup() am Container; waechst das umschliessende Layout
+    // (Fenster-Resize, Sidebar-Toggle, Dev-Tools auf/zu), zeichnet charts.js
+    // ohne weiteren Anstoss NICHT neu - die Kurve bleibt in der alten
+    // Pixel-Breite haengen. ResizeObserver am .chart-box triggert ein
+    // debounced re-render auf tatsaechliche Breitenaenderung.
+    var chartBox = canvas.parentNode;
+    if (chartBox && typeof ResizeObserver !== 'undefined') {
+      var lastW = chartBox.clientWidth, resizeT = null;
+      var ro = new ResizeObserver(function () {
+        var w = chartBox.clientWidth;
+        if (w === lastW) return;
+        lastW = w;
+        if (resizeT) clearTimeout(resizeT);
+        resizeT = setTimeout(render, 80);
+      });
+      ro.observe(chartBox);
     }
   });
 })();

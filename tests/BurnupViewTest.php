@@ -679,6 +679,32 @@ final class BurnupViewTest extends TestCase
         );
     }
 
+    public function testBurnupChartReRendersOnContainerResize(): void
+    {
+        // Felix-Feedback 2026-11-06: der Canvas verankert seine Pixel-
+        // Groesse beim ersten setup() am Container; waechst das Layout
+        // (Fenster-Resize, Sidebar-Toggle), zeichnet charts.js ohne
+        // weiteren Anstoss NICHT neu - die Kurve bleibt in der alten
+        // Pixel-Breite haengen. ResizeObserver am .chart-box triggert
+        // ein debounced re-render auf Breitenaenderung.
+        $view = (string) file_get_contents($this->root() . '/views/cockpit/project.php');
+
+        // Burn-Up: ResizeObserver am chartBox, re-render per setTimeout.
+        $this->assertMatchesRegularExpression(
+            '/new ResizeObserver\(function\s*\(\).*?setTimeout\(render/s',
+            $view,
+            'Burn-Up muss einen ResizeObserver am Container registrieren, der bei Breitenaenderung re-render aufruft'
+        );
+        // Mindestens die Ignore-wenn-Breite-gleich-Guard, damit Resize-Loops
+        // beim re-Render nicht in eine Endlosschleife kippen (clientWidth
+        // vor setup-Rundung geprueft).
+        $this->assertMatchesRegularExpression(
+            '/if\s*\(w\s*===\s*lastW\)\s*return/s',
+            $view,
+            'Resize-Observer muss gleiche Breite ignorieren (sonst re-render-Loop)'
+        );
+    }
+
     public function testBurnupXAxisLabelsAreRotated45Degrees(): void
     {
         // Felix-Feedback 2026-11-06: "regressions test fuer achsen labels.
