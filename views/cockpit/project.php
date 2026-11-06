@@ -593,15 +593,16 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
   var url = <?= json_encode(route('cockpit_burnup_data', ['id' => $project['id']])) ?>;
   var i18n = <?= json_encode([
       'cum_hours'    => t('cockpit.burnup_cum_hours', 'Ist (Stunden)'),
-      'target'       => t('cockpit.burnup_target',    'Soll'),
+      'target'       => t('cockpit.burnup_target',    'Budget'),
+      'soll'         => t('cockpit.burnup_soll',      'Soll (Plan-Matrix)'),
       'none'         => t('cockpit.burnup_none',      'Noch keine Buchungen auf diesem Projekt.'),
       'progress'     => t('cockpit.burnup_progress',  'Fortschritt'),
       'forecast'     => t('cockpit.burnup_forecast',  'Prognose'),
       'deadline'     => t('cockpit.burnup_deadline',  'Planende'),
       'delay'        => t('cockpit.burnup_delay',     'Verzoegerung'),
       'ideal'        => t('cockpit.burnup_ideal',     'Ideal'),
-      'within'       => t('cockpit.burnup_within',    'im Budget'),
-      'over'         => t('cockpit.burnup_over',      'Budget ueberschritten'),
+      'within'       => t('cockpit.burnup_within',    'im Plan'),
+      'over'         => t('cockpit.burnup_over',      'ueber Plan'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
     if (!d.ok || !d.points.length) {
@@ -614,6 +615,14 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
     }
     var labels = d.points.map(function (p) { return p.d; });
     var series = [{ label: i18n.cum_hours, color: '#2563eb', data: d.points.map(function (p) { return p.h; }) }];
+    // Felix-Feedback 2026-11-06: Soll-Kurve = Integral der Plan-Matrix. Steigt
+    // je Woche um die geplanten Stunden - ermoeglicht Woche-fuer-Woche-Vergleich
+    // mit der Ist-Linie und endet rechts auf dem Projekt-Gesamt-Soll (target_h).
+    var sollCurve = d.soll_curve || [];
+    var hasSoll = sollCurve.some(function (v) { return v !== null && v !== undefined && v > 0; });
+    if (hasSoll) {
+      series.push({ label: i18n.soll, color: '#f59e0b', dashed: true, data: sollCurve });
+    }
     if (d.target_h) {
       series.push({ label: i18n.target + ' ' + d.target_h + ' h', color: '#94a3b8', dashed: true,
         data: labels.map(function () { return d.target_h; }) });
@@ -676,14 +685,23 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
         legend: i18n.delay + ' ' + d.delay.date,
       });
     }
-    // Flaechen-Integral unter der Ist-Kurve: gruen wo Ist <= Soll, rot wo Ist > Soll
-    // (Pro-Vorbild). Nur wenn target_h gesetzt ist - sonst fehlt der Vergleichswert.
+    // Flaechen-Integral zwischen Ist und Soll-Plan-Kurve: gruen wo Ist <= Soll
+    // (im Plan), rot wo Ist > Soll (ueber Plan). Felix-Feedback 2026-11-06:
+    // bevorzugt die Plan-Matrix-Soll-Kurve als Vergleichsbasis statt der
+    // horizontalen target_h-Linie - sonst kann man nicht Woche-fuer-Woche
+    // sehen, wo im Plan man steht. Fallback bleibt target_h (fuer Projekte
+    // ohne gefuellte Plan-Matrix).
     var fillBetween = null;
-    if (d.target_h) {
-      var istSeries  = d.points.map(function (p) { return p.h; });
-      var sollSeries = labels.map(function () { return d.target_h; });
+    var istSeries = d.points.map(function (p) { return p.h; });
+    if (hasSoll) {
       fillBetween = {
-        a: istSeries, b: sollSeries,
+        a: istSeries, b: sollCurve,
+        belowColor: '#16a34a', aboveColor: '#ef4444',
+        belowLabel: i18n.within, aboveLabel: i18n.over,
+      };
+    } else if (d.target_h) {
+      fillBetween = {
+        a: istSeries, b: labels.map(function () { return d.target_h; }),
         belowColor: '#16a34a', aboveColor: '#ef4444',
         belowLabel: i18n.within, aboveLabel: i18n.over,
       };

@@ -137,6 +137,62 @@ final class BurnupDataTest extends TestCase
         self::assertArrayHasKey('progress_markers', $p);
         self::assertArrayHasKey('forecast_rays',    $p);
         self::assertArrayHasKey('review_interval',  $p);
+        self::assertArrayHasKey('soll_curve',       $p);
+    }
+
+    public function testSollCurveIntegratesPlanMatrixWeekly(): void
+    {
+        // Felix-Feedback 2026-11-06: der Burn-Up braucht eine Soll-Kurve, die
+        // das Integral ueber die Plan-Matrix bildet - jede Woche in
+        // plan_allocations (period_kind='week') stapelt am Montag dieser Woche
+        // ihre geplanten Minuten auf die kumulierte Soll-Reihe.
+        // Seed: Buchungen in 3 aufeinanderfolgenden Wochen (so bekommt der
+        // Burn-Up dort Labels) + zwei weekly Plan-Allocations in KW18 + KW19.
+        $pid = $this->seedProject();
+        // 2026-04-27 ist ein Montag (KW18 ISO). 2026-05-04 ist der naechste Montag (KW19).
+        $this->seedBookingDay($pid, '2026-04-27', 30);
+        $this->seedBookingDay($pid, '2026-05-04', 30);
+        $this->seedBookingDay($pid, '2026-05-11', 30);
+        PlanRepo::saveAllocation([
+            'project_id' => $pid, 'user_id' => null,
+            'period_kind' => 'week', 'period_start' => '2026-04-27',
+            'planned_minutes' => 600, // 10 h
+        ]);
+        PlanRepo::saveAllocation([
+            'project_id' => $pid, 'user_id' => null,
+            'period_kind' => 'week', 'period_start' => '2026-05-04',
+            'planned_minutes' => 300, // 5 h  -> kumulativ 15 h ab KW19
+        ]);
+
+        $p = cockpit_burnup_payload($pid);
+        $labels = array_map(fn($pt) => $pt['d'], $p['points']);
+        $soll   = $p['soll_curve'];
+        self::assertSame(count($labels), count($soll),
+            'Soll-Kurve muss gleiche Laenge wie labels haben (Chart aligned beides index-basiert)');
+
+        // Vor dem ersten Montag steht der Soll noch nicht. Am ersten Jump-Tag
+        // (2026-04-27) steht kumulativ 10 h, ab 2026-05-04 kumulativ 15 h.
+        $idx27 = array_search('2026-04-27', $labels, true);
+        $idx04 = array_search('2026-05-04', $labels, true);
+        self::assertNotFalse($idx27);
+        self::assertNotFalse($idx04);
+        self::assertSame(10.0, $soll[$idx27], 'KW18 (27.04.) soll bei 10 h kumulativ stehen');
+        self::assertSame(15.0, $soll[$idx04], 'KW19 (04.05.) soll bei 15 h kumulativ stehen (+5 h)');
+        // Zwischen den Jumps bleibt die Treppenkurve konstant.
+        self::assertSame(10.0, $soll[$idx27 + 1], 'Treppenkurve bleibt zwischen Montagen konstant');
+    }
+
+    public function testSollCurveIsAllNullWhenNoPlanMatrixEntries(): void
+    {
+        // Ohne Plan-Matrix-Eintraege darf keine Soll-Kurve entstehen - sonst
+        // wuerde der Chart eine irrefuehrende Nulllinie zeichnen.
+        $pid = $this->seedProject();
+        $this->seedBookingDay($pid, '2026-05-01', 30);
+        $p = cockpit_burnup_payload($pid);
+        self::assertNotEmpty($p['soll_curve']);
+        foreach ($p['soll_curve'] as $v) {
+            self::assertNull($v, 'Soll-Kurve muss ohne plan_allocations durchgaengig null sein');
+        }
     }
 
     public function testReviewIntervalDefaultsTo30(): void

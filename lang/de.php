@@ -1181,8 +1181,9 @@ return [
     'cockpit.burnup_deadline'     => 'Planende',
     'cockpit.burnup_delay'        => 'Verzoegerung',
     'cockpit.burnup_ideal'        => 'Ideal',
-    'cockpit.burnup_within'       => 'im Budget',
-    'cockpit.burnup_over'         => 'Budget ueberschritten',
+    'cockpit.burnup_within'       => 'im Plan',
+    'cockpit.burnup_over'         => 'ueber Plan',
+    'cockpit.burnup_soll'         => 'Soll (Plan-Matrix)',
     // --- Tracker-Entry Card (Pro-UI-Paritaet) ---
     'cockpit.tracker_entry_h3'      => 'Tracker-Eintrag',
     'cockpit.tracker_entry_subtitle' => 'Fortschritt, Terminverschiebung oder Pro-Typen (deaktiviert). Die Eintraege erscheinen in der Timeline.',
@@ -1261,7 +1262,7 @@ return [
     'cockpit.burnup_h3'           => 'Burn-Up (kumulative Stunden)',
     'cockpit.burnup_subtitle'     => 'Ist aus Buchungen vs. Zielstunden',
     'cockpit.burnup_cum_hours'    => 'Ist (Stunden)',
-    'cockpit.burnup_target'       => 'Soll',
+    'cockpit.burnup_target'       => 'Budget',
     'cockpit.burnup_none'         => 'Noch keine Buchungen auf diesem Projekt.',
 
     'cockpit.date_shift_h3'       => 'Terminverschiebung',

@@ -645,6 +645,54 @@ function cockpit_burnup_payload(int $projectId): array
         }
     }
 
+    // v1.0 Felix-Feedback 2026-11-06: Soll-Kurve = Integral der Plan-Matrix.
+    // Jede Woche in plan_allocations (period_kind='week') stapelt am Montag
+    // ihrer period_start-KW die geplanten Minuten auf die Soll-Reihe. So kann
+    // man im Chart Planung (Treppenkurve, gestrichelt) vs. Ist (Kurve)
+    // Woche fuer Woche vergleichen - die Summe landet am rechten Rand auf
+    // dem Projekt-Gesamt-Soll (horizontale target_h-Linie).
+    $sollCurve = array_fill(0, $n, null);
+    if ($n > 0) {
+        $weekly = DB::all(
+            "SELECT period_start, SUM(planned_minutes) AS mins
+               FROM plan_allocations
+              WHERE project_id = ? AND period_kind = 'week'
+           GROUP BY period_start
+           ORDER BY period_start",
+            [$projectId]
+        );
+        if ($weekly) {
+            // Lookup Label -> Index fuer O(n+m) Alignment statt O(n*m).
+            $labelIdx = array_flip($labels);
+            $cum = 0.0;
+            // Pro Woche: Start-Index = period_start, falls nicht im Label-Bereich,
+            // nimm den naechstgroesseren. Vor dem allerersten Label stapeln wir
+            // auf [0] (Backlog aus Vergangenheit).
+            $jumps = [];
+            foreach ($weekly as $w) {
+                $startYmd = (string) $w['period_start'];
+                $hrs = ((int) $w['mins']) / 60.0;
+                if (isset($labelIdx[$startYmd])) {
+                    $idx = (int) $labelIdx[$startYmd];
+                } else {
+                    // naechstgroesseres Label suchen (periode liegt zwischen Labels
+                    // - z. B. wenn Labels taeglich sind und period_start ein Sonntag).
+                    $idx = null;
+                    for ($i = 0; $i < $n; $i++) {
+                        if ($labels[$i] >= $startYmd) { $idx = $i; break; }
+                    }
+                    if ($idx === null) { $idx = $n - 1; } // Plan liegt jenseits des Horizonts.
+                }
+                $jumps[$idx] = ($jumps[$idx] ?? 0.0) + $hrs;
+            }
+            // Treppenkurve: cum erhoeht sich am jeweiligen Index und bleibt rechts konstant.
+            for ($i = 0; $i < $n; $i++) {
+                if (isset($jumps[$i])) { $cum += $jumps[$i]; }
+                $sollCurve[$i] = round($cum, 2);
+            }
+        }
+    }
+
     // Deadline (urspruengliches Enddatum) + Delay (aktuelles Enddatum nach
     // Verschiebung) aus DateShiftRepo. Pro-konform: der aelteste project-Shift
     // traegt die urspruengliche Deadline in old_end; ohne Shifts ist Deadline
@@ -672,6 +720,7 @@ function cockpit_burnup_payload(int $projectId): array
         'progress_markers' => $progressMarkers,    // Punkte auf der Linie.
         'forecast_rays'    => $forecastRays,       // Strahlen im Review-Turnus-Abstand.
         'ideal_line'       => $idealLine,          // 0-100% lineare Trajektorie.
+        'soll_curve'       => $sollCurve,          // Kumulierte Plan-Stunden (Integral der Plan-Matrix).
         'review_interval'  => $interval,
         'planned_end'      => $plannedEnd,         // = Delay-Datum wenn verschoben, sonst = Deadline.
         'deadline'         => $deadlineInfo,       // urspruengliches Enddatum (grau).

@@ -1184,8 +1184,9 @@ return [
     'cockpit.burnup_deadline'     => 'Planned end',
     'cockpit.burnup_delay'        => 'Delay',
     'cockpit.burnup_ideal'        => 'Ideal',
-    'cockpit.burnup_within'       => 'within budget',
-    'cockpit.burnup_over'         => 'over budget',
+    'cockpit.burnup_within'       => 'on plan',
+    'cockpit.burnup_over'         => 'over plan',
+    'cockpit.burnup_soll'         => 'Plan (from matrix)',
     // --- Tracker-Entry card (Pro-UI parity) ---
     'cockpit.tracker_entry_h3'      => 'Tracker entry',
     'cockpit.tracker_entry_subtitle' => 'Progress, date shift, or Pro-only types (disabled). Entries appear in the timeline.',
@@ -1264,7 +1265,7 @@ return [
     'cockpit.burnup_h3'           => 'Burn-up (cumulative hours)',
     'cockpit.burnup_subtitle'     => 'Actual from bookings vs. target hours',
     'cockpit.burnup_cum_hours'    => 'Actual (hours)',
-    'cockpit.burnup_target'       => 'Target',
+    'cockpit.burnup_target'       => 'Budget',
     'cockpit.burnup_none'         => 'No bookings on this project yet.',
 
     'cockpit.date_shift_h3'       => 'Date shift',

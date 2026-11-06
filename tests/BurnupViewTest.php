@@ -137,10 +137,25 @@ final class BurnupViewTest extends TestCase
         $this->assertIsString($js);
 
         // View setzt fillBetween mit gruen/rot entsprechend Ist vs. Soll.
+        // Felix-Feedback 2026-11-06: Soll ist primaer die Plan-Matrix-Kurve
+        // (sollCurve, Integral), erst wenn die leer ist fallen wir auf die
+        // horizontale target_h-Linie zurueck - beide Formen sind gueltig.
+        $hasSollCurveFill = (bool) preg_match(
+            '/fillBetween\s*=\s*\{\s*a:\s*istSeries,\s*b:\s*sollCurve/s',
+            $view
+        );
+        $hasTargetFill = (bool) preg_match(
+            '/fillBetween\s*=\s*\{\s*a:\s*istSeries,\s*b:\s*labels\.map/s',
+            $view
+        );
+        $this->assertTrue(
+            $hasSollCurveFill && $hasTargetFill,
+            'Flaechen-Integral muss BEIDE Vergleichsgrundlagen kennen: Soll-Kurve (bevorzugt) + Target-Fallback'
+        );
         $this->assertMatchesRegularExpression(
-            '/fillBetween\s*=\s*\{\s*a:\s*istSeries,\s*b:\s*sollSeries,\s*belowColor:\s*\'#16a34a\',\s*aboveColor:\s*\'#ef4444\'/s',
+            '/belowColor:\s*\'#16a34a\',\s*aboveColor:\s*\'#ef4444\'/',
             $view,
-            'Flaechen-Integral (fillBetween) fehlt in der Burn-Up-View'
+            'Ampel-Farben (gruen im Plan / rot ueber Plan) fehlen im fillBetween'
         );
 
         // Charts-Engine hat fillBetween-Rendering (Pro-Vorbild): quadweise, inkl. Interpolation.
@@ -577,6 +592,49 @@ final class BurnupViewTest extends TestCase
             $block,
             'Alter Feldname "csrf_token" darf nicht mehr verwendet werden - Server ignoriert ihn'
         );
+    }
+
+    public function testBurnupSollCurveIsConsumedByChartJs(): void
+    {
+        // Felix-Feedback 2026-11-06: der Burn-Up bekommt eine Soll-Kurve
+        // (= Integral ueber die Plan-Matrix). Die darf nicht stillschweigend
+        // aus dem Chart-JS verschwinden - sonst sieht man zwar target_h als
+        // flache Linie, aber nicht die Woche-fuer-Woche-Planung.
+        $view = (string) file_get_contents($this->root() . '/views/cockpit/project.php');
+
+        // Chart-JS liest d.soll_curve + rendert es als eigene gestrichelte Serie.
+        $this->assertStringContainsString(
+            'd.soll_curve',
+            $view,
+            'Chart-JS muss d.soll_curve lesen (Soll-Kurve kommt aus der Burn-Up-Payload)'
+        );
+        $this->assertMatchesRegularExpression(
+            '/label:\s*i18n\.soll,\s*color:\s*\'#[0-9a-f]{6}\'.*?dashed:\s*true.*?data:\s*sollCurve/s',
+            $view,
+            'Soll-Kurve muss als eigene gestrichelte Serie mit i18n.soll gepusht werden'
+        );
+        // fillBetween vergleicht Ist gegen die Soll-Kurve, wenn sie da ist -
+        // Pro-Vorbild: gruen im Plan, rot ueber Plan.
+        $this->assertMatchesRegularExpression(
+            '/if\s*\(hasSoll\)\s*\{\s*fillBetween\s*=\s*\{\s*a:\s*istSeries,\s*b:\s*sollCurve/s',
+            $view,
+            'fillBetween muss Ist gegen die Soll-Kurve setzen, wenn eine Plan-Matrix vorhanden ist'
+        );
+    }
+
+    public function testBurnupSollCurveI18nParity(): void
+    {
+        // I18nTest prueft Keys allgemein; hier haelt der Test explizit die
+        // neuen Burn-Up-Labels fest, damit sie nicht in einem der zwei Files
+        // schleichend verschwinden.
+        $de = include $this->root() . '/lang/de.php';
+        $en = include $this->root() . '/lang/en.php';
+        foreach (['cockpit.burnup_soll', 'cockpit.burnup_target', 'cockpit.burnup_within', 'cockpit.burnup_over'] as $k) {
+            $this->assertArrayHasKey($k, $de, "DE-Key fehlt: $k");
+            $this->assertArrayHasKey($k, $en, "EN-Key fehlt: $k");
+            $this->assertNotEmpty($de[$k]);
+            $this->assertNotEmpty($en[$k]);
+        }
     }
 
     public function testPlanMatrixScrollsHorizontallyAndMarksCurrentWeek(): void
