@@ -381,13 +381,22 @@ final class Banners
     }
 
     /**
-     * A banner HTML page to embed as an iframe: only https on an allowed
-     * first-party host (same rule as links/images). The page is served from the
-     * banner subdomain; the browser needs it in the CSP `frame-src` (see
-     * Banners::frameSrc() / send_security_headers()).
+     * A banner HTML page to embed as an iframe: either https on an allowed
+     * first-party host (same rule as links/images) or a same-origin relative
+     * path beginning with "/" (e.g. "/Media/banners/pro.html") - the browser
+     * loads that under the current host without needing a CSP exception.
+     * The page is served from the banner feed or shipped locally; HTTPS cross-
+     * origin pages need frame-src coverage (see Banners::frameSrc() /
+     * send_security_headers()). Felix-Feedback 2026-11-06: der Feed soll HTML
+     * ausliefern, lokale HTML-Fallbacks bleiben so moeglich.
      */
     public static function isAllowedIframe(string $url): bool
     {
+        // Same-origin relative: "/path.html" or "/path.html?x=y" (no "//" host form).
+        if ($url !== '' && $url[0] === '/' && (strlen($url) < 2 || $url[1] !== '/')) {
+            // No traversal and no fragment-only; must look like a reachable path.
+            return !str_contains($url, '..') && preg_match('#^/[A-Za-z0-9._~\-/]*(\?[^\#]*)?$#', $url) === 1;
+        }
         $p = parse_url($url);
         if (!$p || ($p['scheme'] ?? '') !== 'https' || ($p['host'] ?? '') === '') {
             return false;

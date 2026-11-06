@@ -24,37 +24,34 @@ final class BannerLayoutTest extends TestCase
         return dirname(__DIR__);
     }
 
-    public function testAllShippedBannerSvgsUseThePortraitViewBox(): void
+    public function testDefaultFallbackHasNoCroppedImageBanners(): void
     {
-        $manifestPath = $this->root() . '/assets/banners/default.json';
-        $json = json_decode((string) file_get_contents($manifestPath), true);
+        // Felix-Entscheidung 2026-11-06 Runde 4: der Banner-Feed liefert HTML,
+        // die lokalen Default-Fallbacks sind reine Text-Cards. Damit croppt
+        // nie wieder ein 300x600-SVG an einer 1:4-Sidebar - die Text-Cards
+        // fuellen den Container mit Titel/Text/CTA, kein Bildformat-Konflikt.
+        $json = json_decode((string) file_get_contents($this->root() . '/assets/banners/default.json'), true);
         self::assertIsArray($json);
-        self::assertNotEmpty($json['items'] ?? [], 'default.json fehlt Items');
+        self::assertNotEmpty($json['items'] ?? []);
 
         foreach ($json['items'] as $item) {
-            $image = (string) ($item['image'] ?? '');
-            if ($image === '' || str_starts_with($image, 'http')) {
-                continue;
-            }
-            $svgPath = $this->root() . '/assets/' . $image;
-            self::assertFileExists($svgPath, "Banner-SVG fehlt: {$image}");
-            $head = (string) file_get_contents($svgPath, false, null, 0, 512);
-            self::assertStringContainsString(
-                'viewBox="0 0 300 600"',
-                $head,
-                "Banner-SVG {$image} muss im 300x600-Portrait-Format bleiben, sonst bricht das Sidepanel-Layout"
+            self::assertArrayNotHasKey(
+                'image',
+                $item,
+                "Default-Item '" . ($item['id'] ?? '?') . "' darf keinen 'image'-Pfad mehr tragen - Bilder croppen in der 1:4-Sidebar"
+            );
+            self::assertNotEmpty(
+                $item['title'] ?? '',
+                "Default-Item '" . ($item['id'] ?? '?') . "' braucht einen Titel als Text-Card"
             );
         }
     }
 
-    public function testSidepanelRotatorFillsFullHeightAndImageFillsBox(): void
+    public function testSidepanelRotatorFillsFullHeightAndImageRuleStillCorrectForFeedBanners(): void
     {
-        // Felix-Entscheidung 2026-11-06 Runde 3 ("mach es wie es vorher war.
-        // keine diskussion jetzt. es hat vorher die ganze box ausgefüllt."):
-        // der Rotator nimmt die gesamte Restspalte via flex:1 1 auto, das
-        // sp-item.is-image img fuellt die Box mit object-fit:cover. Dass das
-        // 1:2-Portrait-Banner dabei links/rechts beschnitten wird, ist
-        // bewusst akzeptiert.
+        // Das Rotator-Layout selbst bleibt unveraendert: er fuellt die Rest-
+        // spalte (flex:1 1 auto), und wenn der Feed ein Image-Item liefert,
+        // fuellt object-fit:cover die Box. Default-Fallbacks sind aber Text.
         $css = (string) file_get_contents($this->root() . '/assets/app.css');
 
         self::assertMatchesRegularExpression(
@@ -66,7 +63,23 @@ final class BannerLayoutTest extends TestCase
         self::assertMatchesRegularExpression(
             '/\.sp-item\.is-image img\{[^}]*width\s*:\s*100%[^}]*height\s*:\s*100%[^}]*object-fit\s*:\s*cover/',
             $css,
-            '.sp-item.is-image img muss width/height 100% + object-fit:cover haben, damit das Banner die komplette Box fuellt'
+            '.sp-item.is-image img muss width/height 100% + object-fit:cover haben'
         );
+    }
+
+    public function testIframeAllowsSameOriginRelativePath(): void
+    {
+        // Felix-Feedback 2026-11-06: der Feed soll HTML-Banner liefern. Fuer
+        // lokale HTML-Fallbacks (same-origin) muss isAllowedIframe auch
+        // relative Pfade erlauben - ohne Scheme, beginnend mit "/", kein "//".
+        self::assertTrue(Banners::isAllowedIframe('/Media/banners/zeitcheck.html'));
+        self::assertTrue(Banners::isAllowedIframe('/assets/banners/foo.html?v=2'));
+        // Aber keine Traversals und keine protocol-relative URLs.
+        self::assertFalse(Banners::isAllowedIframe('//evil.example.com/x.html'));
+        self::assertFalse(Banners::isAllowedIframe('/Media/banners/../../etc/passwd'));
+        // HTTPS-Regeln bleiben wie vorher.
+        self::assertTrue(Banners::isAllowedIframe('https://cdn.timeminator.com/a.html'));
+        self::assertFalse(Banners::isAllowedIframe('http://timeminator.com/a.html'));
+        self::assertFalse(Banners::isAllowedIframe('https://evil.example.com/x.html'));
     }
 }
