@@ -539,8 +539,31 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .tracker-timeline .tt-item.tt-progress{border-left-color:#2563eb}
 .tracker-timeline .tt-item.tt-date_shift{border-left-color:#8b5cf6}
 .tracker-timeline .tt-item.tt-status_report{border-left-color:#94a3b8}
-.tracker-timeline .tt-head{display:flex;gap:8px;align-items:center;font-size:13px}
+.tracker-timeline .tt-head{display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap}
 .tracker-timeline .tt-body{margin-top:4px;font-size:14px}
+.tracker-timeline .tt-note{margin-top:4px}
+
+/* Tracker-Edit (Pro-UI-Paritaet, Felix-Feedback 2026-11-06).
+   Das <details class="tt-edit"> liegt als eigenes Block-Element UNTER der
+   <tt-body>, nicht im <tt-head> - damit die Edit-Form die volle Breite der
+   <li> nutzt statt rechts im Head gequetscht zu landen. Das Loeschen passiert
+   im geoeffneten Edit-Dialog neben Speichern, nicht mehr ueber ein X im Head
+   (Felix-Feedback 2026-11-06: "Das Loeschenkreuz nicht ... neben dem
+   Speichern-Button auch ein Abbrechen-Button"). */
+.tracker-timeline .tt-edit{margin-top:6px}
+.tracker-timeline .tt-edit summary{list-style:none;cursor:pointer;display:inline-block}
+.tracker-timeline .tt-edit summary::-webkit-details-marker{display:none}
+.tracker-timeline .tt-edit[open] summary{color:var(--brand)}
+.tracker-timeline .tt-edit-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 12px;margin-top:8px;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--panel-alt,rgba(0,0,0,.03))}
+.tracker-timeline .tt-edit-form label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:3px}
+.tracker-timeline .tt-edit-form input,.tracker-timeline .tt-edit-form select,.tracker-timeline .tt-edit-form textarea{font:inherit;padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink)}
+.tracker-timeline .tt-edit-note{grid-column:1/-1}
+.tracker-timeline .tt-edit-note textarea{resize:vertical;min-height:52px}
+.tracker-timeline .tt-edit-actions{grid-column:1/-1;display:flex;gap:8px;align-items:center;margin-top:4px}
+.tracker-timeline .tt-edit-actions-spacer{flex:1}
+.tracker-timeline .tt-del-form-inline{margin-top:-1px;padding:0 12px 12px;display:block}
+.tracker-timeline .tt-del-form-inline button{color:#ef4444;background:transparent;border:1px solid rgba(239,68,68,.35);padding:4px 10px;border-radius:4px;cursor:pointer;font:inherit}
+.tracker-timeline .tt-del-form-inline button:hover{background:rgba(239,68,68,.08)}
 
 /* Plan-Matrix */
 /* Felix-Feedback 2026-11-06: die Matrix hat deutlich mehr Spalten als in die

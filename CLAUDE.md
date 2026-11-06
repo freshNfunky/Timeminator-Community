@@ -3,6 +3,31 @@
 Alles was hier steht gilt verbindlich fuer jede Claude-Session in diesem
 Repository.
 
+## Nichts fallen lassen — Plan-Pflicht
+
+**Jede Aenderungsanforderung von Felix (auch wenn mitten in einer
+anderen Aufgabe geaeussert) wird SOFORT als Task via `TaskCreate`
+angelegt und bis zum Ende abgearbeitet.** (Felix-Feedback 2026-11-06:
+"nix parken. neue sachen von mir an den plan haengen. nichts fallen
+lassen!!!", und spaeter: "Grundsaetzlich immer in den Plan
+hinzufuegen.")
+
+Konkret:
+
+1. **Sofort erfassen**: jede neue Felix-Anforderung sofort als Task
+   via `TaskCreate` festhalten — auch mitten in einer anderen Aufgabe,
+   auch wenn sie gerade quer einlaeuft.
+2. **Nichts verlieren**: niemals etwas "parken", "fuer spaeter
+   lassen" oder stillschweigend ueberspringen. Jede offene Aenderung
+   bleibt als `pending`/`in_progress` sichtbar bis sie fertig ist.
+3. **Zu Ende bringen**: nicht in der Mitte aufhoeren. Task erst auf
+   `completed` setzen, wenn der Save-Pfad verifiziert ist UND die
+   Regressionstests gruen laufen UND der Commit (+ ggf. zugehoeriger
+   Pro-Issue) draussen ist.
+4. **Pro-Issues als Paper-Trail**: wenn Felix "erstelle das Issue auch
+   fuer Pro" sagt, ist das ein eigener Task, nicht ein Nebensatz. Pro-
+   Issue zaehlt auch zum Abschluss der Aufgabe.
+
 ## Regressionstest-Pflicht fuer Features
 
 **Jedes Feature in dieser Anwendung MUSS durch mindestens einen

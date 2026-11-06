@@ -540,26 +540,31 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
   <?php if (!$timeline): ?>
     <p class="muted"><?= h(t('cockpit.timeline_empty', 'Noch keine Tracker-Eintraege.')) ?></p>
   <?php else: ?>
+    <?php $canEditTracker = Auth::can('structure.manage'); ?>
     <ul class="tracker-timeline">
     <?php foreach ($timeline as $t):
-      $when = (new DateTimeImmutable($t['created_at']))->format('d.m.Y');
+      $when   = (new DateTimeImmutable($t['created_at']))->format('d.m.Y');
+      $tid    = (int) $t['id'];
+      $ttype  = (string) $t['type'];
+      $editable = $canEditTracker && in_array($ttype, ['progress', 'date_shift', 'meeting', 'status_report'], true);
+      $createdLocal = (new DateTimeImmutable($t['created_at']))->format('Y-m-d\TH:i');
     ?>
-      <li class="tt-item tt-<?= h($t['type']) ?>">
+      <li class="tt-item tt-<?= h($ttype) ?>">
         <div class="tt-head">
           <strong><?= h($when) ?></strong>
           <span class="muted"><?= h((string) ($t['user_username'] ?? '')) ?></span>
-          <span class="pill pill-<?= h($t['type']) ?>">
-            <?php switch ((string) $t['type']) {
+          <span class="pill pill-<?= h($ttype) ?>">
+            <?php switch ($ttype) {
               case 'progress':      echo h(t('cockpit.tt_progress',   'Fortschritt')); break;
               case 'date_shift':    echo h(t('cockpit.tt_date_shift', 'Terminverschiebung')); break;
               case 'meeting':       echo h(t('cockpit.tt_meeting',    'Meeting-Protokoll')); break;
               case 'status_report': echo h(t('cockpit.tt_status',     'Status')); break;
-              default:              echo h((string) $t['type']);
+              default:              echo h($ttype);
             } ?>
           </span>
         </div>
         <div class="tt-body">
-          <?php if ($t['type'] === 'progress'): ?>
+          <?php if ($ttype === 'progress'): ?>
             <strong><?= h(number_format((float) $t['value'], 0, ',', '.')) ?>%</strong>
             <?php if ($t['value_forecast'] !== null): ?>
               <span class="muted">(<?= h(t('cockpit.tt_forecast', 'Prognose')) ?>: <?= h(number_format((float) $t['value_forecast'], 0, ',', '.')) ?>%)</span>
@@ -567,7 +572,7 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
             <?php if ($t['date_value']): ?><span class="muted"> · <?= h(t('cockpit.tt_as_of', 'Stand')) ?> <?= h((new DateTimeImmutable($t['date_value']))->format('d.m.Y')) ?></span><?php endif; ?>
             <?php if (!empty($t['project_mood'])):  ?><span class="tt-mood" title="<?= h(t('cockpit.tt_proj_mood', 'Projekt-Mood')) ?> <?= (int) $t['project_mood'] ?>/5 (<?= h(Sentiment::moodLabel((int) $t['project_mood'])) ?>)"> · <?= Sentiment::moodEmoji((int) $t['project_mood']) ?> <span class="muted"><?= h(t('cockpit.tt_proj_mood', 'Projekt-Mood')) ?> <?= (int) $t['project_mood'] ?>/5</span></span><?php endif; ?>
             <?php if (!empty($t['customer_mood'])): ?><span class="tt-mood" title="<?= h(t('cockpit.tt_cust_mood', 'Kunde')) ?> <?= (int) $t['customer_mood'] ?>/5 (<?= h(Sentiment::moodLabel((int) $t['customer_mood'])) ?>)"> · <?= Sentiment::moodEmoji((int) $t['customer_mood']) ?> <span class="muted"><?= h(t('cockpit.tt_cust_mood', 'Kunde')) ?> <?= (int) $t['customer_mood'] ?>/5</span></span><?php endif; ?>
-          <?php elseif ($t['type'] === 'date_shift'): ?>
+          <?php elseif ($ttype === 'date_shift'): ?>
             <?= h(t('cockpit.tt_shift_to', 'Neues Enddatum')) ?>:
             <strong><?= $t['date_value'] ? h((new DateTimeImmutable($t['date_value']))->format('d.m.Y')) : '—' ?></strong>
           <?php else: ?>
@@ -575,12 +580,97 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
             <?php if ($t['date_value']): ?><span class="muted"> · <?= h((new DateTimeImmutable($t['date_value']))->format('d.m.Y')) ?></span><?php endif; ?>
           <?php endif; ?>
           <?php if (!empty($t['note'])): ?>
-            <div class="muted" style="margin-top:4px"><?= nl2br(h((string) $t['note'])) ?></div>
+            <div class="muted tt-note"><?= nl2br(h((string) $t['note'])) ?></div>
           <?php endif; ?>
         </div>
+        <?php if ($editable): ?>
+          <details class="tt-edit">
+            <summary class="btn btn-ghost btn-sm"><?= h(t('cockpit.edit', 'Bearbeiten')) ?></summary>
+            <form method="post" action="<?= h(route('project_tracker_update')) ?>" class="tt-edit-form">
+              <?= csrf_field() ?>
+              <input type="hidden" name="id" value="<?= $tid ?>">
+              <input type="hidden" name="project_id" value="<?= (int) $project['id'] ?>">
+              <input type="hidden" name="return_to" value="cockpit_project">
+              <label><?= h(t('cockpit.f_entry_date', 'Eintrags-Datum')) ?>
+                <input type="datetime-local" name="created_at" value="<?= h($createdLocal) ?>">
+              </label>
+              <?php if ($ttype === 'progress'): ?>
+                <label><?= h(t('cockpit.f_as_of', 'Stand')) ?>
+                  <input type="date" name="date_value" value="<?= h((string) ($t['date_value'] ?? '')) ?>">
+                </label>
+                <label><?= h(t('cockpit.f_progress_pct', 'Fortschritt (%)')) ?>
+                  <input type="number" name="value" min="0" max="100" step="1" value="<?= h((string) (int) $t['value']) ?>">
+                </label>
+                <label><?= h(t('cockpit.f_forecast_pct', 'Prognose (%)')) ?>
+                  <input type="number" name="value_forecast" min="0" max="100" step="1" value="<?= $t['value_forecast'] !== null ? h((string) (int) $t['value_forecast']) : '' ?>">
+                </label>
+                <?php $pm = (int) ($t['project_mood'] ?? 0); $cm = (int) ($t['customer_mood'] ?? 0); ?>
+                <label><?= h(t('cockpit.tt_proj_mood', 'Projekt-Mood')) ?>
+                  <select name="project_mood">
+                    <option value="">–</option>
+                    <?php foreach (range(1, 5) as $i): ?>
+                      <option value="<?= $i ?>"<?= $pm === $i ? ' selected' : '' ?>><?= Sentiment::moodEmoji($i) ?> <?= $i ?>/5</option>
+                    <?php endforeach; ?>
+                  </select>
+                </label>
+                <label><?= h(t('cockpit.tt_cust_mood', 'Kunde')) ?>
+                  <select name="customer_mood">
+                    <option value="">–</option>
+                    <?php foreach (range(1, 5) as $i): ?>
+                      <option value="<?= $i ?>"<?= $cm === $i ? ' selected' : '' ?>><?= Sentiment::moodEmoji($i) ?> <?= $i ?>/5</option>
+                    <?php endforeach; ?>
+                  </select>
+                </label>
+              <?php elseif ($ttype === 'date_shift'): ?>
+                <label><?= h(t('cockpit.tt_shift_to', 'Neues Enddatum')) ?>
+                  <input type="date" name="date_value" value="<?= h((string) ($t['date_value'] ?? '')) ?>">
+                </label>
+              <?php elseif ($ttype === 'status_report'): ?>
+                <label><?= h(t('cockpit.f_status', 'Status')) ?>
+                  <input type="text" name="status" maxlength="32" value="<?= h((string) ($t['status'] ?? '')) ?>">
+                </label>
+                <label><?= h(t('cockpit.f_date', 'Datum')) ?>
+                  <input type="date" name="date_value" value="<?= h((string) ($t['date_value'] ?? '')) ?>">
+                </label>
+              <?php endif; ?>
+              <label class="tt-edit-note"><?= h(t('cockpit.f_note', 'Notiz')) ?>
+                <textarea name="note" rows="3"><?= h((string) ($t['note'] ?? '')) ?></textarea>
+              </label>
+              <div class="tt-edit-actions">
+                <button class="btn btn-primary btn-sm" type="submit"><?= h(t('common.save', 'Speichern')) ?></button>
+                <button class="btn btn-ghost btn-sm tt-edit-cancel" type="button"><?= h(t('common.cancel', 'Abbrechen')) ?></button>
+                <span class="tt-edit-actions-spacer"></span>
+              </div>
+            </form>
+            <form method="post" action="<?= h(route('project_tracker_delete')) ?>" class="tt-del-form tt-del-form-inline"
+                  onsubmit="return confirm('<?= h(t('cockpit.delete_entry_confirm', 'Eintrag wirklich loeschen?')) ?>')">
+              <?= csrf_field() ?>
+              <input type="hidden" name="id" value="<?= $tid ?>">
+              <input type="hidden" name="project_id" value="<?= (int) $project['id'] ?>">
+              <input type="hidden" name="return_to" value="cockpit_project">
+              <button class="btn btn-danger btn-sm" type="submit"><?= h(t('cockpit.delete', 'Loeschen')) ?></button>
+            </form>
+          </details>
+        <?php endif; ?>
       </li>
     <?php endforeach; ?>
     </ul>
+    <?php if ($canEditTracker): ?>
+    <script nonce="<?= h(csp_nonce()) ?>">
+    (function () {
+      // Abbrechen-Button im Tracker-Edit-Form: schliesst das umgebende
+      // <details> ohne POST. Felix-Feedback 2026-11-06: "wir muessen auch
+      // immer die Moeglichkeit haben, die Bearbeitung abbrechen zu koennen".
+      document.querySelectorAll('.tracker-timeline .tt-edit-cancel').forEach(function (btn) {
+        btn.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          var det = btn.closest('details.tt-edit');
+          if (det) { det.open = false; }
+        });
+      });
+    })();
+    </script>
+    <?php endif; ?>
   <?php endif; ?>
 </div>
 
@@ -601,8 +691,8 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
       'deadline'     => t('cockpit.burnup_deadline',  'Planende'),
       'delay'        => t('cockpit.burnup_delay',     'Verzoegerung'),
       'ideal'        => t('cockpit.burnup_ideal',     'Ideal'),
-      'within'       => t('cockpit.burnup_within',    'im Plan'),
-      'over'         => t('cockpit.burnup_over',      'ueber Plan'),
+      'within'       => t('cockpit.burnup_within',    'im Budget'),
+      'over'         => t('cockpit.burnup_over',      'Budget ueberschritten'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
     if (!d.ok || !d.points.length) {

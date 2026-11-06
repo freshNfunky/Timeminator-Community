@@ -221,7 +221,19 @@ function ctrl_project_tracker_update(): void
         'value'          => post('value', null)          !== null && post('value', '')          !== '' ? (float) str_replace(',', '.', (string) post('value'))          : null,
         'value_forecast' => post('value_forecast', null) !== null && post('value_forecast', '') !== '' ? (float) str_replace(',', '.', (string) post('value_forecast')) : null,
     ];
+    // Pro-UI-Paritaet: project_mood + customer_mood sind beim progress-
+    // Eintrag mit-editierbar. Leerer String loescht die Stimmung
+    // (Repo::updateProjectTracker ruft moodClamp mit null auf).
+    if (post('project_mood',  null) !== null) { $extra['project_mood']  = post('project_mood');  }
+    if (post('customer_mood', null) !== null) { $extra['customer_mood'] = post('customer_mood'); }
     $createdAt = trim((string) post('created_at', ''));
+
+    // Felix-Feedback 2026-11-06: der Cockpit-Weg benutzt dieselbe Update-Route,
+    // soll aber nach dem Save zurueck ins Cockpit, nicht in die Projektdetail-
+    // Seite - sonst verliert man die Timeline aus dem Blickfeld.
+    $returnRoute = (string) post('return_to', '') !== ''
+        ? (string) post('return_to', '')
+        : 'project_show';
 
     try {
         Repo::updateProjectTracker($id, (string) post('note', ''), $createdAt !== '' ? $createdAt : null, $extra);
@@ -229,7 +241,7 @@ function ctrl_project_tracker_update(): void
     } catch (Throwable $e) {
         flash($e->getMessage(), 'err');
     }
-    redirect_route('project_show', ['id' => $projectId]);
+    redirect_route($returnRoute, ['id' => $projectId]);
 }
 
 /** Admins (or the author) can retract a mis-posted tracker entry. */

@@ -354,6 +354,8 @@ final class Repo
             'note'           => (string) $r['note'],
             'value'          => $r['value']          !== null ? (float) $r['value']          : null,
             'value_forecast' => $r['value_forecast'] !== null ? (float) $r['value_forecast'] : null,
+            'project_mood'   => $r['project_mood']   !== null ? (int) $r['project_mood']   : null,
+            'customer_mood'  => $r['customer_mood']  !== null ? (int) $r['customer_mood']  : null,
             'user_id'        => $r['user_id']        !== null ? (int) $r['user_id']        : null,
             'user_username'  => $r['user_username']  !== null ? (string) $r['user_username'] : null,
             'created_at'     => (string) $r['created_at'],
@@ -386,6 +388,14 @@ final class Repo
         $value     = $row['value'];
         $forecast  = $row['value_forecast'];
 
+        $projectMood  = $row['project_mood']  ?? null;
+        $customerMood = $row['customer_mood'] ?? null;
+        $moodClamp = function ($raw) {
+            if ($raw === null || $raw === '') return null;
+            $n = (int) $raw;
+            return ($n >= 1 && $n <= 5) ? $n : null;
+        };
+
         if ($row['type'] === 'progress') {
             if (array_key_exists('value', $extra)) {
                 $v = $extra['value'];
@@ -397,6 +407,17 @@ final class Repo
                 $f = $extra['value_forecast'];
                 $forecast = $f !== null ? max(0.0, min(100.0, (float) $f)) : null;
             }
+            // Pro-UI-Paritaet: as_of ist fuer progress editierbar.
+            if (array_key_exists('date_value', $extra)) {
+                $d = $extra['date_value'];
+                if (is_string($d) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) {
+                    $dateValue = $d;
+                } elseif ($d === null || $d === '') {
+                    $dateValue = null;
+                }
+            }
+            if (array_key_exists('project_mood',  $extra)) { $projectMood  = $moodClamp($extra['project_mood']); }
+            if (array_key_exists('customer_mood', $extra)) { $customerMood = $moodClamp($extra['customer_mood']); }
         } else {
             if (array_key_exists('status', $extra)) {
                 $s = $extra['status'];
@@ -427,9 +448,10 @@ final class Repo
 
         DB::run(
             'UPDATE project_trackers
-                SET note = ?, status = ?, date_value = ?, value = ?, value_forecast = ?, created_at = ?
+                SET note = ?, status = ?, date_value = ?, value = ?, value_forecast = ?,
+                    project_mood = ?, customer_mood = ?, created_at = ?
               WHERE id = ?',
-            [$note, $status, $dateValue, $value, $forecast, $ts, $id]
+            [$note, $status, $dateValue, $value, $forecast, $projectMood, $customerMood, $ts, $id]
         );
     }
 

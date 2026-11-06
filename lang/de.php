@@ -1206,6 +1206,14 @@ return [
     'cockpit.f_comment'             => 'Kommentar',
     'cockpit.f_comment_ph'          => 'optional, kurze Notiz',
     'cockpit.f_optional'            => 'optional',
+    // Tracker-Timeline Inline-Edit (Felix-Feedback 2026-11-06)
+    'cockpit.edit'                  => 'Bearbeiten',
+    'cockpit.delete'                => 'Loeschen',
+    'cockpit.delete_entry_confirm'  => 'Eintrag wirklich loeschen?',
+    'cockpit.f_entry_date'          => 'Eintrags-Datum',
+    'cockpit.f_as_of'               => 'Stand',
+    'cockpit.f_status'              => 'Status',
+    'cockpit.f_note'                => 'Notiz',
     'cockpit.book_progress'         => 'Fortschritt buchen',
     // Meeting-Protokoll (Community-Grundfunktion)
     'cockpit.f_meeting_date'           => 'Meeting-Datum',
