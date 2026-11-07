@@ -47,9 +47,15 @@ return [
     // Show PHP errors in the browser. true for local dev, false in production.
     'debug' => true,
 
-    // Link shown in the nav bar / footer pointing to the Pro edition
+    // Link shown in the nav bar pointing to the Pro edition's marketing site
     // (Planung/Budget/Report, Angebote, Rechnungen + Buchhaltungs-Konnektoren).
     'pro_url' => 'https://timeminator.com',
+
+    // Link shown in the footer + sidepanel brand ("mehr Funktionen mit
+    // Timeminator Pro") - zeigt auf die oeffentliche Demo-Instanz, damit
+    // Interessenten Pro direkt ausprobieren koennen. Niemals auf eine
+    // private Instanz setzen.
+    'pro_demo_url' => 'https://demo.timeminator.com',
 
     // --- Updates / registration (Issue #2) ---
     // Release channel for the update check. GitHub Releases API by default.
