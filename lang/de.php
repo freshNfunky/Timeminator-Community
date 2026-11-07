@@ -1379,19 +1379,26 @@ return [
     'co.tile_result'                   => 'Ergebnis',
 
     'cockpit.company_matrix_h3'        => 'Woche Ist / Soll — firmenweit',
-    'cockpit.company_matrix_subtitle'  => 'Letzte 8 Wochen + 2 Wochen voraus · Soll aus Projekt-Allokationen · Ist aus Buchungen',
+    // Tooltip-Key (Felix-Feedback 2026-11-07): Prosa-Subtitle + Farblegende
+    // zusammen im ⓘ-Tooltip statt als zwei sichtbare muted-Zeilen.
+    'cockpit.company_matrix_subtitle'  => 'Letzte 8 Wochen + 2 Wochen voraus · Soll aus Projekt-Allokationen · Ist aus Buchungen. Oben: Ist · unten: Soll. Farbe: gruen = Soll gesetzt, orange = unter 50 % des Soll, rot = ueber 110 % des Soll.',
     'cockpit.company_matrix_empty'     => 'Keine Buchungen oder Planungen im Fenster.',
     'cockpit.company_matrix_legend'    => 'Oben: Ist · unten: Soll. Farbe: gruen = Soll gesetzt, orange = unter 50 % des Soll, rot = ueber 110 % des Soll.',
 
     'cockpit.company_cats_h3'          => 'Projekte nach Projektart',
+    'cockpit.company_cats_h3_year'     => 'Projekte nach Projektart %d',
     'cockpit.company_cats_subtitle'    => 'Jahr %d · Stunden & Projektanzahl · Umsatz je Projektart ist Pro',
+    'cockpit.company_cats_subtitle_tip' => 'Aggregation pro Projektart fuer dieses Jahr: Anzahl aktiver Projekte, aufgelaufene Stunden. Die Umsatz-Spalte ist Teil von Timeminator Pro.',
     'cockpit.company_cats_empty'       => 'Keine aktiven Projekte.',
     'cockpit.company_cats_count'       => 'Projekte',
     'cockpit.company_cats_hours'       => 'Stunden (Jahr)',
     'cockpit.company_cats_revenue'     => 'Umsatz',
 
     'cockpit.company_processes_h3'     => 'Interne Prozesse',
+    'cockpit.company_processes_h3_year' => 'Interne Prozesse %d',
     'cockpit.company_processes_subtitle' => 'Jahr %d · Stunden je Prozess-Kategorie · gesamt %s h',
+    'cockpit.company_processes_subtitle_tip' => 'Aggregation der nicht-abrechenbaren Innen-Taetigkeiten fuer dieses Jahr - Stunden pro Prozess-Kategorie mit Anteil am Gesamtaufwand.',
+    'cockpit.company_processes_total'  => '· gesamt %s h',
     'cockpit.company_processes_empty'  => 'Keine Prozess-Kategorien aktiv.',
     'cockpit.company_processes_cat'    => 'Prozess',
     'cockpit.company_processes_count'  => 'Buchungen',

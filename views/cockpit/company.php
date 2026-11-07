@@ -29,7 +29,10 @@ $currentWeek = (new DateTimeImmutable('today'))->format('o-\WW');
 ?>
 <div class="card">
   <div class="card-head">
-    <h2><?= h(t('cockpit.company_h2', 'Firmen-Cockpit')) ?></h2>
+    <h2>
+      <?= h(t('cockpit.company_h2', 'Firmen-Cockpit')) ?>
+      <?= tip('cockpit.company_intro') ?>
+    </h2>
     <form method="get" style="margin:0">
       <input type="hidden" name="r" value="cockpit_company">
       <label><?= h(t('cockpit.company_year', 'Jahr')) ?>
@@ -41,9 +44,6 @@ $currentWeek = (new DateTimeImmutable('today'))->format('o-\WW');
       </label>
     </form>
   </div>
-  <p class="muted" style="margin-bottom:0">
-    <?= h(t('cockpit.company_intro', 'Diese Edition zeigt die zeitbasierten Jahreskennzahlen deiner Firma. Umsatz, Rechnungen und Firmenbilanz sind Teil von Timeminator Pro.')) ?>
-  </p>
 </div>
 
 <!-- Pro-Teaser-Tiles: Umsatz-/Rechnungs-/Kosten-/Ergebnis-KPIs -->
@@ -51,8 +51,8 @@ $currentWeek = (new DateTimeImmutable('today'))->format('o-\WW');
   <div class="card-head">
     <h3><?= h(t('cockpit.company_kpis_h3', 'Jahreskennzahlen (kaufmaennisch)')) ?>
       <span class="pill pill-pro"><?= h(t('nav.pro_pill')) ?></span>
+      <?= tip('cockpit.company_kpis_subtitle') ?>
     </h3>
-    <span class="muted"><?= h(t('cockpit.company_kpis_subtitle', 'Angebote, Rechnungen, Kosten und Ergebnis liegen in Timeminator Pro.')) ?></span>
   </div>
   <div class="row" style="gap:12px;flex-wrap:wrap;margin:0">
     <?php
@@ -82,8 +82,9 @@ $currentWeek = (new DateTimeImmutable('today'))->format('o-\WW');
 <!-- Woche Ist/Soll-Matrix firmenweit (nutzt PlanRepo aus F2) -->
 <div class="card" style="margin-top:16px">
   <div class="card-head">
-    <h3><?= h(t('cockpit.company_matrix_h3', 'Woche Ist / Soll — firmenweit')) ?></h3>
-    <span class="muted"><?= h(t('cockpit.company_matrix_subtitle', 'Letzte 8 Wochen + 2 Wochen voraus · Soll aus Projekt-Allokationen · Ist aus Buchungen')) ?></span>
+    <h3><?= h(t('cockpit.company_matrix_h3', 'Woche Ist / Soll — firmenweit')) ?>
+      <?= tip('cockpit.company_matrix_subtitle') ?>
+    </h3>
   </div>
   <?php if (!$matrix_users): ?>
     <p class="muted"><?= h(t('cockpit.company_matrix_empty', 'Keine Buchungen oder Planungen im Fenster.')) ?></p>
@@ -128,17 +129,16 @@ $currentWeek = (new DateTimeImmutable('today'))->format('o-\WW');
         </tbody>
       </table>
     </div>
-    <p class="muted" style="font-size:12px;margin-top:6px">
-      <?= h(t('cockpit.company_matrix_legend', 'Oben: Ist · unten: Soll. Farbe: gruen = Soll gesetzt, orange = unter 50 % des Soll, rot = ueber 110 % des Soll.')) ?>
-    </p>
   <?php endif; ?>
 </div>
 
 <!-- Projekte nach Projektart (Zeit-Teil, EUR bleibt Pro) -->
 <div class="card" style="margin-top:16px">
   <div class="card-head">
-    <h3><?= h(t('cockpit.company_cats_h3', 'Projekte nach Projektart')) ?></h3>
-    <span class="muted"><?= h(sprintf(t('cockpit.company_cats_subtitle', 'Jahr %d · Stunden & Projektanzahl · Umsatz je Projektart ist Pro'), $year)) ?></span>
+    <h3>
+      <?= h(sprintf(t('cockpit.company_cats_h3_year', 'Projekte nach Projektart %d'), $year)) ?>
+      <?= tip('cockpit.company_cats_subtitle_tip') ?>
+    </h3>
   </div>
   <?php if (!$by_category): ?>
     <p class="muted"><?= h(t('cockpit.company_cats_empty', 'Keine aktiven Projekte.')) ?></p>
@@ -176,8 +176,11 @@ $currentWeek = (new DateTimeImmutable('today'))->format('o-\WW');
 <!-- Interne Prozesse (Stunden-Zusammenfassung) -->
 <div class="card" style="margin-top:16px">
   <div class="card-head">
-    <h3><?= h(t('cockpit.company_processes_h3', 'Interne Prozesse')) ?></h3>
-    <span class="muted"><?= h(sprintf(t('cockpit.company_processes_subtitle', 'Jahr %d · Stunden je Prozess-Kategorie · gesamt %s h'), $year, $fmtHr($process_total_min / 60))) ?></span>
+    <h3>
+      <?= h(sprintf(t('cockpit.company_processes_h3_year', 'Interne Prozesse %d'), $year)) ?>
+      <span class="muted"><?= h(sprintf(t('cockpit.company_processes_total', '· gesamt %s h'), $fmtHr($process_total_min / 60))) ?></span>
+      <?= tip('cockpit.company_processes_subtitle_tip') ?>
+    </h3>
   </div>
   <?php if (!$process_hours): ?>
     <p class="muted"><?= h(t('cockpit.company_processes_empty', 'Keine Prozess-Kategorien aktiv.')) ?></p>

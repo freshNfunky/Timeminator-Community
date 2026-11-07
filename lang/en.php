@@ -1382,19 +1382,26 @@ return [
     'co.tile_result'                   => 'Result',
 
     'cockpit.company_matrix_h3'        => 'Week actual / target — company-wide',
-    'cockpit.company_matrix_subtitle'  => 'Last 8 weeks + 2 weeks ahead · target from project allocations · actual from bookings',
+    // Tooltip-Key (Felix-Feedback 2026-11-07): prose subtitle + color legend
+    // bundled into the single ⓘ-tooltip instead of two visible muted lines.
+    'cockpit.company_matrix_subtitle'  => 'Last 8 weeks + 2 weeks ahead · target from project allocations · actual from bookings. Top row: actual · bottom row: target. Color: green = target set, orange = below 50 % of target, red = above 110 % of target.',
     'cockpit.company_matrix_empty'     => 'No bookings or allocations in the window.',
     'cockpit.company_matrix_legend'    => 'Top: actual · bottom: target. Colour: green = target set, orange = below 50 % of target, red = above 110 % of target.',
 
     'cockpit.company_cats_h3'          => 'Projects by category',
+    'cockpit.company_cats_h3_year'     => 'Projects by category %d',
     'cockpit.company_cats_subtitle'    => 'Year %d · hours & project count · revenue by category is Pro',
+    'cockpit.company_cats_subtitle_tip' => 'Aggregation per project category for this year: number of active projects, accumulated hours. The revenue column is part of Timeminator Pro.',
     'cockpit.company_cats_empty'       => 'No active projects.',
     'cockpit.company_cats_count'       => 'Projects',
     'cockpit.company_cats_hours'       => 'Hours (year)',
     'cockpit.company_cats_revenue'     => 'Revenue',
 
     'cockpit.company_processes_h3'     => 'Internal processes',
+    'cockpit.company_processes_h3_year' => 'Internal processes %d',
     'cockpit.company_processes_subtitle' => 'Year %d · hours per process category · total %s h',
+    'cockpit.company_processes_subtitle_tip' => 'Aggregation of non-billable internal activities for this year - hours per process category with share of the total.',
+    'cockpit.company_processes_total'  => '· total %s h',
     'cockpit.company_processes_empty'  => 'No active process categories.',
     'cockpit.company_processes_cat'    => 'Process',
     'cockpit.company_processes_count'  => 'Entries',
