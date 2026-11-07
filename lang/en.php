@@ -1236,6 +1236,8 @@ return [
     'cockpit.chart_mode_hours'      => 'Hours',
     'cockpit.chart_mode_percent'    => 'Percent (%)',
     'cockpit.emp_donut_h2'          => 'Where the time went',
+    'cockpit.tile_no_contract'      => 'No contract data on file - balance cannot be calculated.',
+    'cockpit.overtime_net_year'     => 'Net this year',
     'cockpit.emp_donut_hint'        => 'Totals per series (project category, internal processes, vacation, sick, holiday, overtime reduction) across the selected period - same source as the stacked chart above.',
     // Tracker-Timeline inline edit (Felix-Feedback 2026-11-06)
     'cockpit.edit'                  => 'Edit',

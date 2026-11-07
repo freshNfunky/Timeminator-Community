@@ -1233,6 +1233,8 @@ return [
     'cockpit.chart_mode_hours'      => 'Stunden',
     'cockpit.chart_mode_percent'    => 'Prozent (%)',
     'cockpit.emp_donut_h2'          => 'Wofuer die Zeit draufging',
+    'cockpit.tile_no_contract'      => 'Keine Vertragsdaten hinterlegt - Saldo nicht berechenbar.',
+    'cockpit.overtime_net_year'     => 'Jahres-Saldo',
     'cockpit.emp_donut_hint'        => 'Summe pro Serie (Projektkategorie, interne Prozesse, Urlaub, Krankheit, Feiertage, Ueberstundenabbau) ueber den gewaehlten Zeitraum - identische Datenbasis wie die Stapel-Grafik darueber.',
     // Tracker-Timeline Inline-Edit (Felix-Feedback 2026-11-06)
     'cockpit.edit'                  => 'Bearbeiten',

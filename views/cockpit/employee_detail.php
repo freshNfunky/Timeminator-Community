@@ -43,15 +43,52 @@ $sig  = fn(float $n) => ($n > 0 ? '+' : '') . number_format($n, 1, ',', '.');
 
 <!-- KPI-Tiles -->
 <div class="emp-tiles">
-  <?php $ot = $summary['overtime'] ?? null; ?>
-  <div class="emp-tile <?= $ot && $ot['balance'] < 0 ? 'emp-tile-warn' : '' ?>">
+  <?php
+  $ot = $summary['overtime'] ?? null;
+  // Felix-Feedback 2026-11-07: Breakdown-Tooltip, damit der Saldo
+  // nachvollziehbar wird (Jahresuebertrag zeigte 5 h Vorjahr - Tile
+  // aber -298,8 h; erschien widersprüchlich, ist aber korrekt:
+  // Vorjahr + aufgelaufen - abgebaut = Saldo).
+  $otTitle = $ot
+    ? sprintf(
+        '%s: %s | %s: %s | %s: %s',
+        t('cockpit.vacation_carryover', 'Vorjahr'),  $sig((float) $ot['carryover']) . ' h',
+        t('cockpit.overtime_earned',    'aufgelaufen'),  $sig((float) $ot['earned'])    . ' h',
+        t('cockpit.overtime_reduced',   'abgebaut'),  $num((float) $ot['reduced'])  . ' h'
+      )
+    : t('cockpit.tile_no_contract', 'Keine Vertragsdaten hinterlegt');
+  ?>
+  <div class="emp-tile <?= $ot && $ot['balance'] < 0 ? 'emp-tile-warn' : '' ?>" title="<?= h($otTitle) ?>">
     <div class="emp-tile-val"><?= $ot ? $sig((float) $ot['balance']) . ' h' : '&mdash;' ?></div>
     <div class="emp-tile-lbl"><?= h(t('cockpit.tile_overtime', 'Ueberstundenkonto')) ?></div>
+    <?php if ($ot): ?>
+      <div class="emp-tile-sub">
+        <?= h(t('cockpit.vacation_carryover', 'Vorjahr')) ?> <?= $sig((float) $ot['carryover']) ?> h ·
+        <?= h(t('cockpit.overtime_net_year', 'Jahres-Saldo')) ?> <?= $sig((float) ($ot['earned'] - $ot['reduced'])) ?> h
+      </div>
+    <?php endif; ?>
   </div>
-  <?php $v = $summary['vacation'] ?? null; ?>
-  <div class="emp-tile">
+  <?php
+  $v = $summary['vacation'] ?? null;
+  $vTitle = $v
+    ? sprintf(
+        '%s %s + %s %s - %s %s - %s %s',
+        t('cockpit.vacation_entitlement', 'Anspruch'), $num((float) $v['entitlement']),
+        t('cockpit.vacation_carryover',   'Vorjahr'),  $num((float) $v['carryover']),
+        t('cockpit.vacation_taken',       'genommen'), $num((float) $v['taken']),
+        t('cockpit.vacation_planned',     'geplant'),  $num((float) $v['planned'])
+      )
+    : t('cockpit.tile_no_contract', 'Keine Vertragsdaten hinterlegt');
+  ?>
+  <div class="emp-tile" title="<?= h($vTitle) ?>">
     <div class="emp-tile-val"><?= $v ? $num((float) $v['remaining'], 1) . ' ' . h(t('cockpit.tile_days', 'Tage')) : '&mdash;' ?></div>
     <div class="emp-tile-lbl"><?= h(t('cockpit.tile_vacation_remaining', 'Resturlaub')) ?></div>
+    <?php if ($v): ?>
+      <div class="emp-tile-sub">
+        <?= h(t('cockpit.vacation_entitlement', 'Anspruch')) ?> <?= $num((float) $v['entitlement'], 0) ?> ·
+        <?= h(t('cockpit.vacation_taken', 'genommen')) ?> <?= $num((float) $v['taken'], 1) ?>
+      </div>
+    <?php endif; ?>
   </div>
   <?php $year = (int) (new DateTimeImmutable($asOf))->format('Y'); ?>
   <div class="emp-tile">
@@ -64,7 +101,17 @@ $sig  = fn(float $n) => ($n > 0 ? '+' : '') . number_format($n, 1, ',', '.');
     $pct = $weekTarget > 0 ? round($weekTotal / $weekTarget * 100) : null;
     $utilClass = $pct !== null ? ($pct >= 90 ? 'emp-tile-ok' : ($pct >= 50 ? 'emp-tile-warn' : 'emp-tile-low')) : '';
   ?>
-  <div class="emp-tile <?= $utilClass ?>">
+  <?php
+  $utilTitle = $weekTarget > 0
+    ? sprintf(
+        '%s: %s | %s: %s',
+        t('cockpit.week_booked',  'gebucht'),       $num((float) ($summary['week_hours']  ?? 0), 1) . ' h',
+        t('cockpit.week_credit',  'gutgeschrieben') . ' (' . t('cockpit.week_credit_source', 'Feiertag/Urlaub/Krank') . ')',
+        $num((float) ($summary['week_credit'] ?? 0), 1) . ' h'
+      )
+    : t('cockpit.tile_no_contract', 'Keine Vertragsdaten hinterlegt');
+  ?>
+  <div class="emp-tile <?= $utilClass ?>" title="<?= h($utilTitle) ?>">
     <div class="emp-tile-val"><?= $pct !== null ? $pct . ' %' : '&mdash;' ?></div>
     <div class="emp-tile-lbl">
       <?= h(t('cockpit.tile_utilization', 'Auslastung diese Woche')) ?>

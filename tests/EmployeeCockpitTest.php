@@ -315,6 +315,44 @@ final class EmployeeCockpitTest extends TestCase
         );
     }
 
+    public function testKpiTilesCarryBreakdownTooltipsAndSubLine(): void
+    {
+        // Felix-Feedback 2026-11-07: der Saldo in Ueberstundenkonto/Resturlaub-
+        // Tile ist nicht gleich dem Vorjahres-Carryover (Carryover + aufgelaufen
+        // - abgebaut = Saldo). Damit das nicht wie ein Widerspruch wirkt,
+        // tragen die Tiles einen title-Tooltip mit vollem Breakdown + eine
+        // sub-Zeile mit dem wichtigsten Delta.
+        $view = (string) file_get_contents(dirname(__DIR__) . '/views/cockpit/employee_detail.php');
+
+        // Ueberstunden-Tile: title enthaelt Vorjahr/aufgelaufen/abgebaut.
+        self::assertMatchesRegularExpression(
+            "/\\\$otTitle\s*=\s*\\\$ot.*?vacation_carryover.*?overtime_earned.*?overtime_reduced/s",
+            $view,
+            'Ueberstunden-Tile muss title mit Vorjahr/aufgelaufen/abgebaut tragen'
+        );
+        self::assertStringContainsString('cockpit.overtime_net_year', $view, 'Ueberstunden-Sub-Zeile braucht "Jahres-Saldo"-Label');
+
+        // Urlaubs-Tile: title enthaelt Anspruch/Vorjahr/genommen/geplant.
+        self::assertMatchesRegularExpression(
+            "/\\\$vTitle\s*=\s*\\\$v.*?vacation_entitlement.*?vacation_carryover.*?vacation_taken.*?vacation_planned/s",
+            $view,
+            'Urlaubs-Tile muss title mit Anspruch/Vorjahr/genommen/geplant tragen'
+        );
+
+        // Auslastungs-Tile: title enthaelt gebucht/gutgeschrieben.
+        self::assertMatchesRegularExpression(
+            "/\\\$utilTitle\s*=.*?week_booked.*?week_credit/s",
+            $view,
+            'Auslastungs-Tile muss title mit gebucht/gutgeschrieben tragen'
+        );
+
+        // Fallback-Text wenn keine Vertragsdaten da.
+        self::assertStringContainsString('cockpit.tile_no_contract', $view, 'Tooltip-Fallback bei fehlenden Vertragsdaten fehlt');
+
+        // Sub-Zeile wird nur gerendert wenn Werte da sind (CSS-Klasse).
+        self::assertStringContainsString('class="emp-tile-sub"', $view, 'Sub-Zeile mit Breakdown-Highlight fehlt');
+    }
+
     public function testEmployeeListLinksNameToDetail(): void
     {
         // Felix-Feedback 2026-11-07: Namen in der Tabelle "Alle Mitarbeiter"
