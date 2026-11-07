@@ -266,6 +266,55 @@ final class EmployeeCockpitTest extends TestCase
         );
     }
 
+    public function testCarryoverVacationDefaultsToFullEntitlementWhenNotYetStored(): void
+    {
+        // Felix-Feedback 2026-11-07: im Carryover-Formular soll "Resturlaub
+        // (Tage)" fuer neue Jahre den vollen Jahres-Urlaubsanspruch zeigen
+        // (Jahresanfang-Zustand), nicht 0. Nur wenn der User schon mal
+        // gespeichert hat, zeigt die View den persistierten Wert.
+        $uid = TestSupport::seedUser('neena');
+        EmployeeRepo::saveTerms($uid, '2024-01-01', EmployeeRepo::TYPE_EMPLOYEE, 40.0, 30.0);
+
+        // Noch kein Carryover: Repo liefert null, view default = voller
+        // Anspruch aus terms.
+        self::assertNull(
+            EmployeeRepo::carryoverRow($uid, 2026),
+            'Ohne persistierte Zeile muss carryoverRow null liefern - sonst kann die View "unbekannt" nicht erkennen'
+        );
+        // carryover() (legacy) liefert weiter 0er fuer andere Call-Sites.
+        self::assertSame(
+            ['vacation_days' => 0.0, 'overtime_hours' => 0.0],
+            EmployeeRepo::carryover($uid, 2026),
+            'carryover() bleibt rueckwaertskompatibel (kein Schema-Bruch)'
+        );
+
+        // Nach dem Speichern: sowohl carryover() als auch carryoverRow()
+        // geben die persistierten Werte - auch wenn sie 0 sind.
+        EmployeeRepo::saveCarryover($uid, 2026, 0.0, -2.5);
+        $row = EmployeeRepo::carryoverRow($uid, 2026);
+        self::assertNotNull($row);
+        self::assertSame(0.0,  $row['vacation_days']);
+        self::assertSame(-2.5, $row['overtime_hours']);
+    }
+
+    public function testCarryoverFormDefaultsVacationToTermsEntitlement(): void
+    {
+        // Felix-Feedback 2026-11-07: der View muss den Fallback auf
+        // $current['vacation_days'] expliziert; sonst zeigt das Input-Feld
+        // weiter 0.
+        $view = (string) file_get_contents(dirname(__DIR__) . '/views/partials/forms/employee_terms.php');
+        self::assertMatchesRegularExpression(
+            "/\\\$carryVacDefault\s*=\s*\\\$carryover\s*!==\s*null\s*\?.*\\\$carryover\['vacation_days'\].*:\s*\(string\)\s*\(\\\$current\['vacation_days'\]/s",
+            $view,
+            'Carryover-Form muss im "noch nie gespeichert"-Fall auf terms.vacation_days zurueckfallen'
+        );
+        self::assertStringContainsString(
+            'value="<?= h($carryVacDefault) ?>"',
+            $view,
+            'Default-Variable muss im value-Attribut verwendet werden'
+        );
+    }
+
     public function testEmployeeListLinksNameToDetail(): void
     {
         // Felix-Feedback 2026-11-07: Namen in der Tabelle "Alle Mitarbeiter"

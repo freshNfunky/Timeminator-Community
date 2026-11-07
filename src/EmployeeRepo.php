@@ -75,6 +75,23 @@ final class EmployeeRepo
         return ['vacation_days' => (float) ($row['vacation_days'] ?? 0), 'overtime_hours' => (float) ($row['overtime_hours'] ?? 0)];
     }
 
+    /**
+     * Wie carryover(), aber liefert null wenn in der DB fuer diese Kombination
+     * (user, year) noch keine Zeile existiert. Fuer die Admin-View, die beim
+     * noch-nicht-gespeicherten Carryover den Jahres-Urlaubsanspruch als Default
+     * zeigen muss (Felix-Feedback 2026-11-07).
+     * @return array{vacation_days:float,overtime_hours:float}|null
+     */
+    public static function carryoverRow(int $userId, int $year): ?array
+    {
+        $row = DB::one('SELECT vacation_days, overtime_hours FROM account_carryovers WHERE user_id = ? AND year = ?', [$userId, $year]);
+        if (!$row) { return null; }
+        return [
+            'vacation_days'  => (float) $row['vacation_days'],
+            'overtime_hours' => (float) $row['overtime_hours'],
+        ];
+    }
+
     public static function saveCarryover(int $userId, int $year, float $vacationDays, float $overtimeHours): void
     {
         $existing = DB::one('SELECT id FROM account_carryovers WHERE user_id = ? AND year = ?', [$userId, $year]);

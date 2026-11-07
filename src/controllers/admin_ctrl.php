@@ -14,7 +14,11 @@ function ctrl_users_index(): void
         'roles'         => DB::all('SELECT * FROM roles ORDER BY label'),
         'edit'          => $edit,
         'terms_history' => $edit ? EmployeeRepo::history($editId) : [],
-        'carryover'     => $edit ? EmployeeRepo::carryover($editId, $year) : ['vacation_days' => 0, 'overtime_hours' => 0],
+        // Felix-Feedback 2026-11-07: Default beim NEUEN Carryover soll der
+        // volle Jahres-Urlaubsanspruch sein, nicht 0. Dafuer muss die View
+        // "noch nie gespeichert" von "0 persistiert" unterscheiden koennen -
+        // wir reichen daher null durch, wenn in der DB keine Zeile existiert.
+        'carryover'     => $edit ? EmployeeRepo::carryoverRow($editId, $year) : null,
         'carryover_year'=> $year,
         'holiday_catalog' => class_exists('Holidays') ? Holidays::catalog() : [],
     ], t('nav.users'));
