@@ -114,6 +114,7 @@ $routes = [
 
     // v1.0 F1: Mitarbeiter-Cockpit
     'cockpit_employees'       => 'ctrl_cockpit_employees',
+    'cockpit_employee'        => 'ctrl_cockpit_employee',
     'cockpit_employee_weeks'  => 'ctrl_cockpit_employee_weeks',
     'employee_terms_save'     => 'ctrl_employee_terms_save',
     'employee_terms_delete'   => 'ctrl_employee_terms_delete',

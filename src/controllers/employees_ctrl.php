@@ -30,6 +30,41 @@ function ctrl_cockpit_employees(): void
     ], t('cockpit.employees_title', 'Mitarbeiter-Cockpit'));
 }
 
+/**
+ * Mitarbeiter-Detail (Pro-Parity 2026-11-07): Name, Vertragsdaten,
+ * KPI-Tiles (Ueberstundenkonto, Resturlaub, Krankheit, Auslastung),
+ * Verteilungs-Chart (Stunden/Prozent) und ein Donut "Wofuer die Zeit
+ * draufging". Nicht-Admins sehen nur ihr eigenes Konto; Admins koennen
+ * jede user_id aufrufen.
+ */
+function ctrl_cockpit_employee(): void
+{
+    require_perm('stats.view');
+    $all = Auth::can('admin.users');
+    $uid = (int) (get('user_id') ?: Auth::id());
+    if (!$all && $uid !== (int) Auth::id()) {
+        $uid = (int) Auth::id();
+    }
+    $u = DB::one('SELECT id, username, display_name FROM users WHERE id = ?', [$uid]);
+    if (!$u) {
+        flash(t('cockpit.err_user_not_found', 'Mitarbeiter nicht gefunden.'), 'err');
+        redirect_route('cockpit_employees');
+    }
+    $asOf = (new DateTimeImmutable('today'))->format('Y-m-d');
+    $summary = AccountRepo::summary((int) $u['id'], $asOf);
+    // Tagessoll aus EmployeeRepo::dailyTarget (view zeigt es neben der
+    // Wochenarbeitszeit an); fuer Freelancer bzw. fehlende Vertragsdaten null.
+    $summary['daily_target'] = !empty($summary['terms']) && $summary['terms']['employment_type'] !== EmployeeRepo::TYPE_FREELANCER
+        ? EmployeeRepo::dailyTarget($summary['terms'])
+        : null;
+    view('cockpit/employee_detail', [
+        'user'    => $u,
+        'summary' => $summary,
+        'asOf'    => $asOf,
+        'all'     => $all,
+    ], sprintf(t('cockpit.employee_detail_title', 'Mitarbeiter: %s'), $u['display_name'] ?: $u['username']));
+}
+
 /** JSON fuer die gestapelte Wochen-Grafik. Admins waehlen den Mitarbeiter; alle anderen sehen nur sich selbst. */
 function ctrl_cockpit_employee_weeks(): void
 {

@@ -604,6 +604,20 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 #planMatrix .is-current-week{box-shadow:inset 2px 0 0 var(--brand),inset -2px 0 0 var(--brand)}
 #planMatrix thead th.is-current-week{color:var(--brand)}
 
+/* Mitarbeiter-Cockpit Einzelansicht (Pro-Parity, Felix-Feedback 2026-11-07).
+   Infoblock als Grid, 4 KPI-Tiles als Flex-Row - entspricht der Pro-UI. */
+.emp-title{margin:0 0 4px}
+.emp-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px 18px;margin-top:4px}
+.emp-info-grid .info-lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+.emp-tiles{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
+.emp-tile{flex:1 1 180px;min-width:180px;padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:var(--panel);text-align:center}
+.emp-tile .emp-tile-val{font-size:28px;font-weight:700;margin:0 0 4px;color:var(--brand)}
+.emp-tile .emp-tile-lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.emp-tile.emp-tile-warn{background:rgba(245,158,11,.1)}
+.emp-tile.emp-tile-warn .emp-tile-val{color:#f59e0b}
+.emp-tile.emp-tile-ok .emp-tile-val{color:#10b981}
+.emp-tile.emp-tile-low .emp-tile-val{color:#94a3b8}
+
 /* v1.0 F3: Firmen-Cockpit Pro-Teaser-Tiles */
 .pro-teaser-tile{display:block;flex:1 1 150px;min-width:150px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel);text-decoration:none;color:var(--ink);opacity:.75;transition:opacity .15s}
 .pro-teaser-tile:hover{opacity:1;border-color:var(--brand)}

@@ -200,6 +200,84 @@ final class EmployeeCockpitTest extends TestCase
         self::assertSame('Internes Projekt', $projSeries[1]['label']);
     }
 
+    public function testEmployeeDetailViewHasProParityElements(): void
+    {
+        // Felix-Feedback 2026-11-07 (Pro-Screenshot "Sarah Vogel"): die
+        // Community-Einzelansicht muss die gleichen Bausteine haben wie Pro:
+        //   - Backlink zur Uebersicht
+        //   - Infoblock mit Vertragsdaten-Grid (Beschaeftigung, Wochenstunden,
+        //     Urlaubsanspruch, Feiertage, gilt-ab)
+        //   - vier KPI-Tiles (Ueberstunden, Resturlaub, Krankheit-Jahr, Auslastung)
+        //   - Verteilungs-Chart mit "Darstellung"-Dropdown (Stunden/Prozent)
+        //   - Donut "Wofuer die Zeit draufging"
+        //   - Controller-Pfad ctrl_cockpit_employee + Route cockpit_employee
+        $view  = (string) file_get_contents(dirname(__DIR__) . '/views/cockpit/employee_detail.php');
+        $ctrl  = (string) file_get_contents(dirname(__DIR__) . '/src/controllers/employees_ctrl.php');
+        $index = (string) file_get_contents(dirname(__DIR__) . '/index.php');
+
+        // Route + Controller sind registriert.
+        self::assertStringContainsString("'cockpit_employee'", $index, 'Route cockpit_employee fehlt');
+        self::assertStringContainsString("'ctrl_cockpit_employee'", $index, 'Controller ctrl_cockpit_employee nicht gemappt');
+        self::assertStringContainsString('function ctrl_cockpit_employee', $ctrl, 'Controller-Funktion ctrl_cockpit_employee fehlt');
+
+        // Backlink + Infoblock-Grid.
+        self::assertStringContainsString('cockpit.back_to_employees', $view, 'Backlink-Label fehlt');
+        self::assertStringContainsString('class="emp-info-grid"', $view, 'Infoblock-Grid fehlt');
+        foreach ([
+            'cockpit.emp_type',
+            'cockpit.emp_weekly_hours',
+            'cockpit.emp_vacation_entitlement',
+            'cockpit.emp_holiday_region',
+            'cockpit.emp_valid_from',
+        ] as $key) {
+            self::assertStringContainsString($key, $view, "Infoblock-Key $key fehlt");
+        }
+
+        // Vier KPI-Tiles (anzahl der Tile-Container). Matcht .emp-tile exakt,
+        // nicht die inneren .emp-tile-val/.emp-tile-lbl-Kinder.
+        self::assertSame(
+            4,
+            preg_match_all('/<div class="emp-tile(?: [^"]*)?"/', $view),
+            'Mitarbeiter-Cockpit muss genau vier KPI-Tiles rendern'
+        );
+        foreach ([
+            'cockpit.tile_overtime',
+            'cockpit.tile_vacation_remaining',
+            'cockpit.tile_sick_year',
+            'cockpit.tile_utilization',
+        ] as $key) {
+            self::assertStringContainsString($key, $view, "KPI-Tile-Key $key fehlt");
+        }
+
+        // Darstellung-Dropdown (Stunden/Prozent) ersetzt die Checkbox.
+        self::assertStringContainsString('id="empWeeksMode"', $view, 'Darstellungs-Dropdown fehlt');
+        self::assertStringContainsString('cockpit.chart_mode_hours', $view, 'Mode "Stunden" fehlt');
+        self::assertStringContainsString('cockpit.chart_mode_percent', $view, 'Mode "Prozent" fehlt');
+
+        // Donut.
+        self::assertStringContainsString('id="chartEmpDonut"', $view, 'Donut-Chart Canvas fehlt');
+        self::assertStringContainsString('TmCharts.doughnut(donutCanvas', $view, 'Donut-Render-Call fehlt');
+
+        // Admin-Gate: Nicht-Admins koennen nur die eigene user_id abrufen.
+        self::assertMatchesRegularExpression(
+            '/if\s*\(!\$all\s*&&\s*\$uid\s*!==\s*\(int\)\s*Auth::id\(\)\)\s*\{\s*\$uid\s*=\s*\(int\)\s*Auth::id\(\)/s',
+            $ctrl,
+            'Nicht-Admins muessen auf ihre eigene user_id geklemmt werden'
+        );
+    }
+
+    public function testEmployeeListLinksNameToDetail(): void
+    {
+        // Felix-Feedback 2026-11-07: Namen in der Tabelle "Alle Mitarbeiter"
+        // werden klickbar und fuehren zur Einzelansicht.
+        $view = (string) file_get_contents(dirname(__DIR__) . '/views/cockpit/employees.php');
+        self::assertMatchesRegularExpression(
+            '/<a href="[^"]*cockpit_employee[^"]*"[^>]*><strong><\?=\s*h\(\$name\)/',
+            $view,
+            'Mitarbeiter-Name in der Uebersicht muss auf cockpit_employee verlinken'
+        );
+    }
+
     public function testStackedAreaChartHasPercentModeAndTargetDashedLine(): void
     {
         // Felix-Feedback 2026-11-06: Pro-Parity fuer TmCharts.stackedArea.

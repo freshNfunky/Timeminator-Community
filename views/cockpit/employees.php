@@ -29,7 +29,7 @@ $signed = fn(float $n) => ($n > 0 ? '+' : '') . number_format($n, 1, ',', '.');
       $name = $u['display_name'] ?: $u['username'];
     ?>
       <tr>
-        <td><strong><?= h($name) ?></strong></td>
+        <td><a href="<?= h(route('cockpit_employee', ['user_id' => (int) $u['id']])) ?>"><strong><?= h($name) ?></strong></a></td>
         <?php if (!$t): ?>
           <td colspan="6" class="muted">
             <?= h(t('cockpit.no_contract', 'Keine Vertragsdaten hinterlegt')) ?><?php if (Auth::can('admin.users')): ?> &mdash;
