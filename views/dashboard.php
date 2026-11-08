@@ -48,13 +48,19 @@
 </div>
 
 <?php // Felix-Feedback 2026-11-08: persoenliches Sentiment-Widget (Pro-Parity).
-      // Jeder eingeloggte Nutzer mit sentiment.record sieht Mood + Flow fuer heute
-      // als zwei Reihen à 5 Emoji-Buttons; Scope-Toggle (Tag/Woche) steuert ob
-      // der Klick nur heute oder den Rest der Woche konservativ fuellt. ?>
-<?php if (Auth::can('sentiment.record')): ?>
+      // Titel + Save-Scope folgen dem Granularity-Preset. Kein Scope-Dropdown
+      // mehr, weil redundant: der Rhythmus ist bereits Admin-Einstellung.
+      // Follow-up fuer Milestone 1.1 (optionaler Scope-Override) als Pro-Issue
+      // vermerkt. ?>
+<?php if (Auth::can('sentiment.record')):
+  $__isWeekScope = ($sentimentGranularity ?? 'week') === 'week';
+  $__title = $__isWeekScope
+      ? t('dashboard.mood_question_week', 'Wie geht es dir diese Woche?')
+      : t('dashboard.mood_question', 'Wie geht es dir heute?');
+?>
 <div class="card sentiment-widget">
   <div class="card-head">
-    <h2><?= h(t('dashboard.mood_question', 'Wie geht es dir heute?')) ?><?= tip('dashboard.mood_help') ?></h2>
+    <h2><?= h($__title) ?><?= tip('dashboard.mood_help') ?></h2>
   </div>
   <?php foreach (Sentiment::DIMENSIONS as $__d):
       $__cur = $sentimentToday[$__d] ?? null;
@@ -67,6 +73,8 @@
     <?= csrf_field() ?>
     <input type="hidden" name="back" value="dashboard">
     <input type="hidden" name="dim" value="<?= h($__d) ?>">
+    <?php /* Scope folgt dem Granularity-Preset (Felix-Feedback 2026-11-08). */ ?>
+    <input type="hidden" name="scope" value="<?= $__isWeekScope ? 'week' : 'day' ?>">
     <div class="sentiment-row">
       <span class="sentiment-kind">
         <span aria-hidden="true"><?= $__dimIcon ?></span>
@@ -82,10 +90,6 @@
                   title="<?= h($__label) ?> (<?= (int) $__val ?>/5)"><?= $__emoji ?></button>
         <?php endforeach; ?>
       </div>
-      <select name="scope" class="sentiment-scope" title="<?= h(t('mood.week_hint', 'Woche: fuellt die restliche Woche konservativ (gesetzte Tage bleiben).')) ?>">
-        <option value="day"  <?= $sentimentGranularity === 'day'  ? 'selected' : '' ?>><?= h(t('calendar.day',  'Tag')) ?></option>
-        <option value="week" <?= $sentimentGranularity === 'week' ? 'selected' : '' ?>><?= h(t('calendar.week', 'Woche')) ?></option>
-      </select>
     </div>
   </form>
   <?php endforeach; ?>

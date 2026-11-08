@@ -1241,7 +1241,8 @@ return [
     'cockpit.overtime_net_year'     => 'Net this year',
     // Dashboard sentiment widget (Pro parity, Felix 2026-11-08)
     'dashboard.mood_question'       => 'How are you today?',
-    'dashboard.mood_help'           => 'Two dimensions: "Mood" (personal state) and "Flow" (how the work is going today). Pick 1-5 per dimension. "Week" fills the rest of the week conservatively without overwriting days you already set.',
+    'dashboard.mood_question_week'  => 'How is your week going?',
+    'dashboard.mood_help'           => 'Two dimensions: "Mood" (personal state) and "Flow" (how the work is going today). Pick 1-5 per dimension. Whether a click records just today or the whole week follows the global rhythm (admin setting).',
     'sent.dim_mood_label'           => 'Mood',
     'sent.dim_flow_label'           => 'Flow',
     'mood.week_hint'                => 'Week: fills the rest of the week conservatively, without overwriting days you already set.',

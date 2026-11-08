@@ -193,7 +193,13 @@ final class SentimentTest extends TestCase
         self::assertStringContainsString('class="card sentiment-widget"', $view, 'Sentiment-Widget-Karte fehlt im Dashboard');
         self::assertStringContainsString('class="sentiment-form"', $view, 'Sentiment-Form pro Dimension fehlt');
         self::assertStringContainsString('name="dim"', $view, 'Form-Feld dim (mood/flow) fehlt');
-        self::assertStringContainsString('name="scope"', $view, 'Scope-Dropdown (day/week) fehlt');
+        // Scope folgt dem Granularity-Preset (Felix-Feedback 2026-11-08) und
+        // steht als hidden-Input in der Form; das sichtbare <select> ist raus.
+        self::assertStringContainsString('name="scope"', $view, 'Scope-Feld (hidden, Preset-abgeleitet) fehlt');
+        self::assertStringNotContainsString('<select name="scope"', $view, 'Scope-Combo-Box muss raus (redundant zum Preset)');
+        self::assertStringContainsString("input type=\"hidden\" name=\"scope\"", $view, 'Scope muss als hidden input gesetzt sein');
+        self::assertStringContainsString("dashboard.mood_question_week", $view, 'Titel-Variante fuer Woche fehlt');
+        self::assertStringContainsString("\$__isWeekScope", $view, 'Scope-Flag aus Granularity-Preset fehlt');
         self::assertStringContainsString('foreach (Sentiment::DIMENSIONS', $view, 'Widget iteriert nicht ueber Sentiment::DIMENSIONS');
         self::assertStringContainsString('Sentiment::moodEmoji', $view, 'Mood-Emoji-Renderer fehlt im Widget');
         self::assertStringContainsString('Sentiment::flowEmoji', $view, 'Flow-Emoji-Renderer fehlt im Widget');

@@ -1238,7 +1238,8 @@ return [
     'cockpit.overtime_net_year'     => 'Jahres-Saldo',
     // Dashboard-Sentiment-Widget (Pro-Parity, Felix-Feedback 2026-11-08)
     'dashboard.mood_question'       => 'Wie geht es dir heute?',
-    'dashboard.mood_help'           => 'Zwei Dimensionen: "Stimmung" (persoenliches Befinden) und "Fokus" (wie laeuft die Arbeit heute). Pro Dimension 1-5 waehlen. "Woche" fuellt die restliche Woche konservativ auf, ohne bereits gesetzte Tage zu ueberschreiben.',
+    'dashboard.mood_question_week'  => 'Wie geht es dir diese Woche?',
+    'dashboard.mood_help'           => 'Zwei Dimensionen: "Stimmung" (persoenliches Befinden) und "Fokus" (wie laeuft die Arbeit heute). Pro Dimension 1-5 waehlen. Ob der Klick nur den heutigen Tag oder die ganze Woche setzt, folgt dem globalen Rhythmus (Admin-Einstellung).',
     'sent.dim_mood_label'           => 'Stimmung',
     'sent.dim_flow_label'           => 'Fokus',
     'mood.week_hint'                => 'Woche: fuellt die restliche Woche konservativ, ohne bereits gesetzte Tage zu ueberschreiben.',
