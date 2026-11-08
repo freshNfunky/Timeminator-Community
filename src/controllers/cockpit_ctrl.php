@@ -159,7 +159,7 @@ function cockpit_review_due_projects(): array
 
 function ctrl_cockpit_project(): void
 {
-    require_perm('stats.view');
+    require_perm('cockpit.project.view');
     $id = (int) get('id');
     $project = $id ? Repo::project($id) : null;
     if (!$project) {
@@ -226,7 +226,7 @@ function ctrl_cockpit_project(): void
 
 function ctrl_cockpit_index(): void
 {
-    require_perm('stats.view');
+    require_perm('cockpit.project.view');
     view('cockpit/index', [
         'rows'   => cockpit_rows(),
         'dueIds' => array_column(cockpit_review_due_projects(), 'project_id'),
@@ -731,7 +731,7 @@ function cockpit_burnup_payload(int $projectId): array
 /** v1.0 F2.4: Burn-Up JSON (kumulative Stunden ueber Zeit). */
 function ctrl_cockpit_burnup_data(): void
 {
-    require_perm('stats.view');
+    require_perm('cockpit.project.view');
     $id = (int) get('id');
     $payload = cockpit_burnup_payload($id);
     if (!($payload['ok'] ?? false)) {
@@ -859,7 +859,7 @@ function cockpit_sentiment_payload(int $projectId): array
 /** JSON-Endpunkt fuer den Sentiment-Trend-Chart im Projekt-Cockpit. */
 function ctrl_cockpit_sentiment_data(): void
 {
-    require_perm('stats.view');
+    require_perm('cockpit.project.view');
     $id = (int) get('id');
     $payload = cockpit_sentiment_payload($id);
     if (!($payload['ok'] ?? false)) {

@@ -23,7 +23,7 @@ $sig  = fn(float $n) => ($n > 0 ? '+' : '') . number_format($n, 1, ',', '.');
   </div>
   <?php if (!$t): ?>
     <p class="muted"><?= h(t('cockpit.no_contract', 'Keine Vertragsdaten hinterlegt')) ?>
-      <?php if (Auth::can('admin.users')): ?>
+      <?php if (Auth::can('employees.manage')): ?>
         &mdash; <a href="<?= h(route('admin_users', ['edit' => (int) $user['id']])) ?>"><?= h(t('cockpit.manage_user_link', 'Verwaltung &rsaquo; Benutzer')) ?></a>
       <?php endif; ?>.
     </p>
@@ -35,8 +35,8 @@ $sig  = fn(float $n) => ($n > 0 ? '+' : '') . number_format($n, 1, ',', '.');
       <div><div class="info-lbl"><?= h(t('cockpit.emp_holiday_region', 'Feiertage nach')) ?></div><div><?= !empty($t['holiday_region']) ? h((string) $t['holiday_region']) : '<span class="muted">— ' . h(t('cockpit.emp_no_region', 'keine')) . ' —</span>' ?></div></div>
       <div><div class="info-lbl"><?= h(t('cockpit.emp_valid_from', 'gilt ab')) ?></div><div><?= h((new DateTimeImmutable($t['valid_from']))->format('d.m.Y')) ?></div></div>
     </div>
-    <?php if (Auth::can('admin.users')): ?>
-      <p class="muted" style="margin-top:8px"><a href="<?= h(route('admin_users', ['edit' => (int) $user['id']])) ?>">&rsaquo; <?= h(t('cockpit.emp_edit_terms', 'Vertragsdaten bearbeiten')) ?></a></p>
+    <?php if (Auth::can('employees.manage')): ?>
+      <p class="muted emp-edit-link"><a href="<?= h(route('admin_users', ['edit' => (int) $user['id']])) ?>">&rsaquo; <?= h(t('cockpit.emp_edit_terms', 'Vertragsdaten bearbeiten')) ?></a></p>
     <?php endif; ?>
   <?php endif; ?>
 </div>

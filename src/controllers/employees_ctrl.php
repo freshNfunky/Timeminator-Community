@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 function ctrl_cockpit_employees(): void
 {
-    require_perm('stats.view');
+    require_perm('cockpit.employee.view');
     $asOf = (new DateTimeImmutable('today'))->format('Y-m-d');
     $all = Auth::can('admin.users');
     $users = $all
@@ -39,7 +39,7 @@ function ctrl_cockpit_employees(): void
  */
 function ctrl_cockpit_employee(): void
 {
-    require_perm('stats.view');
+    require_perm('cockpit.employee.view');
     $all = Auth::can('admin.users');
     $uid = (int) (get('user_id') ?: Auth::id());
     if (!$all && $uid !== (int) Auth::id()) {
@@ -68,7 +68,7 @@ function ctrl_cockpit_employee(): void
 /** JSON fuer die gestapelte Wochen-Grafik. Admins waehlen den Mitarbeiter; alle anderen sehen nur sich selbst. */
 function ctrl_cockpit_employee_weeks(): void
 {
-    require_perm('stats.view');
+    require_perm('cockpit.employee.view');
     $all = Auth::can('admin.users');
     $userId = $all && get('user_id') ? (int) get('user_id') : (int) Auth::id();
     $weeks = (int) get('weeks', 26);
