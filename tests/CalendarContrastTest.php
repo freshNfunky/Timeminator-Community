@@ -72,6 +72,30 @@ final class CalendarContrastTest extends TestCase
         self::assertSame('#ffffff', $this->pickInk('#12345'));  // falsche Laenge
     }
 
+    public function testCalendarImportHasTooltipsInsteadOfVisibleProse(): void
+    {
+        // Felix-Feedback 2026-11-08: zwei Prosa-Absaetze im Kalender-Import-
+        // Bereich (Feiertagskalender-Subtitle + Externe-Kalender-Intro) sind
+        // Tooltips am jeweiligen Head, keine sichtbaren muted-Paragraphs.
+        $view = (string) file_get_contents($this->root() . '/views/entries/calendar_week.php');
+
+        // Tooltips sind jetzt am Head.
+        self::assertStringContainsString("tip('calimport.holiday_intro')", $view, 'Feiertagskalender-Tooltip fehlt');
+        self::assertStringContainsString("tip('cal.external_intro_tip')", $view, 'Externer-Kalender-Tooltip fehlt');
+
+        // Die alten muted-Prosa-Zeilen sind weg.
+        self::assertStringNotContainsString(
+            "<p class=\"muted\"><?= h(t('calimport.holiday_intro'",
+            $view,
+            'Feiertagskalender-Prosa als sichtbarer muted-Absatz muss raus'
+        );
+        self::assertStringNotContainsString(
+            'calimport-pro-intro',
+            $view,
+            'Externe-Kalender-Prosa (calimport-pro-intro) muss raus - die Info steht jetzt im Tooltip'
+        );
+    }
+
     public function testCalendarViewEmitsLuminanceLogicAndColorDeclaration(): void
     {
         $view = (string) file_get_contents($this->root() . '/views/entries/calendar_week.php');

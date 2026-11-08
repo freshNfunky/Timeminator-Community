@@ -357,14 +357,14 @@ $__calInk = static function (string $hex): string {
 ?>
 <div class="card external-cal-teaser">
   <div class="card-head">
-    <h2><?= h(t('cal.external_title', 'Externe Kalender')) ?></h2>
+    <h2><?= h(t('cal.external_title', 'Externe Kalender')) ?><?= tip('cal.external_intro_tip') ?></h2>
   </div>
 
   <div class="calimport-item">
     <div class="calimport-item-head">
       <strong><?= h(t('calimport.holiday_h2', 'Feiertagskalender')) ?></strong>
+      <?= tip('calimport.holiday_intro') ?>
     </div>
-    <p class="muted"><?= h(t('calimport.holiday_intro', 'Genau ein gesetzlicher Feiertagskalender aus einer festen Liste. Liefert die Markierungen im Day-Head oben und ist Grundlage fuer die Soll-Reduktion in v1.1.')) ?></p>
     <form method="post" action="<?= h(route('holiday_region_save')) ?>" class="calimport-form">
       <?= csrf_field() ?>
       <input type="hidden" name="_back" value="<?= h(route('entries') . '&week=' . $week_start->format('Y-\WW')) ?>">
@@ -395,7 +395,6 @@ $__calInk = static function (string $hex): string {
     </form>
   </div>
 
-  <p class="muted calimport-pro-intro"><?= t('cal.external_intro', 'Externe Quellen laufen in <strong>Timeminator Pro</strong>: CalDAV-Konten (iCloud, Google via CalDAV, FastMail&nbsp;&hellip;) und Kalender-Abos per iCal-/Outlook-URL. Read-only Overlays im Grid, mehrere parallel.') /* contains <strong>, intentional */ ?></p>
   <div class="external-cal-items">
     <a class="external-cal-item" href="<?= h($pro_url) ?>" target="_blank" rel="noopener">
       <strong><?= h(t('cal.ext_multi_title', 'Mehrere Feiertagskalender parallel')) ?></strong>

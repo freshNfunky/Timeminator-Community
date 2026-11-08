@@ -641,6 +641,7 @@ return [
     'cal.ext_book_title'             => 'Zeitbuchung direkt aus dem Kalender',
     'cal.ext_book_hint'              => 'Termin anklicken, Projekt zuordnen, Buchung fertig.',
     'cal.external_intro'             => 'Externe Quellen laufen in <strong>Timeminator Pro</strong>: CalDAV-Konten (iCloud, Google via CalDAV, FastMail&nbsp;&hellip;) und Kalender-Abos per iCal-/Outlook-URL. Read-only Overlays im Grid, mehrere parallel.',
+    'cal.external_intro_tip'         => 'Externe Quellen (CalDAV-Konten wie iCloud, Google via CalDAV, FastMail; iCal-/Outlook-Abo-URLs) laufen in Timeminator Pro. Read-only Overlays im Grid, mehrere parallel.',
 
     // ---------- Projekt-Planung (#111, B.2) ----------
     'planning.target_hours'          => 'Soll-Stunden (Gesamt)',

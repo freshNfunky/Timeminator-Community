@@ -227,6 +227,7 @@ return [
     'cal.next_week'             => 'Next week →',
     'cal.external_title'        => 'External calendars',
     'cal.external_intro'        => 'External sources run in <strong>Timeminator Pro</strong>: CalDAV accounts (iCloud, Google via CalDAV, FastMail&nbsp;&hellip;) and calendar subscriptions via iCal / Outlook URL. Read-only overlays in the grid, several in parallel.',
+    'cal.external_intro_tip'    => 'External sources (CalDAV accounts like iCloud, Google via CalDAV, FastMail; iCal/Outlook subscription URLs) run in Timeminator Pro. Read-only overlays in the grid, several in parallel.',
     'cal.ext_caldav_title'      => 'Add CalDAV calendar',
     'cal.ext_caldav_hint'       => 'iCloud, Google (CalDAV), FastMail, Zimbra …',
     'cal.ext_ics_title'         => 'Calendar subscription (iCal / Outlook URL)',
