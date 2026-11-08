@@ -217,6 +217,12 @@ return [
 
     'cal.day_bracket_target'    => 'Daily target',
     'cal.day_bracket_over'      => 'Overtime',
+    'sent.team_members_h3'      => 'Team members (%d)',
+    'sent.matrix_team_title'    => 'Mood matrix (team)',
+    'sent.matrix_team_hint'     => 'Weekly averages per team member. Smiley = rounded average; "—" = no responses that week.',
+    'sent.matrix_company_title' => 'Mood matrix (whole company)',
+    'sent.matrix_company_hint'  => 'Weekly averages across all active staff. Intended for team-meeting moderation by leadership.',
+    'sent.matrix_corner'        => 'Employee',
     'cal.day_short.mon'         => 'Mon',
     'cal.day_short.tue'         => 'Tue',
     'cal.day_short.wed'         => 'Wed',

@@ -16,7 +16,13 @@ declare(strict_types=1);
 
 function ctrl_sentiment_index(): void
 {
-    require_perm('sentiment.record');
+    // Felix-Feedback 2026-11-08 (#101): die persoenliche Stimmung bleibt
+    // fuer sentiment.record erreichbar, aber die Seite oeffnet sich auch
+    // fuer HR/Assistenz/GL (sentiment.view_team / sentiment.view_company),
+    // damit sie die Aggregate sehen koennen - auch wenn sie selbst nicht
+    // erfassen muessen. Der persoenliche Eingabe-Bereich wird in der View
+    // dann hinter sentiment.record versteckt.
+    require_any_perm('sentiment.record', 'sentiment.view_team', 'sentiment.view_company');
     $uid = Auth::id();
     if ($uid === null) {
         redirect_route('login');
@@ -24,16 +30,38 @@ function ctrl_sentiment_index(): void
 
     $today      = Sentiment::todayForUser($uid);
     $history    = Sentiment::historyForUser($uid, 60);
-    $canTeam    = Auth::can('sentiment.view_team');
+
+    // Team-Aggregat: #101 team-gefiltert ueber plan_allocations.
+    $canTeam     = Auth::can('sentiment.view_team');
+    $teamIds     = $canTeam ? Sentiment::teamMemberIds() : [];
     $teamSummary = $canTeam ? Sentiment::teamSummary(30) : null;
     $teamDaily   = $canTeam ? Sentiment::teamDaily(60)   : [];
+    $teamLabels  = $canTeam ? Sentiment::userLabels($teamIds) : [];
+    $teamMatrix  = $canTeam ? Sentiment::weeklyMoodMatrix($teamIds, 12) : [];
+
+    // Belegschafts-Matrix (#104): alle aktiven User, nur fuer sentiment.view_company.
+    $canCompany   = Auth::can('sentiment.view_company');
+    $companyMatrix = [];
+    $companyLabels = [];
+    if ($canCompany) {
+        $rows = DB::all('SELECT id FROM users WHERE active = 1 ORDER BY id');
+        $companyIds = array_map(static fn($r) => (int) $r['id'], $rows);
+        $companyMatrix = Sentiment::weeklyMoodMatrix($companyIds, 12);
+        $companyLabels = Sentiment::userLabels($companyIds);
+    }
 
     view('sentiment/index', [
         'today'        => $today,
         'history'      => $history,
+        'canRecord'    => Auth::can('sentiment.record'),
         'canTeam'      => $canTeam,
+        'canCompany'   => $canCompany,
         'teamSummary'  => $teamSummary,
         'teamDaily'    => $teamDaily,
+        'teamLabels'   => $teamLabels,
+        'teamMatrix'   => $teamMatrix,
+        'companyLabels'=> $companyLabels,
+        'companyMatrix'=> $companyMatrix,
         'granularity'  => Sentiment::granularity(),
     ], t('nav.sentiment'));
 }

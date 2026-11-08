@@ -11,7 +11,9 @@
 $selectedMood = $today && isset($today['mood']) && $today['mood'] !== null ? (int) $today['mood'] : 0;
 $selectedFlow = $today && isset($today['flow']) && $today['flow'] !== null ? (int) $today['flow'] : 0;
 $noteValue    = (string) ($today['note'] ?? '');
+$canRecord    = $canRecord ?? Auth::can('sentiment.record');
 ?>
+<?php if ($canRecord): ?>
 <div class="card">
   <h2><?= h(t('sent.today_title', 'Dein Eintrag heute')) ?><?= tip('sent.today_intro_v2') ?></h2>
   <form method="post" action="<?= h(route('sentiment_save')) ?>" class="sentiment-form">
@@ -69,8 +71,9 @@ $noteValue    = (string) ($today['note'] ?? '');
     <?php endif; ?>
   </form>
 </div>
+<?php endif; /* canRecord personal edit */ ?>
 
-<?php if (($granularity ?? 'day') === 'week'): ?>
+<?php if ($canRecord && ($granularity ?? 'day') === 'week'): ?>
 <div class="card">
   <h2><?= h(t('sent.week_preset_h2', 'Wochen-Preset')) ?><?= tip('sent.week_preset_hint', 'Setzt eine Dimension (Mood oder Flow) auf einmal fuer alle noch leeren Tage der laufenden Woche. Tage mit bereits individuell gesetztem Wert bleiben unberuehrt.') ?></h2>
   <div class="row">
@@ -94,6 +97,7 @@ $noteValue    = (string) ($today['note'] ?? '');
 </div>
 <?php endif; ?>
 
+<?php if ($canRecord): ?>
 <div class="card">
   <h2><?= h(t('sent.history_title', 'Dein Verlauf (60 Tage)')) ?></h2>
   <?php if (!$history): ?>
@@ -176,6 +180,7 @@ $noteValue    = (string) ($today['note'] ?? '');
     </table>
   <?php endif; ?>
 </div>
+<?php endif; /* history card */ ?>
 
 <?php if ($canTeam): ?>
   <div class="card">
@@ -256,5 +261,42 @@ $noteValue    = (string) ($today['note'] ?? '');
         </div>
       </div>
     <?php endif; ?>
+
+    <?php /* Felix-Feedback 2026-11-08 (#101): "wer alles in diesem Team drin
+       ist" muss sichtbar werden. Die Liste erklaert, aus wessen Daten sich
+       die Aggregate zusammensetzen - und begrenzt Scope gegen Belegschaft. */ ?>
+    <?php if (!empty($teamLabels)): ?>
+      <h3><?= h(sprintf(t('sent.team_members_h3', 'Teammitglieder (%d)'), count($teamLabels))) ?></h3>
+      <ul class="sent-team-members">
+        <?php foreach ($teamLabels as $__u): ?>
+          <li><?= h((string) $__u['label']) ?></li>
+        <?php endforeach; ?>
+      </ul>
+    <?php endif; ?>
   </div>
+
+  <?php /* Felix-Feedback 2026-11-08 (#102): Mitarbeiter-x-Woche-Smiley-Matrix
+     (Team-Scope). Y = Teammitglieder, X = letzte 12 ISO-Wochen. */ ?>
+  <?php if (!empty($teamMatrix) && !empty($teamLabels)): ?>
+    <?php
+      $__matrixLabels = $teamLabels;
+      $__matrixData   = $teamMatrix;
+      $__matrixH2     = t('sent.matrix_team_title', 'Stimmungs-Matrix (Team)');
+      $__matrixHint   = t('sent.matrix_team_hint', 'Wochen-Durchschnitt pro Teammitglied. Smiley = gerundeter Durchschnitt; "—" = keine Antworten in dieser Woche.');
+      require __DIR__ . '/_mood_matrix.php';
+    ?>
+  <?php endif; ?>
+<?php endif; ?>
+
+<?php /* Felix-Feedback 2026-11-08 (#104): Belegschafts-Matrix - nur fuer
+   sentiment.view_company (Geschaeftsleitung-nah). Fuer Team-Meeting-
+   Moderation gedacht. */ ?>
+<?php if (!empty($canCompany) && !empty($companyMatrix) && !empty($companyLabels)): ?>
+  <?php
+    $__matrixLabels = $companyLabels;
+    $__matrixData   = $companyMatrix;
+    $__matrixH2     = t('sent.matrix_company_title', 'Stimmungs-Matrix (Belegschaft)');
+    $__matrixHint   = t('sent.matrix_company_hint', 'Wochen-Durchschnitt fuer alle aktiven Mitarbeiter. Fuer Team-Meeting-Moderation durch die Geschaeftsleitung.');
+    require __DIR__ . '/_mood_matrix.php';
+  ?>
 <?php endif; ?>

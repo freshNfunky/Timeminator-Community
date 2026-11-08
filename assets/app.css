@@ -249,6 +249,18 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .sentiment-tick.is-s4{background:#84cc16;height:85%}
 .sentiment-tick.is-s5{background:#22c55e;height:100%}
 .sentiment-team-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:10px 0 16px;text-align:center}
+/* Felix-Feedback 2026-11-08 (#101/#102/#104): Teammitglieder-Liste + Mood-Matrix. */
+.sent-team-members{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px}
+.sent-team-members li{color:var(--ink)}
+.sent-matrix-card{margin-top:14px}
+.sent-matrix-wrap{overflow-x:auto}
+.sent-matrix{border-collapse:collapse;width:100%;font-size:13px}
+.sent-matrix th,.sent-matrix td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:center;white-space:nowrap}
+.sent-matrix-corner{text-align:left;color:var(--muted);font-weight:600}
+.sent-matrix-weekhead{color:var(--muted);font-weight:600}
+.sent-matrix-user{text-align:left;font-weight:500;color:var(--ink);background:color-mix(in oklab, var(--panel), var(--brand) 2%)}
+.sent-matrix-cell{font-size:16px;line-height:1.1}
+.sent-matrix-flow{margin-left:2px;font-size:14px;opacity:.85}
 .sentiment-team-metric{font-size:22px;line-height:1.2;margin-bottom:2px}
 .sentiment-team-metric strong{font-weight:700}
 @media (max-width:620px){

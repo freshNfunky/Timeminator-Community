@@ -214,6 +214,12 @@ return [
 
     'cal.day_bracket_target'    => 'Tagessoll',
     'cal.day_bracket_over'      => 'Ueberstunden',
+    'sent.team_members_h3'      => 'Teammitglieder (%d)',
+    'sent.matrix_team_title'    => 'Stimmungs-Matrix (Team)',
+    'sent.matrix_team_hint'     => 'Wochen-Durchschnitt pro Teammitglied. Smiley = gerundeter Durchschnitt; "—" = keine Antworten in dieser Woche.',
+    'sent.matrix_company_title' => 'Stimmungs-Matrix (Belegschaft)',
+    'sent.matrix_company_hint'  => 'Wochen-Durchschnitt fuer alle aktiven Mitarbeiter. Fuer Team-Meeting-Moderation durch die Geschaeftsleitung.',
+    'sent.matrix_corner'        => 'Mitarbeiter',
     'cal.day_short.mon'         => 'Mo',
     'cal.day_short.tue'         => 'Di',
     'cal.day_short.wed'         => 'Mi',
