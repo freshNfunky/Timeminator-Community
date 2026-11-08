@@ -137,18 +137,27 @@ final class RoleCatalogTest extends TestCase
         self::assertNotContains('sentiment.view_company', $perms);
     }
 
-    public function testAssistenzSeesCompanyStimmungButNoCockpits(): void
+    public function testAssistenzHasBroadOperationalAccessButNoSystemicRights(): void
     {
+        // Felix-Feedback 2026-11-08 (Anpassung): "Assistenz hat weitestgehend
+        // Rechte der Geschaeftsleitung, aber eben nicht alle. ... alles was
+        // systemisch ist oder irgendwelche Voreinstellungen, das darf auch
+        // die Assistenz nicht."
         seed_roles();
         $perms = $this->permsForRole('assistenz');
-        self::assertContains('sentiment.view_team', $perms);
-        self::assertContains('sentiment.view_company', $perms);
-        self::assertContains('stats.view_company', $perms);
-        self::assertNotContains('cockpit.project.view', $perms);
-        self::assertNotContains('cockpit.employee.view', $perms);
-        self::assertNotContains('cockpit.company.view', $perms);
-        self::assertNotContains('admin.users', $perms);
-        self::assertNotContains('admin.roles', $perms);
+
+        // Operativer Alltag / Team-Meeting-Sichten: ja.
+        foreach (['sentiment.view_team', 'sentiment.view_company', 'stats.view_company',
+                  'cockpit.project.view', 'cockpit.employee.view', 'cockpit.company.view',
+                  'structure.manage', 'scopes.manage'] as $code) {
+            self::assertContains($code, $perms, "Assistenz muss '$code' haben (operativer Alltag)");
+        }
+
+        // Systemisch oder sensible Voreinstellungen / Admin-nah: nein.
+        foreach (['presets.manage', 'admin.users', 'admin.roles', 'admin.system',
+                  'admin.imports', 'scheduler.manage', 'employees.manage'] as $code) {
+            self::assertNotContains($code, $perms, "Assistenz darf '$code' NICHT haben (systemisch/sensible Voreinstellung)");
+        }
     }
 
     public function testMitarbeiterKeepsMinimalPerms(): void

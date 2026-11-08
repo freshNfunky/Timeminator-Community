@@ -110,10 +110,19 @@ function default_role_catalog(): array
             ],
         ],
         'assistenz' => [
+            // Felix-Feedback 2026-11-08 (Anpassung): "Assistenz hat weitestgehend
+            // Rechte der Geschaeftsleitung, aber eben nicht alle. ... alles was
+            // systemisch ist oder irgendwelche Voreinstellungen, das darf auch
+            // die Assistenz nicht." -> Operatives Alltagsgeschaeft ja, Systemisches
+            // und sensible Voreinstellungen (Presets, Rollen, Users, Vertragsdaten)
+            // nein.
             'label' => 'Assistenz der Geschaeftsleitung',
             'perms' => [
                 'entries.manage', 'stats.view', 'stats.view_company',
                 'sentiment.record', 'sentiment.view_team', 'sentiment.view_company',
+                'cockpit.project.view', 'cockpit.employee.view', 'cockpit.company.view',
+                'structure.manage',
+                'scopes.manage',
             ],
         ],
         'user' => [
