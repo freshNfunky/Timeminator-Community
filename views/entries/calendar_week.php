@@ -140,6 +140,55 @@ foreach (($processes ?? []) as $__p) {
     ];
 }
 
+// Felix-Feedback 2026-11-08 (#99): Tagessoll-Klammer rechts der Buchungen.
+// Pro Tag kumulierte Minuten aus Entries + Prozessen (Abwesenheiten zaehlen
+// nicht fuer die Klammer); Grenze wird mitten in einer Buchung gesetzt,
+// wenn das Tagessoll dort erreicht ist. Freelancer bekommen keine Klammer.
+$__dayTargetMin = null;
+$__dayBrackets  = [];
+if (function_exists('Auth::id') || true) {
+    $__uid = (int) Auth::id();
+    if ($__uid > 0) {
+        $__dayTargetMin = EmployeeRepo::dailyTargetMinutes($__uid, $week_start->format('Y-m-d'));
+    }
+}
+if ($__dayTargetMin !== null) {
+    $__eventsByDay = [];
+    foreach ($entries as $__e) {
+        try {
+            $__s = new DateTimeImmutable((string) $__e['start_ts']);
+            $__eEnd = new DateTimeImmutable((string) ($__e['end_ts'] ?? $__e['start_ts']));
+        } catch (Throwable) { continue; }
+        if ($__eEnd <= $__s) { continue; }
+        $__off = (int) floor(($__s->getTimestamp() - $__weekMid) / 86400);
+        if ($__off < 0 || $__off > 6) { continue; }
+        $__eventsByDay[$__off][] = [
+            'start_min' => (int) $__s->format('H') * 60 + (int) $__s->format('i'),
+            'end_min'   => (int) $__eEnd->format('H') * 60 + (int) $__eEnd->format('i'),
+        ];
+    }
+    foreach (($processes ?? []) as $__p) {
+        try {
+            $__s = new DateTimeImmutable((string) $__p['start_ts']);
+            $__eEnd = new DateTimeImmutable((string) ($__p['end_ts'] ?? $__p['start_ts']));
+        } catch (Throwable) { continue; }
+        if ($__eEnd <= $__s) { continue; }
+        $__off = (int) floor(($__s->getTimestamp() - $__weekMid) / 86400);
+        if ($__off < 0 || $__off > 6) { continue; }
+        $__eventsByDay[$__off][] = [
+            'start_min' => (int) $__s->format('H') * 60 + (int) $__s->format('i'),
+            'end_min'   => (int) $__eEnd->format('H') * 60 + (int) $__eEnd->format('i'),
+        ];
+    }
+    foreach ($__eventsByDay as $__off => $__evs) {
+        usort($__evs, static fn($a, $b) => $a['start_min'] <=> $b['start_min']);
+        $__b = DayBracket::compute($__evs, $__dayTargetMin);
+        if ($__b !== null) {
+            $__dayBrackets[$__off] = $__b;
+        }
+    }
+}
+
 // Abwesenheiten je Tag (ein Tag kann mehrere ueberlappende haben).
 $__absByDay = [];
 foreach (($absences ?? []) as $__a) {
@@ -198,6 +247,21 @@ $__calInk = static function (string $hex): string {
 <?php foreach ($__procPerDay as $__dayOffset => $__events): foreach ($__events as $__ev): ?>
 .cal-process-<?= (int) $__ev['id'] ?>{top:<?= $__ev['top'] ?>%;height:<?= $__ev['height'] ?>%}
 <?php endforeach; endforeach; ?>
+<?php /* Felix-Feedback 2026-11-08 (#99): Tagessoll-Klammer pro Day-Column.
+   Top/Height in Prozent eines 24-h-Tags (konsistent zu den Events). */ ?>
+<?php foreach ($__dayBrackets as $__off => $__br):
+    $__tFrom = $__br['target']['from']; $__tTo = $__br['target']['to'];
+    $__tTopPct = round($__tFrom / (24 * 60) * 100, 3);
+    $__tHgtPct = round(($__tTo - $__tFrom) / (24 * 60) * 100, 3);
+?>
+.cal-day-bracket-target-<?= (int) $__off ?>{top:<?= $__tTopPct ?>%;height:<?= $__tHgtPct ?>%}
+<?php if (!empty($__br['over'])):
+    $__oFrom = $__br['over']['from']; $__oTo = $__br['over']['to'];
+    $__oTopPct = round($__oFrom / (24 * 60) * 100, 3);
+    $__oHgtPct = round(($__oTo - $__oFrom) / (24 * 60) * 100, 3);
+?>
+.cal-day-bracket-over-<?= (int) $__off ?>{top:<?= $__oTopPct ?>%;height:<?= $__oHgtPct ?>%}
+<?php endif; endforeach; ?>
 </style>
 
 <div class="card">
@@ -339,6 +403,23 @@ $__calInk = static function (string $hex): string {
             <?php for ($h = 1; $h < 24; $h++): ?>
               <div class="cal-day-line"></div>
             <?php endfor; ?>
+            <?php /* Felix-Feedback 2026-11-08 (#99): Tagessoll-Klammer rechts
+               neben den Events. Zwei moegliche Klammern: Target (Standard)
+               und Over (gestrichelt), sitzen am rechten Rand der Day-Column. */ ?>
+            <?php if (isset($__dayBrackets[$__i])):
+              $__b = $__dayBrackets[$__i];
+              $__tHours = round(($__b['target']['to'] - $__b['target']['from']) / 60, 1);
+              $__oHours = $__b['over'] ? round(($__b['over']['to'] - $__b['over']['from']) / 60, 1) : 0;
+            ?>
+              <div class="cal-day-bracket cal-day-bracket-target cal-day-bracket-target-<?= (int) $__i ?>"
+                   aria-hidden="true"
+                   title="<?= h(t('cal.day_bracket_target', 'Tagessoll')) ?>: <?= $__tHours ?> h"></div>
+              <?php if ($__b['over']): ?>
+                <div class="cal-day-bracket cal-day-bracket-over cal-day-bracket-over-<?= (int) $__i ?>"
+                     aria-hidden="true"
+                     title="<?= h(t('cal.day_bracket_over', 'Ueberstunden')) ?>: +<?= $__oHours ?> h"></div>
+              <?php endif; ?>
+            <?php endif; ?>
             <?php foreach ($__perDay[$__i] ?? [] as $__ev): ?>
               <button type="button" class="cal-event cal-event-<?= (int) $__ev['id'] ?><?= $__ev['running'] ? ' cal-event-running' : '' ?>"
                  data-entry-type="project"

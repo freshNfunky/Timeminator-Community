@@ -118,4 +118,21 @@ final class EmployeeRepo
     {
         return (float) $terms['weekly_hours'] / Workdays::perWeek();
     }
+
+    /**
+     * Tagessoll in Minuten fuer einen User an einem bestimmten Tag.
+     *
+     * Felix-Feedback 2026-11-08 (#99): die Tagessoll-Klammer im Kalender
+     * braucht genau diesen Wert. Freelancer (kein employee_terms-Row,
+     * employment_type != EMPLOYEE) bekommen `null`, dann wird keine
+     * Klammer gerendert.
+     */
+    public static function dailyTargetMinutes(int $userId, string $date): ?int
+    {
+        $terms = self::termsAt($userId, $date);
+        if (!$terms || $terms['employment_type'] !== self::TYPE_EMPLOYEE) {
+            return null;
+        }
+        return (int) round(self::dailyTarget($terms) * 60);
+    }
 }

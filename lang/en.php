@@ -215,6 +215,8 @@ return [
     'entries.flash_timer_started' => 'Timer started.',
     'entries.flash_timer_stopped' => 'Timer stopped and booked.',
 
+    'cal.day_bracket_target'    => 'Daily target',
+    'cal.day_bracket_over'      => 'Overtime',
     'cal.day_short.mon'         => 'Mon',
     'cal.day_short.tue'         => 'Tue',
     'cal.day_short.wed'         => 'Wed',

@@ -898,6 +898,16 @@ body:has(.sidepanel) .foot{padding-right:200px}
 .cal-holiday-name{overflow:hidden;text-overflow:ellipsis}
 .cal-day-grid{position:relative;flex:1;background:var(--soft);
   height:calc(56px * 24);cursor:crosshair;user-select:none}
+/* Felix-Feedback 2026-11-08 (#99): Tagessoll-Klammer rechts der Buchungen.
+   Target = brand-farbene Klammer; Over = gestrichelt, warnfarben. Beide
+   sind absolut im Day-Grid, top/height kommen aus dem nonce-Style. */
+.cal-day-bracket{position:absolute;right:-2px;width:5px;border:1px solid var(--brand);border-left:0;border-radius:0 3px 3px 0;pointer-events:none;z-index:2}
+.cal-day-bracket-target{border-color:var(--brand)}
+.cal-day-bracket-over{border-style:dashed;border-color:#f59e0b}
+:root[data-theme="dark"] .cal-day-bracket-over{border-color:#fbbf24}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .cal-day-bracket-over{border-color:#fbbf24}
+}
 .cal-day-today .cal-day-grid{background:var(--panel)}
 /* Click-drag placeholder for new entries (fixes #64). JS updates
    --draft-top / --draft-height via setProperty on the element so the

@@ -13,6 +13,7 @@ require __DIR__ . '/src/Repo.php';
 require __DIR__ . '/src/Stats.php';
 require __DIR__ . '/src/Settings.php';
 require __DIR__ . '/src/CalendarLocale.php';
+require __DIR__ . '/src/DayBracket.php';
 require __DIR__ . '/src/Updater.php';
 require __DIR__ . '/src/Registration.php';
 require __DIR__ . '/src/Banners.php';

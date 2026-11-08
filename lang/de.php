@@ -212,6 +212,8 @@ return [
     'entries.flash_timer_started' => 'Timer gestartet.',
     'entries.flash_timer_stopped' => 'Timer gestoppt und gebucht.',
 
+    'cal.day_bracket_target'    => 'Tagessoll',
+    'cal.day_bracket_over'      => 'Ueberstunden',
     'cal.day_short.mon'         => 'Mo',
     'cal.day_short.tue'         => 'Di',
     'cal.day_short.wed'         => 'Mi',
