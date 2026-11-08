@@ -47,6 +47,51 @@
   <?php endif; ?>
 </div>
 
+<?php // Felix-Feedback 2026-11-08: persoenliches Sentiment-Widget (Pro-Parity).
+      // Jeder eingeloggte Nutzer mit sentiment.record sieht Mood + Flow fuer heute
+      // als zwei Reihen à 5 Emoji-Buttons; Scope-Toggle (Tag/Woche) steuert ob
+      // der Klick nur heute oder den Rest der Woche konservativ fuellt. ?>
+<?php if (Auth::can('sentiment.record')): ?>
+<div class="card sentiment-widget">
+  <div class="card-head">
+    <h2><?= h(t('dashboard.mood_question', 'Wie geht es dir heute?')) ?><?= tip('dashboard.mood_help') ?></h2>
+  </div>
+  <?php foreach (Sentiment::DIMENSIONS as $__d):
+      $__cur = $sentimentToday[$__d] ?? null;
+      $__dimLabel = $__d === 'mood'
+          ? t('sent.dim_mood_label', 'Stimmung')
+          : t('sent.dim_flow_label', 'Fokus');
+      $__dimIcon  = $__d === 'mood' ? '🙂' : '🎯';
+  ?>
+  <form method="post" action="<?= h(route('sentiment_quick')) ?>" class="sentiment-form">
+    <?= csrf_field() ?>
+    <input type="hidden" name="back" value="dashboard">
+    <input type="hidden" name="dim" value="<?= h($__d) ?>">
+    <div class="sentiment-row">
+      <span class="sentiment-kind">
+        <span aria-hidden="true"><?= $__dimIcon ?></span>
+        <?= h($__dimLabel) ?>
+      </span>
+      <div class="sentiment-scale">
+        <?php foreach (range(1, 5) as $__val):
+            $__emoji = $__d === 'mood' ? Sentiment::moodEmoji($__val) : Sentiment::flowEmoji($__val);
+            $__label = $__d === 'mood' ? Sentiment::moodLabel($__val) : Sentiment::flowLabel($__val);
+        ?>
+          <button type="submit" name="score" value="<?= (int) $__val ?>"
+                  class="sentiment-opt<?= ((int) $__cur) === $__val ? ' active' : '' ?>"
+                  title="<?= h($__label) ?> (<?= (int) $__val ?>/5)"><?= $__emoji ?></button>
+        <?php endforeach; ?>
+      </div>
+      <select name="scope" class="sentiment-scope" title="<?= h(t('mood.week_hint', 'Woche: fuellt die restliche Woche konservativ (gesetzte Tage bleiben).')) ?>">
+        <option value="day"  <?= $sentimentGranularity === 'day'  ? 'selected' : '' ?>><?= h(t('calendar.day',  'Tag')) ?></option>
+        <option value="week" <?= $sentimentGranularity === 'week' ? 'selected' : '' ?>><?= h(t('calendar.week', 'Woche')) ?></option>
+      </select>
+    </div>
+  </form>
+  <?php endforeach; ?>
+</div>
+<?php endif; ?>
+
 <?php if (!empty($planning)): ?>
   <?php
     // Precompute rows + percentages here so the <style> block below can

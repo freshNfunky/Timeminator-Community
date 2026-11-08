@@ -1235,6 +1235,14 @@ return [
     'cockpit.emp_donut_h2'          => 'Wofuer die Zeit draufging',
     'cockpit.tile_no_contract'      => 'Keine Vertragsdaten hinterlegt - Saldo nicht berechenbar.',
     'cockpit.overtime_net_year'     => 'Jahres-Saldo',
+    // Dashboard-Sentiment-Widget (Pro-Parity, Felix-Feedback 2026-11-08)
+    'dashboard.mood_question'       => 'Wie geht es dir heute?',
+    'dashboard.mood_help'           => 'Zwei Dimensionen: "Stimmung" (persoenliches Befinden) und "Fokus" (wie laeuft die Arbeit heute). Pro Dimension 1-5 waehlen. "Woche" fuellt die restliche Woche konservativ auf, ohne bereits gesetzte Tage zu ueberschreiben.',
+    'sent.dim_mood_label'           => 'Stimmung',
+    'sent.dim_flow_label'           => 'Fokus',
+    'mood.week_hint'                => 'Woche: fuellt die restliche Woche konservativ, ohne bereits gesetzte Tage zu ueberschreiben.',
+    'calendar.day'                  => 'Tag',
+    'calendar.week'                 => 'Woche',
     'cockpit.emp_donut_hint'        => 'Summe pro Serie (Projektkategorie, interne Prozesse, Urlaub, Krankheit, Feiertage, Ueberstundenabbau) ueber den gewaehlten Zeitraum - identische Datenbasis wie die Stapel-Grafik darueber.',
     // Tracker-Timeline Inline-Edit (Felix-Feedback 2026-11-06)
     'cockpit.edit'                  => 'Bearbeiten',

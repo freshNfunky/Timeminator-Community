@@ -141,6 +141,7 @@ $routes = [
     'stats_data'   => 'ctrl_stats_data',
     'sentiment'            => 'ctrl_sentiment_index',
     'sentiment_save'       => 'ctrl_sentiment_save',
+    'sentiment_quick'      => 'ctrl_sentiment_quick',
     'sentiment_fill_week'  => 'ctrl_sentiment_fill_week',
     'sentiment_api_save'       => 'ctrl_sentiment_api_save',
     'sentiment_api_fill_week'  => 'ctrl_sentiment_api_fill_week',

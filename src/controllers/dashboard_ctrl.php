@@ -34,13 +34,23 @@ function ctrl_dashboard(): void
     // Active tasks for the quick-start timer picker.
     $tasks = Repo::tasks(true);
 
+    // Felix-Feedback 2026-11-08: persoenliches Sentiment-Widget im
+    // Dashboard (Pro-Parity). Der eigene Mood/Flow-Status fuer heute
+    // wird direkt vom Dashboard aus eingetragen, nicht nur ueber den
+    // Kalender. Default-Granularitaet steuert, ob der Klick auf den Rest
+    // der Woche hochgezogen wird oder nur auf heute wirkt.
+    $sentimentToday = Sentiment::todayForUser($uid) ?? [];
+    $sentimentGran  = Sentiment::granularity();
+
     view('dashboard', [
-        'running'   => $running,
-        'recent'    => $recent,
-        'tasks'     => $tasks,
-        'minToday'  => $minToday,
-        'minWeek'   => $minWeek,
-        'minMonth'  => $minMonth,
-        'planning'  => Repo::projectPlanningSnapshot(),
+        'running'              => $running,
+        'recent'               => $recent,
+        'tasks'                => $tasks,
+        'minToday'             => $minToday,
+        'minWeek'              => $minWeek,
+        'minMonth'             => $minMonth,
+        'planning'             => Repo::projectPlanningSnapshot(),
+        'sentimentToday'       => $sentimentToday,
+        'sentimentGranularity' => $sentimentGran,
     ], t('nav.dashboard', 'Dashboard'));
 }

@@ -222,6 +222,18 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .sentiment-sparkline{display:flex;gap:2px;align-items:flex-end;margin:4px 0 14px;
   height:34px;padding:4px 0;overflow-x:auto}
 .sentiment-tick{display:inline-block;flex:0 0 8px;height:100%;border-radius:3px;background:var(--line)}
+
+/* Dashboard-Sentiment-Widget (Pro-Parity, Felix-Feedback 2026-11-08):
+   zwei Zeilen (Mood + Flow), je 5 Emoji-Buttons horizontal, Scope-Toggle rechts. */
+.sentiment-widget .sentiment-form{margin:0}
+.sentiment-widget .sentiment-form + .sentiment-form{margin-top:10px}
+.sentiment-widget .sentiment-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.sentiment-widget .sentiment-kind{min-width:140px;display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:14px}
+.sentiment-widget .sentiment-scale{display:inline-flex;gap:6px;margin:0;flex-wrap:wrap}
+.sentiment-widget .sentiment-opt{appearance:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:22px;line-height:1;cursor:pointer;transition:border-color .12s,transform .08s}
+.sentiment-widget .sentiment-opt:hover{border-color:var(--brand);transform:translateY(-1px)}
+.sentiment-widget .sentiment-opt.active{border-color:var(--brand);background:var(--soft);box-shadow:0 0 0 2px var(--focus-ring)}
+.sentiment-widget .sentiment-scope{margin-left:auto;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:inherit;font-size:12px}
 .sentiment-tick.is-empty{background:var(--line);opacity:.3}
 .sentiment-tick.is-s1{background:#ef4444;height:30%}
 .sentiment-tick.is-s2{background:#f97316;height:50%}

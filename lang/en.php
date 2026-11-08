@@ -1238,6 +1238,14 @@ return [
     'cockpit.emp_donut_h2'          => 'Where the time went',
     'cockpit.tile_no_contract'      => 'No contract data on file - balance cannot be calculated.',
     'cockpit.overtime_net_year'     => 'Net this year',
+    // Dashboard sentiment widget (Pro parity, Felix 2026-11-08)
+    'dashboard.mood_question'       => 'How are you today?',
+    'dashboard.mood_help'           => 'Two dimensions: "Mood" (personal state) and "Flow" (how the work is going today). Pick 1-5 per dimension. "Week" fills the rest of the week conservatively without overwriting days you already set.',
+    'sent.dim_mood_label'           => 'Mood',
+    'sent.dim_flow_label'           => 'Flow',
+    'mood.week_hint'                => 'Week: fills the rest of the week conservatively, without overwriting days you already set.',
+    'calendar.day'                  => 'Day',
+    'calendar.week'                 => 'Week',
     'cockpit.emp_donut_hint'        => 'Totals per series (project category, internal processes, vacation, sick, holiday, overtime reduction) across the selected period - same source as the stacked chart above.',
     // Tracker-Timeline inline edit (Felix-Feedback 2026-11-06)
     'cockpit.edit'                  => 'Edit',

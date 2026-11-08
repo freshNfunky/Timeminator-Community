@@ -67,6 +67,42 @@ function ctrl_sentiment_fill_week(): void
     redirect_route('sentiment');
 }
 
+/**
+ * Felix-Feedback 2026-11-08 (Dashboard-Sentiment-Widget, Pro-Parity):
+ * ein einziger Submit setzt EINE Dimension (mood oder flow) fuer HEUTE,
+ * optional ueber den Rest der Woche (scope=week fuellt leere Tage konservativ).
+ * Redirect kehrt zum Dashboard zurueck, nicht zur Sentiment-Uebersicht.
+ */
+function ctrl_sentiment_quick(): void
+{
+    require_perm('sentiment.record');
+    csrf_check();
+    $uid = Auth::id();
+    if ($uid === null) { redirect_route('login'); }
+
+    $dim   = (string) post('dim', '');
+    $score = Sentiment::normalizeScore(post('score'));
+    $scope = post('scope') === 'week' ? 'week' : 'day';
+
+    if ($score === null || !in_array($dim, Sentiment::DIMENSIONS, true)) {
+        flash(t('sent.err_pick_any', 'Bitte setze Mood oder Flow (oder beides) auf 1-5.'), 'err');
+        redirect_route('dashboard');
+    }
+
+    $today = Sentiment::today();
+    if ($scope === 'week') {
+        // Pro-Vorbild: fuellt leere Tage bis Sonntag konservativ, ohne
+        // bereits gesetzte Werte zu ueberschreiben.
+        $end = (new DateTimeImmutable($today))->modify('sunday this week')->format('Y-m-d');
+        Sentiment::fillRange($uid, $today, $end, $dim, $score);
+    } else {
+        Sentiment::setDimension($uid, $today, $dim, $score);
+    }
+
+    $back = (string) post('back', 'dashboard');
+    redirect_route(in_array($back, ['dashboard', 'sentiment'], true) ? $back : 'dashboard');
+}
+
 function ctrl_sentiment_save(): void
 {
     require_perm('sentiment.record');

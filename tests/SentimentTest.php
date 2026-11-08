@@ -158,4 +158,68 @@ final class SentimentTest extends TestCase
         self::assertNotSame(Sentiment::moodEmoji(5), Sentiment::flowEmoji(5));
         self::assertNotSame(Sentiment::moodEmoji(1), Sentiment::flowEmoji(1));
     }
+
+    public function testDashboardRendersPersonalSentimentWidgetAndQuickRoute(): void
+    {
+        // Felix-Feedback 2026-11-08: das persoenliche Sentiment-Tracking-
+        // Widget im Dashboard war verschwunden - Pro hat es, Community soll
+        // Parity halten. View + Controller + Route + Quick-Save-Pfad muessen
+        // zusammen vorhanden sein, sonst ist das Widget stillschweigend weg.
+        $root  = dirname(__DIR__);
+        $view  = (string) file_get_contents($root . '/views/dashboard.php');
+        $ctrl  = (string) file_get_contents($root . '/src/controllers/dashboard_ctrl.php');
+        $sent  = (string) file_get_contents($root . '/src/controllers/sentiment_ctrl.php');
+        $index = (string) file_get_contents($root . '/index.php');
+
+        // Dashboard-Controller reicht sentimentToday + sentimentGranularity.
+        self::assertStringContainsString(
+            "Sentiment::todayForUser(\$uid)",
+            $ctrl,
+            'Dashboard-Controller muss Sentiment::todayForUser($uid) laden'
+        );
+        self::assertStringContainsString(
+            "'sentimentToday'",
+            $ctrl,
+            'Dashboard-View braucht sentimentToday als Daten'
+        );
+        self::assertStringContainsString(
+            "'sentimentGranularity'",
+            $ctrl,
+            'Dashboard-View braucht sentimentGranularity'
+        );
+
+        // View rendert das Widget (card.sentiment-widget), beide Dimensionen,
+        // 1..5-Emojis und ein Scope-Dropdown (day|week).
+        self::assertStringContainsString('class="card sentiment-widget"', $view, 'Sentiment-Widget-Karte fehlt im Dashboard');
+        self::assertStringContainsString('class="sentiment-form"', $view, 'Sentiment-Form pro Dimension fehlt');
+        self::assertStringContainsString('name="dim"', $view, 'Form-Feld dim (mood/flow) fehlt');
+        self::assertStringContainsString('name="scope"', $view, 'Scope-Dropdown (day/week) fehlt');
+        self::assertStringContainsString('foreach (Sentiment::DIMENSIONS', $view, 'Widget iteriert nicht ueber Sentiment::DIMENSIONS');
+        self::assertStringContainsString('Sentiment::moodEmoji', $view, 'Mood-Emoji-Renderer fehlt im Widget');
+        self::assertStringContainsString('Sentiment::flowEmoji', $view, 'Flow-Emoji-Renderer fehlt im Widget');
+        self::assertStringContainsString("name=\"back\" value=\"dashboard\"", $view, 'back=dashboard muss im Form stehen, damit Save zurueck ins Dashboard fuehrt');
+
+        // Route + Controller sentiment_quick existieren.
+        self::assertStringContainsString("'sentiment_quick'", $index, 'Route sentiment_quick fehlt');
+        self::assertStringContainsString("'ctrl_sentiment_quick'", $index, 'Controller-Mapping ctrl_sentiment_quick fehlt');
+        self::assertStringContainsString('function ctrl_sentiment_quick', $sent, 'ctrl_sentiment_quick nicht definiert');
+
+        // Quick-Save: fuellt scope=week ueber fillRange, sonst setDimension.
+        self::assertMatchesRegularExpression(
+            '/\$scope\s*===\s*\'week\'.*?Sentiment::fillRange/s',
+            $sent,
+            'sentiment_quick muss scope=week ueber Sentiment::fillRange auf den Rest der Woche anwenden'
+        );
+        self::assertStringContainsString(
+            'Sentiment::setDimension($uid, $today, $dim, $score)',
+            $sent,
+            'sentiment_quick muss scope=day via Sentiment::setDimension schreiben'
+        );
+        // Redirect geht zurueck zum Dashboard (oder zur zulaessigen back-Route).
+        self::assertMatchesRegularExpression(
+            '/in_array\(\$back,\s*\[\'dashboard\',\s*\'sentiment\'\],\s*true\)/s',
+            $sent,
+            'sentiment_quick muss den back-Parameter gegen whitelist pruefen und per Default auf dashboard fallen'
+        );
+    }
 }
