@@ -261,6 +261,24 @@ $__calInk = static function (string $hex): string {
   <?php endif; ?>
 
   <div class="cal-week">
+    <?php /* Felix-Feedback 2026-11-08 (#109): durchgehende Kopfzeile ueber
+       Uhrzeiten UND Tagespalten, mit Corner-Zelle oben links. Der
+       bisherige Pro-Tag-Head (cal-day-head in cal-day) war sticky, aber
+       keine echte durchgehende Zeile. Kopfzeile ist ein eigener Grid-Row
+       innerhalb von .cal-week und tritt horizontal mit den Day-Columns
+       in den gleichen Raster. */ ?>
+    <div class="cal-week-head" role="row">
+      <div class="cal-week-corner" aria-hidden="true"></div>
+      <?php foreach ($__days as $__day):
+        $__hd = $holidays[$__day['ymd']] ?? null;
+        $__hdCls = 'cal-week-dayhead cal-day-head';
+        if ($__day['isToday'])  $__hdCls .= ' is-today';
+        if ($__hd)              $__hdCls .= ' is-holiday';
+        if (!$__day['isWorkDay']) $__hdCls .= ' is-nonworking';
+      ?>
+        <div class="<?= h($__hdCls) ?>" role="columnheader" data-day="<?= h($__day['ymd']) ?>"><?= h($__day['label']) ?></div>
+      <?php endforeach; ?>
+    </div>
     <div class="cal-hours" aria-hidden="true">
       <?php for ($h = 0; $h < 24; $h++): ?>
         <div class="cal-hour-label"><?= sprintf('%02d:00', $h) ?></div>
@@ -270,7 +288,6 @@ $__calInk = static function (string $hex): string {
       <?php foreach ($__days as $__i => $__day): ?>
         <?php $__holiday = $holidays[$__day['ymd']] ?? null; ?>
         <div class="cal-day<?= $__day['isToday'] ? ' cal-day-today' : '' ?><?= $__holiday ? ' cal-day-holiday' : '' ?><?= !$__day['isWorkDay'] ? ' cal-day-nonworking' : '' ?>" data-day="<?= h($__day['ymd']) ?>">
-          <div class="cal-day-head"><?= h($__day['label']) ?></div>
           <?php if (!empty($canRecordSentiment) && ($sentimentGranularity ?? 'week') === 'day'):
             $__dayMood = $weekSentiment[$__day['ymd']]['mood'] ?? null;
             $__dayFlow = $weekSentiment[$__day['ymd']]['flow'] ?? null;

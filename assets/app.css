@@ -847,24 +847,29 @@ body:has(.sidepanel) .foot{padding-right:200px}
    Hour row = 56 px, 24 hours = 1344 px total. The outer container caps
    that at 70vh with overflow-y so a typical screen scrolls to the busy
    hours instead of showing all 24. */
-/* Felix-Feedback 2026-11-08: cal-day-head muss beim vertikalen Scroll der
-   Uhrzeiten OBEN stehen bleiben. Dazu ist wichtig, dass `.cal-week` der
-   EINZIGE Scroll-Container ist - fruehere Variante mit overflow-x:auto
-   auf .cal-days unter 820 px hat den sticky-Bezug kaputt gemacht, sodass
-   die Kopfzeile mit nach unten gewandert ist. */
-.cal-week{display:grid;grid-template-columns:52px 1fr;gap:0;
+/* Felix-Feedback 2026-11-08 (#109): Durchgehende Kopfzeile ueber UHRZEITEN
+   UND Tagespalten - EINE Zeile, Corner-Zelle oben links, dann Mo..So.
+   `.cal-week` ist deshalb ein 3-Zeilen-Grid: Zeile 1 = Head (spannt beide
+   Spalten), Zeile 2 = Hours + Days. `.cal-week` muss der EINZIGE
+   Scroll-Container sein, sonst verliert `.cal-week-head { sticky top:0 }`
+   seinen Bezug und wandert mit nach unten. */
+.cal-week{display:grid;grid-template-columns:52px 1fr;grid-template-rows:auto 1fr;gap:0;
   max-height:70vh;overflow:auto;border:1px solid var(--line);border-radius:9px;
   scroll-padding-top:0}
+.cal-week-head{grid-column:1 / -1;display:grid;grid-template-columns:52px repeat(7, minmax(0,1fr));
+  position:sticky;top:0;z-index:4;background:var(--panel);border-bottom:1px solid var(--line)}
+.cal-week-corner{border-right:1px solid var(--line);background:var(--panel)}
+.cal-week-dayhead,.cal-day-head{padding:6px 8px;font-size:12px;font-weight:600;color:var(--ink);text-align:center;background:var(--panel);border-right:1px solid var(--line)}
+.cal-week-dayhead:last-child,.cal-day-head:last-child{border-right:0}
+.cal-week-dayhead.is-today,.cal-day-head.is-today{color:var(--brand)}
+.cal-week-dayhead.is-holiday,.cal-day-head.is-holiday{color:var(--brand)}
+.cal-week-dayhead.is-nonworking,.cal-day-head.is-nonworking{color:var(--muted);font-style:italic}
 .cal-week .cal-hours{display:grid;grid-template-rows:repeat(24,56px);border-right:1px solid var(--line);background:var(--panel);
   position:sticky;left:0;z-index:3}
 .cal-hour-label{font-size:11px;color:var(--muted);padding:2px 6px;text-align:right}
 .cal-days{display:grid;grid-template-columns:repeat(7,1fr);min-width:0}
 .cal-day{display:flex;flex-direction:column;min-width:0;border-right:1px solid var(--line)}
 .cal-day:last-child{border-right:0}
-.cal-day-head{position:sticky;top:0;z-index:2;background:var(--panel);
-  padding:6px 8px;font-size:12px;font-weight:600;color:var(--ink);
-  border-bottom:1px solid var(--line);text-align:center}
-.cal-day-today .cal-day-head{color:var(--brand)}
 
 /* Holidays list card below the week grid (#110). */
 .holidays-card{margin-top:18px}
@@ -889,7 +894,6 @@ body:has(.sidepanel) .foot{padding-right:200px}
   display:flex;align-items:center;gap:4px;
   text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   cursor:help}
-.cal-day-holiday .cal-day-head{color:var(--brand)}
 .cal-holiday-dot{color:var(--brand);font-size:10px}
 .cal-holiday-name{overflow:hidden;text-overflow:ellipsis}
 .cal-day-grid{position:relative;flex:1;background:var(--soft);
