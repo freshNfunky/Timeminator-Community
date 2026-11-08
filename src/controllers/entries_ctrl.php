@@ -85,21 +85,34 @@ function ctrl_entries_index(): void
     $processCats = ProcessRepo::categories(true);
     $tasks       = Repo::tasks(true);
 
-    // Sentiment-Daten der Woche + aktueller Rhythmus (Felix-Feedback 2026-11-04):
-    // damit der Kalender pro Tag einen Mood-Picker einblenden kann, oder - bei
-    // woechentlichem Rhythmus - einen einzelnen Picker fuer die ganze Woche.
+    // Sentiment-Daten im sichtbaren Bereich + aktueller Rhythmus
+    // (Felix-Feedback 2026-11-04 / 2026-11-08): damit der Kalender pro Tag
+    // einen Mood-Picker einblenden kann, oder - bei woechentlichem Rhythmus -
+    // einen einzelnen Picker fuer die ganze Woche. Fuer die Monatsansicht
+    // wird derselbe Array mit dem gesamten Grid-Bereich gefuellt.
     $weekSentiment = [];
     $sentimentGranularity = Sentiment::granularity();
-    if ($view === 'calendar' && isset($weekStart, $weekEnd) && Auth::can('sentiment.record')) {
-        $rows = DB::all(
-            'SELECT as_of, mood, flow FROM sentiment_entries WHERE user_id = ? AND as_of BETWEEN ? AND ?',
-            [$uid, $weekStart->format('Y-m-d'), $weekEnd->format('Y-m-d')]
-        );
-        foreach ($rows as $r) {
-            $weekSentiment[(string) $r['as_of']] = [
-                'mood' => $r['mood'] !== null ? (int) $r['mood'] : null,
-                'flow' => $r['flow'] !== null ? (int) $r['flow'] : null,
-            ];
+    if ($view === 'calendar' && Auth::can('sentiment.record')) {
+        if ($calendarSpan === 'month' && isset($padStart, $padEnd)) {
+            $sentFrom = $padStart->format('Y-m-d');
+            $sentTo   = $padEnd->format('Y-m-d');
+        } elseif (isset($weekStart, $weekEnd)) {
+            $sentFrom = $weekStart->format('Y-m-d');
+            $sentTo   = $weekEnd->format('Y-m-d');
+        } else {
+            $sentFrom = $sentTo = null;
+        }
+        if ($sentFrom !== null) {
+            $rows = DB::all(
+                'SELECT as_of, mood, flow FROM sentiment_entries WHERE user_id = ? AND as_of BETWEEN ? AND ?',
+                [$uid, $sentFrom, $sentTo]
+            );
+            foreach ($rows as $r) {
+                $weekSentiment[(string) $r['as_of']] = [
+                    'mood' => $r['mood'] !== null ? (int) $r['mood'] : null,
+                    'flow' => $r['flow'] !== null ? (int) $r['flow'] : null,
+                ];
+            }
         }
     }
 
