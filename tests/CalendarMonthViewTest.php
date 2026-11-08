@@ -94,8 +94,11 @@ final class CalendarMonthViewTest extends TestCase
         self::assertStringContainsString('data-dim="mood"', $view, 'Mood-Dim fehlt im Wochen-Picker');
         self::assertStringContainsString('data-dim="flow"', $view, 'Flow-Dim fehlt im Wochen-Picker');
 
-        // Picker nur bei Montag einfuegen (eine Mood-Zelle pro Woche, nicht pro Tag).
-        self::assertStringContainsString('format(\'N\') === 1', $view, 'Pro Woche genau ein Mood-Picker: Check auf Montag fehlt');
+        // Picker nur beim konfigurierten Wochenanfang einfuegen (eine Mood-Zelle
+        // pro Woche, nicht pro Tag). Der Check laeuft ueber CalendarLocale::isWeekStart,
+        // damit er sich bei nicht-montaeglichem Wochenanfang automatisch
+        // mitbewegt.
+        self::assertStringContainsString('CalendarLocale::isWeekStart($d)', $view, 'Pro Woche genau ein Mood-Picker: Check auf CalendarLocale::isWeekStart($d) fehlt');
 
         // Daily-Picker darf im Monat NICHT unkonditional gerendert werden -
         // er haengt an $dayMode (nur wenn Granularitaet='day').

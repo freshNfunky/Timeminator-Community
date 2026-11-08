@@ -28,18 +28,11 @@ $prevMonth  = $monthStart->modify('-1 month');
 $nextMonth  = $monthStart->modify('+1 month');
 $today      = new DateTimeImmutable('today');
 
-$dayHeaders = [
-    t('cal.day_short.mon', 'Mo'),
-    t('cal.day_short.tue', 'Di'),
-    t('cal.day_short.wed', 'Mi'),
-    t('cal.day_short.thu', 'Do'),
-    t('cal.day_short.fri', 'Fr'),
-    t('cal.day_short.sat', 'Sa'),
-    t('cal.day_short.sun', 'So'),
-];
-
-$gridStart = $monthStart->modify('monday this week');
-$gridEnd   = $monthEnd->modify('sunday this week');
+// Wochentags-Labels + Grid-Grenzen folgen dem konfigurierten Wochenanfang
+// (heute Montag, Milestone-1.1-ready fuer abweichende Locale-Einstellungen).
+$dayHeaders = CalendarLocale::weekdayShortLabels();
+$gridStart  = CalendarLocale::weekStart($monthStart);
+$gridEnd    = CalendarLocale::weekEnd($monthEnd);
 
 // Buchungen gruppiert pro Tag + Projekt.
 $byDayProject = [];
@@ -110,10 +103,11 @@ $gridClass = 'cal-month-grid' . ($weekMode ? ' cal-month-grid-with-sent' : '');
     <?php endforeach; ?>
     <?php for ($d = $gridStart; $d <= $gridEnd; $d = $d->modify('+1 day')):
       $ymd      = $d->format('Y-m-d');
-      $isMonday = (int) $d->format('N') === 1;
-      if ($weekMode && $isMonday): ?>
-        <?php /* Wochen-Mood-Zelle links vom Montag. Default-Placeholder:
-           das NEUTRAL-Emoji (Score 3), abgegraut durch is-empty. */ ?>
+      $isWeekStart = CalendarLocale::isWeekStart($d);
+      if ($weekMode && $isWeekStart): ?>
+        <?php /* Wochen-Mood-Zelle links vom konfigurierten Wochenanfang
+           (Montag per Default). Placeholder: Neutrales Emoji (Score 3),
+           abgegraut durch is-empty. */ ?>
         <div class="cal-month-sent-col" role="gridcell">
           <div class="cal-sent-week cal-sent-week-stack" data-monday="<?= h($ymd) ?>" data-csrf="<?= h(csrf_token()) ?>">
             <div class="cal-sent-week-row cal-sent-cell" data-dim="mood">
