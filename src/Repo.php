@@ -546,10 +546,15 @@ final class Repo
 
     public static function workPackages(bool $activeOnly = false): array
     {
-        $sql = 'SELECT w.*, p.name AS project_name, p.client_id, c.name AS client_name
+        // Fix #178: category_ckey + category_label mitreichen, damit die
+        // Liste bei intern "Internes Projekt" statt den Sentinel-Kunden
+        // rendern kann (via entry_client_display).
+        $sql = 'SELECT w.*, p.name AS project_name, p.client_id, c.name AS client_name,
+                       pc.ckey AS category_ckey, pc.label AS category_label
                   FROM work_packages w
                   JOIN projects p ON p.id = w.project_id
-                  JOIN clients  c ON c.id = p.client_id';
+                  JOIN clients  c ON c.id = p.client_id
+             LEFT JOIN project_categories pc ON pc.id = p.category_id';
         if ($activeOnly) {
             $sql .= ' WHERE w.active = 1';
         }

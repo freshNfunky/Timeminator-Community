@@ -13,7 +13,7 @@ $list_headers = [
 ];
 $list_row_renderer = static function (array $p): string {
     $colorAttr = h(strtolower((string) ($p['color'] ?: ($p['client_color'] ?: ''))));
-    $out  = '<td>' . h($p['client_name']) . '</td>';
+    $out  = '<td>' . h(entry_client_display($p)) . '</td>';
     $out .= '<td><span class="dot" data-color="' . $colorAttr . '"></span>'
           . '<a href="' . h(route('project_show', ['id' => (int) $p['id']])) . '">' . h($p['name']) . '</a>'
           . ($p['active'] ? '' : ' <span class="pill">' . h(t('struct.inactive')) . '</span>')

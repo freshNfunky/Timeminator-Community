@@ -387,16 +387,20 @@ function client_ip(): string
  * stattdessen den Kategorie-Label ("Internes Projekt") sehen, damit die
  * Buchung nicht falschlich dem Kundennamen zugeschlagen wird.
  *
- * @param array $e  Entry-Row mit project_category_ckey + project_category_label
- *                  (ergaenzt durch Repo::entries / Repo::entry / Repo::running).
+ * Fix #178: der Helper akzeptiert beide Feldnamen - Entry-Rows tragen
+ * project_category_ckey (prefixed, aus Repo::entries), Projekt-Rows nur
+ * category_ckey (direkt aus projects JOIN project_categories). Beide
+ * fuehren zum gleichen Label-Switch bei intern.
+ *
+ * @param array $e  Row mit (project_)category_ckey + (project_)category_label
  * @return string   Display-Label: category_label bei ckey='intern', sonst client_name.
  */
 function entry_client_display(array $e): string
 {
-    $ckey = (string) ($e['project_category_ckey'] ?? '');
-    if ($ckey === 'intern') {
-        $label = (string) ($e['project_category_label'] ?? '');
-        if ($label !== '') { return $label; }
+    $ckey  = (string) ($e['project_category_ckey']  ?? $e['category_ckey']  ?? '');
+    $label = (string) ($e['project_category_label'] ?? $e['category_label'] ?? '');
+    if ($ckey === 'intern' && $label !== '') {
+        return $label;
     }
     return (string) ($e['client_name'] ?? '');
 }

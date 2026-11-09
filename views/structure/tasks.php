@@ -10,7 +10,7 @@ $list_headers = [
     t('tasks.kind', 'Art'),
 ];
 $list_row_renderer = static function (array $tsk): string {
-    $out  = '<td>' . h($tsk['client_name'] . ' / ' . $tsk['project_name']) . '</td>';
+    $out  = '<td>' . h(entry_client_display($tsk) . ' / ' . $tsk['project_name']) . '</td>';
     $out .= '<td class="muted">' . h($tsk['work_package_name'] ?? '—') . '</td>';
     $out .= '<td>' . h($tsk['name'])
           . ($tsk['active'] ? '' : ' <span class="pill">' . h(t('struct.inactive')) . '</span>')
