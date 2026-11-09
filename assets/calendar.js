@@ -90,6 +90,30 @@
     openDialog();
   }
 
+  // Felix-Feedback 2026-11-09 (#146): Drag im Wochen-Kopf-Header erzeugt
+  // eine Date-Range; der Dialog oeffnet mit Typ = erste Urlaub-Kategorie
+  // und vorbelegtem Range. User kann im Dialog zwischen Urlaub und
+  // Sonderurlaub (oder anderen Abwesenheits-Kategorien) umschalten.
+  function openForNewAbsenceRange(fromYmd, toYmd) {
+    reset();
+    // Default-Vorauswahl: erste Kategorie mit ckey='urlaub' oder account=vacation,
+    // sonst erste absence-option.
+    var opts = typeSel.querySelectorAll('optgroup[label="' + (D.i18n.group_absences || 'Abwesenheiten') + '"] option');
+    var picked = '';
+    for (var i = 0; i < opts.length; i++) {
+      var ckey = (opts[i].textContent || '').toLowerCase();
+      if (ckey.indexOf('urlaub') !== -1 && ckey.indexOf('sonder') === -1) {
+        picked = opts[i].value; break;
+      }
+    }
+    if (!picked && opts.length) picked = opts[0].value;
+    if (picked) typeSel.value = picked;
+    fromIn.value = fromYmd;
+    toIn.value   = toYmd || fromYmd;
+    setType(typeSel.value);
+    openDialog();
+  }
+
   function openForEntry(id) {
     var e = D.entries[String(id)];
     if (!e) return;
@@ -158,6 +182,76 @@
         openForAbsence(parseInt(btn.getAttribute('data-absence-id'), 10));
       });
     });
+
+    // Felix-Feedback 2026-11-09 (#146): Band-Pillen oben in der Kopfzeile
+    // oeffnen den Edit-Dialog der jeweiligen Absence.
+    document.querySelectorAll('.cal-absbar-pill').forEach(function (p) {
+      p.addEventListener('click', function () {
+        openForAbsence(parseInt(p.getAttribute('data-abs-id'), 10));
+      });
+    });
+
+    // Drag-Gesture im Wochen-Head: Mousedown auf einem dayhead -> Mousemove
+    // tracked eine Range ueber die 7 Dayheads; Mouseup oeffnet den Dialog
+    // mit Typ=Urlaub und vorbelegtem Date-Range (from..to via data-day).
+    var head = document.querySelector('.cal-week-head');
+    if (head) {
+      var dragFrom = null;
+      var dragTo   = null;
+      function headsInOrder() {
+        return Array.prototype.slice.call(head.querySelectorAll('.cal-week-dayhead'));
+      }
+      function dayheadFromEvent(ev) {
+        var t = ev.target;
+        while (t && t !== head) {
+          if (t.classList && t.classList.contains('cal-week-dayhead')) return t;
+          t = t.parentNode;
+        }
+        return null;
+      }
+      function clearHighlight() {
+        headsInOrder().forEach(function (d) { d.classList.remove('is-drag-range'); });
+      }
+      function highlight(fromYmd, toYmd) {
+        var lo = fromYmd < toYmd ? fromYmd : toYmd;
+        var hi = fromYmd < toYmd ? toYmd : fromYmd;
+        headsInOrder().forEach(function (d) {
+          var day = d.getAttribute('data-day') || '';
+          d.classList.toggle('is-drag-range', day >= lo && day <= hi);
+        });
+      }
+      head.addEventListener('mousedown', function (ev) {
+        var dh = dayheadFromEvent(ev);
+        if (!dh) return;
+        // Ignorieren, wenn Click auf einem interaktiven Element im Header
+        // (Mood-Picker, Pensum-Badge) landet - der soll normal reagieren.
+        if (ev.target.closest('.cal-sent-day-head, .cal-day-pensum, .cal-sent-cell')) return;
+        dragFrom = dragTo = dh.getAttribute('data-day');
+        head.classList.add('is-dragging');
+        highlight(dragFrom, dragTo);
+        ev.preventDefault();
+      });
+      head.addEventListener('mousemove', function (ev) {
+        if (!dragFrom) return;
+        var dh = dayheadFromEvent(ev);
+        if (!dh) return;
+        dragTo = dh.getAttribute('data-day');
+        highlight(dragFrom, dragTo);
+      });
+      function finishDrag() {
+        if (!dragFrom) return;
+        var lo = dragFrom < dragTo ? dragFrom : dragTo;
+        var hi = dragFrom < dragTo ? dragTo : dragFrom;
+        head.classList.remove('is-dragging');
+        clearHighlight();
+        dragFrom = dragTo = null;
+        openForNewAbsenceRange(lo, hi);
+      }
+      head.addEventListener('mouseup', finishDrag);
+      head.addEventListener('mouseleave', function () {
+        if (dragFrom) finishDrag();
+      });
+    }
     // Edit-Buttons in der Liste (alle 3 Typen).
     document.querySelectorAll('.entry-edit-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {

@@ -25,6 +25,7 @@ require APP_ROOT . '/src/db.php';
 require APP_ROOT . '/src/Settings.php';
 require APP_ROOT . '/src/CalendarLocale.php';
 require APP_ROOT . '/src/DayBracket.php';
+require APP_ROOT . '/src/WorkdaySpans.php';
 require APP_ROOT . '/src/seed.php';
 require APP_ROOT . '/src/LoginThrottle.php';
 require APP_ROOT . '/src/Stats.php';

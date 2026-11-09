@@ -290,6 +290,9 @@ foreach (($processes ?? []) as $__p) {
         'title_edit'     => t('cal.dialog_edit', 'Eintrag bearbeiten'),
         'confirm_delete' => t('cal.dialog_confirm_delete', 'Eintrag loeschen?'),
         'err_generic'    => t('cal.dialog_err_generic', 'Konnte nicht speichern.'),
+        // #146: Label des Abwesenheits-Optgroup, damit JS die Default-
+        // Urlaubsoption im Dialog findet.
+        'group_absences' => t('cal.group_absences', 'Abwesenheiten'),
     ],
 ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
 <script src="<?= h(asset('calendar.js')) ?>" nonce="<?= h(csp_nonce()) ?>"></script>
