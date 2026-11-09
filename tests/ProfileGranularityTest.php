@@ -13,6 +13,12 @@ final class ProfileGranularityTest extends TestCase
     protected function setUp(): void
     {
         TestSupport::bootInMemoryDb();
+        // Felix-Feedback 2026-11-09: resetSettings fehlte - Tests haben
+        // data/settings.json von laufendem Dev-Server geerbt (z.B. Felix
+        // hat 'day' persistiert) und testDefaultGranularityIsWeekWhenNothingSet
+        // kippte dadurch zufaellig auf 'day'. Settings-Cache + File leeren
+        // macht die Tests wieder hermetisch.
+        TestSupport::resetSettings();
     }
 
     public function testDefaultGranularityIsWeekWhenNothingSet(): void
@@ -111,5 +117,49 @@ final class ProfileGranularityTest extends TestCase
         self::assertStringContainsString('function ctrl_sentiment_save_week', $ctrl,
             'Neuer Wochen-Save-Controller fehlt');
         self::assertStringContainsString("Sentiment::fillRange", $ctrl);
+    }
+
+    /**
+     * Felix-Feedback 2026-11-09 (Fix #135): Die View darf KEINE eigene
+     * page-title-H1 rendern - die Layout-Shell zeigt den Titel bereits aus
+     * dem view()-Call. Vorher gab es zwei "Meine Einstellungen"-H1s
+     * uebereinander.
+     */
+    public function testProfileViewDoesNotRenderOwnPageTitleH1(): void
+    {
+        $view = (string) file_get_contents(dirname(__DIR__) . '/views/profile/index.php');
+        self::assertStringNotContainsString('<h1 class="page-title">', $view,
+            'profile/index.php darf keine eigene page-title-H1 setzen - Titel kommt aus der Layout-Shell');
+    }
+
+    /**
+     * Felix-Feedback 2026-11-09 (Fix #136): Das Profil-Formular nutzt die
+     * neue kompakte Radio-Row mit align-items:center, nicht mehr die
+     * form-inline-Spalten-Variante, die Radios und Labels vertikal
+     * uebereinander stapelte.
+     */
+    public function testProfileFormUsesCompactRadioRowLayout(): void
+    {
+        $view = (string) file_get_contents(dirname(__DIR__) . '/views/profile/index.php');
+        self::assertStringContainsString('class="profile-form"', $view,
+            'Form-Klasse profile-form fehlt');
+        self::assertStringContainsString('class="profile-radio-row"', $view,
+            'Radio-Row-Container profile-radio-row fehlt');
+        self::assertStringContainsString('class="profile-radio"', $view,
+            'Einzelne Radio-Labels muessen profile-radio tragen');
+        self::assertStringNotContainsString('class="form-inline"', $view,
+            'form-inline darf nicht mehr verwendet werden (Spalten-Stacking war zerfleddert)');
+
+        $css = (string) file_get_contents(dirname(__DIR__) . '/assets/app.css');
+        self::assertMatchesRegularExpression(
+            '~\.profile-radio-row\s*\{[^}]*align-items:\s*center~s',
+            $css,
+            'profile-radio-row muss align-items:center setzen, damit Radios + Label auf einer Baseline sitzen'
+        );
+        self::assertMatchesRegularExpression(
+            '~\.profile-radio\s*\{[^}]*display:\s*inline-flex~s',
+            $css,
+            'profile-radio muss display:inline-flex nutzen, damit Input + Label horizontal nebeneinander stehen'
+        );
     }
 }
