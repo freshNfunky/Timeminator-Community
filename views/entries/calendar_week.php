@@ -111,7 +111,7 @@ foreach ($entries as $__e) {
         'height'  => round($__hPct, 3),
         'start'   => $__s->format('H:i'),
         'end'     => !empty($__e['end_ts']) ? $__eEnd->format('H:i') : '…',
-        'client'  => (string) ($__e['client_name'] ?? ''),
+        'client'  => entry_client_display($__e),
         'project' => (string) ($__e['project_name'] ?? ''),
         'task'    => (string) ($__e['task_name'] ?? ''),
         'note'    => (string) ($__e['note'] ?? ''),

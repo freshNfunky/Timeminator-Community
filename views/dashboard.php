@@ -15,7 +15,7 @@
     <div class="timer-running" data-start="<?= h($running['start_ts']) ?>">
       <div>
         <span class="badge badge-live"><?= h(t('dash.timer_running_badge', 'laeuft')) ?></span>
-        <strong><?= h($running['client_name']) ?> / <?= h($running['project_name']) ?></strong>
+        <strong><?= h(entry_client_display($running)) ?> / <?= h($running['project_name']) ?></strong>
         <span class="muted">· <?= h($running['task_name']) ?></span>
       </div>
       <div class="timer-clock" id="timerClock">00:00:00</div>
@@ -185,7 +185,7 @@
       <?php foreach ($recent as $e): ?>
       <tr>
         <td><?= h(fmt_dt($e['start_ts'])) ?></td>
-        <td><?= h($e['client_name']) ?> / <?= h($e['project_name']) ?></td>
+        <td><?= h(entry_client_display($e)) ?> / <?= h($e['project_name']) ?></td>
         <td><?= h($e['task_name']) ?><?= $e['note'] ? ' <span class="muted">· ' . h($e['note']) . '</span>' : '' ?></td>
         <td class="r"><?= h(fmt_hm($e['duration_min'])) ?></td>
       </tr>

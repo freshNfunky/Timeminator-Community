@@ -379,3 +379,24 @@ function client_ip(): string
     }
     return $remote;
 }
+
+/**
+ * Felix-Feedback 2026-11-09 (Fix #166): Projekt-Entries werden in Listen
+ * und im Kalender als "Kunde / Projekt" angezeigt. Bei INTERNEN Projekten
+ * ist der zugeordnete Kunde technisch ein Platzhalter - Felix will dort
+ * stattdessen den Kategorie-Label ("Internes Projekt") sehen, damit die
+ * Buchung nicht falschlich dem Kundennamen zugeschlagen wird.
+ *
+ * @param array $e  Entry-Row mit project_category_ckey + project_category_label
+ *                  (ergaenzt durch Repo::entries / Repo::entry / Repo::running).
+ * @return string   Display-Label: category_label bei ckey='intern', sonst client_name.
+ */
+function entry_client_display(array $e): string
+{
+    $ckey = (string) ($e['project_category_ckey'] ?? '');
+    if ($ckey === 'intern') {
+        $label = (string) ($e['project_category_label'] ?? '');
+        if ($label !== '') { return $label; }
+    }
+    return (string) ($e['client_name'] ?? '');
+}

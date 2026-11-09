@@ -77,7 +77,7 @@ foreach ($entries as $__e) {
         'sort'  => (string) $__e['start_ts'],
         'start' => (string) $__e['start_ts'],
         'end'   => (string) ($__e['end_ts'] ?? ''),
-        'label' => (string) ($__e['client_name'] ?? '') . ' / ' . (string) ($__e['project_name'] ?? ''),
+        'label' => entry_client_display($__e) . ' / ' . (string) ($__e['project_name'] ?? ''),
         'sub'   => (string) ($__e['task_name'] ?? ''),
         'note'  => (string) ($__e['note'] ?? ''),
         'dur'   => (int) ($__e['duration_min'] ?? 0),

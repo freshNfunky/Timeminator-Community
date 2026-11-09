@@ -793,12 +793,14 @@ final class Repo
     {
         return DB::one(
             'SELECT e.*, t.name AS task_name, p.name AS project_name, c.name AS client_name,
-                    w.name AS work_package_name, w.code AS work_package_code
+                    w.name AS work_package_name, w.code AS work_package_code,
+                    pc.ckey AS project_category_ckey, pc.label AS project_category_label
                FROM time_entries e
                JOIN tasks t    ON t.id = e.task_id
                JOIN projects p ON p.id = e.project_id
                JOIN clients  c ON c.id = e.client_id
           LEFT JOIN work_packages w ON w.id = e.work_package_id
+          LEFT JOIN project_categories pc ON pc.id = p.category_id
               WHERE e.id = ?',
             [$id]
         );
@@ -809,12 +811,14 @@ final class Repo
     {
         return DB::one(
             'SELECT e.*, t.name AS task_name, p.name AS project_name, c.name AS client_name,
-                    w.name AS work_package_name
+                    w.name AS work_package_name,
+                    pc.ckey AS project_category_ckey, pc.label AS project_category_label
                FROM time_entries e
                JOIN tasks t    ON t.id = e.task_id
                JOIN projects p ON p.id = e.project_id
                JOIN clients  c ON c.id = e.client_id
           LEFT JOIN work_packages w ON w.id = e.work_package_id
+          LEFT JOIN project_categories pc ON pc.id = p.category_id
               WHERE e.user_id = ? AND e.end_ts IS NULL
               ORDER BY e.start_ts DESC LIMIT 1',
             [$userId]
@@ -874,12 +878,15 @@ final class Repo
                        c.name AS client_name,  c.code AS client_code,
                        c.color AS client_color, p.color AS project_color,
                        p.track AS project_track, c.track AS client_track,
-                       w.name AS work_package_name, w.code AS work_package_code
+                       w.name AS work_package_name, w.code AS work_package_code,
+                       pc.ckey  AS project_category_ckey,
+                       pc.label AS project_category_label
                   FROM time_entries e
                   JOIN tasks t    ON t.id = e.task_id
                   JOIN projects p ON p.id = e.project_id
                   JOIN clients  c ON c.id = e.client_id
              LEFT JOIN work_packages w ON w.id = e.work_package_id
+             LEFT JOIN project_categories pc ON pc.id = p.category_id
                  WHERE ' . implode(' AND ', $where) . '
                  ORDER BY e.start_ts DESC';
         if (!empty($f['limit'])) {

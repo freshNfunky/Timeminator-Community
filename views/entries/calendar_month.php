@@ -43,7 +43,7 @@ foreach ($entries as $e) {
         continue;
     }
     $ymd = $s->format('Y-m-d');
-    $label = ((string) ($e['client_name'] ?? ''))
+    $label = entry_client_display($e)
         . (($e['project_name'] ?? '') !== '' ? ' / ' . (string) $e['project_name'] : '');
     if ($label === ' / ' || $label === '') {
         $label = (string) ($e['project_name'] ?? '—');
