@@ -272,6 +272,8 @@ return [
     'projects.edit'             => 'Projekt bearbeiten',
     'projects.new'              => 'Neues Projekt',
     'projects.pick_client'      => 'Kunde waehlen …',
+    'projects.pick_category'    => 'Projektart waehlen …',
+    'projects.client_lock_hint' => 'Zuerst Projektart waehlen',
     'projects.track_override'   => 'Gleis / Gruppe (ueberschreibt Kunde)',
     'projects.col_project'      => 'Projekt',
     'projects.budget_note_pro'  => 'Zeit-/Geldbudget, Planung und Fortschritts-Report sind Teil von <b>Timeminator Pro</b>.',

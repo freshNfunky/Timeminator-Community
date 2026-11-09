@@ -27,7 +27,10 @@ $project_categories = $project_categories ?? Repo::projectCategories(true);
     }
   ?>
   <label><?= h(t('projects.category', 'Projektart')) ?><?= tip('projects.category_hint', 'Legt fest, ob ein Kunde Pflicht ist und wie er heisst (z. B. Foerdermittelgeber bei Foerderprojekten). Verwalten in Presets.') ?>
-    <select name="category_id">
+    <select name="category_id" required>
+      <?php if (!$edit): ?>
+        <option value=""><?= h(t('projects.pick_category', 'Projektart waehlen …')) ?></option>
+      <?php endif; ?>
       <?php foreach ($project_categories as $__pc):
         // Edit-Modus + gegensaetzliche Projektart -> Option ueberspringen.
         if ($edit && $__editIsInternal !== null) {
@@ -46,8 +49,17 @@ $project_categories = $project_categories ?? Repo::projectCategories(true);
       <small class="muted"><?= h(t('projects.category_lock_hint', 'Wechsel intern <-> nicht-intern erfolgt erst ab v1.2 (Pro-Issue).')) ?></small>
     <?php endif; ?>
   </label>
-  <label><?= h(t('struct.client', 'Kunde')) ?>
-    <select name="client_id">
+  <?php /* Felix-Feedback 2026-11-09 (Fix #175): Kunde-Feld folgt der
+     Kaskaden-Hierarchie des Entry-Dialogs - erst Projektart waehlen,
+     dann oeffnet sich das Kunde-Feld; bei Internes Projekt entfaellt
+     es komplett; bei Foerderprojekt wird das Label auf "Projekttraeger"
+     umgestellt. data-base-label fuer Label-Swap wie im Entry-Dialog. */ ?>
+  <label class="project-client-label"
+         data-base-label="<?= h(t('struct.client', 'Kunde')) ?>"
+         data-lock-hint="<?= h(t('projects.client_lock_hint', 'Zuerst Projektart waehlen')) ?>"
+         data-base-placeholder="<?= h(t('projects.pick_client', 'Kunde waehlen …')) ?>">
+    <span class="project-client-label-text"><?= h(t('struct.client', 'Kunde')) ?></span>
+    <select name="client_id" class="project-client-select">
       <option value=""><?= h(t('projects.pick_client', 'Kunde waehlen …')) ?></option>
       <?php foreach (($clients ?? []) as $__c): ?>
         <?php if (($__c['code'] ?? '') === '__internal__') continue; ?>
@@ -55,6 +67,41 @@ $project_categories = $project_categories ?? Repo::projectCategories(true);
       <?php endforeach; ?>
     </select>
   </label>
+  <script nonce="<?= h(csp_nonce()) ?>">
+  (function () {
+    // Felix-Feedback 2026-11-09 (Fix #175): Kaskaden-Verhalten fuer die
+    // Projekt-Form analog Entry-Dialog. Keine flache Liste; erst
+    // Projektart, dann Kunde.
+    var form = document.currentScript.closest('form');
+    if (!form) return;
+    var catSel     = form.querySelector('select[name="category_id"]');
+    var clientSel  = form.querySelector('.project-client-select');
+    var clientLab  = form.querySelector('.project-client-label');
+    var clientText = form.querySelector('.project-client-label-text');
+    if (!catSel || !clientSel || !clientLab || !clientText) return;
+    var placeholder = clientSel.querySelector('option[value=""]');
+    var baseLabel   = clientLab.getAttribute('data-base-label') || clientText.textContent;
+    var basePlh     = clientLab.getAttribute('data-base-placeholder') || (placeholder ? placeholder.textContent : '');
+    var lockHint    = clientLab.getAttribute('data-lock-hint') || 'Zuerst Projektart waehlen';
+    function apply() {
+      var opt         = catSel.selectedOptions[0];
+      var needsClient = opt && opt.value ? opt.getAttribute('data-needs-client') === '1' : true;
+      var customLabel = opt ? (opt.getAttribute('data-client-label') || '') : '';
+      // Internes Projekt: Kunde-Feld komplett ausblenden.
+      clientLab.hidden    = !needsClient;
+      clientSel.disabled  = !needsClient || !catSel.value;
+      if (!needsClient)  { clientSel.value = ''; }
+      // Label-Swap bei Foerderprojekt.
+      clientText.textContent = (needsClient && customLabel) ? customLabel : baseLabel;
+      // Placeholder-Swap: Lock-Hint solange keine Art gewaehlt.
+      if (placeholder) {
+        placeholder.textContent = catSel.value ? basePlh : lockHint;
+      }
+    }
+    catSel.addEventListener('change', apply);
+    apply();
+  })();
+  </script>
   <label><?= h(t('struct.name', 'Name')) ?> <input type="text" name="name" value="<?= h($edit['name'] ?? '') ?>" required></label>
   <label><?= h(t('struct.code', 'Kennung (Code)')) ?> <input type="text" name="code" value="<?= h($edit['code'] ?? '') ?>" placeholder="<?= h(t('struct.code_placeholder_short', 'automatisch, falls leer')) ?>"></label>
   <label><?= h(t('projects.track_override', 'Gleis / Gruppe (ueberschreibt Kunde)')) ?>

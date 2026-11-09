@@ -281,6 +281,8 @@ return [
     'projects.edit'             => 'Edit project',
     'projects.new'              => 'New project',
     'projects.pick_client'      => 'Pick a client …',
+    'projects.pick_category'    => 'Pick a project category …',
+    'projects.client_lock_hint' => 'Pick a project category first',
     'projects.track_override'   => 'Track / group (overrides client)',
     'projects.col_project'      => 'Project',
     'projects.budget_note_pro'  => 'Time + money budgets, planning and progress reports are part of <b>Timeminator Pro</b>.',
