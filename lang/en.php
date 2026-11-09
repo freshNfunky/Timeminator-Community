@@ -994,6 +994,7 @@ return [
     'cal.err_new_task_project'      => 'A project must be selected for the new task.',
     'cal.err_time_required'         => 'Start and end are required.',
     'cal.err_from_date_required'    => 'From-date is required.',
+    'dash.timer_type'               => 'Type',
     'cal.confirm_delete_fallback'   => 'Really delete?',
     'cat.foerder_client_label'      => 'Grant provider',
 

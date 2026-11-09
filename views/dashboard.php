@@ -1,7 +1,9 @@
 <?php
-/** @var ?array $running @var array $recent @var array $tasks
+/** @var ?array $running @var ?array $runningProcess
+ *  @var array $recent @var array $tasks
  *  @var int $minToday @var int $minWeek @var int $minMonth
- *  @var array $planning   Repo::projectPlanningSnapshot(); may be empty */
+ *  @var array $planning   Repo::projectPlanningSnapshot(); may be empty
+ *  @var array $processCategories  ProcessRepo::categories(true) */
 ?>
 <div class="grid-tiles">
   <div class="tile"><div class="tile-val"><?= h(fmt_hours($minToday)) ?></div><div class="tile-lbl"><?= h(t('dash.today')) ?></div></div>
@@ -24,6 +26,24 @@
         <button class="btn btn-danger" type="submit"><?= h(t('dash.timer_stop')) ?></button>
       </form>
     </div>
+  <?php elseif ($runningProcess ?? null): ?>
+    <?php /* Fix #186: laufender Interner-Prozess-Timer. Kein Kunde/Projekt,
+       nur Kategorie-Label plus optionale Notiz. */ ?>
+    <div class="timer-running" data-start="<?= h($runningProcess['start_ts']) ?>">
+      <div>
+        <span class="badge badge-live"><?= h(t('dash.timer_running_badge', 'laeuft')) ?></span>
+        <strong><?= h(t('cal.group_processes', 'Interne Prozesse')) ?></strong>
+        <span class="muted">· <?= h($runningProcess['category_label']) ?></span>
+        <?php if (!empty($runningProcess['note'])): ?>
+          <span class="muted">· <?= h($runningProcess['note']) ?></span>
+        <?php endif; ?>
+      </div>
+      <div class="timer-clock" id="timerClock">00:00:00</div>
+      <form method="post" action="<?= h(route('timer_stop')) ?>">
+        <?= csrf_field() ?>
+        <button class="btn btn-danger" type="submit"><?= h(t('dash.timer_stop')) ?></button>
+      </form>
+    </div>
   <?php else: ?>
     <form method="post" action="<?= h(route('timer_start')) ?>" class="timer-start" id="timerStartForm">
       <?= csrf_field() ?>
@@ -31,20 +51,41 @@
          ueber der Kaskade - analog Entry-Dialog. Ohne diese Stufe stand
          im Kunden-Select "Zuerst Projektart waehlen", aber die Projektart
          war nirgends auswaehlbar. */ ?>
+      <?php /* Fix #186: Typ-Switcher kombiniert Projektarten + Interne
+         Prozesse in EINER Combobox. Projekt-Optionen tragen den Projekt-
+         art-Wert als Zahl (1/2/3), Prozess-Optionen tragen "p:<id>"
+         analog zum Entry-Dialog-Typ-Switcher. Das Script unterscheidet
+         und blendet die Hierarchie bei Prozess-Wahl komplett aus. */ ?>
       <label class="timer-cat-label">
-        <?= h(t('projects.category', 'Projektart')) ?>
-        <select class="timer-cat" aria-label="<?= h(t('projects.category', 'Projektart')) ?>">
+        <?= h(t('dash.timer_type', 'Typ')) ?>
+        <select class="timer-cat" aria-label="<?= h(t('dash.timer_type', 'Typ')) ?>">
           <option value=""><?= h(t('projects.pick_category', 'Projektart waehlen …')) ?></option>
-          <?php foreach (($projectCategories ?? []) as $__pc): ?>
-            <option value="<?= (int) $__pc['id'] ?>"
-                    data-ckey="<?= h((string) $__pc['ckey']) ?>"
-                    data-needs-client="<?= (int) $__pc['needs_client'] ?>"
-                    data-client-label="<?= h($__pc['client_label'] ?: t('project_cat.client_default', 'Kunde')) ?>">
-              <?= h($__pc['label']) ?>
-            </option>
-          <?php endforeach; ?>
+          <optgroup label="<?= h(t('cal.type_project', 'Projekt-Zeit')) ?>">
+            <?php foreach (($projectCategories ?? []) as $__pc): ?>
+              <option value="<?= (int) $__pc['id'] ?>"
+                      data-kind="project"
+                      data-ckey="<?= h((string) $__pc['ckey']) ?>"
+                      data-needs-client="<?= (int) $__pc['needs_client'] ?>"
+                      data-client-label="<?= h($__pc['client_label'] ?: t('project_cat.client_default', 'Kunde')) ?>">
+                <?= h($__pc['label']) ?>
+              </option>
+            <?php endforeach; ?>
+          </optgroup>
+          <?php if (!empty($processCategories)): ?>
+            <optgroup label="<?= h(t('cal.group_processes', 'Interne Prozesse')) ?>">
+              <?php foreach ($processCategories as $__pc): ?>
+                <option value="p:<?= (int) $__pc['id'] ?>" data-kind="process">
+                  <?= h($__pc['label']) ?>
+                </option>
+              <?php endforeach; ?>
+            </optgroup>
+          <?php endif; ?>
         </select>
       </label>
+      <?php /* Hidden Input: bei Prozess-Wahl wird hier die Kategorie-ID
+         gesetzt; bei Projekt-Wahl bleibt es leer, dann uebernimmt
+         task_picker das task_id-Feld. */ ?>
+      <input type="hidden" name="process_category_id" value="" id="timerProcessCategoryId">
       <?php
       $selectedTaskId = 0;
       $wrapClass = 'tp-stack grow';
@@ -61,6 +102,7 @@
       if (!form) return;
       var catSel = form.querySelector('.timer-cat');
       var picker = form.querySelector('.task-picker');
+      var procIdInput = document.getElementById('timerProcessCategoryId');
       if (!catSel || !picker) return;
       var clientLabel  = picker.querySelector('.tp-client-label');
       var clientText   = clientLabel ? clientLabel.querySelector('.tp-client-label-text') : null;
@@ -70,7 +112,17 @@
         ? (clientLabel.getAttribute('data-base-label') || clientText.textContent)
         : '';
       function apply() {
-        var opt = catSel.selectedOptions[0];
+        var opt  = catSel.selectedOptions[0];
+        var kind = opt ? (opt.getAttribute('data-kind') || '') : '';
+        // Fix #186: Interner Prozess - keine Hierarchie, task-picker weg,
+        // process_category_id im hidden input setzen. task_id bleibt leer.
+        if (kind === 'process') {
+          picker.hidden = true;
+          if (procIdInput) { procIdInput.value = (opt.value || '').replace(/^p:/, ''); }
+          return;
+        }
+        picker.hidden = false;
+        if (procIdInput) { procIdInput.value = ''; }
         var ckey        = opt ? (opt.getAttribute('data-ckey') || '')         : '';
         var needsClient = opt && opt.value ? opt.getAttribute('data-needs-client') === '1' : true;
         var customLabel = opt ? (opt.getAttribute('data-client-label') || '') : '';

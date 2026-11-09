@@ -6,7 +6,10 @@ function ctrl_dashboard(): void
     require_login();
     $uid = Auth::id();
 
-    $running = Repo::running($uid);
+    // Fix #186: Timer kann Projekt-Zeit oder Interner Prozess sein.
+    // Beide Repos pruefen; die UI rendert je nach Typ.
+    $running         = Repo::running($uid);
+    $runningProcess  = $running ? null : ProcessRepo::running($uid);
     $recent = Repo::entries(['user_id' => $uid, 'limit' => 8]);
 
     // Totals for today / this week / this month (work-day aware).
@@ -46,9 +49,13 @@ function ctrl_dashboard(): void
     // Projektart-Combobox oberhalb der task-picker-Hierarchie, analog
     // zum Entry-Dialog. Dafuer brauchen wir die Projektart-Liste.
     $projectCategories = Repo::projectCategories(true);
+    // Fix #186: Timer-Card unterstuetzt auch Interne Prozesse ohne
+    // Hierarchie. Prozess-Kategorien auflisten fuer den Typ-Switcher.
+    $processCategories = ProcessRepo::categories(true);
 
     view('dashboard', [
         'running'              => $running,
+        'runningProcess'       => $runningProcess,
         'recent'               => $recent,
         'tasks'                => $tasks,
         'minToday'             => $minToday,
@@ -58,5 +65,6 @@ function ctrl_dashboard(): void
         'sentimentToday'       => $sentimentToday,
         'sentimentGranularity' => $sentimentGran,
         'projectCategories'    => $projectCategories,
+        'processCategories'    => $processCategories,
     ], t('nav.dashboard', 'Dashboard'));
 }
