@@ -358,6 +358,11 @@ return [
     'tp.all_wp'                 => 'Alle Arbeitspakete',
     'tp.wp_none_inline'         => '(ohne Arbeitspaket)',
     'tp.pick_task'              => 'Aufgabe waehlen …',
+    'tp.new_task'               => 'Neue Aufgabe',
+    'tp.new_task_name'          => 'Name der neuen Aufgabe',
+    'tp.new_task_placeholder'   => 'z.B. Konzept, Review, Deployment',
+    'tp.new_task_hint'          => 'Waehle Kunde und Projekt oben - die Aufgabe wird dort angelegt.',
+    'tp.new_task_err_no_project' => 'Fuer eine neue Aufgabe muss ein Projekt ausgewaehlt sein.',
 
     'update.new_version'        => 'Neue Version %s',
     'update.installed'          => 'Installiert: v%s',

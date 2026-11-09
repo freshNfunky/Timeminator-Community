@@ -414,6 +414,7 @@
       });
       // Aufgaben: ganze Chain
       filterOptions(task, function (o) {
+        if (o.value === '__new__') { return true; } // "+ Neue Aufgabe" immer sichtbar
         if (cid !== '' && o.getAttribute('data-client')  !== cid) { return false; }
         if (pid !== '' && o.getAttribute('data-project') !== pid) { return false; }
         if (wid !== '' && o.getAttribute('data-wp')      !== wid) { return false; }
@@ -429,6 +430,46 @@
         o.hidden = !ok;
         o.disabled = !ok;
       });
+    }
+
+    // Felix-Feedback 2026-11-09 (Fix #141): Inline-Create fuer Aufgaben.
+    // Wenn im Task-Select "+ Neue Aufgabe" (value="__new__") gewaehlt wird,
+    // blendet sich das tp-new-task-Panel ein. Beim Submit kopieren wir
+    // Projekt- und Arbeitspaket-ID aus den UX-Selects in Hidden-Felder,
+    // damit der Server die Aufgabe dem richtigen Projekt zuordnen kann.
+    var newPanel = root.querySelector('.tp-new-task');
+    if (newPanel) {
+      var newInput   = newPanel.querySelector('.tp-new-task-name');
+      var newProjIn  = newPanel.querySelector('.tp-new-task-project');
+      var newWpIn    = newPanel.querySelector('.tp-new-task-wp');
+      function syncNewPanel() {
+        var isNew = task.value === '__new__';
+        newPanel.hidden = !isNew;
+        if (newInput) { newInput.required = isNew; }
+        if (isNew) {
+          if (newProjIn) { newProjIn.value = project.value || ''; }
+          if (newWpIn)   { newWpIn.value   = wp.value      || ''; }
+        } else {
+          if (newInput)  { newInput.value  = ''; }
+          if (newProjIn) { newProjIn.value = ''; }
+          if (newWpIn)   { newWpIn.value   = ''; }
+        }
+      }
+      task.addEventListener('change', syncNewPanel);
+      project.addEventListener('change', syncNewPanel);
+      wp.addEventListener('change', syncNewPanel);
+      syncNewPanel();
+      // Submit-Handler des umliegenden Forms: Projekt + WP final mirrorn,
+      // falls der User die Parents zuletzt geaendert hat.
+      var form = root.closest('form');
+      if (form) {
+        form.addEventListener('submit', function () {
+          if (task.value === '__new__') {
+            if (newProjIn) { newProjIn.value = project.value || ''; }
+            if (newWpIn)   { newWpIn.value   = wp.value      || ''; }
+          }
+        });
+      }
     }
   }
 })();

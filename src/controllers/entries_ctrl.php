@@ -14,6 +14,39 @@ function parse_dtlocal(?string $v): ?string
     }
 }
 
+/**
+ * Felix-Feedback 2026-11-09 (Fix #141): Pro-Variante erlaubt, im
+ * Aufgaben-Dropdown "+ Neue Aufgabe" zu waehlen und direkt im Entry-
+ * Formular eine neue Task anzulegen. Diese Helfer-Funktion wandelt den
+ * rohen task_id-POST-Wert in eine echte Task-ID um - entweder bestehend
+ * (numerisch) oder frisch angelegt (bei "__new__" + name + project_id).
+ *
+ * Gibt 0 zurueck, wenn die Anlage scheitert (kein Name, kein Projekt).
+ * Caller behandelt 0 wie "keine Aufgabe gewaehlt".
+ *
+ * @param array{name:string,project_id:int,wp_id:int} $newTask
+ */
+function entries_resolve_task_id(string $raw, array $newTask): int
+{
+    $raw = trim($raw);
+    if ($raw !== '__new__') {
+        return (int) $raw;
+    }
+    $name      = trim((string) ($newTask['name'] ?? ''));
+    $projectId = (int) ($newTask['project_id'] ?? 0);
+    $wpId      = (int) ($newTask['wp_id'] ?? 0);
+    if ($name === '' || $projectId <= 0) {
+        return 0;
+    }
+    return Repo::saveTask([
+        'project_id'      => $projectId,
+        'work_package_id' => $wpId > 0 ? $wpId : null,
+        'name'            => $name,
+        'kind'            => 'default',
+        'active'          => 1,
+    ]);
+}
+
 function ctrl_entries_index(): void
 {
     require_perm('entries.manage');
@@ -324,7 +357,15 @@ function ctrl_entry_save(): void
     require_perm('entries.manage');
     csrf_check();
     $id = post_int('id');
-    $taskId = post_int('task_id');
+    // Felix-Feedback 2026-11-09 (Fix #141): Pro-Variante erlaubt das Anlegen
+    // einer neuen Aufgabe direkt aus dem Entry-Formular (Dropdown-Option
+    // "+ Neue Aufgabe"). Der Client sendet dann task_id=__new__ plus Name +
+    // Projekt-/Arbeitspaket-Kontext aus dem Task-Picker.
+    $taskId = entries_resolve_task_id((string) post('task_id'), [
+        'name'       => (string) post('new_task_name', ''),
+        'project_id' => (int)    post('new_task_project_id', 0),
+        'wp_id'      => (int)    post('new_task_wp_id', 0),
+    ]);
     $start = parse_dtlocal((string) post('start_ts'));
     $end = parse_dtlocal((string) post('end_ts'));
     $note = trim((string) post('note'));
@@ -383,7 +424,13 @@ function ctrl_entry_api_save(): void
     csrf_check();
     header('Content-Type: application/json');
     $id     = post_int('id');
-    $taskId = post_int('task_id');
+    // Fix #141 parity im API-Pfad: auch der Kalender-Overlay-Dialog
+    // kann "+ Neue Aufgabe" uebergeben.
+    $taskId = entries_resolve_task_id((string) post('task_id'), [
+        'name'       => (string) post('new_task_name', ''),
+        'project_id' => (int)    post('new_task_project_id', 0),
+        'wp_id'      => (int)    post('new_task_wp_id', 0),
+    ]);
     $start  = parse_dtlocal((string) post('start_ts'));
     $end    = parse_dtlocal((string) post('end_ts'));
     $note   = trim((string) post('note'));

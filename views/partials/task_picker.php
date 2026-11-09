@@ -88,6 +88,26 @@ foreach ($tasks as $t) {
           data-wp="<?= (int) ($t['work_package_id'] ?? 0) ?>"
           <?= $selectedTaskId == (int) $t['id'] ? 'selected' : '' ?>><?= h($t['name']) ?></option>
       <?php endforeach; ?>
+      <?php /* Felix-Feedback 2026-11-09 (Fix #141): Pro-Variante erlaubt
+         "+ Neue Aufgabe" als letzter Option - Klick blendet unter dem
+         Select ein Inline-Input ein, das beim Speichern eine neue Task im
+         gefilterten Projekt anlegt. */ ?>
+      <option value="__new__" class="tp-opt-new">+ <?= h(t('tp.new_task', 'Neue Aufgabe')) ?></option>
     </select>
   </label>
+  <?php /* Inline-Create-Panel. Default versteckt, JS klappt es bei
+     task_id == __new__ aus und versteckt es sonst wieder. Die Parent-IDs
+     (Client/Projekt/Arbeitspaket) werden beim Submit per JS aus den
+     UX-Selects in die Hidden-Felder kopiert, damit der Server weiss, zu
+     welchem Projekt die neue Aufgabe gehoert. */ ?>
+  <div class="tp-new-task" hidden>
+    <label><?= h(t('tp.new_task_name', 'Name der neuen Aufgabe')) ?>
+      <input type="text" name="new_task_name" class="tp-new-task-name"
+             maxlength="120"
+             placeholder="<?= h(t('tp.new_task_placeholder', 'z.B. Konzept, Review, Deployment')) ?>">
+    </label>
+    <input type="hidden" name="new_task_project_id" class="tp-new-task-project" value="">
+    <input type="hidden" name="new_task_wp_id"       class="tp-new-task-wp"      value="">
+    <p class="tp-new-task-hint muted"><?= h(t('tp.new_task_hint', 'Waehle Kunde und Projekt oben - die Aufgabe wird dort angelegt.')) ?></p>
+  </div>
 </div>

@@ -367,6 +367,11 @@ return [
     'tp.all_wp'                 => 'All work packages',
     'tp.wp_none_inline'         => '(no work package)',
     'tp.pick_task'              => 'Pick a task …',
+    'tp.new_task'               => 'New task',
+    'tp.new_task_name'          => 'Name of the new task',
+    'tp.new_task_placeholder'   => 'e.g. Concept, Review, Deployment',
+    'tp.new_task_hint'          => 'Choose a client and project above — the task will be created there.',
+    'tp.new_task_err_no_project' => 'A new task needs a selected project.',
 
     'update.new_version'        => 'New version %s',
     'update.installed'          => 'Installed: v%s',
