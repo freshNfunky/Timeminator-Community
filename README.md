@@ -13,7 +13,7 @@
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
   <img alt="PHP 8.1+" src="https://img.shields.io/badge/PHP-8.1%2B-777bb4.svg">
   <img alt="Databases: MySQL / SQLite" src="https://img.shields.io/badge/db-MySQL%20%7C%20SQLite-003545.svg">
-  <img alt="Status: pre-1.0" src="https://img.shields.io/badge/status-pre--1.0%20(beta)-orange.svg">
+  <img alt="Version 1.0.0" src="https://img.shields.io/badge/version-1.0.0-brightgreen.svg">
 </p>
 
 <p align="center">
@@ -24,10 +24,10 @@
   <a href="#security-notes">Security</a>
 </p>
 
-> **Status: pre-1.0 (alpha / beta).** Current version: see [`VERSION`](VERSION).
-> Data model, config keys, permission codes and routes may still change between
-> minor versions; `1.0.0` will mark the first stable release. Pin an exact
-> version in production and read the [`CHANGELOG`](CHANGELOG.md) before updating.
+> **Status: 1.0.0 — first official release.** Data model and routes are now
+> stable; breaking changes will land only on a new major version. Pin an exact
+> version in production and read the [release notes](https://github.com/freshNfunky/Timeminator-Community/releases/tag/v1.0.0)
+> before updating.
 
 ---
 
