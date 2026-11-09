@@ -6,9 +6,35 @@ $project_categories = $project_categories ?? Repo::projectCategories(true);
 <form method="post" action="<?= h(route('project_save')) ?>" class="form-inline">
   <?= csrf_field() ?>
   <?php if ($edit): ?><input type="hidden" name="id" value="<?= (int) $edit['id'] ?>"><?php endif; ?>
+  <?php
+    // Felix-Feedback 2026-11-09 (Fix #174): Beim Edit darf die Projektart
+    // NICHT zwischen intern und nicht-intern wechselbar sein. Internes
+    // Projekt hat als "Kunde" immer den Sentinel __internal__ - wuerde
+    // man auf Kundenprojekt wechseln, saesse das Projekt auf diesem
+    // Sentinel-Kunden. Umgekehrt: Kundenprojekt -> Intern wuerde den
+    // echten Kunden "verlieren". V1.2 (Pro-Issue) wird den Wechsel mit
+    // Kunde-Switch erlauben; bis dahin: sperren auf Seite der Gleichart.
+    $__editCategoryRow = null;
+    $__editIsInternal  = null;
+    if ($edit && !empty($edit['category_id'])) {
+        foreach ($project_categories as $__pc) {
+            if ((int) $__pc['id'] === (int) $edit['category_id']) {
+                $__editCategoryRow = $__pc;
+                $__editIsInternal  = !((int) $__pc['needs_client']);
+                break;
+            }
+        }
+    }
+  ?>
   <label><?= h(t('projects.category', 'Projektart')) ?><?= tip('projects.category_hint', 'Legt fest, ob ein Kunde Pflicht ist und wie er heisst (z. B. Foerdermittelgeber bei Foerderprojekten). Verwalten in Presets.') ?>
     <select name="category_id">
-      <?php foreach ($project_categories as $__pc): ?>
+      <?php foreach ($project_categories as $__pc):
+        // Edit-Modus + gegensaetzliche Projektart -> Option ueberspringen.
+        if ($edit && $__editIsInternal !== null) {
+            $__pcIsInternal = !((int) $__pc['needs_client']);
+            if ($__pcIsInternal !== $__editIsInternal) { continue; }
+        }
+      ?>
         <option value="<?= (int) $__pc['id'] ?>" <?= ($edit['category_id'] ?? 0) == $__pc['id'] ? 'selected' : '' ?>
                 data-needs-client="<?= (int) $__pc['needs_client'] ?>"
                 data-client-label="<?= h($__pc['client_label'] ?: t('project_cat.client_default', 'Kunde')) ?>">
@@ -16,6 +42,9 @@ $project_categories = $project_categories ?? Repo::projectCategories(true);
         </option>
       <?php endforeach; ?>
     </select>
+    <?php if ($edit && $__editIsInternal !== null): ?>
+      <small class="muted"><?= h(t('projects.category_lock_hint', 'Wechsel intern <-> nicht-intern erfolgt erst ab v1.2 (Pro-Issue).')) ?></small>
+    <?php endif; ?>
   </label>
   <label><?= h(t('struct.client', 'Kunde')) ?>
     <select name="client_id">

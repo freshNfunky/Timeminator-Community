@@ -974,6 +974,8 @@ return [
 
     'projects.category'             => 'Projektart',
     'projects.category_hint'        => 'Legt fest, ob ein Kunde Pflicht ist und wie er heisst (z. B. Foerdermittelgeber bei Foerderprojekten). Verwalten in Presets.',
+    'projects.category_lock_hint'   => 'Wechsel intern <-> nicht-intern erfolgt erst ab v1.2 (Pro-Issue).',
+    'projects.err_category_lock'    => 'Wechsel zwischen internem und externem Projekt ist in v1.0 nicht erlaubt. Pro-Issue v1.2 vormerken.',
 
     'process_cat.title'             => 'Prozessarten',
     'process_cat.h1'                => 'Prozessarten',

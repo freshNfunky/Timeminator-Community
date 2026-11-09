@@ -977,6 +977,8 @@ return [
 
     'projects.category'             => 'Project category',
     'projects.category_hint'        => 'Decides whether a client is required and what to call it (e.g. Grant provider for grant projects). Manage in Presets.',
+    'projects.category_lock_hint'   => 'Switching internal <-> non-internal will be available from v1.2 (Pro issue).',
+    'projects.err_category_lock'    => 'Switching between internal and external projects is not allowed in v1.0. Tracked for Pro v1.2.',
 
     'process_cat.title'             => 'Process categories',
     'process_cat.h1'                => 'Process categories',

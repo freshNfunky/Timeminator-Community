@@ -274,6 +274,29 @@ function ctrl_project_save(): void
     if ($categoryRow && !(int) $categoryRow['needs_client']) {
         $clientId = Repo::internalClientId();
     }
+    // Felix-Feedback 2026-11-09 (Fix #174): beim Edit darf die Projektart
+    // NICHT zwischen intern und nicht-intern wechseln. Interne Projekte
+    // haben technisch den Sentinel-Kunden __internal__; ein Wechsel auf
+    // Kundenprojekt wuerde ohne Kunde-Switch den Sentinel vererben
+    // (Datenintegritaet-Problem). Analog: Kundenprojekt -> Intern wuerde
+    // den echten Kunden "verlieren". V1.2 wird den Switch koordiniert
+    // erlauben (Pro-Issue). Bis dahin: Server lehnt den Wechsel ab.
+    if ($id && $categoryRow) {
+        $existing = Repo::project($id);
+        if ($existing && !empty($existing['category_id'])) {
+            $existingCat = Repo::projectCategory((int) $existing['category_id']);
+            if ($existingCat) {
+                $wasInternal = !((int) $existingCat['needs_client']);
+                $willBeInternal = !((int) $categoryRow['needs_client']);
+                if ($wasInternal !== $willBeInternal) {
+                    flash(t('projects.err_category_lock',
+                        'Wechsel zwischen internem und externem Projekt ist in v1.0 nicht erlaubt. Pro-Issue v1.2 vormerken.'
+                    ), 'err');
+                    redirect_route('projects');
+                }
+            }
+        }
+    }
     if ($name === '' || !$clientId) {
         flash(t('projects.err_client_name_required', 'Kunde und Name sind erforderlich.'), 'err');
         redirect_route('projects');
