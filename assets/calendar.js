@@ -167,16 +167,24 @@
   }
 
   // Open EMPTY dialog from an empty cell click (prefill date 09:00-10:00).
-  function openForNew(ymd) {
+  // Felix-Feedback 2026-11-09 (Fix #160): Click/Drag im Zeit-Grid soll
+  // die tatsaechlich gewaehlten Minuten uebergeben. startMin/endMin sind
+  // optional - fallen auf 09:00-10:00 zurueck, wenn beide null (Dashboard-
+  // Pfad, neuer Entry ohne Kalender-Kontext).
+  function openForNew(ymd, startMin, endMin) {
     reset();
     if (ymd) {
-      startIn.value = ymd + 'T09:00';
-      endIn.value   = ymd + 'T10:00';
+      var sMin = (typeof startMin === 'number' && startMin >= 0) ? startMin : 9 * 60;
+      var eMin = (typeof endMin   === 'number' && endMin   > sMin) ? endMin  : sMin + 60;
+      if (eMin > 24 * 60) { eMin = 24 * 60; }
+      startIn.value = ymd + 'T' + pad2(Math.floor(sMin / 60)) + ':' + pad2(sMin % 60);
+      endIn.value   = ymd + 'T' + pad2(Math.floor(eMin / 60)) + ':' + pad2(eMin % 60);
       fromIn.value  = ymd;
       toIn.value    = ymd;
     }
     openDialog();
   }
+  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
   // Felix-Feedback 2026-11-09 (#146): Drag im Wochen-Kopf-Header erzeugt
   // eine Date-Range; der Dialog oeffnet mit Typ = erste Urlaub-Kategorie
@@ -257,10 +265,50 @@
   }
 
   function wireGrid() {
+    // Felix-Feedback 2026-11-09 (Fix #160): Click/Drag im Stunden-Grid
+    // soll die tatsaechlich geklickte Uhrzeit uebergeben (vorher: immer
+    // 09:00-10:00). Mousedown -> Minute berechnen; mousemove ueber die
+    // gleiche Spalte erweitert Range; mouseup oeffnet Dialog mit
+    // gesnappten Minuten. Minute-Mapping: (y - gridTop) / gridHeight *
+    // 24 * 60, 15-Minuten-Snap.
     document.querySelectorAll('.cal-day-grid').forEach(function (grid) {
-      grid.addEventListener('click', function (ev) {
-        if (ev.target === grid || ev.target.classList.contains('cal-day-line')) {
-          openForNew(grid.getAttribute('data-day'));
+      var gDragStart = null;
+      var gDragEnd   = null;
+      function minuteFromEvent(ev) {
+        var rect = grid.getBoundingClientRect();
+        var y = ev.clientY - rect.top;
+        if (y < 0) y = 0;
+        if (y > rect.height) y = rect.height;
+        var raw = (y / rect.height) * 24 * 60;
+        return Math.round(raw / 15) * 15;
+      }
+      grid.addEventListener('mousedown', function (ev) {
+        if (ev.button !== 0) return;
+        if (ev.target.closest('.cal-event, .cal-process, .cal-day-absence, .cal-absbar-pill, .cal-day-bracket')) return;
+        gDragStart = minuteFromEvent(ev);
+        gDragEnd   = gDragStart;
+        ev.preventDefault();
+      });
+      grid.addEventListener('mousemove', function (ev) {
+        if (gDragStart === null) return;
+        gDragEnd = minuteFromEvent(ev);
+      });
+      grid.addEventListener('mouseup', function (ev) {
+        if (gDragStart === null) return;
+        var lo = Math.min(gDragStart, gDragEnd);
+        var hi = Math.max(gDragStart, gDragEnd);
+        gDragStart = gDragEnd = null;
+        // Reine Clicks (keine Bewegung) -> 60min Standardblock.
+        if (hi - lo < 15) { hi = lo + 60; }
+        openForNew(grid.getAttribute('data-day'), lo, hi);
+      });
+      grid.addEventListener('mouseleave', function () {
+        if (gDragStart !== null) {
+          var lo = Math.min(gDragStart, gDragEnd);
+          var hi = Math.max(gDragStart, gDragEnd);
+          gDragStart = gDragEnd = null;
+          if (hi - lo < 15) { hi = lo + 60; }
+          openForNew(grid.getAttribute('data-day'), lo, hi);
         }
       });
     });
