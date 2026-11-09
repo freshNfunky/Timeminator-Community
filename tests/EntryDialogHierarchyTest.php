@@ -256,12 +256,17 @@ final class EntryDialogHierarchyTest extends TestCase
     {
         $js = (string) file_get_contents(dirname(__DIR__) . '/assets/calendar.js');
         // taskWrap wird nur bei Projekt-Zeit angezeigt (Prozess + Abwesenheit
-        // kriegen hidden=true).
-        self::assertStringContainsString("taskWrap.hidden = (k !== 'project')", $js,
-            'Task-Picker muss bei Prozess + Abwesenheit hidden sein');
-        // Stunden-Feld nur bei Abwesenheit + overtime-Konto.
-        self::assertStringContainsString("k === 'absence' && absenceAccountOf(v) === 'overtime'", $js,
-            'Stunden-Feld nur bei Ueberstundenabbau');
+        // kriegen hidden=true). Formatierung kann ein zusaetzliches Leerzeichen
+        // tragen (Fix #171 hat die Zeile ausgerichtet).
+        self::assertMatchesRegularExpression(
+            "~taskWrap\\.hidden\\s*=\\s*\\(k\\s*!==\\s*'project'\\)~",
+            $js,
+            'Task-Picker muss bei Prozess + Abwesenheit hidden sein'
+        );
+        // Fix #171: Ueberstundenabbau laeuft jetzt Zeit-basiert (nicht mehr
+        // ueber das hoursWrap-Feld). isOvertime-Flag triggert den Zeit-Pfad.
+        self::assertStringContainsString("absenceAccountOf(v) === 'overtime'", $js,
+            'Ueberstundenabbau-Zweig muss ueber absenceAccountOf(v) === overtime erkannt werden');
     }
 
     /**

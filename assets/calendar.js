@@ -46,13 +46,18 @@
   }
   function setType(v) {
     var k = typeKind(v);
-    taskWrap.hidden = (k !== 'project');
-    timeRow.hidden  = (k === 'absence');
-    dateRow.hidden  = (k !== 'absence');
-    hoursWrap.hidden = !(k === 'absence' && absenceAccountOf(v) === 'overtime');
+    // Felix-Feedback 2026-11-09 (Fix #171): Ueberstundenabbau laeuft
+    // stundenweise im Grid (data-account='overtime') - also Zeit-Felder
+    // (start/end) statt Datum-Felder (Von/Bis + Stunden). Urlaub,
+    // Krankheit, Sonderurlaub bleiben ganztaegig (Datum).
+    var isOvertime = (k === 'absence' && absenceAccountOf(v) === 'overtime');
+    taskWrap.hidden  = (k !== 'project');
+    timeRow.hidden   = (k === 'absence' && !isOvertime);
+    dateRow.hidden   = (k !== 'absence' || isOvertime);
+    hoursWrap.hidden = true; // optionale Stundenangabe entfaellt - Zeiten reichen
     if (taskSel) taskSel.required = (k === 'project');
-    startIn.required = endIn.required = (k !== 'absence');
-    fromIn.required  = (k === 'absence');
+    startIn.required = endIn.required = (k !== 'absence' || isOvertime);
+    fromIn.required  = (k === 'absence' && !isOvertime);
   }
   // Felix-Feedback 2026-11-09 (Fix #149/#150/#157): Projektart-Filter.
   // #157: Logik wird HARDCODED nach ckey. Die 3 Default-Kategorien tragen
@@ -699,15 +704,31 @@
         window.location.reload();
       });
     } else {
-      if (!fromIn.value) { showError('Von-Datum ist erforderlich.'); return; }
-      postForm(D.urls.absence_save, {
-        id: id, category_id: typeSel.value,
-        start_date: fromIn.value, end_date: toIn.value || fromIn.value,
-        note: note, hours: hoursIn.value || '',
-      }).then(function (res) {
-        if (!res.ok) { showError(res.error); return; }
-        window.location.reload();
-      });
+      // Felix-Feedback 2026-11-09 (Fix #171): Ueberstundenabbau kommt mit
+      // start_ts/end_ts (Zeit-basiert); Urlaub/Krankheit/Sonderurlaub
+      // weiterhin ganztaegig mit start_date/end_date.
+      var isOvertime = (absenceAccountOf(typeSel.value) === 'overtime');
+      if (isOvertime) {
+        if (!startIn.value || !endIn.value) { showError('Start und Ende sind erforderlich.'); return; }
+        postForm(D.urls.absence_save, {
+          id: id, category_id: typeSel.value,
+          start_ts: startIn.value, end_ts: endIn.value,
+          note: note,
+        }).then(function (res) {
+          if (!res.ok) { showError(res.error); return; }
+          window.location.reload();
+        });
+      } else {
+        if (!fromIn.value) { showError('Von-Datum ist erforderlich.'); return; }
+        postForm(D.urls.absence_save, {
+          id: id, category_id: typeSel.value,
+          start_date: fromIn.value, end_date: toIn.value || fromIn.value,
+          note: note,
+        }).then(function (res) {
+          if (!res.ok) { showError(res.error); return; }
+          window.location.reload();
+        });
+      }
     }
   }
 

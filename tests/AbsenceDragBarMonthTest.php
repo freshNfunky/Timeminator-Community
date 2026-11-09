@@ -132,28 +132,28 @@ final class AbsenceDragBarMonthTest extends TestCase
         self::assertStringContainsString('toIn.value   = toYmd', $js,
             'Bis-Feld muss aus Drag-Range vorbelegt werden');
 
-        // setType-Logik: taskWrap + timeRow + hoursWrap sind bei Absence
-        // hidden, dateRow ist bei Absence sichtbar.
+        // setType-Logik: taskWrap ist bei Absence hidden; timeRow/dateRow
+        // schalten sich je nach Ueberstundenabbau (Fix #171) um - bei allen
+        // anderen Absence-Arten ist dateRow sichtbar und timeRow hidden.
         self::assertMatchesRegularExpression(
-            "~taskWrap\\.hidden = \\(k !== 'project'\\)~",
+            "~taskWrap\\.hidden\\s*=\\s*\\(k !== 'project'\\)~",
             $js,
             'Task-Picker muss bei Absence hidden werden'
         );
         self::assertMatchesRegularExpression(
-            "~timeRow\\.hidden\\s*=\\s*\\(k === 'absence'\\)~",
+            "~timeRow\\.hidden\\s*=\\s*\\(k === 'absence'\\s*&&\\s*!isOvertime\\)~",
             $js,
             'Start/Ende-Datetime muss bei Absence verschwinden'
         );
         self::assertMatchesRegularExpression(
-            "~dateRow\\.hidden\\s*=\\s*\\(k !== 'absence'\\)~",
+            "~dateRow\\.hidden\\s*=\\s*\\(k !== 'absence'\\s*\\|\\|\\s*isOvertime\\)~",
             $js,
-            'Von/Bis-Date muss bei Absence sichtbar sein'
+            'Von/Bis-Date muss bei Absence sichtbar sein (ausser Ueberstundenabbau - Fix #171)'
         );
-        self::assertMatchesRegularExpression(
-            "~hoursWrap\\.hidden\\s*=\\s*!\\(k === 'absence' && absenceAccountOf\\(v\\) === 'overtime'\\)~",
-            $js,
-            'Stunden-Feld nur bei Ueberstundenabbau (bei Urlaub hidden)'
-        );
+        // Fix #171: hoursWrap ist generell hidden - Ueberstundenabbau laeuft
+        // Zeit-basiert, die Stundenzahl ergibt sich aus start_ts/end_ts.
+        self::assertStringContainsString('hoursWrap.hidden = true', $js,
+            'Stunden-Feld ist jetzt generell hidden (Ueberstundenabbau laeuft Zeit-basiert)');
     }
 
     public function testMonthDragGuardsAllowPillsAndMoodNotToTriggerRangeSelection(): void
