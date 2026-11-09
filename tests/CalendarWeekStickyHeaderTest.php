@@ -166,6 +166,24 @@ final class CalendarWeekStickyHeaderTest extends TestCase
         );
     }
 
+    public function testDayheadIsFlexColumnWithMoodBottomAligned(): void
+    {
+        // Felix-Feedback 2026-11-09 (Fix #147): Mood/Flow-Smileys muessen
+        // in der cal-week-dayhead am Unterrand sitzen. Verhindert, dass die
+        // Smileys nach oben rutschen, wenn benachbarte Spalten in Zukunft
+        // eine Urlaubs-Reihe einfuegen (Pro-Parity + Issue 477).
+        self::assertMatchesRegularExpression(
+            '~\.cal-week-dayhead,\.cal-day-head\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column~s',
+            $this->css(),
+            'cal-week-dayhead muss display:flex + flex-direction:column sein'
+        );
+        self::assertMatchesRegularExpression(
+            '~\.cal-week-dayhead\s+\.cal-sent-day-head\s*\{[^}]*margin-top:\s*auto~s',
+            $this->css(),
+            'cal-sent-day-head braucht margin-top:auto, damit Mood/Flow am Boden sitzen'
+        );
+    }
+
     public function testHoursColumnStickyLeftKeepsLabelsVisibleWhenHorizontalScroll(): void
     {
         self::assertMatchesRegularExpression(

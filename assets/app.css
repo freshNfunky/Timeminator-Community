@@ -927,8 +927,15 @@ body:has(.sidepanel) .foot{padding-right:200px}
 .cal-week-head{grid-column:1 / -1;display:grid;grid-template-columns:52px repeat(7, minmax(0,1fr));
   position:sticky;top:0;z-index:4;background:var(--panel);border-bottom:1px solid var(--line)}
 .cal-week-corner{border-right:1px solid var(--line);background:var(--panel)}
-.cal-week-dayhead,.cal-day-head{padding:6px 8px;font-size:12px;font-weight:600;color:var(--ink);text-align:center;background:var(--panel);border-right:1px solid var(--line)}
+/* Felix-Feedback 2026-11-09 (Fix #147): Spalten der Kopfzeile sind
+   vertikaler Flex, Mood/Flow sitzen am UNTERRAND (margin-top:auto auf
+   .cal-sent-day-head). Sobald eine Abwesenheits-/Urlaubsreihe die
+   Kopfzeile verlaengert, bleiben die Mood-Smileys ueber alle Spalten
+   auf einer gemeinsamen Baseline am Boden - sie rutschen nicht nach
+   oben. Label bleibt oben, Pensum darunter, Mood am Boden. */
+.cal-week-dayhead,.cal-day-head{display:flex;flex-direction:column;align-items:center;padding:6px 8px;font-size:12px;font-weight:600;color:var(--ink);text-align:center;background:var(--panel);border-right:1px solid var(--line)}
 .cal-week-dayhead:last-child,.cal-day-head:last-child{border-right:0}
+.cal-week-dayhead .cal-sent-day-head{margin-top:auto}
 .cal-week-dayhead.is-today,.cal-day-head.is-today{color:var(--brand)}
 .cal-week-dayhead.is-holiday,.cal-day-head.is-holiday{color:var(--brand)}
 .cal-week-dayhead.is-nonworking,.cal-day-head.is-nonworking{color:var(--muted);font-style:italic}
