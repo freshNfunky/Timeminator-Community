@@ -12,6 +12,9 @@ app_boot();
 require __DIR__ . '/src/Repo.php';
 require __DIR__ . '/src/Stats.php';
 require __DIR__ . '/src/Settings.php';
+require __DIR__ . '/src/CalendarLocale.php';
+require __DIR__ . '/src/DayBracket.php';
+require __DIR__ . '/src/WorkdaySpans.php';
 require __DIR__ . '/src/Updater.php';
 require __DIR__ . '/src/Registration.php';
 require __DIR__ . '/src/Banners.php';
@@ -19,6 +22,14 @@ require __DIR__ . '/src/Mail.php';
 require __DIR__ . '/src/PasswordReset.php';
 require __DIR__ . '/src/Scheduler.php';
 require __DIR__ . '/src/Holidays.php';
+require __DIR__ . '/src/ProcessRepo.php';
+require __DIR__ . '/src/AbsenceRepo.php';
+require __DIR__ . '/src/Workdays.php';
+require __DIR__ . '/src/EmployeeRepo.php';
+require __DIR__ . '/src/AccountRepo.php';
+require __DIR__ . '/src/EmployeeStats.php';
+require __DIR__ . '/src/DateShiftRepo.php';
+require __DIR__ . '/src/PlanRepo.php';
 require __DIR__ . '/src/seed.php';
 require __DIR__ . '/src/Migrator.php';
 
@@ -39,9 +50,13 @@ require __DIR__ . '/src/controllers/imports_ctrl.php';
 require __DIR__ . '/src/controllers/pro_teaser_ctrl.php';
 require __DIR__ . '/src/controllers/banners_ctrl.php';
 require __DIR__ . '/src/controllers/password_reset_ctrl.php';
+require __DIR__ . '/src/controllers/profile_ctrl.php';
 require __DIR__ . '/src/controllers/cron_ctrl.php';
 require __DIR__ . '/src/Sentiment.php';
 require __DIR__ . '/src/controllers/sentiment_ctrl.php';
+require __DIR__ . '/src/controllers/employees_ctrl.php';
+require __DIR__ . '/src/controllers/cockpit_ctrl.php';
+require __DIR__ . '/src/controllers/company_cockpit_ctrl.php';
 
 $r = (string) get('r', Auth::check() ? 'dashboard' : 'login');
 
@@ -52,11 +67,18 @@ $routes = [
     'reset_form'     => 'ctrl_reset_form',
     'dashboard'    => 'ctrl_dashboard',
 
-    'entries'         => 'ctrl_entries_index',
-    'entries_export'  => 'ctrl_entries_export',
-    'entry_form'      => 'ctrl_entry_form',
-    'entry_save'      => 'ctrl_entry_save',
-    'entry_delete'    => 'ctrl_entry_delete',
+    'entries'           => 'ctrl_entries_index',
+    'entries_export'    => 'ctrl_entries_export',
+    'entry_form'        => 'ctrl_entry_form',
+    'entry_save'        => 'ctrl_entry_save',
+    'entry_delete'      => 'ctrl_entry_delete',
+    // v1.0 Kalender-Dialog JSON-API
+    'entry_api_save'    => 'ctrl_entry_api_save',
+    'entry_api_delete'  => 'ctrl_entry_api_delete',
+    'absence_api_save'  => 'ctrl_absence_api_save',
+    'absence_api_delete'=> 'ctrl_absence_api_delete',
+    'process_api_save'  => 'ctrl_process_api_save',
+    'process_api_delete'=> 'ctrl_process_api_delete',
     'timer_start'  => 'ctrl_timer_start',
     'timer_stop'   => 'ctrl_timer_stop',
     'timer_status' => 'ctrl_timer_status',
@@ -94,11 +116,43 @@ $routes = [
     'absence_category_save'   => 'ctrl_absence_category_save',
     'absence_category_delete' => 'ctrl_absence_category_delete',
 
+    // v1.0 F1: Mitarbeiter-Cockpit
+    'cockpit_employees'       => 'ctrl_cockpit_employees',
+    'cockpit_employee'        => 'ctrl_cockpit_employee',
+    'cockpit_employee_weeks'  => 'ctrl_cockpit_employee_weeks',
+    'employee_terms_save'     => 'ctrl_employee_terms_save',
+    'employee_terms_delete'   => 'ctrl_employee_terms_delete',
+    'account_carryover_save'  => 'ctrl_account_carryover_save',
+
+    // v1.0 F2: Projekt-Cockpit
+    'cockpit'                      => 'ctrl_cockpit_index',
+    'cockpit_project'              => 'ctrl_cockpit_project',
+    'cockpit_review'               => 'ctrl_cockpit_review',
+    'cockpit_review_batch_save'    => 'ctrl_cockpit_review_batch_save',
+    'cockpit_health_save'          => 'ctrl_cockpit_health_save',
+    'cockpit_review_interval_save' => 'ctrl_cockpit_review_interval_save',
+    'cockpit_plan_cell_save'       => 'ctrl_cockpit_plan_cell_save',
+    'cockpit_plan_total_save'      => 'ctrl_cockpit_plan_total_save',
+    'cockpit_plan_delete'          => 'ctrl_cockpit_plan_delete',
+    'cockpit_date_shift_save'      => 'ctrl_cockpit_date_shift_save',
+    'cockpit_burnup_data'          => 'ctrl_cockpit_burnup_data',
+    'cockpit_sentiment_data'       => 'ctrl_cockpit_sentiment_data',
+
+    // v1.0 F3: Firmen-Cockpit (teaser-heavy)
+    'cockpit_company'              => 'ctrl_cockpit_company',
+
     'stats'        => 'ctrl_stats_index',
     'stats_data'   => 'ctrl_stats_data',
     'sentiment'            => 'ctrl_sentiment_index',
     'sentiment_save'       => 'ctrl_sentiment_save',
+    'sentiment_save_week'  => 'ctrl_sentiment_save_week',
+    'sentiment_quick'      => 'ctrl_sentiment_quick',
     'sentiment_fill_week'  => 'ctrl_sentiment_fill_week',
+    'sentiment_api_save'       => 'ctrl_sentiment_api_save',
+    'sentiment_api_fill_week'  => 'ctrl_sentiment_api_fill_week',
+    'sentiment_granularity_api'=> 'ctrl_sentiment_granularity_api',
+    'profile'                  => 'ctrl_profile_index',
+    'profile_save'             => 'ctrl_profile_save',
     'scopes'       => 'ctrl_scopes_index',
     'scope_save'   => 'ctrl_scope_save',
     'scope_delete' => 'ctrl_scope_delete',

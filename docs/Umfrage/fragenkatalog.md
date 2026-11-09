@@ -8,7 +8,7 @@ Zwei Bausteine, die zusammenspielen:
 2. **Feedback-Formular (Tally / Google Forms)** – sammelt das eigentliche Kunden-Feedback zuverlässig und anonym ein. Der Fragenkatalog dafür steht unten, 1:1 zum Einpflegen.
 
 > **Zwei Platzhalter, die DU setzen musst:**
-> - `{{DEMO_URL}}` → Link zu deiner öffentlichen Demo oder Landingpage (z. B. `https://timeminator.felixschaller.com`).
+> - `{{DEMO_URL}}` → Link zu deiner öffentlichen Demo oder Landingpage (z. B. `https://timeminator.com`).
 > - `{{FORM_URL}}` → Link zum fertigen Tally-/Google-Forms-Formular.
 >
 > Beide sind in der Quest-Seite als klar markierte Buttons hinterlegt und müssen vor dem Teilen gesetzt werden.

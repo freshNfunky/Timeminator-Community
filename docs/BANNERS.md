@@ -15,10 +15,10 @@ turn every part of it off.
 1. The page asks a **first-party route** of your own installation
    (`index.php?r=banners`) for the carousel — never a third party directly. The
    request is asynchronous and never blocks page rendering.
-2. That route fetches the creatives **server-side** from a configurable banner
-   subdomain (default `https://assets.felixschaller.com/feed.json`) so creatives
-   can be rotated without shipping a new Timeminator release, and caches them for
-   `cache_ttl` seconds (cached **per locale**).
+2. That route fetches the creatives **server-side** from a feed URL you point
+   it at via `banners.endpoint` (shipped `null`, so the feed is off by default)
+   so creatives can be rotated without shipping a new Timeminator release, and
+   caches them for `cache_ttl` seconds (cached **per locale**).
    - **Localized feeds:** the app requests the locale-scoped feed first, derived
      from the active UI language (`I18n::current()`) — e.g. `feed-de.json` /
      `feed-en.json` — and **falls back to the base `feed.json`** when that
@@ -43,8 +43,8 @@ Content-Security-Policy (`connect-src 'self'`) needs no exception.
       "title": "Headline",
       "text": "One or two sentences.",
       "cta": "Call to action",
-      "href": "https://felixschaller.com/landing",
-      "image": "https://assets.felixschaller.com/spring.svg"
+      "href": "https://timeminator.com/landing",
+      "image": "https://example.com/spring.svg"
     }
   ]
 }
@@ -53,9 +53,8 @@ Content-Security-Policy (`connect-src 'self'`) needs no exception.
 Every creative is sanitized before it is shown:
 
 - `href` is accepted **only** if it is `https://` on one of the first-party hosts
-  in `banners.allowed_hosts` (default `felixschaller.com`, `timeminator.com`,
-  `xixum.ai`, `af-ax.com`; subdomains included) — the remote feed can never point the slot at
-  an arbitrary site.
+  in `banners.allowed_hosts` (shipped `['timeminator.com']`; subdomains included)
+  — the remote feed can never point the slot at an arbitrary site.
 - `image` is accepted as a same-origin relative asset, an inline `data:image/*`
   URI, or an `https` image on an allowed host. The default CSP sets
   `img-src 'self' data:`, so same-origin and `data:` creatives render with no

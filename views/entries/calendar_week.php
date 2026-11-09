@@ -50,6 +50,17 @@ for ($i = 0; $i < 7; $i++) {
 
 $__nowTs   = time();
 $__weekMid = (int) $week_start->setTime(0, 0)->getTimestamp();
+
+// Felix-Feedback 2026-11-09 (#138): rote "Jetzt"-Linie im heutigen
+// Spalten-Grid, Pro-Parity. Nur rendern, wenn TODAY in der aktuell
+// sichtbaren Woche liegt (sonst ist die Linie sinnlos).
+$__nowDt       = new DateTimeImmutable();
+$__isCurWeek   = ($__nowDt >= $week_start) && ($__nowDt < $week_start->modify('+7 days'));
+$__nowPct      = null;
+if ($__isCurWeek) {
+    $__nowMin = (int) $__nowDt->format('G') * 60 + (int) $__nowDt->format('i');
+    $__nowPct = round($__nowMin / (24 * 60) * 100, 3);
+}
 $__perDay  = [];
 $__minTop  = 100.0;
 foreach ($entries as $__e) {
@@ -89,7 +100,14 @@ foreach ($entries as $__e) {
         $__minTop = $__topPct;
     }
 
-    $__color = strtolower((string) ($__e['client_color'] ?? ''));
+    // Felix-Feedback 2026-11-09 (Fix #169): Kalender-Bloecke werden
+    // primaer nach PROJEKT-Farbe eingefaerbt, Kunden-Farbe nur als
+    // Fallback. Vorher war es umgekehrt - alle Projekt-Entries eines
+    // Kunden sahen gleich aus, egal welche Farbe im Projekt gesetzt war.
+    $__color = strtolower((string) ($__e['project_color'] ?? ''));
+    if ($__color === '' || !preg_match('/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/', $__color)) {
+        $__color = strtolower((string) ($__e['client_color'] ?? ''));
+    }
     if ($__color !== '' && !preg_match('/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/', $__color)) {
         $__color = '';
     }
@@ -100,13 +118,242 @@ foreach ($entries as $__e) {
         'height'  => round($__hPct, 3),
         'start'   => $__s->format('H:i'),
         'end'     => !empty($__e['end_ts']) ? $__eEnd->format('H:i') : '…',
-        'client'  => (string) ($__e['client_name'] ?? ''),
+        'client'  => entry_client_display($__e),
         'project' => (string) ($__e['project_name'] ?? ''),
         'task'    => (string) ($__e['task_name'] ?? ''),
         'note'    => (string) ($__e['note'] ?? ''),
         'running' => empty($__e['end_ts']),
         'color'   => $__color,
     ];
+}
+
+// Felix-Feedback 2026-11-09 (Fix #180): Ueberstundenabbau-Entries werden
+// Zeit-basiert erfasst (Fix #171) und muessen im Grid als Zeit-Block
+// (nicht ganztaegige Pille) erscheinen. Ein overtime-Entry ist eine
+// Abwesenheit mit category_account='overtime' und gesetzten start_ts/end_ts.
+// Diese Entries NICHT ins ganztaegige $__absBand - sie werden unten als
+// $__overtimePerDay im Grid platziert.
+$__overtimePerDay = [];
+$__overtimeAbsIds = [];
+foreach (($absences ?? []) as $__a) {
+    if (($__a['category_account'] ?? '') !== 'overtime') { continue; }
+    if (empty($__a['start_ts']) || empty($__a['end_ts']))  { continue; }
+    try {
+        $__s   = new DateTimeImmutable((string) $__a['start_ts']);
+        $__eEnd = new DateTimeImmutable((string) $__a['end_ts']);
+    } catch (Throwable) { continue; }
+    if ($__eEnd <= $__s) { continue; }
+    $__sTs = $__s->getTimestamp();
+    $__dayOffset = (int) floor(($__sTs - $__weekMid) / 86400);
+    if ($__dayOffset < 0 || $__dayOffset > 6) { continue; }
+    $__dayStart = (int) $week_start->modify('+' . $__dayOffset . ' days')->setTime(0, 0)->getTimestamp();
+    $__dayEnd   = $__dayStart + 86400;
+    $__vs = max($__sTs, $__dayStart);
+    $__ve = min($__eEnd->getTimestamp(), $__dayEnd);
+    $__topPct = (($__vs - $__dayStart) / 86400) * 100.0;
+    $__hPct   = (($__ve - $__vs) / 86400) * 100.0;
+    if ($__hPct < 1.2) { $__hPct = 1.2; }
+    if ($__topPct < $__minTop) { $__minTop = $__topPct; }
+    $__overtimePerDay[$__dayOffset][] = [
+        'id'     => (int) $__a['id'],
+        'top'    => round($__topPct, 3),
+        'height' => round($__hPct, 3),
+        'start'  => $__s->format('H:i'),
+        'end'    => $__eEnd->format('H:i'),
+        'label'  => (string) ($__a['category_label'] ?? ''),
+        'note'   => (string) ($__a['note'] ?? ''),
+    ];
+    $__overtimeAbsIds[(int) $__a['id']] = true;
+}
+
+// v1.0 Kalender-Dialog: Interne Prozesse als farblich getrennte Bloecke
+// im selben Grid rendern (gleiche top/height-Mathematik wie entries).
+$__procPerDay = [];
+foreach (($processes ?? []) as $__p) {
+    try {
+        $__s = new DateTimeImmutable((string) $__p['start_ts']);
+        $__eEnd = new DateTimeImmutable((string) ($__p['end_ts'] ?? $__p['start_ts']));
+    } catch (Throwable) { continue; }
+    if ($__eEnd <= $__s) { $__eEnd = $__s->modify('+15 minutes'); }
+    $__sTs = $__s->getTimestamp();
+    $__dayOffset = (int) floor(($__sTs - $__weekMid) / 86400);
+    if ($__dayOffset < 0 || $__dayOffset > 6) { continue; }
+    $__dayStart = (int) $week_start->modify('+' . $__dayOffset . ' days')->setTime(0, 0)->getTimestamp();
+    $__dayEnd = $__dayStart + 86400;
+    $__vs = max($__sTs, $__dayStart);
+    $__ve = min($__eEnd->getTimestamp(), $__dayEnd);
+    $__topPct = (($__vs - $__dayStart) / 86400) * 100.0;
+    $__hPct = (($__ve - $__vs) / 86400) * 100.0;
+    if ($__hPct < 1.2) { $__hPct = 1.2; }
+    if ($__topPct < $__minTop) { $__minTop = $__topPct; }
+    $__procPerDay[$__dayOffset][] = [
+        'id'     => (int) $__p['id'],
+        'top'    => round($__topPct, 3),
+        'height' => round($__hPct, 3),
+        'start'  => $__s->format('H:i'),
+        'end'    => $__eEnd->format('H:i'),
+        'label'  => (string) ($__p['category_label'] ?? ''),
+        'note'   => (string) ($__p['note'] ?? ''),
+    ];
+}
+
+// Felix-Feedback 2026-11-08 (#99): Tagessoll-Klammer rechts der Buchungen.
+// Pro Tag kumulierte Minuten aus Entries + Prozessen (Abwesenheiten zaehlen
+// nicht fuer die Klammer); Grenze wird mitten in einer Buchung gesetzt,
+// wenn das Tagessoll dort erreicht ist. Freelancer bekommen keine Klammer.
+// Felix-Feedback 2026-11-09 (#119): Tagessoll pro Tag, nicht pauschal.
+// Wochenenden + Feiertage haben Tagessoll 0 (freier Tag). Freelancer
+// ohne Vertragsdaten haben Tagessoll null (kein Badge, keine Klammer).
+// Felix-Feedback 2026-11-09 (Code-Review Fix #131): keine parallele
+// $__dayTargetMin-Variable mehr - der per-Tag-Map ist die einzige Quelle.
+$__dayTargetByOffset = [];
+$__dayBrackets       = [];
+$__uid = (int) Auth::id();
+if ($__uid > 0) {
+    foreach ($__days as $__i => $__day) {
+        $__dayTargetByOffset[$__i] = EmployeeRepo::dailyTargetMinutes($__uid, $__day['ymd']);
+    }
+}
+// Gate: nur rechnen, wenn mindestens ein Werktag mit Tagessoll > 0 im Grid.
+$__hasAnyTarget = false;
+foreach ($__dayTargetByOffset as $__t) {
+    if ($__t !== null && $__t > 0) { $__hasAnyTarget = true; break; }
+}
+if ($__hasAnyTarget) {
+    $__eventsByDay = [];
+    foreach ($entries as $__e) {
+        try {
+            $__s = new DateTimeImmutable((string) $__e['start_ts']);
+            $__eEnd = new DateTimeImmutable((string) ($__e['end_ts'] ?? $__e['start_ts']));
+        } catch (Throwable) { continue; }
+        if ($__eEnd <= $__s) { continue; }
+        $__off = (int) floor(($__s->getTimestamp() - $__weekMid) / 86400);
+        if ($__off < 0 || $__off > 6) { continue; }
+        $__eventsByDay[$__off][] = [
+            'start_min' => (int) $__s->format('H') * 60 + (int) $__s->format('i'),
+            'end_min'   => (int) $__eEnd->format('H') * 60 + (int) $__eEnd->format('i'),
+        ];
+    }
+    foreach (($processes ?? []) as $__p) {
+        try {
+            $__s = new DateTimeImmutable((string) $__p['start_ts']);
+            $__eEnd = new DateTimeImmutable((string) ($__p['end_ts'] ?? $__p['start_ts']));
+        } catch (Throwable) { continue; }
+        if ($__eEnd <= $__s) { continue; }
+        $__off = (int) floor(($__s->getTimestamp() - $__weekMid) / 86400);
+        if ($__off < 0 || $__off > 6) { continue; }
+        $__eventsByDay[$__off][] = [
+            'start_min' => (int) $__s->format('H') * 60 + (int) $__s->format('i'),
+            'end_min'   => (int) $__eEnd->format('H') * 60 + (int) $__eEnd->format('i'),
+        ];
+    }
+    foreach ($__eventsByDay as $__off => $__evs) {
+        // Pro Tag: eigenes Tagessoll. Wochenenden / Feiertage (Soll=0)
+        // bekommen keine Klammer, weil Buchungen dort als Ueberstunden
+        // zaehlen - die entsprechende Darstellung macht die Overtime-
+        // Klammer selbst.
+        $__dayTgt = $__dayTargetByOffset[$__off] ?? null;
+        if ($__dayTgt === null || $__dayTgt <= 0) { continue; }
+        usort($__evs, static fn($a, $b) => $a['start_min'] <=> $b['start_min']);
+        $__b = DayBracket::compute($__evs, $__dayTgt);
+        if ($__b !== null) {
+            $__dayBrackets[$__off] = $__b;
+        }
+    }
+}
+
+// Abwesenheiten je Tag (ein Tag kann mehrere ueberlappende haben).
+$__absByDay = [];
+foreach (($absences ?? []) as $__a) {
+    try {
+        $__from = new DateTimeImmutable((string) $__a['start_date']);
+        $__to   = new DateTimeImmutable((string) ($__a['end_date'] ?? $__a['start_date']));
+    } catch (Throwable) { continue; }
+    for ($__d = $__from; $__d <= $__to; $__d = $__d->modify('+1 day')) {
+        $__ymd = $__d->format('Y-m-d');
+        $__absByDay[$__ymd][] = [
+            'id'       => (int) $__a['id'],
+            'category' => (string) ($__a['category_label'] ?? ''),
+            'account'  => (string) ($__a['category_account'] ?? ''),
+            'hours'    => $__a['hours'] !== null ? (float) $__a['hours'] : null,
+            'note'     => (string) ($__a['note'] ?? ''),
+            'start'    => (string) $__a['start_date'],
+            'end'      => (string) ($__a['end_date'] ?? $__a['start_date']),
+            'cat_id'   => (int) $__a['category_id'],
+        ];
+    }
+}
+
+// Felix-Feedback 2026-11-09 (#146): Ganztaegige Abwesenheiten als Pillen-
+// Band ueber der Dayhead-Row rendern. Pro Absence wird die Range in
+// zusammenhaengende Werktags-Spans zerlegt - Wochenende + Feiertag
+// schneiden aus und erzeugen natuerliche Luecken. Spans werden auf die
+// sichtbare Woche geclippt und als day-offset (0..6) + length-Angabe
+// weitergegeben, sodass das View-Markup CSS-Grid-Spans benutzen kann.
+$__weekStartYmd = $week_start->format('Y-m-d');
+$__weekEndYmd   = $week_start->modify('+6 days')->format('Y-m-d');
+$__workingDows  = Holidays::workingDays();
+$__holidayFlags = [];
+foreach (($holidays ?? []) as $__k => $__v) { $__holidayFlags[(string) $__k] = true; }
+$__absBand = []; // list<array{abs_id,cat,cat_ckey,span,from,to,note,row}>
+$__absBandByYmd = []; // ymd (from) => list<idx in $__absBand>
+foreach (($absences ?? []) as $__a) {
+    // Fix #180: Ueberstundenabbau-Entries erscheinen im Zeit-Grid, nicht
+    // als ganztaegige Pille.
+    if (isset($__overtimeAbsIds[(int) $__a['id']])) { continue; }
+    $__aFrom = max((string) $__a['start_date'], $__weekStartYmd);
+    $__aTo   = min((string) ($__a['end_date'] ?? $__a['start_date']), $__weekEndYmd);
+    if ($__aFrom > $__aTo) { continue; }
+    $__spans = WorkdaySpans::workdaySpans($__aFrom, $__aTo, $__workingDows, $__holidayFlags);
+    foreach ($__spans as $__span) {
+        $__idx = count($__absBand);
+        $__absBand[] = [
+            'abs_id'   => (int) $__a['id'],
+            'cat'      => (string) ($__a['category_label'] ?? ''),
+            'cat_ckey' => (string) ($__a['category_ckey'] ?? ''),
+            'span'     => (int) $__span['days'],
+            'from'     => $__span['from'],
+            'to'       => $__span['to'],
+            'note'     => (string) ($__a['note'] ?? ''),
+            'row'      => 0, // wird gleich berechnet
+        ];
+        $__absBandByYmd[$__span['from']][] = $__idx;
+    }
+}
+// Felix-Feedback 2026-11-09 (#162): Pillen untereinander stapeln wie
+// Gantt-Chart - zwei Pillen die den gleichen Tag belegen muessen in
+// unterschiedlichen Rows liegen. Pensum-Badge sitzt unter allen.
+// Row-Assignment: Pillen nach from-Datum sortieren, dann greedy den
+// niedrigsten freien Row waehlen.
+usort($__absBand, static function (array $a, array $b): int {
+    $c = strcmp($a['from'], $b['from']);
+    return $c !== 0 ? $c : strcmp($a['to'], $b['to']);
+});
+$__rowOccupancy = []; // rowIdx => endYmd (inklusive) der aktuell belegten Pille
+foreach ($__absBand as $__k => &$__p) {
+    $__chosen = null;
+    foreach ($__rowOccupancy as $__r => $__endYmd) {
+        if ($__endYmd < $__p['from']) { $__chosen = $__r; break; }
+    }
+    if ($__chosen === null) { $__chosen = count($__rowOccupancy); }
+    $__rowOccupancy[$__chosen] = $__p['to'];
+    $__p['row'] = $__chosen;
+}
+unset($__p);
+// $__absBandByYmd nach Umsortierung neu aufbauen und pro Tag die max.
+// Anzahl Rows ausrechnen, damit das dayhead-Label den richtigen Platz
+// nach unten freihaelt.
+$__absBandByYmd = [];
+$__absRowsByYmd = []; // ymd => max Row+1 (= Anzahl benoetigter Zeilen an diesem Tag)
+foreach ($__absBand as $__k => $__p) {
+    $__absBandByYmd[$__p['from']][] = $__k;
+    // Fuer jeden Tag im Span die Row-Anzahl hochzaehlen.
+    $__dayCursor = $__p['from'];
+    while ($__dayCursor <= $__p['to']) {
+        $__cur = $__absRowsByYmd[$__dayCursor] ?? 0;
+        if ($__p['row'] + 1 > $__cur) { $__absRowsByYmd[$__dayCursor] = $__p['row'] + 1; }
+        $__dayCursor = (new DateTimeImmutable($__dayCursor))->modify('+1 day')->format('Y-m-d');
+    }
 }
 
 $__filterQp = array_filter($filter ?? [], static fn($v) => $v !== '' && $v !== 0 && $v !== null);
@@ -117,11 +364,84 @@ $__weekQp = static function (DateTimeImmutable $m) use ($__filterQp): array {
 
 $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0) * 24));
 ?>
+<?php
+// Felix-Feedback 2026-11-06: helle Hintergrundfarben (gelb/orange) mit
+// weissem Default-Text sind unlesbar. Luminanz pro Block berechnen und
+// Textfarbe auf schwarz oder weiss setzen - WCAG-konforme relative
+// Luminanz (approx. 0.299*R + 0.587*G + 0.114*B), Schwelle 150 passt fuer
+// die typischen Block-Hintergruende (dunkles Blau -> weiss,
+// Gelb/Orange/Hellgruen -> schwarz).
+$__calInk = static function (string $hex): string {
+    $h = ltrim(trim($hex), '#');
+    if (strlen($h) === 3) { $h = $h[0].$h[0].$h[1].$h[1].$h[2].$h[2]; }
+    if (!preg_match('/^[0-9a-fA-F]{6}$/', $h)) { return '#ffffff'; }
+    $r = hexdec(substr($h, 0, 2));
+    $g = hexdec(substr($h, 2, 2));
+    $b = hexdec(substr($h, 4, 2));
+    $lum = 0.299 * $r + 0.587 * $g + 0.114 * $b;
+    return $lum > 150 ? '#1f2937' : '#ffffff';
+};
+?>
 <style nonce="<?= h(csp_nonce()) ?>">
 .cal-week { --cal-scroll: <?= $__earliestHour * 56 ?>px; }
-<?php foreach ($__perDay as $__dayOffset => $__events): foreach ($__events as $__ev): ?>
-.cal-event-<?= (int) $__ev['id'] ?>{top:<?= $__ev['top'] ?>%;height:<?= $__ev['height'] ?>%;<?= $__ev['color'] !== '' ? 'background-color:' . $__ev['color'] . ';' : '' ?>}
+<?php foreach ($__perDay as $__dayOffset => $__events): foreach ($__events as $__ev):
+    $__ink = $__ev['color'] !== '' ? $__calInk((string) $__ev['color']) : '';
+?>
+.cal-event-<?= (int) $__ev['id'] ?>{top:<?= $__ev['top'] ?>%;height:<?= $__ev['height'] ?>%;<?= $__ev['color'] !== '' ? 'background-color:' . $__ev['color'] . ';color:' . $__ink . ';' : '' ?>}
 <?php endforeach; endforeach; ?>
+<?php foreach ($__procPerDay as $__dayOffset => $__events): foreach ($__events as $__ev): ?>
+.cal-process-<?= (int) $__ev['id'] ?>{top:<?= $__ev['top'] ?>%;height:<?= $__ev['height'] ?>%}
+<?php endforeach; endforeach; ?>
+<?php /* Fix #180: Ueberstundenabbau als Zeit-Block im Grid. */ ?>
+<?php foreach ($__overtimePerDay as $__dayOffset => $__events): foreach ($__events as $__ev): ?>
+.cal-overtime-<?= (int) $__ev['id'] ?>{top:<?= $__ev['top'] ?>%;height:<?= $__ev['height'] ?>%}
+<?php endforeach; endforeach; ?>
+<?php /* Felix-Feedback 2026-11-08 (#99): Tagessoll-Klammer pro Day-Column.
+   Top/Height in Prozent eines 24-h-Tags (konsistent zu den Events). */ ?>
+<?php foreach ($__dayBrackets as $__off => $__br):
+    $__tFrom = $__br['target']['from']; $__tTo = $__br['target']['to'];
+    $__tTopPct = round($__tFrom / (24 * 60) * 100, 3);
+    $__tHgtPct = round(($__tTo - $__tFrom) / (24 * 60) * 100, 3);
+?>
+.cal-day-bracket-target-<?= (int) $__off ?>{top:<?= $__tTopPct ?>%;height:<?= $__tHgtPct ?>%}
+<?php if (!empty($__br['over'])):
+    $__oFrom = $__br['over']['from']; $__oTo = $__br['over']['to'];
+    $__oTopPct = round($__oFrom / (24 * 60) * 100, 3);
+    $__oHgtPct = round(($__oTo - $__oFrom) / (24 * 60) * 100, 3);
+?>
+.cal-day-bracket-over-<?= (int) $__off ?>{top:<?= $__oTopPct ?>%;height:<?= $__oHgtPct ?>%}
+<?php endif; endforeach; ?>
+<?php /* Felix-Feedback 2026-11-09 (#138): Jetzt-Linie, Position in Prozent
+   des 24h-Tages, nonce-authorized (CSP-strict). */ ?>
+<?php if ($__nowPct !== null): ?>
+.cal-now-line{top:<?= $__nowPct ?>%}
+<?php endif; ?>
+<?php /* Fix #155 + #162: Pillen sitzen INNERHALB der ersten Dayhead-Zelle,
+   Breite = span * 100% - padding. Hoehen-Offset (top) pro Pille nach
+   Row-Assignment, damit sich mehrere Pillen pro Tag wie Gantt-Rows
+   untereinander anordnen statt zu ueberlappen. */ ?>
+<?php foreach ($__absBand as $__k => $__p):
+    $__wPct = (int) $__p['span'] * 100;
+    $__top  = 22 + ((int) $__p['row']) * 24; // Basis 22px + 24px pro Row
+?>
+.cal-absbar-slot-<?= (int) $__k ?>{width:calc(<?= $__wPct ?>% - 8px);top:<?= $__top ?>px}
+<?php endforeach; ?>
+<?php /* Felix-Feedback 2026-11-09 (Fix #173): Pensum-Badges sitzen pro
+   Woche auf GLEICHER Hoehe (bottom), egal wie viele ganztaegige Pillen
+   ein einzelner Tag hat. Dafuer eine einheitliche Pill-Zone ueber die
+   ganze Woche reservieren = max rows ueber alle Tage der Woche.
+   Vorher: pro Tag individuell -> Pensum sprang je nach Pill-Anzahl
+   hoch/runter (optisch "zackig"). */ ?>
+<?php
+    $__maxWeekRows = 0;
+    foreach (($__absRowsByYmd ?? []) as $__rows) {
+        if ($__rows > $__maxWeekRows) { $__maxWeekRows = $__rows; }
+    }
+    $__weekLabelMb = 4 + $__maxWeekRows * 24; // 24px pro Row + Basis-Luft
+?>
+<?php if ($__maxWeekRows > 0): ?>
+.cal-week-head .cal-week-dayhead-label{margin-bottom:<?= $__weekLabelMb ?>px}
+<?php endif; ?>
 </style>
 
 <div class="card">
@@ -131,13 +451,146 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
       <p class="muted"><?= h($week_start->format('d.m.')) ?> – <?= h($__weekEnd->format('d.m.Y')) ?></p>
     </div>
     <div class="cal-nav">
+      <?php /* Toggle Woche|Monat (Pro-Paritaet, Felix-Feedback 2026-11-04). */ ?>
+      <span class="cal-span-toggle" role="group" aria-label="<?= h(t('cal.span_toggle', 'Ansicht')) ?>">
+        <a class="btn btn-sm is-active" aria-current="page" href="<?= h(route('entries', $__filterQp + ['view' => 'calendar'])) ?>"><?= h(t('cal.span_week', 'Woche')) ?></a>
+        <a class="btn btn-sm" href="<?= h(route('entries', $__filterQp + ['view' => 'calendar', 'span' => 'month'])) ?>"><?= h(t('cal.span_month', 'Monat')) ?></a>
+      </span>
+      <?php /* Felix-Feedback 2026-11-09 (#111): Rhythmus-Umschalter ist aus
+         der Kalender-Oberflaeche ausgezogen - er liegt jetzt in den
+         Benutzereinstellungen (?r=profile). Hier bleibt nur die Woche/Monat-
+         Navigation. */ ?>
       <a class="btn btn-sm" href="<?= h(route('entries', $__weekQp($__prevWeek))) ?>"><?= h(t('cal.prev_week', '← Vorige Woche')) ?></a>
       <a class="btn btn-sm" href="<?= h(route('entries', $__filterQp + ['view' => 'calendar'])) ?>"><?= h(t('dash.today')) ?></a>
       <a class="btn btn-sm" href="<?= h(route('entries', $__weekQp($__nextWeek))) ?>"><?= h(t('cal.next_week', 'Naechste Woche →')) ?></a>
     </div>
   </div>
 
+  <?php if (!empty($canRecordSentiment) && ($sentimentGranularity ?: 'week') === 'week'): ?>
+    <?php /* Wochen-Picker (Pro-Style, Felix-Feedback 2026-11-04: "schau's
+       dir in der pro variante an"): je Dimension nur ein Current-Emoji-
+       Button, Klick oeffnet Popover mit 5 Optionen - identisch zum
+       Daily-Picker, nur dass der Click alle leeren Tage der Woche fuellt.
+       Prosa "Setzt die Woche …" sitzt als Tooltip am ⓘ-Badge. */ ?>
+    <?php /* Default-Placeholder: das NEUTRAL-Emoji (Score 3), abgegraut durch
+       is-empty. Pro-Vorbild (Felix-Feedback 2026-11-04: "in der pro ist ein
+       ausgegrautes emojii.") - "—" war zu nichtssagend. */ ?>
+    <div class="cal-sent-week" data-monday="<?= h($week_start->format('Y-m-d')) ?>" data-csrf="<?= h(csrf_token()) ?>">
+      <div class="cal-sent-week-row cal-sent-cell" data-dim="mood">
+        <span class="cal-sent-label"><?= h(t('sent.mood_short', 'Mood')) ?></span>
+        <button type="button" class="cal-sent-current is-empty" aria-label="<?= h(t('sent.mood_short', 'Mood')) ?>"><?= Sentiment::moodEmoji(3) ?></button>
+        <div class="cal-sent-popover" hidden role="listbox" aria-label="<?= h(t('sent.mood_short', 'Mood')) ?>">
+          <?php foreach ([1,2,3,4,5] as $__s): ?>
+            <button type="button" class="cal-sent-opt" data-score="<?= $__s ?>" role="option" title="<?= h(Sentiment::moodLabel($__s)) ?>"><?= Sentiment::moodEmoji($__s) ?></button>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <div class="cal-sent-week-row cal-sent-cell" data-dim="flow">
+        <span class="cal-sent-label"><?= h(t('sent.flow_short', 'Flow')) ?></span>
+        <button type="button" class="cal-sent-current is-empty" aria-label="<?= h(t('sent.flow_short', 'Flow')) ?>"><?= Sentiment::flowEmoji(3) ?></button>
+        <div class="cal-sent-popover" hidden role="listbox" aria-label="<?= h(t('sent.flow_short', 'Flow')) ?>">
+          <?php foreach ([1,2,3,4,5] as $__s): ?>
+            <button type="button" class="cal-sent-opt" data-score="<?= $__s ?>" role="option" title="<?= h(Sentiment::flowLabel($__s)) ?>"><?= Sentiment::flowEmoji($__s) ?></button>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <?= tip('cal.sent_week_hint') ?>
+    </div>
+  <?php endif; ?>
+
   <div class="cal-week">
+    <?php /* Felix-Feedback 2026-11-08 (#109): durchgehende Kopfzeile ueber
+       Uhrzeiten UND Tagespalten, mit Corner-Zelle oben links. Der
+       bisherige Pro-Tag-Head (cal-day-head in cal-day) war sticky, aber
+       keine echte durchgehende Zeile. Kopfzeile ist ein eigener Grid-Row
+       innerhalb von .cal-week und tritt horizontal mit den Day-Columns
+       in den gleichen Raster. */ ?>
+    <?php /* Felix-Feedback 2026-11-09 (Fix #155): Pillen fuer ganztaegige
+       Abwesenheiten sitzen jetzt INNERHALB der jeweiligen Kopfzelle,
+       zwischen Wochentag-Label (oben) und Pensum-Badge (unten). Das
+       vermeidet die separate Band-Row ueber dem Head und loest zugleich
+       das Verzerren bei schmalen Viewports: die Pille ist absolute in
+       der ersten Dayhead-Zelle ihres Spans platziert, Breite = span *
+       100%, skaliert damit sauber mit der Spaltenbreite. */ ?>
+    <div class="cal-week-head" role="row" data-week-start="<?= h($__weekStartYmd) ?>">
+      <div class="cal-week-corner" aria-hidden="true"></div>
+      <?php foreach ($__days as $__i => $__day):
+        $__hd = $holidays[$__day['ymd']] ?? null;
+        $__hdCls = 'cal-week-dayhead cal-day-head';
+        if ($__day['isToday'])  $__hdCls .= ' is-today';
+        if ($__hd)              $__hdCls .= ' is-holiday';
+        if (!$__day['isWorkDay']) $__hdCls .= ' is-nonworking';
+      ?>
+        <div class="<?= h($__hdCls) ?>" role="columnheader" data-day="<?= h($__day['ymd']) ?>">
+          <div class="cal-week-dayhead-label"><?= h($__day['label']) ?></div>
+          <?php /* Fix #155: Abwesenheits-Pille unter dem Datums-Label, als
+             absolute Overlay mit width = span * 100% (skaliert mit der
+             Spaltenbreite). Die Pille wird nur in der ERSTEN Cell ihres
+             Spans gerendert und laeuft ueber die Nachbar-Cells hinweg
+             (overflow:visible auf dayhead). */ ?>
+          <?php foreach ($__absBandByYmd[$__day['ymd']] ?? [] as $__pIdx):
+            $__p = $__absBand[$__pIdx];
+            $__ckeyCss = preg_replace('~[^a-z0-9_-]~', '_', strtolower($__p['cat_ckey'] ?: 'absence'));
+          ?>
+            <button type="button"
+                    class="cal-absbar-pill cal-absbar-pill-<?= h($__ckeyCss) ?> cal-absbar-slot-<?= (int) $__pIdx ?>"
+                    data-abs-id="<?= $__p['abs_id'] ?>"
+                    title="<?= h($__p['cat'] . ' (' . $__p['from'] . ' – ' . $__p['to'] . ')' . ($__p['note'] !== '' ? ' · ' . $__p['note'] : '')) ?>">
+              <span class="cal-absbar-pill-label"><?= h($__p['cat']) ?></span>
+            </button>
+          <?php endforeach; ?>
+          <?php /* Felix-Feedback 2026-11-09 (#118/#119): Pensum-Badge pro Tag
+             in der Kopfzeile - gruen unter Soll, gelb genau drauf, rot
+             ueber Soll. Freelancer (Tagessoll=null) + Wochenenden /
+             Feiertage (Tagessoll=0) bekommen kein Badge. */ ?>
+          <?php $__dayTgt = $__dayTargetByOffset[$__i] ?? null; ?>
+          <?php if ($__dayTgt !== null && $__dayTgt > 0):
+            $__sum = isset($__dayBrackets[$__i]) ? (int) $__dayBrackets[$__i]['sum'] : 0;
+            $__diff = $__sum - $__dayTgt;
+            $__toleranceMin = 5;
+            if (abs($__diff) <= $__toleranceMin)      $__pensumCls = 'is-ok';
+            elseif ($__diff < 0)                      $__pensumCls = 'is-under';
+            else                                      $__pensumCls = 'is-over';
+            $__fmtH = static fn(int $m): string => number_format($m / 60, 1, ',', '.');
+          ?>
+            <div class="cal-day-pensum <?= $__pensumCls ?>"
+                 title="<?= h(t('cal.day_pensum_tip', 'Gebuchte Stunden heute / Tagessoll')) ?>">
+              <?= h($__fmtH($__sum)) ?> / <?= h($__fmtH($__dayTgt)) ?> h
+            </div>
+          <?php endif; ?>
+          <?php /* Felix-Feedback 2026-11-09 (#110): Daily-Mood-Picker sitzt
+             in der STICKY Kopfzeile, nicht in der Uhrzeiten-Tabelle - sonst
+             scrollt er mit dem Auto-Scroll zur ersten Buchungsstunde aus
+             dem sichtbaren Bereich. */ ?>
+          <?php if (!empty($canRecordSentiment) && ($sentimentGranularity ?? 'week') === 'day'):
+            $__dayMood = $weekSentiment[$__day['ymd']]['mood'] ?? null;
+            $__dayFlow = $weekSentiment[$__day['ymd']]['flow'] ?? null;
+            $__isFuture = $__day['date'] > $__today;
+            $__moodCur = Sentiment::moodEmoji($__dayMood !== null ? $__dayMood : 3);
+            $__flowCur = Sentiment::flowEmoji($__dayFlow !== null ? $__dayFlow : 3);
+          ?>
+            <div class="cal-sent-day cal-sent-day-head<?= $__isFuture ? ' is-future' : '' ?>" data-day="<?= h($__day['ymd']) ?>" data-csrf="<?= h(csrf_token()) ?>" <?= $__isFuture ? 'title="' . h(t('cal.sent_future', 'Zukunft')) . '"' : '' ?>>
+              <div class="cal-sent-cell" data-dim="mood" data-current="<?= $__dayMood ?? '' ?>">
+                <button type="button" class="cal-sent-current<?= $__dayMood === null ? ' is-empty' : '' ?>" <?= $__isFuture ? 'disabled' : '' ?> title="<?= h(t('sent.mood_short', 'Mood')) . ($__dayMood !== null ? ': ' . h(Sentiment::moodLabel($__dayMood)) : '') ?>" aria-label="<?= h(t('sent.mood_short', 'Mood')) ?>"><?= $__moodCur ?></button>
+                <div class="cal-sent-popover" hidden role="listbox" aria-label="<?= h(t('sent.mood_short', 'Mood')) ?>">
+                  <?php foreach ([1,2,3,4,5] as $__s): ?>
+                    <button type="button" class="cal-sent-opt<?= $__dayMood === $__s ? ' is-selected' : '' ?>" data-score="<?= $__s ?>" role="option" aria-selected="<?= $__dayMood === $__s ? 'true' : 'false' ?>" title="<?= h(Sentiment::moodLabel($__s)) ?>"><?= Sentiment::moodEmoji($__s) ?></button>
+                  <?php endforeach; ?>
+                </div>
+              </div>
+              <div class="cal-sent-cell" data-dim="flow" data-current="<?= $__dayFlow ?? '' ?>">
+                <button type="button" class="cal-sent-current<?= $__dayFlow === null ? ' is-empty' : '' ?>" <?= $__isFuture ? 'disabled' : '' ?> title="<?= h(t('sent.flow_short', 'Flow')) . ($__dayFlow !== null ? ': ' . h(Sentiment::flowLabel($__dayFlow)) : '') ?>" aria-label="<?= h(t('sent.flow_short', 'Flow')) ?>"><?= $__flowCur ?></button>
+                <div class="cal-sent-popover" hidden role="listbox" aria-label="<?= h(t('sent.flow_short', 'Flow')) ?>">
+                  <?php foreach ([1,2,3,4,5] as $__s): ?>
+                    <button type="button" class="cal-sent-opt<?= $__dayFlow === $__s ? ' is-selected' : '' ?>" data-score="<?= $__s ?>" role="option" aria-selected="<?= $__dayFlow === $__s ? 'true' : 'false' ?>" title="<?= h(Sentiment::flowLabel($__s)) ?>"><?= Sentiment::flowEmoji($__s) ?></button>
+                  <?php endforeach; ?>
+                </div>
+              </div>
+            </div>
+          <?php endif; ?>
+        </div>
+      <?php endforeach; ?>
+    </div>
     <div class="cal-hours" aria-hidden="true">
       <?php for ($h = 0; $h < 24; $h++): ?>
         <div class="cal-hour-label"><?= sprintf('%02d:00', $h) ?></div>
@@ -147,24 +600,74 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
       <?php foreach ($__days as $__i => $__day): ?>
         <?php $__holiday = $holidays[$__day['ymd']] ?? null; ?>
         <div class="cal-day<?= $__day['isToday'] ? ' cal-day-today' : '' ?><?= $__holiday ? ' cal-day-holiday' : '' ?><?= !$__day['isWorkDay'] ? ' cal-day-nonworking' : '' ?>" data-day="<?= h($__day['ymd']) ?>">
-          <div class="cal-day-head"><?= h($__day['label']) ?></div>
+          <?php /* Felix-Feedback 2026-11-09 (#110): Daily-Mood-Picker ist in
+             die sticky Kopfzeile oben gezogen; die cal-day-Column enthaelt
+             ihn nicht mehr. */ ?>
           <?php if ($__holiday): ?>
             <div class="cal-day-holiday-badge" title="<?= h(t($__holiday['key'], $__holiday['key'])) ?>">
               <span class="cal-holiday-dot" aria-hidden="true">★</span>
               <span class="cal-holiday-name"><?= h(t($__holiday['key'], $__holiday['key'])) ?></span>
             </div>
           <?php endif; ?>
+          <?php /* Felix-Feedback 2026-11-09 (#146): Abwesenheiten werden
+             jetzt oben als Band-Pillen gerendert, nicht mehr als Buttons
+             in der jeweiligen cal-day-Spalte - eine zusammenhaengende
+             Buchung ist eine Pille ueber mehrere Spalten, Wochenende/
+             Feiertag erzeugen natuerliche Luecken. */ ?>
           <div class="cal-day-grid" data-day="<?= h($__day['ymd']) ?>">
             <?php for ($h = 1; $h < 24; $h++): ?>
               <div class="cal-day-line"></div>
             <?php endfor; ?>
+            <?php /* Felix-Feedback 2026-11-09 (#138): rote Jetzt-Linie nur im
+               heutigen Tag, positioniert per nonce-Style oben im Block. */ ?>
+            <?php if ($__day['isToday'] && $__nowPct !== null): ?>
+              <div class="cal-now-line" aria-hidden="true" title="<?= h(t('cal.now_line', 'Jetzt')) ?>"></div>
+            <?php endif; ?>
+            <?php /* Felix-Feedback 2026-11-08 (#99): Tagessoll-Klammer rechts
+               neben den Events. Zwei moegliche Klammern: Target (Standard)
+               und Over (gestrichelt), sitzen am rechten Rand der Day-Column. */ ?>
+            <?php if (isset($__dayBrackets[$__i])):
+              $__b = $__dayBrackets[$__i];
+              $__tHours = round(($__b['target']['to'] - $__b['target']['from']) / 60, 1);
+              $__oHours = $__b['over'] ? round(($__b['over']['to'] - $__b['over']['from']) / 60, 1) : 0;
+            ?>
+              <div class="cal-day-bracket cal-day-bracket-target cal-day-bracket-target-<?= (int) $__i ?>"
+                   aria-hidden="true"
+                   title="<?= h(t('cal.day_bracket_target', 'Tagessoll')) ?>: <?= $__tHours ?> h"></div>
+              <?php if ($__b['over']): ?>
+                <div class="cal-day-bracket cal-day-bracket-over cal-day-bracket-over-<?= (int) $__i ?>"
+                     aria-hidden="true"
+                     title="<?= h(t('cal.day_bracket_over', 'Ueberstunden')) ?>: +<?= $__oHours ?> h"></div>
+              <?php endif; ?>
+            <?php endif; ?>
             <?php foreach ($__perDay[$__i] ?? [] as $__ev): ?>
-              <a class="cal-event cal-event-<?= (int) $__ev['id'] ?><?= $__ev['running'] ? ' cal-event-running' : '' ?>"
-                 href="<?= h(route('entry_form', ['id' => $__ev['id']])) ?>"
+              <button type="button" class="cal-event cal-event-<?= (int) $__ev['id'] ?><?= $__ev['running'] ? ' cal-event-running' : '' ?>"
+                 data-entry-type="project"
+                 data-entry-id="<?= (int) $__ev['id'] ?>"
                  title="<?= h($__ev['client'] . ' / ' . $__ev['project'] . ' · ' . $__ev['task']) ?>&#10;<?= h($__ev['start']) ?> – <?= h($__ev['end']) ?><?= $__ev['note'] !== '' ? '&#10;' . h($__ev['note']) : '' ?>">
                 <span class="cal-event-time"><?= h($__ev['start']) ?></span>
                 <span class="cal-event-label"><?= h($__ev['client']) ?><?= $__ev['project'] !== '' ? ' / ' . h($__ev['project']) : '' ?></span>
-              </a>
+              </button>
+            <?php endforeach; ?>
+            <?php foreach ($__procPerDay[$__i] ?? [] as $__ev): ?>
+              <button type="button" class="cal-event cal-process cal-process-<?= (int) $__ev['id'] ?>"
+                 data-entry-type="process"
+                 data-entry-id="<?= (int) $__ev['id'] ?>"
+                 title="<?= h($__ev['label'] . ($__ev['note'] !== '' ? ' · ' . $__ev['note'] : '')) ?>&#10;<?= h($__ev['start']) ?> – <?= h($__ev['end']) ?>">
+                <span class="cal-event-time"><?= h($__ev['start']) ?></span>
+                <span class="cal-event-label"><?= h($__ev['label']) ?></span>
+              </button>
+            <?php endforeach; ?>
+            <?php /* Fix #180: Ueberstundenabbau als Zeit-Block, grau wie
+               Prozesse, aber mit data-entry-type=absence fuer den Edit. */ ?>
+            <?php foreach ($__overtimePerDay[$__i] ?? [] as $__ev): ?>
+              <button type="button" class="cal-event cal-overtime cal-overtime-<?= (int) $__ev['id'] ?>"
+                 data-entry-type="absence"
+                 data-absence-id="<?= (int) $__ev['id'] ?>"
+                 title="<?= h($__ev['label'] . ($__ev['note'] !== '' ? ' · ' . $__ev['note'] : '')) ?>&#10;<?= h($__ev['start']) ?> – <?= h($__ev['end']) ?>">
+                <span class="cal-event-time"><?= h($__ev['start']) ?></span>
+                <span class="cal-event-label"><?= h($__ev['label']) ?></span>
+              </button>
             <?php endforeach; ?>
           </div>
         </div>
@@ -173,6 +676,9 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
   </div>
 </div>
 
+<!-- Dialog + JS werden zentral in views/entries/index.php eingebunden, damit
+     sowohl Kalender- als auch Liste-View den gleichen Create/Edit-Flow bekommen. -->
+
 <?php
   $__holidayRegion  = Holidays::currentRegion();
   $__holidayCatalog = Holidays::catalog();
@@ -180,14 +686,14 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
 ?>
 <div class="card external-cal-teaser">
   <div class="card-head">
-    <h2><?= h(t('cal.external_title', 'Externe Kalender')) ?></h2>
+    <h2><?= h(t('cal.external_title', 'Externe Kalender')) ?><?= tip('cal.external_intro_tip') ?></h2>
   </div>
 
   <div class="calimport-item">
     <div class="calimport-item-head">
       <strong><?= h(t('calimport.holiday_h2', 'Feiertagskalender')) ?></strong>
+      <?= tip('calimport.holiday_intro') ?>
     </div>
-    <p class="muted"><?= h(t('calimport.holiday_intro', 'Genau ein gesetzlicher Feiertagskalender aus einer festen Liste. Liefert die Markierungen im Day-Head oben und ist Grundlage fuer die Soll-Reduktion in v1.1.')) ?></p>
     <form method="post" action="<?= h(route('holiday_region_save')) ?>" class="calimport-form">
       <?= csrf_field() ?>
       <input type="hidden" name="_back" value="<?= h(route('entries') . '&week=' . $week_start->format('Y-\WW')) ?>">
@@ -218,7 +724,6 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
     </form>
   </div>
 
-  <p class="muted calimport-pro-intro"><?= t('cal.external_intro', 'Externe Quellen laufen in <strong>Timeminator Pro</strong>: CalDAV-Konten (iCloud, Google via CalDAV, FastMail&nbsp;&hellip;) und Kalender-Abos per iCal-/Outlook-URL. Read-only Overlays im Grid, mehrere parallel.') /* contains <strong>, intentional */ ?></p>
   <div class="external-cal-items">
     <a class="external-cal-item" href="<?= h($pro_url) ?>" target="_blank" rel="noopener">
       <strong><?= h(t('cal.ext_multi_title', 'Mehrere Feiertagskalender parallel')) ?></strong>
@@ -242,3 +747,8 @@ $__earliestHour = $__minTop >= 99.0 ? 8 : max(0, (int) floor(($__minTop / 100.0)
     </a>
   </div>
 </div>
+
+
+<?php /* Sentiment-Picker JS in gemeinsames Partial ausgelagert, damit
+   Monatsansicht die gleiche Mechanik bekommt (Felix-Feedback 2026-11-08). */ ?>
+<?php require __DIR__ . '/_sentiment_picker_js.php'; ?>

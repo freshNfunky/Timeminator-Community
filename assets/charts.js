@@ -48,11 +48,27 @@ window.TmCharts = (function () {
     return { ctx: ctx, w: w, h: h };
   }
 
+  // Rundet v auf den naechst-hoeheren "schoenen" Wert fuer die Achsen-Max-Marke.
+  // Feingranularer Schritt-Katalog, damit ein Max knapp ueber 100 nicht gleich auf
+  // 200 springt (Felix-Feedback 2026-11-03: "legende nicht viel hoeher als der
+  // max wert"). Die Aufrufer kalkulieren vorher v = dataMax * 1.05, der niedrigste
+  // Schritt (1.2) legt also ~15 % Headroom ueber den eigentlichen Datenwert.
   function niceMax(v){
     if (v <= 0) return 1;
     var pow = Math.pow(10, Math.floor(Math.log10(v)));
     var n = v / pow;
-    var step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+    var step;
+    if      (n <= 1)   step = 1;
+    else if (n <= 1.2) step = 1.2;
+    else if (n <= 1.5) step = 1.5;
+    else if (n <= 2)   step = 2;
+    else if (n <= 2.5) step = 2.5;
+    else if (n <= 3)   step = 3;
+    else if (n <= 4)   step = 4;
+    else if (n <= 5)   step = 5;
+    else if (n <= 6)   step = 6;
+    else if (n <= 8)   step = 8;
+    else               step = 10;
     return step * pow;
   }
 
@@ -187,6 +203,117 @@ window.TmCharts = (function () {
     });
   }
 
+  /**
+   * Stacked area over time (v1.0 F1 Mitarbeiter-Cockpit). spec:
+   * { xLabels, weekStarts?, series: [{label, color, data}], target: [h|null],
+   *   unit, targetLabel? }. Each series stacks on the previous; dashed line
+   *   draws the week target; hover tooltip over the chart-box.
+   */
+  function stackedArea(canvas, spec, legendEl){
+    var s = setup(canvas), ctx = s.ctx, th = theme();
+    var xs = spec.xLabels || [], series = spec.series || [], target = spec.target || [];
+    var n = xs.length, unit = spec.unit || 'h';
+    // Pro-Vorbild percent-Mode: jede Woche wird auf 100 % normiert; die
+    // Oberkante ist dann immer flach, nur die prozentuale Verteilung
+    // zwischen den Kategorien wechselt. Target-Linie macht in diesem Modus
+    // keinen Sinn - sie entfaellt mit.
+    if (spec.percent && n && series.length) {
+      var colTotal = [];
+      for (var ci = 0; ci < n; ci++) {
+        var tt = 0;
+        series.forEach(function(se){ tt += Number(se.data[ci] || 0); });
+        colTotal.push(tt);
+      }
+      series = series.map(function(se){
+        return {
+          key: se.key, label: se.label, color: se.color,
+          data: se.data.map(function(v, i){ return colTotal[i] > 0 ? (Number(v || 0) / colTotal[i]) * 100 : 0; })
+        };
+      });
+      target = []; unit = '%';
+    }
+    if (!n || !series.length){ empty(ctx, s.w, s.h); if (legendEl) legendEl.innerHTML = ''; return; }
+    var totals = [];
+    for (var i = 0; i < n; i++){
+      var sum = 0;
+      series.forEach(function(se){ sum += Number(se.data[i] || 0); });
+      totals.push(sum);
+    }
+    var maxV = Math.max.apply(null, totals.concat(target.filter(function(v){ return v !== null && v !== undefined; })));
+    var yMax = spec.percent ? 100 : niceMax(maxV * 1.05);
+    ctx.font = '11px -apple-system,Segoe UI,Roboto,sans-serif';
+    var padL = Math.ceil(ctx.measureText(yMax + ' ' + unit).width) + 14, padR = 16, padT = 12, padB = 40;
+    var plotW = s.w - padL - padR, plotH = s.h - padT - padB;
+    var xAt = function(i){ return padL + (n <= 1 ? plotW / 2 : (plotW * i) / (n - 1)); };
+    var yAt = function(v){ return padT + plotH - (v / yMax) * plotH; };
+
+    ctx.strokeStyle = th.line; ctx.fillStyle = th.muted; ctx.lineWidth = 1; ctx.textAlign = 'right';
+    for (var g = 0; g <= 4; g++){
+      var gv = (yMax * g) / 4, gy = Math.round(yAt(gv)) + 0.5;
+      ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(padL + plotW, gy); ctx.stroke();
+      ctx.fillText((Math.round(gv * 10) / 10) + ' ' + unit, padL - 6, gy);
+    }
+    ctx.textAlign = 'center';
+    var step = Math.max(1, Math.ceil(n / Math.max(1, Math.floor(plotW / 46))));
+    for (var xi = 0; xi < n; xi += step){ ctx.fillText(xs[xi], xAt(xi), padT + plotH + 16); }
+
+    var lower = new Array(n).fill(0);
+    series.forEach(function(se){
+      var upper = lower.map(function(l, i){ return l + Number(se.data[i] || 0); });
+      ctx.beginPath();
+      for (var i = 0; i < n; i++){ i ? ctx.lineTo(xAt(i), yAt(upper[i])) : ctx.moveTo(xAt(i), yAt(upper[i])); }
+      for (var j = n - 1; j >= 0; j--){ ctx.lineTo(xAt(j), yAt(lower[j])); }
+      ctx.closePath();
+      ctx.globalAlpha = 0.85; ctx.fillStyle = se.color; ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = se.color; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (var k = 0; k < n; k++){ k ? ctx.lineTo(xAt(k), yAt(upper[k])) : ctx.moveTo(xAt(k), yAt(upper[k])); }
+      ctx.stroke();
+      lower = upper;
+    });
+
+    var hasTarget = target.some(function(v){ return v !== null && v !== undefined; });
+    if (hasTarget){
+      ctx.setLineDash([6, 4]); ctx.strokeStyle = th.ink; ctx.lineWidth = 1.5; ctx.beginPath();
+      var started = false;
+      target.forEach(function(v, i){
+        if (v === null || v === undefined){ started = false; return; }
+        started ? ctx.lineTo(xAt(i), yAt(v)) : ctx.moveTo(xAt(i), yAt(v)); started = true;
+      });
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    if (legendEl){
+      var rows = series.slice().reverse().map(function(se){
+        return '<li><span class="lg-sw" style="background:' + se.color + '"></span><span class="lg-lbl">' + escapeHtml(se.label) + '</span></li>';
+      });
+      if (hasTarget) rows.push('<li><span class="lg-dash"></span><span class="lg-lbl">' + escapeHtml(spec.targetLabel || 'Week target') + '</span></li>');
+      legendEl.innerHTML = '<ul class="chart-legend">' + rows.join('') + '</ul>';
+    }
+
+    var box = canvas.parentNode, tip = box.querySelector('.chart-tip');
+    if (!tip){ tip = document.createElement('div'); tip.className = 'chart-tip'; tip.hidden = true; box.appendChild(tip); }
+    canvas.onmousemove = function(ev){
+      var r = canvas.getBoundingClientRect(), mx = ev.clientX - r.left;
+      var i = Math.max(0, Math.min(n - 1, Math.round(((mx - padL) / plotW) * (n - 1))));
+      var lines = series.slice().reverse().filter(function(se){ return Number(se.data[i] || 0) > 0; }).map(function(se){
+        return '<span class="lg-sw" style="background:' + se.color + '"></span>' + escapeHtml(se.label) + ': <strong>' + (Math.round(Number(se.data[i]) * 10) / 10) + ' ' + unit + '</strong>';
+      });
+      var t = target[i];
+      var totalLabel = spec.totalLabel || 'total';
+      var ofLabel = spec.ofLabel || 'of';
+      var fromLabel = spec.weekFromLabel || 'from';
+      tip.innerHTML = '<div><strong>' + escapeHtml(xs[i]) + '</strong>'
+        + (spec.weekStarts ? ' <span class="muted">' + escapeHtml(fromLabel) + ' ' + escapeHtml(spec.weekStarts[i]) + '</span>' : '') + '</div>'
+        + lines.join('<br>') + '<div class="muted">' + escapeHtml(totalLabel) + ' ' + (Math.round(totals[i] * 10) / 10) + ' ' + unit + (t !== null && t !== undefined ? ' ' + escapeHtml(ofLabel) + ' ' + t + ' ' + unit : '') + '</div>';
+      tip.hidden = false;
+      var left = xAt(i) + 12;
+      if (left + 190 > s.w) left = xAt(i) - 12 - 190;
+      tip.style.left = Math.max(4, left) + 'px'; tip.style.top = '8px';
+    };
+    canvas.onmouseleave = function(){ tip.hidden = true; };
+  }
+
   function roundRect(ctx, x, y, w, h, r){
     r = Math.min(r, w / 2, h / 2); if (r < 0) r = 0;
     ctx.beginPath();
@@ -201,5 +328,256 @@ window.TmCharts = (function () {
   function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
-  return { doughnut: doughnut, barsV: barsV, barsH: barsH, groupedBars: groupedBars };
+  /**
+   * Lean multi-line chart (v1.0 F2 Projekt-Cockpit Burn-Up). spec:
+   * { xLabels, series: [{label, color, data, dashed?}], unit, targetLabel? }.
+   * No dual-axis, no money formatting — one y-axis for all series.
+   */
+  function lines(canvas, spec, legendEl){
+    var s = setup(canvas), ctx = s.ctx, th = theme();
+    var xs = spec.xLabels || [], series = spec.series || [], unit = spec.unit || '';
+    var points = spec.points || [], rays = spec.rays || [], vlines = spec.vlines || [], rightUnit = spec.rightUnit || '';
+    var n = xs.length;
+    var leftVals = [], rightVals = [];
+    series.forEach(function(se){ (se.data || []).forEach(function(v){
+      if (v === null || v === undefined) return;
+      (se.right ? rightVals : leftVals).push(v);
+    }); });
+    points.forEach(function(p){ if (p && p.y !== null && p.y !== undefined) (p.right ? rightVals : leftVals).push(p.y); });
+    rays.forEach(function(r){
+      if (!r) return;
+      var arr = r.right ? rightVals : leftVals;
+      if (r.y0 !== null && r.y0 !== undefined) arr.push(r.y0);
+      if (r.y1 !== null && r.y1 !== undefined) arr.push(r.y1);
+    });
+    if (!n || (!leftVals.length && !rightVals.length)){ empty(ctx, s.w, s.h); if (legendEl) legendEl.innerHTML = ''; return; }
+    var yMax  = leftVals.length  ? niceMax(Math.max.apply(null, leftVals)  * 1.05) : 1;
+    var yMaxR = rightVals.length ? niceMax(Math.max.apply(null, rightVals) * 1.05) : 100;
+    ctx.font = '11px -apple-system,Segoe UI,Roboto,sans-serif';
+    var padL = Math.ceil(ctx.measureText(yMax + ' ' + unit).width) + 14;
+    var padR = rightVals.length ? Math.ceil(ctx.measureText(yMaxR + ' ' + rightUnit).width) + 14 : 16;
+    // padB vergroessert: die 45-Grad-rotierten X-Labels brauchen vertikal
+    // mehr Platz als ein horizontaler Datumslabel (Felix-Feedback 2026-11-06).
+    var padT = 12, padB = 56;
+    var plotW = s.w - padL - padR, plotH = s.h - padT - padB;
+    var xAt  = function(i){ return padL + (n <= 1 ? plotW / 2 : (plotW * i) / (n - 1)); };
+    var yAt  = function(v){ return padT + plotH - (v / yMax)  * plotH; };
+    var yAtR = function(v){ return padT + plotH - (v / yMaxR) * plotH; };
+
+    ctx.strokeStyle = th.line; ctx.fillStyle = th.muted; ctx.lineWidth = 1; ctx.textAlign = 'right';
+    for (var g = 0; g <= 4; g++){
+      var gv = (yMax * g) / 4, gy = Math.round(yAt(gv)) + 0.5;
+      ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(padL + plotW, gy); ctx.stroke();
+      ctx.fillText((Math.round(gv * 10) / 10) + (unit ? ' ' + unit : ''), padL - 6, gy);
+    }
+    if (rightVals.length){
+      ctx.textAlign = 'left';
+      for (var gr = 0; gr <= 4; gr++){
+        var gvr = (yMaxR * gr) / 4;
+        ctx.fillText((Math.round(gvr * 10) / 10) + (rightUnit ? ' ' + rightUnit : ''), padL + plotW + 6, yAtR(gvr));
+      }
+    }
+    // X-Achsen-Labels um -45 Grad rotieren (Felix-Feedback 2026-11-06:
+    // "lassen sich nicht stapeln"): horizontal gerendert kollidieren eng
+    // beieinander liegende Datumslabels sofort, mit 45 Grad passen sie
+    // dicht gestaffelt und ohne Ueberlapp uebereinander.
+    ctx.fillStyle = th.muted;
+    var step = Math.max(1, Math.ceil(n / Math.max(1, Math.floor(plotW / 48))));
+    for (var xi = 0; xi < n; xi += step){
+      ctx.save();
+      ctx.translate(xAt(xi), padT + plotH + 8);
+      ctx.rotate(-Math.PI / 4);
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(xs[xi], 0, 6);
+      ctx.restore();
+    }
+
+    vlines.forEach(function(vl){
+      if (vl.index === null || vl.index === undefined) return;
+      // Hidden-Chip: Legend-Chip bleibt sichtbar, Linie nicht.
+      if (vl.key && hiddenSetSeries && ((hiddenSetSeries.has && hiddenSetSeries.has(vl.key)) || hiddenSetSeries[vl.key])) return;
+      var vx = Math.round(xAt(vl.index)) + 0.5;
+      ctx.strokeStyle = vl.color || '#94a3b8'; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(vx, padT); ctx.lineTo(vx, padT + plotH); ctx.stroke();
+      ctx.setLineDash([]);
+      if (vl.label){
+        ctx.fillStyle = vl.color || '#94a3b8'; ctx.textAlign = 'left';
+        ctx.fillText(vl.label, vx + 4, padT + 10);
+      }
+    });
+
+    // fillBetween (Pro-Vorbild): faerbt die Flaeche UNTER der Ist-Kurve bis zur
+    // Nulllinie der linken Achse - gruen wo Ist <= Soll (im Budget), rot wo Ist
+    // > Soll (Budget ueberschritten). Segmentweise mit linearer Interpolation
+    // am Vorzeichenwechsel, damit die Farbgrenze exakt den Schnittpunkt trifft.
+    // Erwartet spec.fillBetween = { a:[...], b:[...], aboveColor, belowColor }.
+    var fb = spec.fillBetween || null;
+    if (fb && fb.a && fb.b){
+      // Felix-Feedback 2026-11-06: Legend-Toggle unterscheidet zwischen
+      // "im Plan" und "ueber Plan". Jeder Teil darf einzeln ausgeschaltet
+      // werden; die Chips bleiben in der Legende sichtbar (via hidden-Set
+      // + is-off-Klasse), rendern aber keine Flaeche mehr.
+      var hiddenSet = spec.hidden || null;
+      var hiddenHas = function(k){ return !!(k && hiddenSet && (hiddenSet.has ? hiddenSet.has(k) : hiddenSet[k])); };
+      var showBelow = !hiddenHas(fb.belowKey);
+      var showAbove = !hiddenHas(fb.aboveKey);
+      var zeroY = yAt(0);
+      var fillQuad = function(x0, aY0, x1, aY1, fillColor){
+        if (!fillColor) return;
+        ctx.beginPath();
+        ctx.moveTo(x0, aY0); ctx.lineTo(x1, aY1); ctx.lineTo(x1, zeroY); ctx.lineTo(x0, zeroY);
+        ctx.closePath();
+        ctx.fillStyle = fillColor; ctx.globalAlpha = 0.22; ctx.fill(); ctx.globalAlpha = 1;
+      };
+      for (var fj = 0; fj < n - 1; fj++){
+        var a0 = fb.a[fj], a1 = fb.a[fj + 1], b0 = fb.b[fj], b1 = fb.b[fj + 1];
+        if (a0 === null || a0 === undefined || a1 === null || a1 === undefined ||
+            b0 === null || b0 === undefined || b1 === null || b1 === undefined) continue;
+        var d0 = a0 - b0, d1 = a1 - b1, fx0 = xAt(fj), fx1 = xAt(fj + 1);
+        var pickColor = function(above){
+          if (above  && !showAbove) return null;
+          if (!above && !showBelow) return null;
+          return above ? fb.aboveColor : fb.belowColor;
+        };
+        if ((d0 >= 0) === (d1 >= 0)){
+          fillQuad(fx0, yAt(a0), fx1, yAt(a1), pickColor(d0 >= 0));
+        } else {
+          var t = d0 / (d0 - d1), xm = fx0 + (fx1 - fx0) * t, ym = yAt(a0 + (a1 - a0) * t);
+          fillQuad(fx0, yAt(a0), xm, ym, pickColor(d0 >= 0));
+          fillQuad(xm, ym, fx1, yAt(a1), pickColor(d1 >= 0));
+        }
+      }
+    }
+
+    // Felix-Feedback 2026-11-06: Legend-Toggle. Serien, deren Key im
+    // spec.hidden-Set steht, bleiben in series stehen (damit die Legende
+    // sie listet + als "aus" markiert), werden aber NICHT gezeichnet.
+    var hiddenSetSeries = spec.hidden || null;
+    var seriesHidden = function(se){
+      var k = se && (se.key || se.label);
+      return !!(k && hiddenSetSeries && (hiddenSetSeries.has ? hiddenSetSeries.has(k) : hiddenSetSeries[k]));
+    };
+    series.forEach(function(se){
+      if (seriesHidden(se)) return;
+      ctx.strokeStyle = se.color || '#2563eb'; ctx.lineWidth = 1.5;
+      if (se.dashed) { ctx.setLineDash([6, 4]); } else { ctx.setLineDash([]); }
+      ctx.beginPath();
+      var started = false, lastY = null, y = se.right ? yAtR : yAt;
+      (se.data || []).forEach(function(v, i){
+        if (v === null || v === undefined) { started = false; lastY = null; return; }
+        var px = xAt(i), py = y(v);
+        if (!started) {
+          ctx.moveTo(px, py);
+        } else if (se.step) {
+          // Stufen: zuerst horizontal (bis zum neuen x), dann vertikal auf den neuen y.
+          ctx.lineTo(px, lastY);
+          ctx.lineTo(px, py);
+        } else {
+          ctx.lineTo(px, py);
+        }
+        started = true; lastY = py;
+      });
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    // Helper fuer den Hidden-Check auf einzelne Punkt-/Ray-Keys (Teil des
+    // Legend-Toggle-Mechanismus, Felix-Feedback 2026-11-06).
+    var itemHidden = function(it){
+      var k = it && it.key;
+      return !!(k && hiddenSetSeries && (hiddenSetSeries.has ? hiddenSetSeries.has(k) : hiddenSetSeries[k]));
+    };
+    // Prognose-Strahlen zuerst (hinter die Marker-Punkte).
+    rays.forEach(function(r){
+      if (itemHidden(r)) return;
+      if (r.x0 === null || r.x0 === undefined || r.x1 === null || r.x1 === undefined) return;
+      if (r.y0 === null || r.y0 === undefined || r.y1 === null || r.y1 === undefined) return;
+      var y = r.right ? yAtR : yAt;
+      ctx.strokeStyle = r.color || '#d97706';
+      ctx.setLineDash(r.dashed ? [6, 4] : []);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(xAt(r.x0), y(r.y0));
+      ctx.lineTo(xAt(r.x1), y(r.y1));
+      ctx.stroke();
+      // Zielpunkt als hohler Kreis am Review-Horizont (Pro-Vorbild): nur Umriss,
+      // kein fill - signalisiert eine Prognose, keinen gemessenen Wert.
+      ctx.setLineDash([]);
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(xAt(r.x1), y(r.y1), 4, 0, Math.PI * 2); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    points.forEach(function(p){
+      if (itemHidden(p)) return;
+      if (p.x === null || p.x === undefined || p.y === null || p.y === undefined) return;
+      var cx = xAt(p.x), cy = (p.right ? yAtR : yAt)(p.y);
+      ctx.fillStyle = p.color || '#8b5cf6';
+      ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.fill();
+    });
+
+    if (legendEl){
+      // SVG-Swatch (Pro-Vorbild): zeigt denselben Strich wie im Chart (durchgezogen/
+      // gestrichelt) UND optional den passenden Marker (gefuellter Punkt fuer
+      // Fortschritt-Reports, hohler Kreis fuer Prognose-Endpunkte). Die Legende
+      // ist damit visuell identisch zu dem, was tatsaechlich gezeichnet wird.
+      // marker: 'dot' = gefuellter Punkt mittig (Fortschritt),
+      // marker: 'ring' = hohler Kreis am Linienende (Prognose).
+      var mkSwatch = function(color, dashed, marker){
+        var c = color || '#2563eb';
+        var dashAttr = dashed ? ' stroke-dasharray="4 3"' : '';
+        var line = '<line x1="0" y1="4" x2="22" y2="4" stroke="' + c + '" stroke-width="3"' + dashAttr + '/>';
+        var mk = '';
+        if (marker === 'dot')       mk = '<circle cx="11" cy="4" r="3" fill="' + c + '"/>';
+        else if (marker === 'ring') mk = '<circle cx="22" cy="4" r="3" fill="none" stroke="' + c + '" stroke-width="2"/>';
+        return '<svg class="lg-svg" width="26" height="8" viewBox="0 0 26 8" aria-hidden="true">' + line + mk + '</svg>';
+      };
+      // Legend-Items sind klickbare Chips (Pro-Vorbild, Felix-Feedback
+      // 2026-11-06: "dass die ein- und ausschaltbar sind"). Jeder Chip
+      // traegt einen data-k-Key (bevorzugt se.key, sonst se.label). Der
+      // Caller haengt den Toggle-Handler per Delegation auf legendEl und
+      // rendert den Chart mit gefilterten Serien neu - die Klickbarkeit
+      // allein macht noch nichts; sie ist das Transport-Protokoll.
+      var keyOf = function(x, fallback){ return (x && (x.key || x.label)) || fallback || ''; };
+      var isOff = function(k){
+        var set = spec.hidden || null;
+        return !!(k && set && (set.has ? set.has(k) : set[k]));
+      };
+      var chip = function(k, swatch, label){
+        var off = isOff(k) ? ' is-off' : '';
+        return '<li><button type="button" class="lg-chip' + off + '" data-k="' + escapeHtml(k) + '">' +
+               swatch + '<span class="lg-lbl">' + escapeHtml(label || '') + '</span></button></li>';
+      };
+      var items = series.map(function(se){
+        return chip(keyOf(se), mkSwatch(se.color, !!se.dashed, se.marker), se.label);
+      });
+      (spec.pointLegend || []).forEach(function(pl){
+        items.push(chip(keyOf(pl), mkSwatch(pl.color || '#8b5cf6', !!pl.dashed, pl.marker), pl.label));
+      });
+      vlines.forEach(function(vl){
+        if (!vl.legend) return;
+        items.push(chip(keyOf(vl, vl.legend), mkSwatch(vl.color || '#94a3b8', true, null), vl.legend));
+      });
+      if (fb && (fb.belowLabel || fb.aboveLabel)){
+        // Flaechen-Swatch als Inline-SVG mit fill-Attribut - KEIN inline style="...",
+        // sonst blockiert style-src-attr 'none' die Farbe komplett (CSP). Die
+        // theme-abhaengige Deckkraft kommt ueber die CSS-Klasse .lg-area-rect.
+        var areaSwatch = function(color){
+          return '<svg class="lg-svg" width="20" height="12" viewBox="0 0 20 12" aria-hidden="true">' +
+                 '<rect class="lg-area-rect" x="0" y="0" width="20" height="12" rx="2" fill="' + color + '"/>' +
+                 '</svg>';
+        };
+        if (fb.belowLabel){
+          items.push(chip(fb.belowKey || fb.belowLabel, areaSwatch(fb.belowColor), fb.belowLabel));
+        }
+        if (fb.aboveLabel){
+          items.push(chip(fb.aboveKey || fb.aboveLabel, areaSwatch(fb.aboveColor), fb.aboveLabel));
+        }
+      }
+      legendEl.innerHTML = '<ul class="chart-legend">' + items.join('') + '</ul>';
+    }
+  }
+
+  return { doughnut: doughnut, barsV: barsV, barsH: barsH, groupedBars: groupedBars, stackedArea: stackedArea, lines: lines };
 })();

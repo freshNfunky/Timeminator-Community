@@ -146,16 +146,47 @@ function ctrl_project_tracker_save(): void
         return is_numeric($norm) ? (float) $norm : null;
     };
 
+    // Weiterleitungs-Ziel: Fortschritt + Meeting werden im Projekt-Cockpit
+    // eingetragen (Pro-UI-Paritaet) und sollen auch dorthin zurueckkehren; die
+    // klassische status_report-Variante landet weiterhin in der Projekt-Detail-
+    // Ansicht. Via post('return_to') kann die View den Zielnamen ueberschreiben.
+    $returnRoute = (string) post('return_to', '') !== ''
+        ? (string) post('return_to', '')
+        : (in_array($type, ['progress', 'meeting'], true) ? 'cockpit_project' : 'project_show');
+
+    // Meeting-Protokoll (Community-light): Titel + Teilnehmer wandern als
+    // Praefix in die Note - die Repo-Insert hat keine eigenen Spalten dafuer,
+    // Pro's volle Form mit action_items/approvers bleibt der Pro-Variante
+    // vorbehalten.
+    if ($type === 'meeting') {
+        $title  = trim((string) post('meeting_title', ''));
+        $parts  = trim((string) post('meeting_participants', ''));
+        $prefix = '';
+        if ($title !== '') $prefix .= $title . "\n";
+        if ($parts !== '') $prefix .= t('cockpit.meeting_participants_prefix', 'Teilnehmer') . ': ' . $parts . "\n";
+        if ($prefix !== '') $note = $prefix . "\n" . $note;
+    }
+
     $extra = [];
     if ($type === 'progress') {
         $value = $parseNum((string) post('value', ''));
         if ($value === null) {
             flash(t('tracker.err_value_empty', 'Bitte einen Fortschrittswert (0..100) angeben.'), 'err');
-            redirect_route('project_show', ['id' => $projectId]);
+            redirect_route($returnRoute, ['id' => $projectId]);
         }
         $forecast = $parseNum((string) post('value_forecast', ''));
         $extra['value']          = $value;
         $extra['value_forecast'] = $forecast;
+        // Pro-UI-Paritaet: Progress-Meldungen tragen optional ein as_of-Datum
+        // (fuer Nachtraege) + Projekt-/Kunden-Stimmung 1..5.
+        $asOf = trim((string) post('date_value', ''));
+        if ($asOf !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $asOf)) {
+            $extra['date_value'] = $asOf;
+        }
+        $projectMood  = post('project_mood',  '');
+        $customerMood = post('customer_mood', '');
+        if ($projectMood  !== '') $extra['project_mood']  = $projectMood;
+        if ($customerMood !== '') $extra['customer_mood'] = $customerMood;
     } else {
         $extra['status'] = (string) post('status', 'on_plan');
         $extra['date_value'] = trim((string) post('date_value', ''));
@@ -167,7 +198,7 @@ function ctrl_project_tracker_save(): void
     } catch (Throwable $e) {
         flash($e->getMessage(), 'err');
     }
-    redirect_route('project_show', ['id' => $projectId]);
+    redirect_route($returnRoute, ['id' => $projectId]);
 }
 
 /**
@@ -190,7 +221,19 @@ function ctrl_project_tracker_update(): void
         'value'          => post('value', null)          !== null && post('value', '')          !== '' ? (float) str_replace(',', '.', (string) post('value'))          : null,
         'value_forecast' => post('value_forecast', null) !== null && post('value_forecast', '') !== '' ? (float) str_replace(',', '.', (string) post('value_forecast')) : null,
     ];
+    // Pro-UI-Paritaet: project_mood + customer_mood sind beim progress-
+    // Eintrag mit-editierbar. Leerer String loescht die Stimmung
+    // (Repo::updateProjectTracker ruft moodClamp mit null auf).
+    if (post('project_mood',  null) !== null) { $extra['project_mood']  = post('project_mood');  }
+    if (post('customer_mood', null) !== null) { $extra['customer_mood'] = post('customer_mood'); }
     $createdAt = trim((string) post('created_at', ''));
+
+    // Felix-Feedback 2026-11-06: der Cockpit-Weg benutzt dieselbe Update-Route,
+    // soll aber nach dem Save zurueck ins Cockpit, nicht in die Projektdetail-
+    // Seite - sonst verliert man die Timeline aus dem Blickfeld.
+    $returnRoute = (string) post('return_to', '') !== ''
+        ? (string) post('return_to', '')
+        : 'project_show';
 
     try {
         Repo::updateProjectTracker($id, (string) post('note', ''), $createdAt !== '' ? $createdAt : null, $extra);
@@ -198,7 +241,7 @@ function ctrl_project_tracker_update(): void
     } catch (Throwable $e) {
         flash($e->getMessage(), 'err');
     }
-    redirect_route('project_show', ['id' => $projectId]);
+    redirect_route($returnRoute, ['id' => $projectId]);
 }
 
 /** Admins (or the author) can retract a mis-posted tracker entry. */
@@ -230,6 +273,29 @@ function ctrl_project_save(): void
     $categoryRow = $categoryId ? Repo::projectCategory($categoryId) : null;
     if ($categoryRow && !(int) $categoryRow['needs_client']) {
         $clientId = Repo::internalClientId();
+    }
+    // Felix-Feedback 2026-11-09 (Fix #174): beim Edit darf die Projektart
+    // NICHT zwischen intern und nicht-intern wechseln. Interne Projekte
+    // haben technisch den Sentinel-Kunden __internal__; ein Wechsel auf
+    // Kundenprojekt wuerde ohne Kunde-Switch den Sentinel vererben
+    // (Datenintegritaet-Problem). Analog: Kundenprojekt -> Intern wuerde
+    // den echten Kunden "verlieren". V1.2 wird den Switch koordiniert
+    // erlauben (Pro-Issue). Bis dahin: Server lehnt den Wechsel ab.
+    if ($id && $categoryRow) {
+        $existing = Repo::project($id);
+        if ($existing && !empty($existing['category_id'])) {
+            $existingCat = Repo::projectCategory((int) $existing['category_id']);
+            if ($existingCat) {
+                $wasInternal = !((int) $existingCat['needs_client']);
+                $willBeInternal = !((int) $categoryRow['needs_client']);
+                if ($wasInternal !== $willBeInternal) {
+                    flash(t('projects.err_category_lock',
+                        'Wechsel zwischen internem und externem Projekt ist in v1.0 nicht erlaubt. Pro-Issue v1.2 vormerken.'
+                    ), 'err');
+                    redirect_route('projects');
+                }
+            }
+        }
     }
     if ($name === '' || !$clientId) {
         flash(t('projects.err_client_name_required', 'Kunde und Name sind erforderlich.'), 'err');

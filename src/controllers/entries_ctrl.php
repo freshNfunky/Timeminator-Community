@@ -14,41 +14,187 @@ function parse_dtlocal(?string $v): ?string
     }
 }
 
+/**
+ * Felix-Feedback 2026-11-09 (Fix #141): Pro-Variante erlaubt, im
+ * Aufgaben-Dropdown "+ Neue Aufgabe" zu waehlen und direkt im Entry-
+ * Formular eine neue Task anzulegen. Diese Helfer-Funktion wandelt den
+ * rohen task_id-POST-Wert in eine echte Task-ID um - entweder bestehend
+ * (numerisch) oder frisch angelegt (bei "__new__" + name + project_id).
+ *
+ * Gibt 0 zurueck, wenn die Anlage scheitert (kein Name, kein Projekt).
+ * Caller behandelt 0 wie "keine Aufgabe gewaehlt".
+ *
+ * @param array{name:string,project_id:int,wp_id:int} $newTask
+ */
+function entries_resolve_task_id(string $raw, array $newTask): int
+{
+    $raw = trim($raw);
+    if ($raw !== '__new__') {
+        return (int) $raw;
+    }
+    $name      = trim((string) ($newTask['name'] ?? ''));
+    $projectId = (int) ($newTask['project_id'] ?? 0);
+    $wpId      = (int) ($newTask['wp_id'] ?? 0);
+    if ($name === '' || $projectId <= 0) {
+        return 0;
+    }
+    return Repo::saveTask([
+        'project_id'      => $projectId,
+        'work_package_id' => $wpId > 0 ? $wpId : null,
+        'name'            => $name,
+        'kind'            => 'default',
+        'active'          => 1,
+    ]);
+}
+
 function ctrl_entries_index(): void
 {
     require_perm('entries.manage');
     // Calendar is the default; the flat list is an opt-in via ?view=list.
     $view = get('view') === 'list' ? 'list' : 'calendar';
+    // Within the calendar view, span=month switches from the week grid to a
+    // month overview (Felix-Feedback 2026-11-04: Monatsansicht muss drin sein).
+    $calendarSpan = 'week';
     $f    = entries_filter_from_request();
 
     if ($view === 'calendar') {
-        $weekStart = entries_week_start_from_request();
-        $weekEnd   = $weekStart->modify('+6 days');
-        // In the calendar view the from/to filter follows the visible week.
-        $f['from'] = $weekStart->format('Y-m-d');
-        $f['to']   = $weekEnd->format('Y-m-d');
+        $spanParam = (string) get('span', '');
+        $calendarSpan = $spanParam === 'month' ? 'month' : 'week';
+
+        if ($calendarSpan === 'month') {
+            // Monatsbereich leiten wir aus ?month=YYYY-MM ab (sonst aktueller Monat).
+            $monthParam = trim((string) get('month', ''));
+            try {
+                $monthStart = $monthParam !== '' && preg_match('/^\d{4}-\d{2}$/', $monthParam)
+                    ? new DateTimeImmutable($monthParam . '-01')
+                    : new DateTimeImmutable('first day of this month');
+            } catch (Throwable) {
+                $monthStart = new DateTimeImmutable('first day of this month');
+            }
+            $monthEnd = $monthStart->modify('last day of this month');
+            // Filter deckt den sichtbaren Bereich (ggf. mit Rand-Padding
+            // zum konfigurierten Wochenanfang/-ende) ab, damit Zellen aus
+            // dem Vor-/Folgemonat ebenfalls Buchungen zeigen. CalendarLocale
+            // ist die EINE Stelle fuer Wochen-Grenzen (Felix-Feedback
+            // 2026-11-09, Code-Review Fix #129): dieselbe Logik wie in
+            // views/entries/calendar_month.php, nicht mehr hardcoded Mo/So.
+            $padStart = CalendarLocale::weekStart($monthStart);
+            $padEnd   = CalendarLocale::weekEnd($monthEnd);
+            $f['from'] = $padStart->format('Y-m-d');
+            $f['to']   = $padEnd->format('Y-m-d');
+        } else {
+            $weekStart = entries_week_start_from_request();
+            $weekEnd   = $weekStart->modify('+6 days');
+            // In the calendar view the from/to filter follows the visible week.
+            $f['from'] = $weekStart->format('Y-m-d');
+            $f['to']   = $weekEnd->format('Y-m-d');
+        }
     }
 
     $entries = Repo::entries($f);
     $holidays = [];
-    if ($view === 'calendar' && isset($weekStart, $weekEnd)) {
-        $region = Holidays::currentRegion();
-        $holidays = Holidays::byDate(
-            $weekStart->format('Y-m-d'),
-            $weekEnd->format('Y-m-d'),
-            $region
-        );
+    if ($view === 'calendar') {
+        // Felix-Feedback 2026-11-09 (#123): die Feiertagsregion kommt aus
+        // employee_terms.holiday_region des eingeloggten Users - nicht aus
+        // dem System-Default. Sonst sieht ein Bayern-User den 6. Januar
+        // (Heilige Drei Koenige) nicht als Feiertag.
+        $__uid = (int) Auth::id();
+        $__today = (new DateTimeImmutable('today'))->format('Y-m-d');
+        $__terms = $__uid > 0 ? EmployeeRepo::termsAt($__uid, $__today) : null;
+        $region = (string) ($__terms['holiday_region'] ?? '') ?: Holidays::currentRegion();
+
+        // Felix-Feedback 2026-11-09 (#122 Vorbereitung): auch die
+        // Monatsansicht laedt Feiertage fuer ihren padStart..padEnd-Bereich.
+        if ($calendarSpan === 'month' && isset($padStart, $padEnd)) {
+            $__hFrom = $padStart->format('Y-m-d');
+            $__hTo   = $padEnd->format('Y-m-d');
+        } elseif (isset($weekStart, $weekEnd)) {
+            $__hFrom = $weekStart->format('Y-m-d');
+            $__hTo   = $weekEnd->format('Y-m-d');
+        } else {
+            $__hFrom = $__hTo = null;
+        }
+        if ($__hFrom !== null) {
+            $holidays = Holidays::byDate($__hFrom, $__hTo, $region);
+        }
     }
+    // v1.0 Kalender-Dialog (konsistent mit Pro): im Kalender-Modus laedt
+    // der Entries-Controller zusaetzlich Abwesenheiten + Prozess-Buchungen
+    // der Woche sowie die aktiven Kategorien, damit der neue Overlay-Dialog
+    // alle drei Typen anbieten kann.
+    // v1.0: Beide Views (Kalender + Liste) laden Abwesenheiten + Prozesse
+    // damit der Create-Dialog mit 3-Typ-Switcher ueberall funktioniert.
+    $uid = (int) Auth::id();
+    if ($view === 'calendar' && isset($weekStart, $weekEnd)) {
+        $fromDay = $weekStart->modify('-1 day')->format('Y-m-d');
+        $toDay   = $weekEnd->modify('+1 day')->format('Y-m-d');
+    } else {
+        $fromDay = $f['from'] ?: (new DateTimeImmutable('-30 days'))->format('Y-m-d');
+        $toDay   = $f['to']   ?: (new DateTimeImmutable('+30 days'))->format('Y-m-d');
+    }
+    $absences    = AbsenceRepo::forUser($uid, $fromDay, $toDay);
+    $processes   = ProcessRepo::forUser($uid, $fromDay . ' 00:00:00', $toDay . ' 23:59:59');
+    $absenceCats = AbsenceRepo::categories(true);
+    $processCats = ProcessRepo::categories(true);
+    $tasks       = Repo::tasks(true);
+    // Felix-Feedback 2026-11-09 (Fix #149): Projektart im Dialog als
+    // erste Filter-Stufe (Pro-Parity: Projektart -> Kunde -> Projekt ->
+    // Arbeitspaket -> Aufgabe).
+    $projectCategories = Repo::projectCategories(true);
+
+    // Sentiment-Daten im sichtbaren Bereich + aktueller Rhythmus
+    // (Felix-Feedback 2026-11-04 / 2026-11-08): damit der Kalender pro Tag
+    // einen Mood-Picker einblenden kann, oder - bei woechentlichem Rhythmus -
+    // einen einzelnen Picker fuer die ganze Woche. Fuer die Monatsansicht
+    // wird derselbe Array mit dem gesamten Grid-Bereich gefuellt.
+    $weekSentiment = [];
+    $sentimentGranularity = Sentiment::granularity();
+    if ($view === 'calendar' && Auth::can('sentiment.record')) {
+        if ($calendarSpan === 'month' && isset($padStart, $padEnd)) {
+            $sentFrom = $padStart->format('Y-m-d');
+            $sentTo   = $padEnd->format('Y-m-d');
+        } elseif (isset($weekStart, $weekEnd)) {
+            $sentFrom = $weekStart->format('Y-m-d');
+            $sentTo   = $weekEnd->format('Y-m-d');
+        } else {
+            $sentFrom = $sentTo = null;
+        }
+        if ($sentFrom !== null) {
+            $rows = DB::all(
+                'SELECT as_of, mood, flow FROM sentiment_entries WHERE user_id = ? AND as_of BETWEEN ? AND ?',
+                [$uid, $sentFrom, $sentTo]
+            );
+            foreach ($rows as $r) {
+                $weekSentiment[(string) $r['as_of']] = [
+                    'mood' => $r['mood'] !== null ? (int) $r['mood'] : null,
+                    'flow' => $r['flow'] !== null ? (int) $r['flow'] : null,
+                ];
+            }
+        }
+    }
+
     view('entries/index', [
-        'entries'    => $entries,
-        'clients'    => Repo::clients(),
-        'projects'   => Repo::projects(),
-        'filter'     => $f,
-        'total'      => Stats::totalMinutes($entries),
-        'view'       => $view,
-        'pro_url'    => (string) cfg('pro_url', 'https://timeminator.felixschaller.com'),
-        'week_start' => $view === 'calendar' ? ($weekStart ?? null) : null,
-        'holidays'   => $holidays,
+        'entries'     => $entries,
+        'clients'     => Repo::clients(),
+        'projects'    => Repo::projects(),
+        'filter'      => $f,
+        'total'       => Stats::totalMinutes($entries),
+        'view'        => $view,
+        'pro_url'     => (string) cfg('pro_url', 'https://timeminator.com'),
+        'week_start'  => $view === 'calendar' ? ($weekStart ?? null) : null,
+        'holidays'    => $holidays,
+        'absences'    => $absences,
+        'processes'   => $processes,
+        'absenceCats' => $absenceCats,
+        'processCats' => $processCats,
+        'tasks'       => $tasks,
+        'projectCategories' => $projectCategories,
+        'weekSentiment' => $weekSentiment,
+        'sentimentGranularity' => $sentimentGranularity,
+        'canRecordSentiment'   => Auth::can('sentiment.record'),
+        'canAdminSentiment'    => Auth::can('admin.system'),
+        'calendarSpan'         => $calendarSpan,
+        'month_start'          => $view === 'calendar' && $calendarSpan === 'month' ? ($monthStart ?? null) : null,
     ], t('nav.entries'));
 }
 
@@ -166,27 +312,20 @@ function entries_export_row(array $r): array
 function ctrl_entry_form(): void
 {
     require_perm('entries.manage');
+    // Felix-Feedback 2026-11-09 Hardening 6: Legacy-Full-Page-Form ist
+    // tot - aber ein Default-"Neu" per Deep-Link oeffnet wieder den
+    // ueberschreibenden 9.11. 09-10-Dialog, wenn der Nutzer per reload
+    // zurueckkommt. Daher: Edit via ?edit=X weiterhin (eindeutig gewollt),
+    // Neu ohne Parameter -> Nutzer landet im Kalender und dragged selbst.
     $id = (int) get('id', 0);
-    $entry = $id ? Repo::entry($id) : null;
-    if ($entry && (int) $entry['user_id'] !== Auth::id() && !Auth::isAdmin()) {
-        redirect_route('entries');
-    }
-    // For brand-new entries the week calendar can pre-fill start/end via
-    // ?start_ts=…&end_ts=… (both as 'Y-m-d\TH:i' or 'Y-m-d H:i:s'). Values
-    // are parsed through DateTimeImmutable so an invalid format just drops
-    // the pre-fill rather than crashing.
-    if (!$entry) {
-        $prefill = entry_form_prefill_from_request();
-        if ($prefill !== null) {
-            $entry = $prefill;
+    if ($id) {
+        $entry = Repo::entry($id);
+        if (!$entry || ((int) $entry['user_id'] !== Auth::id() && !Auth::isAdmin())) {
+            redirect_route('entries');
         }
+        redirect_route('entries', ['view' => 'calendar', 'edit' => $id]);
     }
-    view('entries/form', [
-        'entry'    => $entry,
-        'clients'  => Repo::clients(true),
-        'projects' => Repo::projects(true),
-        'tasks'    => Repo::tasks(true),
-    ], $entry && !empty($entry['id']) ? 'Eintrag bearbeiten' : 'Neuer Eintrag');
+    redirect_route('entries', ['view' => 'calendar']);
 }
 
 function entry_form_prefill_from_request(): ?array
@@ -216,18 +355,32 @@ function ctrl_entry_save(): void
     require_perm('entries.manage');
     csrf_check();
     $id = post_int('id');
-    $taskId = post_int('task_id');
+    // Felix-Feedback 2026-11-09 (Fix #141): Pro-Variante erlaubt das Anlegen
+    // einer neuen Aufgabe direkt aus dem Entry-Formular (Dropdown-Option
+    // "+ Neue Aufgabe"). Der Client sendet dann task_id=__new__ plus Name +
+    // Projekt-/Arbeitspaket-Kontext aus dem Task-Picker.
+    $taskId = entries_resolve_task_id((string) post('task_id'), [
+        'name'       => (string) post('new_task_name', ''),
+        'project_id' => (int)    post('new_task_project_id', 0),
+        'wp_id'      => (int)    post('new_task_wp_id', 0),
+    ]);
     $start = parse_dtlocal((string) post('start_ts'));
     $end = parse_dtlocal((string) post('end_ts'));
     $note = trim((string) post('note'));
 
+    // Felix-Feedback 2026-11-09: Fehlerpfade duerfen den User NIE auf die
+    // Legacy entry_form-Seite werfen - immer zurueck zum Overlay-Dialog.
+    // Hardening 6: fuer "Neu"-Fehlerfall KEIN ?new=1 mehr, sondern nur
+    // zum Kalender - der Nutzer sieht seinen Fehler-Flash und entscheidet
+    // selbst neu per Grid-Drag.
+    $overlayParams = $id ? ['view' => 'calendar', 'edit' => $id] : ['view' => 'calendar'];
     if (!$taskId || !$start || !$end) {
         flash(t('entries.err_required', 'Aufgabe, Start und Ende sind erforderlich.'), 'err');
-        redirect_route('entry_form', $id ? ['id' => $id] : []);
+        redirect_route('entries', $overlayParams);
     }
     if ($end <= $start) {
         flash(t('entries.err_end_before_start', 'Ende muss nach dem Start liegen.'), 'err');
-        redirect_route('entry_form', $id ? ['id' => $id] : []);
+        redirect_route('entries', $overlayParams);
     }
 
     if ($id) {
@@ -235,9 +388,17 @@ function ctrl_entry_save(): void
         if (!$existing || ((int) $existing['user_id'] !== Auth::id() && !Auth::isAdmin())) {
             redirect_route('entries');
         }
+        if ($msg = Repo::bookingConflict((int) $existing['user_id'], $start, $end, $id)) {
+            flash($msg, 'err');
+            redirect_route('entries', $overlayParams);
+        }
         Repo::updateEntry($id, $taskId, $start, $end, $note);
         flash(t('entries.flash_updated', 'Eintrag aktualisiert.'));
     } else {
+        if ($msg = Repo::bookingConflict(Auth::id(), $start, $end)) {
+            flash($msg, 'err');
+            redirect_route('entries', $overlayParams);
+        }
         Repo::createEntry(Auth::id(), $taskId, $start, $end, $note, 'manual');
         flash(t('entries.flash_saved', 'Eintrag gespeichert.'));
     }
@@ -256,6 +417,90 @@ function ctrl_entry_delete(): void
     redirect_route('entries');
 }
 
+/**
+ * JSON-API fuer den Kalender-Dialog (v1.0, konsistent mit Pro): legt einen
+ * Projekt-Zeiteintrag an oder aktualisiert ihn. Antwortet mit
+ * {ok, entry?, error?}.
+ */
+function ctrl_entry_api_save(): void
+{
+    require_perm('entries.manage');
+    csrf_check();
+    header('Content-Type: application/json');
+    $id     = post_int('id');
+    // Fix #141 parity im API-Pfad: auch der Kalender-Overlay-Dialog
+    // kann "+ Neue Aufgabe" uebergeben.
+    $taskId = entries_resolve_task_id((string) post('task_id'), [
+        'name'       => (string) post('new_task_name', ''),
+        'project_id' => (int)    post('new_task_project_id', 0),
+        'wp_id'      => (int)    post('new_task_wp_id', 0),
+    ]);
+    $start  = parse_dtlocal((string) post('start_ts'));
+    $end    = parse_dtlocal((string) post('end_ts'));
+    $note   = trim((string) post('note'));
+
+    if (!$taskId || !$start || !$end) {
+        echo json_encode(['ok' => false, 'error' => t('entries.err_required', 'Aufgabe, Start und Ende sind erforderlich.')]);
+        exit;
+    }
+    if ($end <= $start) {
+        echo json_encode(['ok' => false, 'error' => t('entries.err_end_before_start', 'Ende muss nach dem Start liegen.')]);
+        exit;
+    }
+    // Felix-Feedback 2026-11-09 (Code-Review Fix #134): Auth::id() kann
+    // theoretisch null sein (Edge-Case: Session-Rennen, Test-Stubs).
+    // Vorher wurde das stillschweigend zu user_id=0 gecastet und
+    // Repo::bookingConflict traf dann auf keinen Datensatz -> Konflikt-
+    // Pruefung wurde No-Op. Lieber hart 401, bevor etwas gespeichert wird.
+    $actorUid = Auth::id();
+    if ($actorUid === null || (int) $actorUid <= 0) {
+        http_response_code(401);
+        echo json_encode(['ok' => false, 'error' => 'auth']);
+        exit;
+    }
+    $actorUid = (int) $actorUid;
+    try {
+        $uidForCheck = $actorUid;
+        if ($id) {
+            $existing = Repo::entry($id);
+            if (!$existing || ((int) $existing['user_id'] !== $actorUid && !Auth::isAdmin())) {
+                echo json_encode(['ok' => false, 'error' => 'forbidden']);
+                exit;
+            }
+            $uidForCheck = (int) $existing['user_id'];
+        }
+        if ($msg = Repo::bookingConflict($uidForCheck, $start, $end, $id ?: null)) {
+            echo json_encode(['ok' => false, 'error' => $msg]);
+            exit;
+        }
+        if ($id) {
+            Repo::updateEntry($id, $taskId, $start, $end, $note);
+            echo json_encode(['ok' => true, 'entry' => Repo::entry($id)]);
+            exit;
+        }
+        $newId = Repo::createEntry($actorUid, $taskId, $start, $end, $note, 'manual');
+        echo json_encode(['ok' => true, 'entry' => Repo::entry($newId)]);
+    } catch (Throwable $e) {
+        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+function ctrl_entry_api_delete(): void
+{
+    require_perm('entries.manage');
+    csrf_check();
+    header('Content-Type: application/json');
+    $id = post_int('id');
+    if ($id) {
+        Repo::deleteEntry($id, Auth::id(), Auth::isAdmin());
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+    echo json_encode(['ok' => false, 'error' => 'not_found']);
+    exit;
+}
+
 // ---------- Timer ----------
 
 function ctrl_timer_start(): void
@@ -265,6 +510,14 @@ function ctrl_timer_start(): void
     $taskId = post_int('task_id');
     if (!$taskId) {
         flash(t('entries.err_pick_task', 'Bitte eine Aufgabe waehlen.'), 'err');
+        redirect_route('dashboard');
+    }
+    // Overlap-Check: Timer-Start darf nicht in eine andere Buchung fallen.
+    // Ein laufender Timer wird von startTimer() vorher gestoppt - er darf
+    // nicht als Konflikt zaehlen (Pro-PR #444).
+    $running = Repo::running(Auth::id());
+    if ($msg = Repo::bookingConflict(Auth::id(), now(), null, $running ? (int) $running['id'] : null)) {
+        flash($msg, 'err');
         redirect_route('dashboard');
     }
     Repo::startTimer(Auth::id(), $taskId, trim((string) post('note')));

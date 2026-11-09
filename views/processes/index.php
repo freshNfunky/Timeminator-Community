@@ -5,7 +5,9 @@
  * @var array $categories
  */
 ?>
-<h1 class="page-title"><?= h(t('processes.h1', 'Interne Prozesse')) ?><?= tip('processes.help', 'Nicht-projektbezogene Taetigkeiten wie Angebotserstellung oder Akquise. Buchungen hier zaehlen nicht als Projektzeit und tauchen in Projekt-/Kunden-Statistiken nicht auf.') ?></h1>
+<?php /* Fix #144: page-title kommt aus der Layout-Shell, Tooltip per
+   $__titleTip-Convention. */
+$__titleTip = 'processes.help'; ?>
 
 <div class="cols">
   <div class="card col-form">

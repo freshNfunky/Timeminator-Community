@@ -10,12 +10,12 @@ declare(strict_types=1);
  */
 function ctrl_presets_index(): void
 {
-    require_perm('structure.manage');
+    require_perm('presets.manage');
     view('presets/index', [
         'project_categories' => Repo::projectCategories(),
         'process_categories' => ProcessRepo::categories(),
         'absence_categories' => AbsenceRepo::categories(),
-        'pro_url'            => (string) cfg('pro_url', 'https://timeminator.felixschaller.com'),
+        'pro_url'            => (string) cfg('pro_url', 'https://timeminator.com'),
     ], t('presets.title', 'Presets'));
 }
 
@@ -23,7 +23,7 @@ function ctrl_presets_index(): void
 
 function ctrl_project_categories_index(): void
 {
-    require_perm('structure.manage');
+    require_perm('presets.manage');
     view('structure/project_categories', [
         'categories' => Repo::projectCategories(),
     ], t('project_cat.title', 'Projektarten'));
@@ -31,7 +31,7 @@ function ctrl_project_categories_index(): void
 
 function ctrl_project_category_save(): void
 {
-    require_perm('structure.manage');
+    require_perm('presets.manage');
     csrf_check();
     $id    = post_int('id');
     $label = trim((string) post('label'));
@@ -69,7 +69,7 @@ function ctrl_project_category_save(): void
 
 function ctrl_project_category_delete(): void
 {
-    require_perm('structure.manage');
+    require_perm('presets.manage');
     csrf_check();
     $id = post_int('id');
     if ($id) {

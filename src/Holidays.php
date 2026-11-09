@@ -71,6 +71,26 @@ final class Holidays
     }
 
     /**
+     * Translated name of the holiday on `$date` in `$region`, or null if the
+     * day is not a statutory holiday there. Used by the Mitarbeiter-Cockpit
+     * (v1.0 F1) to flag "heute: Pfingstmontag" and by AccountRepo to zero out
+     * the daily target. A `null` or invalid region yields `null`.
+     */
+    public static function on(?string $region, string $date): ?string
+    {
+        if ($region === null || !self::isValidRegion($region)) {
+            return null;
+        }
+        $year = (int) substr($date, 0, 4);
+        foreach (self::forRegion($region, $year) as $h) {
+            if ($h['date'] === substr($date, 0, 10)) {
+                return t($h['key'], $h['key']);
+            }
+        }
+        return null;
+    }
+
+    /**
      * Catalog for the Admin -> System dropdown, grouped by country.
      * Returns ordered groups so the UI can render <optgroup>s.
      *

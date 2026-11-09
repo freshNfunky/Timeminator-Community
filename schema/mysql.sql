@@ -75,7 +75,11 @@ CREATE TABLE IF NOT EXISTS projects (
   color         VARCHAR(16)  NULL,
   active        TINYINT(1)   NOT NULL DEFAULT 1,
   target_hours  DECIMAL(10,2) NULL,
+  planned_start DATE         NULL,
   planned_end   DATE         NULL,
+  kickoff_at    DATETIME     NULL,
+  closeout_at   DATETIME     NULL,
+  review_interval_days INT   NULL,
   created_at    DATETIME     NOT NULL,
   FOREIGN KEY (client_id)   REFERENCES clients(id),
   FOREIGN KEY (category_id) REFERENCES project_categories(id)
@@ -97,6 +101,9 @@ CREATE TABLE IF NOT EXISTS absences (
   category_id   INT NOT NULL,
   start_date    DATE NOT NULL,
   end_date      DATE NOT NULL,
+  -- Fix #180: Zeit-basierte Abwesenheiten (Ueberstundenabbau)
+  start_ts      DATETIME NULL,
+  end_ts        DATETIME NULL,
   note          VARCHAR(255) NULL,
   hours         DECIMAL(4,2) NULL,
   created_at    DATETIME NOT NULL,
@@ -256,6 +263,8 @@ CREATE TABLE IF NOT EXISTS project_trackers (
   note        TEXT NOT NULL,
   value       DECIMAL(10,2) NULL,
   value_forecast DECIMAL(10,2) NULL,
+  project_mood  TINYINT NULL,            -- v1.0 F2: 1..5 bei type='progress'
+  customer_mood TINYINT NULL,            -- v1.0 F2: 1..5 bei type='progress'
   user_id     INT NULL,
   created_at  DATETIME NOT NULL,
   KEY idx_project_trackers_project (project_id, created_at),
@@ -275,6 +284,63 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
   version    VARCHAR(64) PRIMARY KEY,
   applied_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- v1.0 F2: Plan-Allokationen (Soll-Stunden-Matrix Mitarbeiter x Zeitraum).
+CREATE TABLE IF NOT EXISTS plan_allocations (
+  id              INT AUTO_INCREMENT PRIMARY KEY,
+  project_id      INT NOT NULL,
+  user_id         INT NULL,
+  period_kind     VARCHAR(16) NOT NULL DEFAULT 'total',
+  period_start    DATE NULL,
+  planned_minutes INT NOT NULL DEFAULT 0,
+  note            VARCHAR(255) NULL,
+  created_at      DATETIME NOT NULL,
+  INDEX idx_plan_project       (project_id),
+  INDEX idx_plan_project_week  (project_id, period_kind, period_start),
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- v1.0 F2: Terminverschiebungs-Log fuer Projekte (und optional Arbeitspakete).
+CREATE TABLE IF NOT EXISTS date_shifts (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  kind       VARCHAR(32) NOT NULL,
+  object_id  INT NOT NULL,
+  project_id INT NOT NULL,
+  old_end    DATE NULL,
+  new_end    DATE NULL,
+  reason     VARCHAR(500) NOT NULL,
+  user_id    INT NULL,
+  created_at DATETIME NOT NULL,
+  INDEX idx_date_shifts_project (project_id, created_at),
+  INDEX idx_date_shifts_object  (kind, object_id, created_at),
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- v1.0 F1: Mitarbeiter-Vertragsdaten (historisiert) + Jahresuebertraege.
+CREATE TABLE IF NOT EXISTS employee_terms (
+  id              INT AUTO_INCREMENT PRIMARY KEY,
+  user_id         INT NOT NULL,
+  valid_from      DATE NOT NULL,
+  employment_type VARCHAR(16) NOT NULL,
+  weekly_hours    DECIMAL(5,2) NOT NULL DEFAULT 40,
+  vacation_days   DECIMAL(5,2) NOT NULL DEFAULT 25,
+  holiday_region  VARCHAR(32) NULL,
+  created_at      DATETIME NOT NULL,
+  INDEX idx_employee_terms_user_from (user_id, valid_from),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS account_carryovers (
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  user_id        INT NOT NULL,
+  year           INT NOT NULL,
+  vacation_days  DECIMAL(6,2) NOT NULL DEFAULT 0,
+  overtime_hours DECIMAL(7,2) NOT NULL DEFAULT 0,
+  UNIQUE KEY uk_carry_user_year (user_id, year),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET foreign_key_checks = 1;
 

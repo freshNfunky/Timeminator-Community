@@ -5,13 +5,75 @@ declare(strict_types=1);
 
 function ctrl_users_index(): void
 {
-    require_perm('admin.users');
+    // Felix-Feedback 2026-11-08 (#98): HR + GL + Admin kommen rein, um
+    // Vertragsdaten zu pflegen. Die reinen User-Felder (Username, Rolle,
+    // Passwort-Reset) bleiben via View-Gate Admin-only, siehe users.php.
+    require_any_perm('admin.users', 'employees.manage');
     $editId = (int) get('edit', 0);
+    $edit = $editId ? DB::one('SELECT * FROM users WHERE id = ?', [$editId]) : null;
+    $year = (int) (new DateTimeImmutable('today'))->format('Y');
     view('admin/users', [
-        'users' => DB::all('SELECT u.*, r.label AS role_label FROM users u LEFT JOIN roles r ON r.id = u.role_id ORDER BY u.username'),
-        'roles' => DB::all('SELECT * FROM roles ORDER BY label'),
-        'edit'  => $editId ? DB::one('SELECT * FROM users WHERE id = ?', [$editId]) : null,
+        'users'         => DB::all('SELECT u.*, r.label AS role_label FROM users u LEFT JOIN roles r ON r.id = u.role_id ORDER BY u.username'),
+        'roles'         => DB::all('SELECT * FROM roles ORDER BY label'),
+        'edit'          => $edit,
+        'terms_history' => $edit ? EmployeeRepo::history($editId) : [],
+        // Felix-Feedback 2026-11-07: Default beim NEUEN Carryover soll der
+        // volle Jahres-Urlaubsanspruch sein, nicht 0. Dafuer muss die View
+        // "noch nie gespeichert" von "0 persistiert" unterscheiden koennen -
+        // wir reichen daher null durch, wenn in der DB keine Zeile existiert.
+        'carryover'     => $edit ? EmployeeRepo::carryoverRow($editId, $year) : null,
+        'carryover_year'=> $year,
+        'holiday_catalog' => class_exists('Holidays') ? Holidays::catalog() : [],
     ], t('nav.users'));
+}
+
+/** v1.0 F1: speichere Vertragsstand (Beschaeftigungsart, Wochenstunden, Urlaubsanspruch) ab Datum. */
+function ctrl_employee_terms_save(): void
+{
+    require_perm('employees.manage');
+    csrf_check();
+    $userId = post_int('user_id');
+    $validFrom = trim((string) post('valid_from'));
+    $type = (string) post('employment_type', EmployeeRepo::TYPE_EMPLOYEE);
+    $weekly = (float) post('weekly_hours', 40);
+    $vacation = (float) post('vacation_days', 25);
+    $region = trim((string) post('holiday_region', ''));
+    if ($region === '' || $region === '__none__') { $region = null; }
+    if (!$userId || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $validFrom)) {
+        flash(t('employee.err_invalid_date', 'Ungueltiges Gueltig-ab-Datum.'), 'err');
+        redirect_route('admin_users', ['edit' => $userId]);
+    }
+    if ($weekly < 0 || $weekly > 80) { $weekly = 40; }
+    if ($vacation < 0 || $vacation > 60) { $vacation = 25; }
+    EmployeeRepo::saveTerms($userId, $validFrom, $type, $weekly, $vacation, $region);
+    flash(t('employee.flash_terms_saved', 'Vertragsdaten gespeichert.'));
+    redirect_route('admin_users', ['edit' => $userId]);
+}
+
+function ctrl_employee_terms_delete(): void
+{
+    require_perm('employees.manage');
+    csrf_check();
+    $termId = post_int('id');
+    $userId = post_int('user_id');
+    if ($termId) { EmployeeRepo::deleteTerms($termId); flash(t('employee.flash_terms_deleted', 'Vertragsstand entfernt.')); }
+    redirect_route('admin_users', ['edit' => $userId]);
+}
+
+/** v1.0 F1: Jahresuebertrag (Resturlaub, Ueberstundensaldo) fuer das laufende Jahr setzen. */
+function ctrl_account_carryover_save(): void
+{
+    require_perm('employees.manage');
+    csrf_check();
+    $userId = post_int('user_id');
+    $year = (int) post('year', (int) (new DateTimeImmutable('today'))->format('Y'));
+    $vac = (float) post('vacation_days', 0);
+    $ot  = (float) post('overtime_hours', 0);
+    if ($userId) {
+        EmployeeRepo::saveCarryover($userId, $year, $vac, $ot);
+        flash(t('employee.flash_carryover_saved', 'Jahresuebertrag gespeichert.'));
+    }
+    redirect_route('admin_users', ['edit' => $userId]);
 }
 
 function ctrl_user_save(): void

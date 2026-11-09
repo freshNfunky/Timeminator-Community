@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 function ctrl_cron_index(): void
 {
-    require_perm('admin.system');
+    require_perm('scheduler.manage');
     Scheduler::bootJobs();
     view('admin/cron', [
         'jobs'      => Scheduler::status(),
@@ -24,7 +24,7 @@ function ctrl_cron_index(): void
 
 function ctrl_cron_run_one(): void
 {
-    require_perm('admin.system');
+    require_perm('scheduler.manage');
     csrf_check();
     Scheduler::bootJobs();
     $name = trim((string) post('name'));
@@ -44,7 +44,7 @@ function ctrl_cron_run_one(): void
 
 function ctrl_cron_regen_token(): void
 {
-    require_perm('admin.system');
+    require_perm('scheduler.manage');
     csrf_check();
     Scheduler::regenerateToken();
     flash(t('cron.flash_token_regen', 'Neuer Web-Cron-Token erzeugt.'));

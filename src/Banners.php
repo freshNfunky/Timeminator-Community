@@ -28,8 +28,9 @@ final class Banners
     // in config.php. Keeps the Community edition working out of the box after
     // a fresh install - without this, a config missing the banners block would
     // silently fall back to the bundled offline SVG set forever. Served from
-    // an ad-blocker-neutral subdomain (not `banner.*`).
-    private const DEFAULT_ENDPOINT = 'https://assets.felixschaller.com/feed.json';
+    // an ad-blocker-neutral subdomain (not `banner.*`). PHP endpoint: byte-
+    // identical to the previous feed.json, just switched extension.
+    private const DEFAULT_ENDPOINT = 'https://assets.felixschaller.com/feed.php';
 
     // ---------- Visibility / configuration ----------
 
@@ -89,9 +90,12 @@ final class Banners
     }
 
     /**
-     * Locale-scoped feed URL for a base endpoint: feed.json -> feed-<lang>.json
-     * (the suffix is inserted before the .json extension; any query string is
-     * preserved). Returns '' when the endpoint has no .json to localize.
+     * Locale-scoped feed URL for a base endpoint: inserts the language code
+     * before the file extension. Supports both .json and .php endpoints (feed.
+     * json -> feed-de.json, feed.php -> feed-de.php). Any query string is
+     * preserved. Returns '' when the endpoint has no supported extension.
+     * Felix-Feedback 2026-11-06: der Feed darf auch feed.php heissen; vorher
+     * wurde nur .json erkannt und der Locale-Aufruf still verworfen.
      */
     public static function localeEndpoint(string $endpoint, string $lang): string
     {
@@ -100,10 +104,11 @@ final class Banners
             return '';
         }
         $parts = explode('?', $endpoint, 2);
-        if (!preg_match('/\.json$/i', $parts[0])) {
+        if (!preg_match('/\.(json|php)$/i', $parts[0], $m)) {
             return '';
         }
-        $path = preg_replace('/\.json$/i', '-' . $lang . '.json', $parts[0]);
+        $ext  = strtolower($m[1]);
+        $path = preg_replace('/\.(json|php)$/i', '-' . $lang . '.' . $ext, $parts[0]);
         return $path . (isset($parts[1]) ? '?' . $parts[1] : '');
     }
 
@@ -383,13 +388,22 @@ final class Banners
     }
 
     /**
-     * A banner HTML page to embed as an iframe: only https on an allowed
-     * first-party host (same rule as links/images). The page is served from the
-     * banner subdomain; the browser needs it in the CSP `frame-src` (see
-     * Banners::frameSrc() / send_security_headers()).
+     * A banner HTML page to embed as an iframe: either https on an allowed
+     * first-party host (same rule as links/images) or a same-origin relative
+     * path beginning with "/" (e.g. "/Media/banners/pro.html") - the browser
+     * loads that under the current host without needing a CSP exception.
+     * The page is served from the banner feed or shipped locally; HTTPS cross-
+     * origin pages need frame-src coverage (see Banners::frameSrc() /
+     * send_security_headers()). Felix-Feedback 2026-11-06: der Feed soll HTML
+     * ausliefern, lokale HTML-Fallbacks bleiben so moeglich.
      */
     public static function isAllowedIframe(string $url): bool
     {
+        // Same-origin relative: "/path.html" or "/path.html?x=y" (no "//" host form).
+        if ($url !== '' && $url[0] === '/' && (strlen($url) < 2 || $url[1] !== '/')) {
+            // No traversal and no fragment-only; must look like a reachable path.
+            return !str_contains($url, '..') && preg_match('#^/[A-Za-z0-9._~\-/]*(\?[^\#]*)?$#', $url) === 1;
+        }
         $p = parse_url($url);
         if (!$p || ($p['scheme'] ?? '') !== 'https' || ($p['host'] ?? '') === '') {
             return false;

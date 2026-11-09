@@ -23,6 +23,10 @@ date_default_timezone_set('Europe/Berlin');
 require APP_ROOT . '/src/helpers.php';
 require APP_ROOT . '/src/db.php';
 require APP_ROOT . '/src/Settings.php';
+require APP_ROOT . '/src/CalendarLocale.php';
+require APP_ROOT . '/src/DayBracket.php';
+require APP_ROOT . '/src/WorkdaySpans.php';
+require APP_ROOT . '/src/seed.php';
 require APP_ROOT . '/src/LoginThrottle.php';
 require APP_ROOT . '/src/Stats.php';
 require APP_ROOT . '/src/Repo.php';
@@ -34,6 +38,16 @@ require APP_ROOT . '/src/Mail.php';
 require APP_ROOT . '/src/PasswordReset.php';
 require APP_ROOT . '/src/Scheduler.php';
 require APP_ROOT . '/src/Holidays.php';
+require APP_ROOT . '/src/Workdays.php';
+require APP_ROOT . '/src/EmployeeRepo.php';
+require APP_ROOT . '/src/AccountRepo.php';
+require APP_ROOT . '/src/EmployeeStats.php';
+require APP_ROOT . '/src/DateShiftRepo.php';
+require APP_ROOT . '/src/PlanRepo.php';
+require APP_ROOT . '/src/AbsenceRepo.php';
+require APP_ROOT . '/src/controllers/cockpit_ctrl.php';
+require APP_ROOT . '/src/ProcessRepo.php';
+require APP_ROOT . '/src/controllers/company_cockpit_ctrl.php';
 
 // Tests access session superglobals without a real session; initialize empty
 // so a direct $_SESSION read doesn't warn.

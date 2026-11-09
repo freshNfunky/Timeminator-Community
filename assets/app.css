@@ -96,6 +96,11 @@ code{background:var(--code-bg);padding:1px 5px;border-radius:5px;font-size:.85em
   padding:18px;margin-bottom:18px;box-shadow:var(--shadow-card)}
 .card.narrow{max-width:560px}
 .card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+/* Felix-Feedback 2026-11-06: der Gruppierungs-Hinweis an der Statistik-
+   Verteilung war muted + klein -> Nutzer dachten das Dropdown gruppiere
+   gar nicht. Jetzt brand-farbig, damit das "nach Projekt/Kunde/Gleis"
+   neben "Verteilung" sofort ins Auge springt. */
+.dist-group-lbl{color:var(--brand);font-weight:600}
 .card h2{font-size:16px;margin:0 0 12px}
 .card h3{font-size:14px;margin:16px 0 8px;color:var(--muted)}
 
@@ -107,6 +112,11 @@ code{background:var(--code-bg);padding:1px 5px;border-radius:5px;font-size:.85em
 .btn-primary:hover{background:var(--brand-d)}
 .btn-danger{background:var(--panel);border-color:var(--btn-danger-border);color:var(--err)}
 .btn-danger:hover{background:var(--btn-danger-hover)}
+/* Fix #172: Zwei-Klick-Confirm fuer Loeschen im Entry-Dialog - der
+   armed-State faerbt den Button rot (statt roter Border + roter Text)
+   und erhoeht die Breite leicht, damit "Wirklich loeschen?" nicht
+   umbricht. Ohne diese Klasse wirkt der erste Klick "wirkungslos". */
+.btn-danger.is-confirm-armed{background:var(--err);color:#fff;border-color:var(--err)}
 .btn-ghost{background:transparent;border-color:transparent;color:var(--muted)}
 .btn-sm{padding:5px 9px;font-size:12px}
 .btn-block{width:100%;padding:11px}
@@ -130,6 +140,104 @@ textarea{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
 select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);border-color:var(--brand)}
 .row{display:flex;gap:12px}
 .row .grow{flex:1}
+/* Tracker-Entry Forms werden ueber das native HTML5 [hidden] gesteuert - .row
+   setzt aber display:flex und ueberschreibt damit "hidden". Felix-Feedback
+   2026-11-03: Switcher wechselte den Typ, Formular blieb gleich. */
+.tracker-form[hidden]{display:none !important}
+
+/* Kalender-Sentiment-Picker (Felix-Feedback 2026-11-04): Pro-Style, je
+   Dimension nur EIN Emoji-Button im day-head - Klick oeffnet ein kompaktes
+   horizontales Popover mit allen 5 Optionen. So spart der Kalender Platz. */
+.cal-sent-day{display:flex;gap:6px;justify-content:center;padding:3px 2px 2px;border-bottom:1px solid var(--line)}
+.cal-sent-day.is-future{opacity:.45}
+.cal-sent-cell{position:relative;display:inline-block}
+.cal-sent-current{background:transparent;border:1px solid transparent;border-radius:6px;padding:1px 4px;font-size:17px;line-height:1;cursor:pointer;color:var(--ink);transition:background .15s,border-color .15s}
+.cal-sent-current:hover{background:color-mix(in oklab, var(--panel), var(--brand) 12%);border-color:color-mix(in oklab, var(--line), var(--brand) 20%)}
+/* is-empty = kein Wert gesetzt, Placeholder-Emoji wird abgegraut dargestellt
+   (Pro-Vorbild). Grayscale + reduzierte Opacity macht das Score-3-Emoji
+   deutlich erkennbar als "noch nicht erfasst". */
+.cal-sent-current.is-empty{opacity:.35;filter:grayscale(1)}
+.cal-sent-current[disabled]{cursor:not-allowed;opacity:.25}
+.cal-sent-current.is-open{background:color-mix(in oklab, var(--panel), var(--brand) 18%);border-color:var(--brand)}
+/* Popover: horizontale 5-Button-Reihe, absolut unter dem Current-Button. */
+.cal-sent-popover{position:absolute;top:calc(100% + 2px);left:50%;transform:translateX(-50%);display:flex;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:3px 4px;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:5;white-space:nowrap}
+.cal-sent-popover[hidden]{display:none}
+.cal-sent-opt{background:transparent;border:1px solid transparent;border-radius:5px;padding:1px 3px;font-size:17px;line-height:1;cursor:pointer;color:var(--ink);opacity:.65}
+.cal-sent-opt:hover{opacity:1;background:color-mix(in oklab, var(--panel), var(--brand) 12%)}
+.cal-sent-opt.is-selected{opacity:1;border-color:var(--brand);background:color-mix(in oklab, var(--panel), var(--brand) 18%)}
+
+/* Weekly-Picker: kompakte horizontale Zeile ueber der Wochenuebersicht. */
+.cal-sent-week{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 14px;background:var(--panel-alt, color-mix(in oklab, var(--panel), var(--brand) 4%));border-bottom:1px solid var(--line);font-size:13px}
+.cal-sent-week-row{display:flex;align-items:center;gap:4px}
+.cal-sent-label{color:var(--muted);margin-right:2px;font-weight:600}
+.cal-sent-hint{margin:0;font-size:12px;flex:1 1 20em}
+.cal-sent-week .cal-sent-btn{background:transparent;border:1px solid transparent;border-radius:6px;padding:1px 4px;font-size:16px;line-height:1;cursor:pointer;color:var(--ink);opacity:.7}
+.cal-sent-week .cal-sent-btn:hover{opacity:1;background:color-mix(in oklab, var(--panel), var(--brand) 12%)}
+.cal-sent-week .cal-sent-btn.is-selected{opacity:1;border-color:var(--brand);background:color-mix(in oklab, var(--panel), var(--brand) 18%)}
+
+/* Granularitaets-Toggle Daily/Weekly (admin-only, Kalender-Navi). */
+.cal-sent-toggle{display:inline-flex;gap:2px;margin-right:6px}
+.cal-sent-toggle .btn.is-active{background:var(--brand);color:#fff}
+
+/* Monatsansicht (Felix-Feedback 2026-11-04: "warum gibt es keine monats-
+   sicht mehr?"). 7-Spalten-Grid, pro Tag Datum + max. 3 Projektzeilen. */
+.cal-span-toggle{display:inline-flex;gap:2px;margin-right:6px}
+.cal-span-toggle .btn.is-active{background:var(--brand);color:#fff}
+.cal-month-grid{display:grid;grid-template-columns:repeat(7, minmax(0, 1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.cal-month-grid.cal-month-grid-with-sent{grid-template-columns:minmax(72px, 0.5fr) repeat(7, minmax(0, 1fr))}
+.cal-month-dow{background:color-mix(in oklab, var(--panel), var(--brand) 6%);padding:6px 8px;font-size:12px;font-weight:600;color:var(--muted);text-align:center}
+.cal-month-dow-sent{font-size:11px}
+.cal-month-sent-col{display:flex;align-items:center;justify-content:center;background:color-mix(in oklab, var(--panel), var(--brand) 3%);padding:6px 4px;min-height:92px}
+.cal-month-sent-col .cal-sent-week{display:flex;flex-direction:column;align-items:center;gap:6px;padding:0;background:transparent;border:0;font-size:12px}
+.cal-month-sent-col .cal-sent-week-row{flex-direction:column;gap:2px}
+.cal-month-sent-col .cal-sent-label{font-size:10px;color:var(--muted)}
+.cal-month-cell{display:flex;flex-direction:column;gap:4px;background:var(--panel);padding:6px 8px;min-height:92px;color:var(--ink);font-size:13px;transition:background .15s;position:relative}
+.cal-month-link{display:flex;flex-direction:column;gap:4px;flex:1 1 auto;text-decoration:none;color:inherit;min-height:0}
+.cal-month-cell:hover{background:color-mix(in oklab, var(--panel), var(--brand) 6%)}
+.cal-month-cell.is-out{background:color-mix(in oklab, var(--panel), var(--line) 25%);color:var(--muted)}
+.cal-month-cell.is-today{box-shadow:inset 0 0 0 2px var(--brand)}
+.cal-month-cell.is-holiday .cal-month-day-num{color:var(--brand)}
+/* Felix-Feedback 2026-11-09 (#122): Wochenenden + Feiertage farblich
+   hervorheben, Parity zur Wochenansicht. Werktage bleiben neutral,
+   Wochenende = sanftes Grau, Feiertag = sanftes Rot. */
+.cal-month-cell.is-weekend{background-color:rgba(100,116,139,.09)}
+.cal-month-cell.is-holiday{background-color:rgba(239,68,68,.07)}
+:root[data-theme="dark"] .cal-month-cell.is-weekend{background-color:rgba(96,165,250,.10)}
+:root[data-theme="dark"] .cal-month-cell.is-holiday{background-color:rgba(248,113,113,.14)}
+:root[data-theme="dark"] .cal-month-cell.is-holiday .cal-month-day-num{color:#fecaca}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .cal-month-cell.is-weekend{background-color:rgba(96,165,250,.10)}
+  :root:not([data-theme="light"]) .cal-month-cell.is-holiday{background-color:rgba(248,113,113,.14)}
+  :root:not([data-theme="light"]) .cal-month-cell.is-holiday .cal-month-day-num{color:#fecaca}
+}
+.cal-month-cell-head{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+.cal-month-day-num{font-weight:700;font-size:14px}
+.cal-month-hol{color:var(--brand);font-size:12px}
+.cal-month-sum{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.cal-month-projs{display:flex;flex-direction:column;gap:2px;overflow:hidden}
+.cal-month-proj{display:flex;align-items:center;gap:6px;font-size:11px;line-height:1.3;min-width:0}
+.cal-month-proj-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-month-proj-h{color:var(--muted);flex:0 0 auto;font-variant-numeric:tabular-nums}
+.cal-month-proj.cal-month-more{color:var(--muted);font-style:italic}
+.cal-sent-day-month{margin-top:auto;justify-content:flex-start;border-bottom:none;border-top:1px dashed var(--line);padding:4px 2px 2px}
+/* Felix-Feedback 2026-11-09 (#110): Daily-Mood-Picker sitzt in der sticky
+   Wochen-Kopfzeile, nicht in der Uhrzeiten-Tabelle - sonst scrollt er mit. */
+.cal-sent-day-head{border-bottom:0;padding:2px 2px 3px;justify-content:center}
+.cal-week-dayhead-label{line-height:1.15}
+/* Felix-Feedback 2026-11-09 (#118): Pensum-Badge pro Tag in der Kopfzeile.
+   Drei Zonen: unter Soll (gruen), genau drauf (gelb, +/- 5 min), ueber Soll (rot). */
+.cal-day-pensum{display:inline-block;margin-top:3px;padding:1px 6px;border-radius:9999px;font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;border:1px solid transparent}
+.cal-day-pensum.is-under{background:rgba(34,197,94,.14);color:#15803d;border-color:rgba(34,197,94,.35)}
+.cal-day-pensum.is-ok{background:rgba(234,179,8,.16);color:#854d0e;border-color:rgba(234,179,8,.45)}
+.cal-day-pensum.is-over{background:rgba(239,68,68,.16);color:#b91c1c;border-color:rgba(239,68,68,.45)}
+:root[data-theme="dark"] .cal-day-pensum.is-under{color:#86efac;border-color:rgba(34,197,94,.55)}
+:root[data-theme="dark"] .cal-day-pensum.is-ok{color:#facc15;border-color:rgba(234,179,8,.55)}
+:root[data-theme="dark"] .cal-day-pensum.is-over{color:#fca5a5;border-color:rgba(239,68,68,.55)}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .cal-day-pensum.is-under{color:#86efac;border-color:rgba(34,197,94,.55)}
+  :root:not([data-theme="light"]) .cal-day-pensum.is-ok{color:#facc15;border-color:rgba(234,179,8,.55)}
+  :root:not([data-theme="light"]) .cal-day-pensum.is-over{color:#fca5a5;border-color:rgba(239,68,68,.55)}
+}
 .form-actions{display:flex;gap:10px;align-items:center;margin-top:6px}
 
 /* Tables */
@@ -158,13 +266,45 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .sentiment-sparkline{display:flex;gap:2px;align-items:flex-end;margin:4px 0 14px;
   height:34px;padding:4px 0;overflow-x:auto}
 .sentiment-tick{display:inline-block;flex:0 0 8px;height:100%;border-radius:3px;background:var(--line)}
+
+/* Dashboard-Sentiment-Widget (Pro-Parity, Felix-Feedback 2026-11-08):
+   zwei Zeilen (Mood + Flow), je 5 Emoji-Buttons horizontal, Scope-Toggle rechts. */
+.sentiment-widget .sentiment-form{margin:0}
+.sentiment-widget .sentiment-form + .sentiment-form{margin-top:10px}
+.sentiment-widget .sentiment-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.sentiment-widget .sentiment-kind{min-width:140px;display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:14px}
+.sentiment-widget .sentiment-scale{display:inline-flex;gap:6px;margin:0;flex-wrap:wrap}
+.sentiment-widget .sentiment-opt{appearance:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:22px;line-height:1;cursor:pointer;transition:border-color .12s,transform .08s}
+.sentiment-widget .sentiment-opt:hover{border-color:var(--brand);transform:translateY(-1px)}
+.sentiment-widget .sentiment-opt.active{border-color:var(--brand);background:var(--soft);box-shadow:0 0 0 2px var(--focus-ring)}
+.sentiment-widget .sentiment-scope{margin-left:auto;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:inherit;font-size:12px}
 .sentiment-tick.is-empty{background:var(--line);opacity:.3}
 .sentiment-tick.is-s1{background:#ef4444;height:30%}
 .sentiment-tick.is-s2{background:#f97316;height:50%}
 .sentiment-tick.is-s3{background:#eab308;height:70%}
 .sentiment-tick.is-s4{background:#84cc16;height:85%}
 .sentiment-tick.is-s5{background:#22c55e;height:100%}
+/* Felix-Feedback 2026-11-09 (#116): Wochen-Preset stapelt Mood + Flow
+   untereinander, damit die 5 Smileys einer Dimension in einer Zeile
+   bleiben und nicht komisch umbrechen. */
+.sentiment-week-stack{display:flex;flex-direction:column;gap:14px;margin-top:6px}
+.sentiment-week-stack .sentiment-week-form{display:block}
+.sentiment-week-stack .sentiment-week-h3{margin:0 0 8px;font-size:14px;color:var(--muted);font-weight:600}
+.sentiment-week-stack .sentiment-scale{flex-wrap:nowrap}
+.sentiment-week-stack .form-actions{margin-top:8px}
 .sentiment-team-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:10px 0 16px;text-align:center}
+/* Felix-Feedback 2026-11-08 (#101/#102/#104): Teammitglieder-Liste + Mood-Matrix. */
+.sent-team-members{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px}
+.sent-team-members li{color:var(--ink)}
+.sent-matrix-card{margin-top:14px}
+.sent-matrix-wrap{overflow-x:auto}
+.sent-matrix{border-collapse:collapse;width:100%;font-size:13px}
+.sent-matrix th,.sent-matrix td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:center;white-space:nowrap}
+.sent-matrix-corner{text-align:left;color:var(--muted);font-weight:600}
+.sent-matrix-weekhead{color:var(--muted);font-weight:600}
+.sent-matrix-user{text-align:left;font-weight:500;color:var(--ink);background:color-mix(in oklab, var(--panel), var(--brand) 2%)}
+.sent-matrix-cell{font-size:16px;line-height:1.1}
+.sent-matrix-flow{margin-left:2px;font-size:14px;opacity:.85}
 .sentiment-team-metric{font-size:22px;line-height:1.2;margin-bottom:2px}
 .sentiment-team-metric strong{font-weight:700}
 @media (max-width:620px){
@@ -321,7 +461,19 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 /* Projekt-Tracker (zeitgestempelte Status-Berichte, #127) */
 .cockpit-tracker-head{margin-top:22px}
 .tracker-form{max-width:720px;display:flex;flex-direction:column;gap:10px;margin:8px 0 18px}
-.tracker-form label{display:flex;flex-direction:column;gap:4px}
+/* Tracker-Entry-Forms zweispaltig (Felix-Feedback 2026-11-03: "nimmt zu viel
+   platz ein. vllt. kann man das zweispaltig machen"): Grid mit zwei Spalten,
+   jedes Feld steht in einer der beiden Spalten. Elemente mit .grow (z. B. der
+   Kommentar) spannen beide Spalten. Buttons und versteckte Inputs ebenso. */
+.tracker-form{display:grid !important;grid-template-columns:repeat(2, minmax(0, 1fr));gap:10px 16px;align-items:end}
+.tracker-form label{display:flex;flex-direction:column;gap:4px;margin:0;min-width:0}
+.tracker-form label.grow,
+.tracker-form .form-actions,
+.tracker-form > input[type="hidden"]{grid-column:1 / -1}
+.tracker-form input[type="date"],
+.tracker-form input[type="number"],
+.tracker-form input[type="text"],
+.tracker-form select{width:100%;box-sizing:border-box}
 .tracker-type-label select{max-width:360px}
 .tracker-form textarea{min-height:72px;font-family:inherit}
 /* Conditional fields driven by data-attributes the small app.js script
@@ -375,7 +527,34 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
   padding:16px}
 .form-inline{display:flex;flex-direction:column;gap:10px;max-width:720px}
 .form-inline label{display:flex;flex-direction:column;gap:4px}
+/* Fix #177: .form-inline label{display:flex} ueberschreibt die Browser-
+   Default-Regel [hidden]{display:none} (hoehere Spezifitaet) - deshalb
+   wurde das Kunden-Label bei internen Projekten trotz hidden-Attribut
+   noch angezeigt. Diese Regel macht das explizit rueckgaengig. */
+.form-inline label[hidden]{display:none}
 .form-inline-title{margin:0 0 8px;font-size:16px}
+/* Fix #177: readonly-Textfeld (z.B. "Internes Projekt" bei gesperrter
+   Projektart) - sieht aus wie ein Input, aber ist nur Text, nicht
+   fokussierbar. */
+.input-readonly{padding:9px 11px;margin-top:4px;background:var(--panel);color:var(--ink);
+  font-size:13px;border:1px solid var(--line);border-radius:9px;
+  opacity:.85;cursor:default}
+/* Felix-Feedback 2026-11-09 (Fix #136): persoenliches Profil - kompakte,
+   auf einer Baseline ausgerichtete Radio-Row. .form-inline mit
+   flex-direction:column stapelte die Labels und deren Inputs waren wegen
+   .form-inline label{flex-direction:column} einen Textblock ueber dem
+   Radio - das wirkte zerfleddert. */
+.profile-form{max-width:720px}
+.profile-section-title{margin:0 0 10px;font-size:16px}
+.profile-radio-row{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.profile-radio{display:inline-flex;align-items:center;gap:6px;cursor:pointer;line-height:1}
+.profile-radio input[type=radio]{margin:0}
+.profile-save{margin-left:auto}
+.health-row{display:flex;align-items:center;gap:10px;padding:6px 0;flex-wrap:wrap}
+.health-row + .health-row{border-top:1px solid var(--line)}
+.health-row-label{flex:1 1 auto;min-width:0;font-weight:600}
+.health-row input.health-row-date{width:11em;margin-top:0;flex:0 0 auto}
+.health-row input.health-row-days{width:6em;margin-top:0;flex:0 0 auto}
 .report-empty-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:8px 0;border-bottom:1px solid var(--line)}
 .report-empty-list li:last-child{border-bottom:0}
@@ -404,6 +583,49 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .task-picker label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);margin:0}
 .task-picker select{width:100%}
 .timer-start .task-picker{flex:1 1 100%;margin-bottom:0}
+/* Felix-Feedback 2026-11-09 (Fix #141): Inline-Create-Panel fuer "+ Neue
+   Aufgabe". Spannt ueber alle 4 Picker-Spalten + sitzt unter dem Grid. */
+.task-picker .tp-new-task{grid-column:1/-1;display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px dashed var(--brand);border-radius:8px;background:color-mix(in oklab, var(--panel), var(--brand) 4%)}
+.task-picker .tp-new-task[hidden]{display:none}
+.task-picker .tp-new-task input[type=text]{width:100%}
+.task-picker .tp-new-task-hint{margin:0;font-size:12px}
+/* Felix-Feedback 2026-11-09 (Fix #149): Im Dialog ist der Picker vertikal
+   gestapelt (tp-stack), damit die 5 Dropdowns (Projektart + Kunde +
+   Projekt + Arbeitspaket + Aufgabe) auf schmaler Dialog-Breite nicht
+   zusammenbrechen. Ausserhalb des Dialogs bleibt das 4-Spalten-Grid. */
+.task-picker.tp-stack{display:flex;flex-direction:column;gap:8px}
+.cal-dialog-task-picker{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.cal-dialog-task-picker > label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);margin:0}
+/* Fix #156: Felix-Feedback 2026-11-09 - internes Projekt soll das Kunde-
+   Feld komplett ausblenden. JS setzt [hidden], aber display:flex der
+   Picker-Labels ueberschreibt das Default [hidden]{display:none}. Hier
+   explizit wiederherstellen. Gleicher Bug-Typ wie bei #calTaskWrap. */
+.cal-dialog-task-picker > label[hidden],
+.task-picker label[hidden],
+.task-picker .tp-client-label[hidden]{display:none}
+/* Felix-Feedback 2026-11-09 (Fix #150/#151): [hidden] ist default
+   display:none, aber die Klassenregel oben (display:flex) ueberschreibt
+   das mit gleicher Spezifitaet. Deshalb hier den Hidden-Zustand explizit
+   festhalten - der Task-Picker verschwindet bei Prozess + Abwesenheit
+   komplett (nur bei Projekt-Zeit sichtbar). */
+#calTaskWrap[hidden]{display:none}
+#calHoursWrap[hidden],#calTimeRow[hidden],#calDateRow[hidden]{display:none}
+/* Felix-Feedback 2026-11-09 (#143): Projektart-Pills in der Projekt-Liste.
+   Farbkodierung nach ckey - kundenprojekt=blau, internes_projekt=grau,
+   foerderprojekt=gold - eigene pro Pill, sodass sie auch dann sinnvoll
+   bleiben, wenn die Admin spaeter weitere Kategorien anlegt. */
+.pill-cat{display:inline-block;padding:1px 8px;border-radius:9999px;font-size:11px;font-weight:600;border:1px solid transparent;background:rgba(148,163,184,.14);color:var(--muted)}
+.pill-cat-kundenprojekt{background:rgba(59,130,246,.12);color:#1d4ed8;border-color:rgba(59,130,246,.3)}
+.pill-cat-internes_projekt{background:rgba(148,163,184,.18);color:#475569;border-color:rgba(148,163,184,.35)}
+.pill-cat-foerderprojekt{background:rgba(234,179,8,.16);color:#854d0e;border-color:rgba(234,179,8,.4)}
+:root[data-theme="dark"] .pill-cat-kundenprojekt{color:#93c5fd;border-color:rgba(59,130,246,.45)}
+:root[data-theme="dark"] .pill-cat-internes_projekt{color:#cbd5e1;border-color:rgba(148,163,184,.45)}
+:root[data-theme="dark"] .pill-cat-foerderprojekt{color:#facc15;border-color:rgba(234,179,8,.5)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .pill-cat-kundenprojekt{color:#93c5fd;border-color:rgba(59,130,246,.45)}
+  :root:not([data-theme="light"]) .pill-cat-internes_projekt{color:#cbd5e1;border-color:rgba(148,163,184,.45)}
+  :root:not([data-theme="light"]) .pill-cat-foerderprojekt{color:#facc15;border-color:rgba(234,179,8,.5)}
+}
 @media (max-width:820px){
   .task-picker{grid-template-columns:1fr}
 }
@@ -414,9 +636,181 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .chart-box{position:relative;height:300px}
 .chart-legend{list-style:none;margin:12px 0 0;padding:0;font-size:13px}
 .chart-legend li{display:flex;align-items:center;gap:8px;padding:3px 0}
+/* Chart-Legende horizontal (Pro-Vorbild): Eintraege flossen vorher untereinander,
+   das zog eine Burn-Up-Legende mit 5-6 Serien uebermaessig in die Hoehe und
+   entsprach nicht dem gewohnten Legendenbild. Rastereintraege (chart-legend-grid)
+   bleiben davon ausgenommen. */
+.chart-legend:not(.chart-legend-grid){display:flex;flex-wrap:wrap;column-gap:20px;row-gap:2px}
+.chart-legend:not(.chart-legend-grid) li{flex:none;padding:2px 0}
+.chart-legend:not(.chart-legend-grid) .lg-lbl{flex:none;white-space:nowrap}
 .lg-dot{width:10px;height:10px;border-radius:3px;flex:none}
 .lg-lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lg-val{color:var(--muted);white-space:nowrap}
+.lg-sw{display:inline-block;width:12px;height:12px;border-radius:2px;flex:none;margin-right:4px;vertical-align:middle}
+.lg-dash{display:inline-block;width:18px;height:0;border-top:2px dashed var(--ink);flex:none;margin-right:4px;vertical-align:middle}
+/* Linien-Swatches (Pro-Vorbild): zeigen in der Legende denselben Strich wie die
+   tatsaechlich gezeichnete Kurve - durchgezogen bzw. gestrichelt in der Serienfarbe.
+   border-top-color wird vom JS inline gesetzt. */
+.lg-line{display:inline-block;width:18px;height:0;border-top:3px solid;flex:none;margin-right:4px;vertical-align:middle}
+.lg-line-dashed{border-top-style:dashed}
+/* Klickbare Legenden-Chips (Pro-Vorbild, Felix-Feedback 2026-11-06): jede
+   Kurve laesst sich per Klick auf ihren Legendeintrag ein-/ausblenden. Der
+   Chip ist ein <button> ohne Default-Button-Look; ausgeschaltete Chips sind
+   abgedunkelt + durchgestrichen - visuell eindeutig "aus". */
+.chart-legend .lg-chip{appearance:none;background:transparent;border:0;padding:0;margin:0;font:inherit;color:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:6px;border-radius:4px}
+.chart-legend .lg-chip:hover{background:rgba(148,163,184,.12)}
+.chart-legend .lg-chip:focus-visible{outline:2px solid var(--brand);outline-offset:1px}
+.chart-legend .lg-chip.is-off{opacity:.4}
+.chart-legend .lg-chip.is-off .lg-lbl{text-decoration:line-through}
+.lg-svg{flex:none;margin-right:4px;vertical-align:middle}
+/* Flaechen-Swatch fuer fillBetween-Eintraege: als SVG-Rect gerendert (CSP-clean -
+   style-src-attr 'none' blockiert inline style="background:..."). Theme-abhaengige
+   Deckkraft ueber fill-opacity: im Light-Mode halbtransparent wie die eigentliche
+   Chart-Flaeche, im Dark-Mode voll deckend, sonst verschwindet das kleine
+   Rechteck vor dunklem Panel optisch komplett (Felix-Feedback 2026-11-03). */
+.lg-area-rect{fill-opacity:.55}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .lg-area-rect{fill-opacity:1}
+}
+:root[data-theme="dark"] .lg-area-rect{fill-opacity:1}
+:root[data-theme="light"] .lg-area-rect{fill-opacity:.55}
+.chart-tip{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.4;color:var(--ink);pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.08);max-width:220px;z-index:5}
+.chart-tip .muted{color:var(--muted)}
+
+/* v1.0 F2: Projekt-Cockpit */
+.pill-ok{background:#dcfce7;color:#166534}
+.pill-warn{background:#fef3c7;color:#92400e}
+.pill-progress{background:#dbeafe;color:#1e3a8a}
+.pill-date_shift{background:#ede9fe;color:#5b21b6}
+.pill-status_report{background:#f3f4f6;color:#374151}
+:root[data-theme="dark"] .pill-ok{background:#14532d;color:#bbf7d0}
+:root[data-theme="dark"] .pill-warn{background:#78350f;color:#fde68a}
+:root[data-theme="dark"] .pill-progress{background:#1e3a8a;color:#dbeafe}
+:root[data-theme="dark"] .pill-date_shift{background:#5b21b6;color:#ede9fe}
+:root[data-theme="dark"] .pill-status_report{background:#374151;color:#f3f4f6}
+
+.tracker-timeline{list-style:none;margin:0;padding:0}
+.tracker-timeline .tt-item{border-left:3px solid var(--line);padding:8px 0 8px 14px;margin-left:4px}
+.tracker-timeline .tt-item.tt-progress{border-left-color:#2563eb}
+.tracker-timeline .tt-item.tt-date_shift{border-left-color:#8b5cf6}
+.tracker-timeline .tt-item.tt-status_report{border-left-color:#94a3b8}
+.tracker-timeline .tt-head{display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap}
+.tracker-timeline .tt-body{margin-top:4px;font-size:14px}
+.tracker-timeline .tt-note{margin-top:4px}
+
+/* Tracker-Edit (Pro-UI-Paritaet, Felix-Feedback 2026-11-06).
+   Head-Layout: Inhalt links (Datum, User, Pill) UND rechts als .tt-actions
+   die Bearbeiten/X-Buttons, vertikal mittig aligned durch das align-items
+   am tt-head. Bearbeiten-Button togglet .is-editing an der <li>; CSS
+   versteckt das X nur in dieser Zeile und zeigt das .tt-edit-Panel unter
+   dem Body (dadurch laeuft die Form in voller <li>-Breite). */
+.tracker-timeline .tt-actions{margin-left:auto;display:inline-flex;align-items:center;gap:4px}
+.tracker-timeline .tt-edit-toggle{padding:2px 8px}
+.tracker-timeline .tt-del-form{display:inline-flex;margin:0}
+.tracker-timeline .tt-del{appearance:none;background:transparent;border:0;color:var(--muted);cursor:pointer;padding:2px 6px;font-size:16px;line-height:1;border-radius:4px}
+.tracker-timeline .tt-del:hover{color:#ef4444;background:rgba(239,68,68,.08)}
+.tracker-timeline .tt-item.is-editing .tt-del-form{visibility:hidden}
+.tracker-timeline .tt-item.is-editing .tt-edit-toggle{color:var(--brand)}
+.tracker-timeline .tt-edit{margin-top:8px}
+.tracker-timeline .tt-edit[hidden]{display:none}
+.tracker-timeline .tt-edit-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 12px;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--panel-alt,rgba(0,0,0,.03))}
+.tracker-timeline .tt-edit-form label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:3px}
+.tracker-timeline .tt-edit-form input,.tracker-timeline .tt-edit-form select,.tracker-timeline .tt-edit-form textarea{font:inherit;padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink)}
+.tracker-timeline .tt-edit-note{grid-column:1/-1}
+.tracker-timeline .tt-edit-note textarea{resize:vertical;min-height:52px}
+.tracker-timeline .tt-edit-actions{grid-column:1/-1;display:flex;gap:8px;align-items:center;margin-top:4px}
+
+/* Plan-Matrix */
+/* Felix-Feedback 2026-11-06: die Matrix hat deutlich mehr Spalten als in die
+   Card passen - sie MUSS horizontal scrollen (vorher war das inline
+   style="overflow-x:auto" - vom CSP style-src-attr 'none' blockiert, daher
+   ging die h-Box ueber den Card-Rand). Zusaetzlich vertikal auf ~5 Zeilen
+   begrenzen, Header + Namen-Spalte sticky damit man beim Scrollen die
+   Orientierung behaelt, und die aktuelle Kalenderwoche mit einem senkrechten
+   Rahmen visuell markieren. */
+.plan-matrix-scroll{overflow:auto;max-height:calc(5 * 48px + 56px);border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+#planMatrix{margin:0}
+#planMatrix thead th{position:sticky;top:0;z-index:2;background:var(--panel)}
+#planMatrix thead th.plan-col-name,
+#planMatrix tbody td.plan-col-name{position:sticky;left:0;z-index:1;background:var(--panel);min-width:140px}
+#planMatrix thead th.plan-col-name{z-index:3}
+#planMatrix .plan-wk{min-width:68px}
+#planMatrix .plan-wk .plan-wk-date{display:block;font-weight:normal;font-size:11px;color:var(--muted)}
+#planMatrix .plan-ist{font-size:12px;color:var(--muted);text-align:right}
+#planMatrix .plan-soll-input{border:1px solid var(--line);border-radius:4px;padding:2px 4px;font-size:13px;width:4.5em;text-align:right}
+#planMatrix .plan-soll-input:focus{border-color:var(--brand);outline:none}
+#planMatrix td.plan-cell{padding:4px 6px;vertical-align:top}
+/* Aktuelle Kalenderwoche: senkrechter Rahmen links+rechts, damit die
+   gesamte Spalte visuell zusammengefasst ist (nicht nur die Header-Zelle). */
+#planMatrix .is-current-week{box-shadow:inset 2px 0 0 var(--brand),inset -2px 0 0 var(--brand)}
+#planMatrix thead th.is-current-week{color:var(--brand)}
+
+/* Mitarbeiter-Cockpit Einzelansicht (Pro-Parity, Felix-Feedback 2026-11-07).
+   Infoblock als Grid, 4 KPI-Tiles als Flex-Row - entspricht der Pro-UI. */
+.emp-title{margin:0 0 4px}
+.emp-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px 18px;margin-top:4px}
+.emp-info-grid .info-lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+.emp-tiles{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
+.emp-tile{flex:1 1 180px;min-width:180px;padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:var(--panel);text-align:center}
+.emp-tile .emp-tile-val{font-size:28px;font-weight:700;margin:0 0 4px;color:var(--brand)}
+.emp-tile .emp-tile-lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.emp-tile .emp-tile-sub{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.3}
+.emp-tile.emp-tile-warn{background:rgba(245,158,11,.1)}
+.emp-tile.emp-tile-warn .emp-tile-val{color:#f59e0b}
+.emp-tile.emp-tile-ok .emp-tile-val{color:#10b981}
+.emp-tile.emp-tile-low .emp-tile-val{color:#94a3b8}
+
+/* v1.0 F3: Firmen-Cockpit Pro-Teaser-Tiles */
+.pro-teaser-tile{display:block;flex:1 1 150px;min-width:150px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel);text-decoration:none;color:var(--ink);opacity:.75;transition:opacity .15s}
+.pro-teaser-tile:hover{opacity:1;border-color:var(--brand)}
+.pro-teaser-tile .tile-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.pro-teaser-tile .tile-value{font-size:22px;font-weight:700;margin:4px 0;color:var(--muted)}
+.pro-teaser-tile .tile-cta{font-size:11px;color:var(--brand)}
+/* Felix-Feedback 2026-11-06: fiktive Demozahlen in Pro-Teaser-Tiles
+   visuell deutlich als Beispiel markieren - ausgegraut + gestrichelte
+   Unterstreichung, damit niemand sie mit echten Zahlen verwechselt. */
+.tile-value-demo{text-decoration:underline dashed var(--line);text-underline-offset:3px;opacity:.6}
+
+/* Dashboard: Zeitaufzeichnung-Titel ueber dem Timer, dezent */
+.timer-card .timer-card-title{font-size:15px;margin:0 0 10px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px}
+
+/* v1.0 Kalender-Dialog: Prozess-Bloecke + Absence-Badges + Dialog-Styles */
+/* Fix #160: user-select:none verhindert, dass der native Browser-Text-
+   Drag den JS-Drag-Range im Zeit-Grid abfaengt. */
+.cal-day-grid{cursor:crosshair;user-select:none;-webkit-user-select:none}
+.cal-event{appearance:none;border:none;font:inherit;text-align:left;cursor:pointer;color:inherit}
+.cal-event.cal-process{background:#f59e0b;color:#1f2937}
+:root[data-theme="dark"] .cal-event.cal-process{background:#92400e;color:#fde68a}
+/* Fix #180: Ueberstundenabbau als Zeit-Block im Grid, grauer als Prozesse. */
+.cal-event.cal-overtime{background:#94a3b8;color:#1f2937}
+:root[data-theme="dark"] .cal-event.cal-overtime{background:#475569;color:#e2e8f0}
+.cal-day-absence{display:block;width:calc(100% - 8px);margin:4px;padding:3px 6px;background:#10b981;color:#fff;border:none;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;text-align:left;line-height:1.2}
+:root[data-theme="dark"] .cal-day-absence{background:#065f46;color:#d1fae5}
+.cal-day-absence:hover{opacity:.85}
+
+.cal-dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:20px;max-width:520px;width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.cal-dialog::backdrop{background:rgba(0,0,0,.45)}
+.cal-dialog form > label,.cal-dialog form > .row{display:block;margin-bottom:10px}
+.cal-dialog form .row{display:flex;gap:10px}
+.cal-dialog form .row > .grow{flex:1}
+.cal-dialog h3{margin:0 0 14px;font-size:17px}
+.cal-dialog select,.cal-dialog input[type=text],.cal-dialog input[type=date],.cal-dialog input[type=datetime-local]{width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--ink);font:inherit;margin-top:3px}
+.cal-dialog .form-actions{display:flex;gap:8px;margin-top:14px;align-items:center}
+.cal-dialog .form-actions .btn-danger{margin-left:auto}
+
+/* v1.0 Entries: prominente Reiter oben (Kalender | Liste) */
+.entries-tabs{display:flex;gap:4px;align-items:center;margin:0 0 12px;border-bottom:1px solid var(--line);padding:0 4px}
+.entries-tabs .entries-tab{padding:10px 18px;color:var(--muted);text-decoration:none;font-weight:500;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;position:relative;top:1px}
+.entries-tabs .entries-tab:hover{color:var(--ink);background:var(--panel-alt,rgba(0,0,0,.03))}
+.entries-tabs .entries-tab.is-active{color:var(--ink);background:var(--panel);border-color:var(--line);border-bottom-color:var(--panel)}
+.entries-tabs .entries-tab-spacer{flex:1}
+:root[data-theme="dark"] .entries-tabs .entries-tab:hover{background:rgba(255,255,255,.04)}
+
+/* Entries-Liste: Typ-Pills */
+.pill-process{background:#fef3c7;color:#92400e}
+.pill-absence{background:#d1fae5;color:#065f46}
+:root[data-theme="dark"] .pill-process{background:#78350f;color:#fde68a}
+:root[data-theme="dark"] .pill-absence{background:#065f46;color:#d1fae5}
 
 /* Report traffic-light cells */
 .cell-green{background:var(--cell-green-bg);color:var(--cell-green-ink)}
@@ -493,6 +887,11 @@ body:has(.sidepanel) .foot{padding-right:200px}
   -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
   opacity:.9;transition:opacity .15s}
 .sp-brand:hover{opacity:1}
+/* Rotator-Container: flext ueber die gesamte Restspalte des Sidepanels
+   (Felix-Feedback 2026-11-06 Runde 3: Banner soll wieder die ganze Box
+   ausfuellen). Die sp-item.is-image-Bilder fuellen diese Flaeche komplett
+   mit object-fit:cover; dass das 300x600-Portrait-Banner dabei links/
+   rechts beschnitten wird, ist bewusst akzeptiert. */
 .sp-rotator{position:relative;flex:1 1 auto;min-height:0}
 .sp-item{position:absolute;inset:0 0 22px 0;display:flex;flex-direction:column;gap:10px;
   background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
@@ -574,18 +973,36 @@ body:has(.sidepanel) .foot{padding-right:200px}
    Hour row = 56 px, 24 hours = 1344 px total. The outer container caps
    that at 70vh with overflow-y so a typical screen scrolls to the busy
    hours instead of showing all 24. */
-.cal-week{display:grid;grid-template-columns:52px 1fr;gap:0;
-  max-height:70vh;overflow-y:auto;border:1px solid var(--line);border-radius:9px;
+/* Felix-Feedback 2026-11-08 (#109): Durchgehende Kopfzeile ueber UHRZEITEN
+   UND Tagespalten - EINE Zeile, Corner-Zelle oben links, dann Mo..So.
+   `.cal-week` ist deshalb ein 3-Zeilen-Grid: Zeile 1 = Head (spannt beide
+   Spalten), Zeile 2 = Hours + Days. `.cal-week` muss der EINZIGE
+   Scroll-Container sein, sonst verliert `.cal-week-head { sticky top:0 }`
+   seinen Bezug und wandert mit nach unten. */
+.cal-week{display:grid;grid-template-columns:52px 1fr;grid-template-rows:auto 1fr;gap:0;
+  max-height:70vh;overflow:auto;border:1px solid var(--line);border-radius:9px;
   scroll-padding-top:0}
-.cal-week .cal-hours{display:grid;grid-template-rows:repeat(24,56px);border-right:1px solid var(--line);background:var(--panel)}
+.cal-week-head{grid-column:1 / -1;display:grid;grid-template-columns:52px repeat(7, minmax(0,1fr));
+  position:sticky;top:0;z-index:4;background:var(--panel);border-bottom:1px solid var(--line)}
+.cal-week-corner{border-right:1px solid var(--line);background:var(--panel)}
+/* Felix-Feedback 2026-11-09 (Fix #147): Spalten der Kopfzeile sind
+   vertikaler Flex, Mood/Flow sitzen am UNTERRAND (margin-top:auto auf
+   .cal-sent-day-head). Sobald eine Abwesenheits-/Urlaubsreihe die
+   Kopfzeile verlaengert, bleiben die Mood-Smileys ueber alle Spalten
+   auf einer gemeinsamen Baseline am Boden - sie rutschen nicht nach
+   oben. Label bleibt oben, Pensum darunter, Mood am Boden. */
+.cal-week-dayhead,.cal-day-head{display:flex;flex-direction:column;align-items:center;padding:6px 8px;font-size:12px;font-weight:600;color:var(--ink);text-align:center;background:var(--panel);border-right:1px solid var(--line)}
+.cal-week-dayhead:last-child,.cal-day-head:last-child{border-right:0}
+.cal-week-dayhead .cal-sent-day-head{margin-top:auto}
+.cal-week-dayhead.is-today,.cal-day-head.is-today{color:var(--brand)}
+.cal-week-dayhead.is-holiday,.cal-day-head.is-holiday{color:var(--brand)}
+.cal-week-dayhead.is-nonworking,.cal-day-head.is-nonworking{color:var(--muted);font-style:italic}
+.cal-week .cal-hours{display:grid;grid-template-rows:repeat(24,56px);border-right:1px solid var(--line);background:var(--panel);
+  position:sticky;left:0;z-index:3}
 .cal-hour-label{font-size:11px;color:var(--muted);padding:2px 6px;text-align:right}
 .cal-days{display:grid;grid-template-columns:repeat(7,1fr);min-width:0}
 .cal-day{display:flex;flex-direction:column;min-width:0;border-right:1px solid var(--line)}
 .cal-day:last-child{border-right:0}
-.cal-day-head{position:sticky;top:0;z-index:2;background:var(--panel);
-  padding:6px 8px;font-size:12px;font-weight:600;color:var(--ink);
-  border-bottom:1px solid var(--line);text-align:center}
-.cal-day-today .cal-day-head{color:var(--brand)}
 
 /* Holidays list card below the week grid (#110). */
 .holidays-card{margin-top:18px}
@@ -610,11 +1027,89 @@ body:has(.sidepanel) .foot{padding-right:200px}
   display:flex;align-items:center;gap:4px;
   text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   cursor:help}
-.cal-day-holiday .cal-day-head{color:var(--brand)}
 .cal-holiday-dot{color:var(--brand);font-size:10px}
 .cal-holiday-name{overflow:hidden;text-overflow:ellipsis}
 .cal-day-grid{position:relative;flex:1;background:var(--soft);
   height:calc(56px * 24);cursor:crosshair;user-select:none}
+/* Felix-Feedback 2026-11-08 (#99): Tagessoll-Klammer rechts der Buchungen.
+   Target = brand-farbene Klammer; Over = gestrichelt, warnfarben. Beide
+   sind absolut im Day-Grid, top/height kommen aus dem nonce-Style. */
+/* Felix-Feedback 2026-11-09 (Fix #155): Pillen sitzen INNERHALB der
+   ersten Dayhead-Zelle ihres Spans, zwischen Wochentag-Label (oben)
+   und Pensum/Mood (unten). Width wird pro Pill via nonce-Style auf
+   span*100% - padding gesetzt - skaliert damit sauber mit der
+   Spaltenbreite auch unter 820 px. Die dayhead braucht overflow:visible,
+   damit die Pille ueber die Nachbar-Cells laufen darf. */
+/* Felix-Feedback 2026-11-09 (Fix #161, Korrektur): Pille sitzt ZWISCHEN
+   Wochentag-Label (oben) und Pensum-Badge (darunter). Umsetzung: das
+   Label bekommt via :has() ein margin-bottom, das den Platz fuer die
+   Pille freiraeumt - Pensum + Mood rutschen dadurch nach unten. Die
+   Pille selbst sitzt per position:absolute auf top:22px, direkt
+   unterhalb des Labels. */
+.cal-week-dayhead{position:relative;overflow:visible}
+/* Fix #173: Label-Margin fuer die Pill-Zone wird jetzt EINHEITLICH pro
+   Woche gesetzt (inline <style> im View, Selector .cal-week-head
+   .cal-week-dayhead-label), damit Pensum-Badges aller Tage auf gleicher
+   Hoehe sitzen. Diese alte :has()-Regel pro-Tag ist obsolet. */
+.cal-absbar-pill{position:absolute;left:4px;top:22px;background:rgba(234,179,8,.18);color:#854d0e;border:1px solid rgba(234,179,8,.45);border-radius:9999px;padding:2px 10px;font-size:11px;font-weight:600;line-height:1.3;text-align:center;cursor:pointer;min-height:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;z-index:2;pointer-events:auto}
+.cal-absbar-pill:hover{filter:brightness(1.05)}
+.cal-absbar-pill-urlaub{background:rgba(234,179,8,.18);color:#854d0e;border-color:rgba(234,179,8,.45)}
+.cal-absbar-pill-sonderurlaub{background:rgba(59,130,246,.14);color:#1d4ed8;border-color:rgba(59,130,246,.4)}
+.cal-absbar-pill-krankheit,.cal-absbar-pill-ueberstunden{background:rgba(148,163,184,.18);color:#475569;border-color:rgba(148,163,184,.35)}
+:root[data-theme="dark"] .cal-absbar-pill-urlaub{color:#facc15;border-color:rgba(234,179,8,.55)}
+:root[data-theme="dark"] .cal-absbar-pill-sonderurlaub{color:#93c5fd;border-color:rgba(59,130,246,.55)}
+:root[data-theme="dark"] .cal-absbar-pill-krankheit,
+:root[data-theme="dark"] .cal-absbar-pill-ueberstunden{color:#cbd5e1;border-color:rgba(148,163,184,.5)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .cal-absbar-pill-urlaub{color:#facc15;border-color:rgba(234,179,8,.55)}
+  :root:not([data-theme="light"]) .cal-absbar-pill-sonderurlaub{color:#93c5fd;border-color:rgba(59,130,246,.55)}
+  :root:not([data-theme="light"]) .cal-absbar-pill-krankheit,
+  :root:not([data-theme="light"]) .cal-absbar-pill-ueberstunden{color:#cbd5e1;border-color:rgba(148,163,184,.5)}
+}
+/* Drag-Selection Highlight waehrend des Ziehens in der Kopfzeile. */
+.cal-week-head.is-dragging{cursor:crosshair;user-select:none}
+.cal-week-dayhead.is-drag-range{background:color-mix(in oklab, var(--panel), var(--brand) 15%)}
+
+/* Felix-Feedback 2026-11-09 (#148/#153): Monatsansicht - Abwesenheits-
+   Pillen sitzen als position:absolute-Overlay in der FIRST-cell ihres
+   Spans, mit Breite = span * 100% - padding. Dadurch verdrangen sie den
+   Grid-Auto-Flow der Kacheln nicht mehr. Cells brauchen position:relative
+   + overflow:visible, damit die Pille ueber die Spannweite laufen kann. */
+.cal-month-cell{position:relative;overflow:visible}
+.cal-month-abs-pill{position:absolute;top:4px;left:4px;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;line-height:1.3;text-align:center;cursor:pointer;z-index:3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:rgba(234,179,8,.2);color:#854d0e;border:1px solid rgba(234,179,8,.5);pointer-events:auto}
+.cal-month-abs-pill-urlaub{background:rgba(234,179,8,.2);color:#854d0e;border-color:rgba(234,179,8,.5)}
+.cal-month-abs-pill-sonderurlaub{background:rgba(59,130,246,.16);color:#1d4ed8;border-color:rgba(59,130,246,.45)}
+.cal-month-abs-pill-krankheit,.cal-month-abs-pill-ueberstunden{background:rgba(148,163,184,.2);color:#475569;border-color:rgba(148,163,184,.4)}
+:root[data-theme="dark"] .cal-month-abs-pill-urlaub{color:#facc15;border-color:rgba(234,179,8,.6)}
+:root[data-theme="dark"] .cal-month-abs-pill-sonderurlaub{color:#93c5fd;border-color:rgba(59,130,246,.55)}
+:root[data-theme="dark"] .cal-month-abs-pill-krankheit,
+:root[data-theme="dark"] .cal-month-abs-pill-ueberstunden{color:#cbd5e1;border-color:rgba(148,163,184,.55)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .cal-month-abs-pill-urlaub{color:#facc15;border-color:rgba(234,179,8,.6)}
+  :root:not([data-theme="light"]) .cal-month-abs-pill-sonderurlaub{color:#93c5fd;border-color:rgba(59,130,246,.55)}
+  :root:not([data-theme="light"]) .cal-month-abs-pill-krankheit,
+  :root:not([data-theme="light"]) .cal-month-abs-pill-ueberstunden{color:#cbd5e1;border-color:rgba(148,163,184,.55)}
+}
+.cal-month-grid.is-dragging{cursor:crosshair;user-select:none}
+.cal-month-cell.is-drag-range{background:color-mix(in oklab, var(--panel), var(--brand) 15%)}
+
+/* Felix-Feedback 2026-11-09 (#138): Jetzt-Linie - 2px rote Linie quer durch
+   die heutige Tag-Column, mit kleinem Dot am linken Rand. Pro-Parity. */
+.cal-now-line{position:absolute;left:-3px;right:0;height:2px;background:#ef4444;pointer-events:none;z-index:3}
+.cal-now-line::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:#ef4444}
+:root[data-theme="dark"] .cal-now-line,
+:root[data-theme="dark"] .cal-now-line::before{background:#f87171}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .cal-now-line,
+  :root:not([data-theme="light"]) .cal-now-line::before{background:#f87171}
+}
+.cal-day-bracket{position:absolute;right:-2px;width:5px;border:1px solid var(--brand);border-left:0;border-radius:0 3px 3px 0;pointer-events:none;z-index:2}
+.cal-day-bracket-target{border-color:var(--brand)}
+.cal-day-bracket-over{border-style:dashed;border-color:#f59e0b}
+:root[data-theme="dark"] .cal-day-bracket-over{border-color:#fbbf24}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .cal-day-bracket-over{border-color:#fbbf24}
+}
 .cal-day-today .cal-day-grid{background:var(--panel)}
 /* Click-drag placeholder for new entries (fixes #64). JS updates
    --draft-top / --draft-height via setProperty on the element so the
@@ -741,8 +1236,14 @@ body:has(.sidepanel) .foot{padding-right:200px}
   .grid-tiles{grid-template-columns:1fr}
   .ref{columns:1}
   .update-banner{position:static;width:auto;margin:12px 0 0}
-  .cal-days{overflow-x:auto}
   .cal-day{min-width:120px}
+  /* Felix-Feedback 2026-11-09 (#125): bei schmaler Viewport laeuft die
+     cal-days-Row horizontal ueber (min-width 120px pro Spalte), aber die
+     Head-Row scalierte mit 1fr und wurde reingequetscht. Dadurch rutschte
+     oben der Wochentag auf die falsche Spalte (Neujahr landete optisch
+     auf 03.01.). Fix: Kopfzeile bekommt denselben minmax-Vertrag wie die
+     cal-day-Spalten, damit beide synchron bleiben. */
+  .cal-week-head{grid-template-columns:52px repeat(7, minmax(120px, 1fr))}
   .external-cal-items{grid-template-columns:1fr}
 }
 

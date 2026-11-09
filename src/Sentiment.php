@@ -33,10 +33,37 @@ final class Sentiment
      */
     public const GRANULARITIES = ['day' => 'Taeglich', 'week' => 'Woechentlich'];
 
-    public static function granularity(): string
+    /**
+     * Felix-Feedback 2026-11-09 (#111): "Diese woechentliche oder taegliche
+     * Messung der Stimmung bitte in den Benutzerbereich reinlegen. Das kann
+     * dann jeder fuer sich selbst festlegen."
+     *
+     * Reihenfolge: User-Preference (Settings-Key sentiment_granularity_u<uid>)
+     * uebersteuert den System-Default. Ohne User (CLI, Login-Screen) oder
+     * ohne persoenliche Einstellung faellt der Aufruf auf
+     * sentiment_granularity (System-Default) + Fallback 'week' zurueck.
+     */
+    public static function granularity(?int $userId = null): string
     {
+        $uid = $userId ?? Auth::id();
+        if ($uid !== null) {
+            $own = (string) Settings::get('sentiment_granularity_u' . (int) $uid, '');
+            if (array_key_exists($own, self::GRANULARITIES)) {
+                return $own;
+            }
+        }
         $g = (string) Settings::get('sentiment_granularity', 'week');
         return array_key_exists($g, self::GRANULARITIES) ? $g : 'week';
+    }
+
+    /** Setzt die persoenliche Rhythmus-Preference eines Users. */
+    public static function setUserGranularity(int $userId, string $granularity): bool
+    {
+        if (!array_key_exists($granularity, self::GRANULARITIES)) {
+            return false;
+        }
+        Settings::set('sentiment_granularity_u' . $userId, $granularity);
+        return true;
     }
 
     /** Clamp a user-supplied value to the valid 1..5 range, or null if garbage. */
@@ -225,6 +252,108 @@ final class Sentiment
         ];
     }
 
+    /**
+     * Felix-Feedback 2026-11-08 (#101): "Teamstimmung bezieht sich dann auch
+     * auf das jeweilige Team". Community-1.0 hat noch keine eigene Team-
+     * Tabelle - wir leiten das Team aus `plan_allocations` ab: jeder User
+     * mit mindestens einer Zuweisung ist Teil des Projektteams.
+     *
+     * @return list<int>
+     */
+    public static function teamMemberIds(): array
+    {
+        $rows = DB::all(
+            'SELECT DISTINCT user_id FROM plan_allocations WHERE user_id IS NOT NULL ORDER BY user_id'
+        );
+        return array_map(static fn($r) => (int) $r['user_id'], $rows);
+    }
+
+    /**
+     * Felix-Feedback 2026-11-08 (#101): "wer alles in diesem Team drin ist"
+     * muss sichtbar werden. Liefert die User-Namen fuer die uebergebene
+     * User-ID-Liste; haelt sich an display_name (Fallback username).
+     *
+     * @param list<int> $userIds
+     * @return list<array{id:int,label:string}>
+     */
+    public static function userLabels(array $userIds): array
+    {
+        if ($userIds === []) { return []; }
+        $marks = implode(',', array_fill(0, count($userIds), '?'));
+        $rows = DB::all(
+            "SELECT id, COALESCE(NULLIF(display_name, ''), username) AS label
+               FROM users
+              WHERE id IN ($marks)
+           ORDER BY label ASC",
+            $userIds
+        );
+        return array_map(static fn($r) => ['id' => (int) $r['id'], 'label' => (string) $r['label']], $rows);
+    }
+
+    /**
+     * Felix-Feedback 2026-11-08 (#102/#104): Mitarbeiter-x-Woche-Smiley-Matrix.
+     * Liefert fuer jeden User und jede ISO-Woche der letzten $weeksBack
+     * Wochen den Durchschnitts-Mood + -Flow (null wenn nichts getrackt).
+     *
+     * Wochenanfang kommt aus CalendarLocale, damit der Wechsel auf z.B.
+     * Sonntag spaeter mitwandert.
+     *
+     * @param list<int> $userIds
+     * @return array<int,array<string,array{mood:?float,flow:?float}>>
+     *     [user_id => [iso_week_start_date => ['mood' => ?float, 'flow' => ?float]]]
+     */
+    public static function weeklyMoodMatrix(array $userIds, int $weeksBack = 12): array
+    {
+        $out = [];
+        if ($userIds === []) { return $out; }
+        $weeksBack = max(1, min(52, $weeksBack));
+        $today = new DateTimeImmutable('today');
+        $endWeek = CalendarLocale::weekStart($today);
+        $startWeek = $endWeek->modify('-' . ($weeksBack - 1) . ' week');
+        $from = $startWeek->format('Y-m-d');
+        $to   = $endWeek->modify('+6 days')->format('Y-m-d');
+
+        $marks = implode(',', array_fill(0, count($userIds), '?'));
+        $rows = DB::all(
+            "SELECT user_id, as_of, mood, flow
+               FROM sentiment_entries
+              WHERE user_id IN ($marks) AND as_of BETWEEN ? AND ?",
+            array_merge($userIds, [$from, $to])
+        );
+
+        $sum = []; // [uid][weekStart] => ['mood_sum'=>float,'mood_n'=>int,'flow_sum'=>float,'flow_n'=>int]
+        foreach ($rows as $r) {
+            try {
+                $d = new DateTimeImmutable((string) $r['as_of']);
+            } catch (Throwable) { continue; }
+            $wk = CalendarLocale::weekStart($d)->format('Y-m-d');
+            $uid = (int) $r['user_id'];
+            $sum[$uid][$wk] ??= ['mood_sum' => 0.0, 'mood_n' => 0, 'flow_sum' => 0.0, 'flow_n' => 0];
+            if ($r['mood'] !== null) {
+                $sum[$uid][$wk]['mood_sum'] += (float) $r['mood'];
+                $sum[$uid][$wk]['mood_n']   += 1;
+            }
+            if ($r['flow'] !== null) {
+                $sum[$uid][$wk]['flow_sum'] += (float) $r['flow'];
+                $sum[$uid][$wk]['flow_n']   += 1;
+            }
+        }
+
+        foreach ($userIds as $uid) {
+            $row = [];
+            for ($w = $startWeek; $w <= $endWeek; $w = $w->modify('+7 days')) {
+                $wk = $w->format('Y-m-d');
+                $cell = $sum[$uid][$wk] ?? null;
+                $row[$wk] = [
+                    'mood' => $cell && $cell['mood_n'] > 0 ? $cell['mood_sum'] / $cell['mood_n'] : null,
+                    'flow' => $cell && $cell['flow_n'] > 0 ? $cell['flow_sum'] / $cell['flow_n'] : null,
+                ];
+            }
+            $out[(int) $uid] = $row;
+        }
+        return $out;
+    }
+
     /** Mood emoji 1..5 — the classic smiley scale. */
     public static function moodEmoji(int $score): string
     {
@@ -302,7 +431,17 @@ final class Sentiment
     }
 
     /** Set a single dimension of the day, leaving the other dimension and the note untouched. */
-    public static function setDimension(int $userId, string $asOf, string $dim, int $score): void
+    /**
+     * Setzt (oder loescht) eine Dimension (mood|flow) fuer einen Tag.
+     *
+     * Felix-Feedback 2026-11-09 (Code-Review Fix #127): `$score === null`
+     * loescht den Wert (SQL NULL), statt 0 in die Spalte zu schreiben. Die
+     * JS-Picker (views/entries/_sentiment_picker_js.php) schicken bei einem
+     * Clear-Click `score=''`, der Controller normalisiert das zu null - hier
+     * muss das zu echtem NULL werden, sonst landet 0 in mood/flow (ausserhalb
+     * des dokumentierten 1..5-Range).
+     */
+    public static function setDimension(int $userId, string $asOf, string $dim, ?int $score): void
     {
         $col = $dim === 'flow' ? 'flow' : 'mood';
         $now = now();

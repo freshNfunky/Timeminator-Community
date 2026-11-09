@@ -11,7 +11,8 @@
  * @var string $pro_url
  */
 ?>
-<h1 class="page-title"><?= h(t('presets.h1', 'Presets')) ?></h1>
+<?php /* Felix-Feedback 2026-11-09 (Fix #144): Layout-Shell rendert den
+   page-title. Keine zweite h1.page-title hier. */ ?>
 <p class="page-sub muted"><?= h(t('presets.subtitle', 'Katalog- und Vorlagen-Einstellungen zentral an einer Stelle. Projektarten und Prozessarten liegen vorne, weitere Vorlagen folgen in Pro.')) ?></p>
 
 <div class="card">

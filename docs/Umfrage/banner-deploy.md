@@ -76,7 +76,7 @@ Da die Release unmittelbar ansteht, wird das bewusst in Kauf genommen — ein Zw
 lohnt den Aufwand nicht. Ein generischer, ID-basierter Shortlink-/Redirect-Dienst (bit.ly-Stil)
 ist als Future Work notiert: Issue #117.
 
-## Upload auf assets.felixschaller.com
+## Upload auf <your-feed-host>
 
 Erst Creative/Feed hochladen, dann `feed.json` neu generieren. Deploy-Methode (SSH/rsync) steht
 noch aus — Zielhost/-pfad bitte ergänzen:
@@ -87,5 +87,5 @@ noch aus — Zielhost/-pfad bitte ergänzen:
 # danach feed.json auf dem Server um das Item aus feed-item.json ergänzen
 ```
 
-> `assets.felixschaller.com` und `banner.felixschaller.com` teilen denselben Docroot; der
+> `<your-feed-host>` und `<legacy-banner-host>` teilen denselben Docroot; der
 > Server-Ordner heißt weiterhin `banner/`.

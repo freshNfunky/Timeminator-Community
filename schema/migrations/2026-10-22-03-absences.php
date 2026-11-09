@@ -124,7 +124,7 @@ if (!$tableExists('absences')) {
 $now = date('Y-m-d H:i:s');
 $defaults = [
     ['urlaub',       'Urlaub',                   10, 'vacation'],
-    ['krankheit',    'Ausfall wegen Krankheit',  20, 'sick'],
+    ['krankheit',    'Krankheit',                20, 'sick'],
     ['ueberstunden', 'Ueberstundenabbau',        30, 'overtime'],
 ];
 $check = $pdo->prepare('SELECT COUNT(*) FROM absence_categories WHERE ckey = ?');

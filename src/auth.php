@@ -128,3 +128,23 @@ function require_perm(string $permission): void
         exit;
     }
 }
+
+/**
+ * Felix-Feedback 2026-11-08 (#98/#100): manche Routen sind fuer mehrere
+ * Rollen zugaenglich (z.B. Mitarbeiter-Verwaltung fuer Admin UND HR), ohne
+ * dass der Admin seine Benutzer-Felder "freigibt". Dieser Helper durchlaesst,
+ * wenn mindestens eine der Permissions greift, und wirft sonst 403.
+ */
+function require_any_perm(string ...$permissions): void
+{
+    require_login();
+    foreach ($permissions as $p) {
+        if (Auth::can($p)) { return; }
+    }
+    http_response_code(403);
+    view('error', [
+        'code' => 403,
+        'message' => sprintf(t('err.no_permission', 'Keine Berechtigung fuer diese Aktion (%s).'), h(implode(' | ', $permissions))),
+    ], t('err.no_access_title', 'Kein Zugriff'));
+    exit;
+}

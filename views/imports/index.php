@@ -8,7 +8,7 @@
  * @var string $filter_to
  */
 ?>
-<h1 class="page-title"><?= h(t('imports.title', 'CSV-Import')) ?></h1>
+<?php /* Fix #144: page-title kommt aus der Layout-Shell. */ ?>
 
 <?php if ($preview): ?>
   <div class="card">

@@ -7,7 +7,7 @@
  */
 
 return [
-    // 'mysql' for production (public.felixschaller.com), 'sqlite' for local dev.
+    // 'mysql' for shared-hosting production, 'sqlite' for local dev.
     'db_driver' => 'sqlite',
 
     // --- MySQL / MariaDB (All-Inkl / kasserver) ---
@@ -34,8 +34,8 @@ return [
     // 0 = calendar day; 4 = the spec's 04:00 night boundary.
     'day_boundary_hour' => 4,
 
-    // Session cookie name (keep distinct so it does not collide with the
-    // other projects living on public.felixschaller.com).
+    // Session cookie name (keep distinct from other PHP apps sharing the
+    // same hostname to avoid session collisions).
     'session_name' => 'timeminator_sid',
 
     // Set true only when served over HTTPS (production). Locally: false.
@@ -47,28 +47,34 @@ return [
     // Show PHP errors in the browser. true for local dev, false in production.
     'debug' => true,
 
-    // Link shown in the nav bar / footer pointing to the Pro edition
+    // Link shown in the nav bar pointing to the Pro edition's marketing site
     // (Planung/Budget/Report, Angebote, Rechnungen + Buchhaltungs-Konnektoren).
-    'pro_url' => 'https://timeminator.felixschaller.com',
+    'pro_url' => 'https://timeminator.com',
+
+    // Link shown in the footer + sidepanel brand ("mehr Funktionen mit
+    // Timeminator Pro") - zeigt auf die oeffentliche Demo-Instanz, damit
+    // Interessenten Pro direkt ausprobieren koennen. Niemals auf eine
+    // private Instanz setzen.
+    'pro_demo_url' => 'https://demo.timeminator.com',
 
     // --- Updates / registration (Issue #2) ---
     // Release channel for the update check. GitHub Releases API by default.
     // Adjust the repo slug to wherever the Community Edition is published.
     'update_manifest_url' => 'https://api.github.com/repos/freshNfunky/Timeminator-Community/releases/latest',
     // Endpoint the OPTIONAL, opt-in installation registration is sent to.
-    // This is the lead-generator (Issue #2c): only email/domain/version, off by default.
-    'registration_endpoint' => 'https://license.felixschaller.com/timeminator-registry/register.php',
+    // Off by default; set to your own license/registry server if you run one.
+    // Only email/domain/version are sent; see docs for the exact payload.
+    'registration_endpoint' => null,
 
     // --- Community banner carousel + telemetry (Issue #22) ---
-    // The Community edition carries a slim banner column that rotates through
-    // FelixSchallerCOM services, tools and news. Creatives are loaded from a
-    // dedicated subdomain so they can be rotated without shipping a release; on
-    // any network failure the app falls back to the bundled default set in
+    // The Community edition can show a slim banner column with news and
+    // service hints. Creatives are loaded from a feed URL you point it at,
+    // so they can be rotated without shipping a release; on any network
+    // failure the app falls back to the bundled default set in
     // assets/banners/default.json, so the slot is never empty or broken.
     //
-    // This is how the free Community edition is funded. In the Pro edition the
-    // whole block is removed (or set 'enabled' => false to strip it here).
-    // Full detail: docs/BANNERS.md.
+    // In the Pro edition the whole block is removed (or set 'enabled' => false
+    // to strip it here). Full detail: docs/BANNERS.md.
     'banners' => [
         // Master switch. true/false forces the feature on/off (Pro ships false);
         // leave it unset to use the Community default (on, with an admin toggle
@@ -77,8 +83,8 @@ return [
 
         // Subdomain that serves the carousel feed as JSON: { "items": [ ... ] }.
         // The app fetches it server-side, so a strict CSP (connect-src 'self')
-        // is enough — the browser only ever talks to this installation.
-        'endpoint' => 'https://assets.felixschaller.com/feed.json',
+        // is enough - the browser only ever talks to this installation.
+        'endpoint' => 'https://assets.felixschaller.com/feed.php',
 
         // First-party hosts whose https links/images the feed may reference.
         // Subdomains are always included. Anything else in the feed is stripped,
