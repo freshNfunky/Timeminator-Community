@@ -19,7 +19,7 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
 ?>
 <?php if ($__cockpitAny): ?>
   <span class="nav-sep"></span>
-  <details class="nav-group"<?= $__cockpitActive ? ' open' : '' ?>>
+  <details class="nav-group">
     <summary class="nav-group-toggle<?= $__cockpitActive ? ' active' : '' ?>"><?= h(t('nav.cockpit_group', 'Cockpit')) ?></summary>
     <div class="nav-group-items">
       <?php if (Auth::can('cockpit.project.view')): ?>
@@ -53,7 +53,7 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
 ?>
 <?php if ($__monAny): ?>
   <span class="nav-sep"></span>
-  <details class="nav-group"<?= $__monActive ? ' open' : '' ?>>
+  <details class="nav-group">
     <summary class="nav-group-toggle<?= $__monActive ? ' active' : '' ?>"><?= h(t('nav.monitoring', 'Monitoring')) ?></summary>
     <div class="nav-group-items">
       <?php if (Auth::can('stats.view')): ?>
@@ -80,7 +80,7 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
 ?>
 <?php if ($__dataAny): ?>
   <span class="nav-sep"></span>
-  <details class="nav-group"<?= $__dataActive ? ' open' : '' ?>>
+  <details class="nav-group">
     <summary class="nav-group-toggle<?= $__dataActive ? ' active' : '' ?>"><?= h(t('nav.master_data', 'Stammdaten')) ?></summary>
     <div class="nav-group-items">
       <?php if (Auth::can('structure.manage')): ?>
@@ -103,7 +103,7 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
 ?>
 <?php if (Auth::check()): ?>
   <span class="nav-sep"></span>
-  <details class="nav-group"<?= $__kmActive ? ' open' : '' ?>>
+  <details class="nav-group">
     <summary class="nav-group-toggle<?= $__kmActive ? ' active' : '' ?>"><?= h(t('nav.commercial')) ?> <span class="pill pill-pro nav-pill"><?= h(t('nav.pro_pill')) ?></span></summary>
     <div class="nav-group-items">
       <a href="<?= h(route('pro_invoices')) ?>"<?= $active(['pro_invoices']) ?> title="<?= h(t('nav.pro_feature_tooltip')) ?>"><?= h(t('nav.invoices')) ?></a>
@@ -126,7 +126,7 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
 ?>
 <?php if ($__sysAny): ?>
   <span class="nav-sep"></span>
-  <details class="nav-group"<?= $__sysActive ? ' open' : '' ?>>
+  <details class="nav-group">
     <summary class="nav-group-toggle<?= $__sysActive ? ' active' : '' ?>"><?= h(t('nav.admin')) ?></summary>
     <div class="nav-group-items">
       <?php if (Auth::can('admin.users')): ?>
