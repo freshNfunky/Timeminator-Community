@@ -145,28 +145,28 @@ final class CalendarWeekStickyHeaderTest extends TestCase
         );
     }
 
-    public function testDailyMoodPickerSitsAtTopOfCalDayNotBelowHead(): void
+    public function testDailyMoodPickerSitsInsideStickyHeaderNotInsideCalDay(): void
     {
-        // Felix-Feedback (Fortsetzung #109): "ansonsten steht dann die Mood
-        // auch in der Kopfzeile vom Wochentag". Day-Head ist jetzt oben als
-        // durchgehende Zeile; der Daily-Mood-Picker sitzt weiterhin als
-        // erstes Kind von .cal-day (also optisch direkt unter dem Head).
+        // Felix-Feedback 2026-11-09 (#110): "Moods muessen in die Kopfzeile
+        // rein, nicht in die Uhrzeiten-Tabelle - sonst scrollen die beim
+        // Auto-Scroll zur ersten Buchungsstunde aus dem sichtbaren Bereich."
         //
-        // Der Marker `cal-day<?=` identifiziert den Spalten-Anfang eindeutig
-        // (nicht zu verwechseln mit dem Container `cal-days`).
-        // Marker `cal-day<?=` identifiziert den Spalten-Anfang eindeutig
-        // (nicht zu verwechseln mit dem Container `cal-days`). Zwischen
-        // oeffnender Tag-Zeile und dem Picker darf nur Whitespace stehen -
-        // kein cal-day-head mehr, keine Holiday-Badge-Vorlagerung.
-        $pos = strpos($this->view(), 'class="cal-day<?=');
+        // Der Daily-Picker sitzt deshalb als Kind von .cal-week-dayhead
+        // und NICHT mehr in .cal-day.
+        $view = $this->view();
+
+        self::assertStringContainsString('cal-sent-day-head', $view,
+            'Daily-Picker braucht die Marker-Klasse cal-sent-day-head in der Kopfzeile');
+        self::assertStringContainsString('cal-week-dayhead-label', $view,
+            'Label-Wrapper fuer Wochentag in der Kopfzeile fehlt');
+
+        $pos = strpos($view, 'class="cal-day<?=');
         self::assertNotFalse($pos, 'Spalten-Start "class=\"cal-day<?=" fehlt im Markup');
-        $after = substr($this->view(), $pos, 400);
+        $after = substr($view, $pos, 400);
         self::assertStringNotContainsString('cal-day-head', $after,
             'Nach dem Spalten-Start darf kein cal-day-head mehr folgen (Head ist jetzt oben)');
-        self::assertMatchesRegularExpression(
-            '~>\s*<\?php\s+if\s*\(!empty\(\$canRecordSentiment\)~',
-            $after,
-            'Erstes Kind von .cal-day muss der Daily-Mood-Picker-Block sein'
+        self::assertStringNotContainsString('cal-sent-day', $after,
+            'Daily-Mood-Picker darf NICHT mehr in .cal-day stehen - sonst scrollt er mit (Felix #110)'
         );
     }
 }

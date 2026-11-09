@@ -202,6 +202,10 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .cal-month-proj-h{color:var(--muted);flex:0 0 auto;font-variant-numeric:tabular-nums}
 .cal-month-proj.cal-month-more{color:var(--muted);font-style:italic}
 .cal-sent-day-month{margin-top:auto;justify-content:flex-start;border-bottom:none;border-top:1px dashed var(--line);padding:4px 2px 2px}
+/* Felix-Feedback 2026-11-09 (#110): Daily-Mood-Picker sitzt in der sticky
+   Wochen-Kopfzeile, nicht in der Uhrzeiten-Tabelle - sonst scrollt er mit. */
+.cal-sent-day-head{border-bottom:0;padding:2px 2px 3px;justify-content:center}
+.cal-week-dayhead-label{line-height:1.15}
 .form-actions{display:flex;gap:10px;align-items:center;margin-top:6px}
 
 /* Tables */

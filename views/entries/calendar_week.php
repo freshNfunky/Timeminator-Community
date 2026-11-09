@@ -340,29 +340,20 @@ $__calInk = static function (string $hex): string {
         if ($__hd)              $__hdCls .= ' is-holiday';
         if (!$__day['isWorkDay']) $__hdCls .= ' is-nonworking';
       ?>
-        <div class="<?= h($__hdCls) ?>" role="columnheader" data-day="<?= h($__day['ymd']) ?>"><?= h($__day['label']) ?></div>
-      <?php endforeach; ?>
-    </div>
-    <div class="cal-hours" aria-hidden="true">
-      <?php for ($h = 0; $h < 24; $h++): ?>
-        <div class="cal-hour-label"><?= sprintf('%02d:00', $h) ?></div>
-      <?php endfor; ?>
-    </div>
-    <div class="cal-days">
-      <?php foreach ($__days as $__i => $__day): ?>
-        <?php $__holiday = $holidays[$__day['ymd']] ?? null; ?>
-        <div class="cal-day<?= $__day['isToday'] ? ' cal-day-today' : '' ?><?= $__holiday ? ' cal-day-holiday' : '' ?><?= !$__day['isWorkDay'] ? ' cal-day-nonworking' : '' ?>" data-day="<?= h($__day['ymd']) ?>">
+        <div class="<?= h($__hdCls) ?>" role="columnheader" data-day="<?= h($__day['ymd']) ?>">
+          <div class="cal-week-dayhead-label"><?= h($__day['label']) ?></div>
+          <?php /* Felix-Feedback 2026-11-09 (#110): Daily-Mood-Picker sitzt
+             in der STICKY Kopfzeile, nicht in der Uhrzeiten-Tabelle - sonst
+             scrollt er mit dem Auto-Scroll zur ersten Buchungsstunde aus
+             dem sichtbaren Bereich. */ ?>
           <?php if (!empty($canRecordSentiment) && ($sentimentGranularity ?? 'week') === 'day'):
             $__dayMood = $weekSentiment[$__day['ymd']]['mood'] ?? null;
             $__dayFlow = $weekSentiment[$__day['ymd']]['flow'] ?? null;
             $__isFuture = $__day['date'] > $__today;
-            // Default-Placeholder: neutrales Emoji (Score 3), abgegraut via
-            // is-empty (Pro-Vorbild, Felix-Feedback 2026-11-04). "—" war zu
-            // nichtssagend - ein grauen Emoji signalisiert "noch nichts gesetzt".
             $__moodCur = Sentiment::moodEmoji($__dayMood !== null ? $__dayMood : 3);
             $__flowCur = Sentiment::flowEmoji($__dayFlow !== null ? $__dayFlow : 3);
           ?>
-            <div class="cal-sent-day<?= $__isFuture ? ' is-future' : '' ?>" data-day="<?= h($__day['ymd']) ?>" data-csrf="<?= h(csrf_token()) ?>" <?= $__isFuture ? 'title="' . h(t('cal.sent_future', 'Zukunft')) . '"' : '' ?>>
+            <div class="cal-sent-day cal-sent-day-head<?= $__isFuture ? ' is-future' : '' ?>" data-day="<?= h($__day['ymd']) ?>" data-csrf="<?= h(csrf_token()) ?>" <?= $__isFuture ? 'title="' . h(t('cal.sent_future', 'Zukunft')) . '"' : '' ?>>
               <div class="cal-sent-cell" data-dim="mood" data-current="<?= $__dayMood ?? '' ?>">
                 <button type="button" class="cal-sent-current<?= $__dayMood === null ? ' is-empty' : '' ?>" <?= $__isFuture ? 'disabled' : '' ?> title="<?= h(t('sent.mood_short', 'Mood')) . ($__dayMood !== null ? ': ' . h(Sentiment::moodLabel($__dayMood)) : '') ?>" aria-label="<?= h(t('sent.mood_short', 'Mood')) ?>"><?= $__moodCur ?></button>
                 <div class="cal-sent-popover" hidden role="listbox" aria-label="<?= h(t('sent.mood_short', 'Mood')) ?>">
@@ -381,6 +372,21 @@ $__calInk = static function (string $hex): string {
               </div>
             </div>
           <?php endif; ?>
+        </div>
+      <?php endforeach; ?>
+    </div>
+    <div class="cal-hours" aria-hidden="true">
+      <?php for ($h = 0; $h < 24; $h++): ?>
+        <div class="cal-hour-label"><?= sprintf('%02d:00', $h) ?></div>
+      <?php endfor; ?>
+    </div>
+    <div class="cal-days">
+      <?php foreach ($__days as $__i => $__day): ?>
+        <?php $__holiday = $holidays[$__day['ymd']] ?? null; ?>
+        <div class="cal-day<?= $__day['isToday'] ? ' cal-day-today' : '' ?><?= $__holiday ? ' cal-day-holiday' : '' ?><?= !$__day['isWorkDay'] ? ' cal-day-nonworking' : '' ?>" data-day="<?= h($__day['ymd']) ?>">
+          <?php /* Felix-Feedback 2026-11-09 (#110): Daily-Mood-Picker ist in
+             die sticky Kopfzeile oben gezogen; die cal-day-Column enthaelt
+             ihn nicht mehr. */ ?>
           <?php if ($__holiday): ?>
             <div class="cal-day-holiday-badge" title="<?= h(t($__holiday['key'], $__holiday['key'])) ?>">
               <span class="cal-holiday-dot" aria-hidden="true">★</span>
