@@ -83,15 +83,18 @@
     var needsClient = cfg.needsClient;
     var clientLabelOverride = cfg.clientLabel;
 
-    // Projekt-Optionen nach ckey filtern.
-    Array.prototype.forEach.call(projectSel.options, function (o) {
-      if (o.value === '') return;
-      var ckey = o.getAttribute('data-cat-ckey') || '';
-      var ok = (wantCkey === '' || ckey === wantCkey);
-      o.hidden = !ok; o.disabled = !ok;
-    });
+    // #158: Projektart-Filter wird am Picker-Root als data-cat-filter
+    // persistiert, damit applyFilters() in app.js den Filter beim
+    // Kaskaden-Rebuild mit beruecksichtigt. Sonst wuerde applyFilters
+    // alle Projekte wieder sichtbar machen (ueberschreibt o.hidden).
+    if (taskPicker) {
+      if (wantCkey) {
+        taskPicker.setAttribute('data-cat-filter', wantCkey);
+      } else {
+        taskPicker.removeAttribute('data-cat-filter');
+      }
+    }
     var curP = projectSel.selectedOptions[0];
-    if (curP && curP.hidden) { projectSel.value = ''; }
 
     // Kunde-Feld show/hide + Label-Switch.
     var clientLabel = taskPicker ? taskPicker.querySelector('.tp-client-label') : null;

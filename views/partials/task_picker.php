@@ -71,17 +71,16 @@ foreach ($tasks as $t) {
   <label><?= h(t('projects.col_project')) ?>
     <select class="tp-project" aria-label="<?= h(t('tp.project_filter', 'Projekt filtern')) ?>">
       <option value=""><?= h(t('tp.all_projects', 'Alle Projekte')) ?></option>
-      <?php foreach ($projects as $pid => $p):
-        // #143: Kategorie-Prefix direkt im Option-Text, damit intern /
-        // extern / Foerder sofort sichtbar sind ("[Intern] Robotik-Beratung").
-        $__optLabel = $p['category_label'] !== ''
-            ? '[' . $p['category_label'] . '] ' . $p['name']
-            : $p['name'];
-      ?>
+      <?php /* Felix-Feedback 2026-11-09 (Fix #159): Kategorie-Prefix im
+         Option-Text (z.B. "[Kundenprojekt] Antriebsstudie") ist
+         redundant - die Projektart wird oben bereits gewaehlt und
+         filtert die Projektliste. data-cat-ckey + data-cat-label
+         bleiben als Datenattribute (fuer JS-Filterung + Edit-Modus). */ ?>
+      <?php foreach ($projects as $pid => $p): ?>
         <option value="<?= (int) $pid ?>"
                 data-client="<?= (int) $p['client_id'] ?>"
                 data-cat-ckey="<?= h($p['category_ckey']) ?>"
-                data-cat-label="<?= h($p['category_label']) ?>"><?= h($__optLabel) ?></option>
+                data-cat-label="<?= h($p['category_label']) ?>"><?= h($p['name']) ?></option>
       <?php endforeach; ?>
     </select>
   </label>

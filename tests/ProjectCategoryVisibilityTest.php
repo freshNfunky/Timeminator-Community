@@ -30,8 +30,11 @@ final class ProjectCategoryVisibilityTest extends TestCase
             'Projekt-Option muss data-cat-ckey mitfuehren, damit JS/CSS Kategorie-aware sein kann');
         self::assertStringContainsString('data-cat-label', $view,
             'Projekt-Option muss data-cat-label mitfuehren');
-        self::assertStringContainsString("'[' . \$p['category_label'] . '] '", $view,
-            'Option-Text praefix "[<Kategorie>] " fehlt');
+        // Fix #159: Prefix "[Kundenprojekt] …" ist raus - die Projektart
+        // wird oben bereits gewaehlt und filtert die Liste. Daten bleiben
+        // als data-* fuer die JS-Filterung erhalten.
+        self::assertStringNotContainsString("'[' . \$p['category_label'] . '] '", $view,
+            'Option-Text-Prefix "[<Kategorie>] " muss raus - Projektart filtert bereits');
     }
 
     public function testRepoTasksSqlJoinsProjectCategories(): void

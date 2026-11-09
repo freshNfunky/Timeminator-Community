@@ -401,12 +401,20 @@
       var cid = client.value;
       var pid = project.value;
       var wid = wp.value;
+      // Fix #158: Projektart-Filter (data-cat-filter am Root) wird mit
+      // beruecksichtigt - sonst werden alle Projekte wieder sichtbar und
+      // ueberschreiben den Projektart-Filter aus calendar.js.
+      var catFilterCkey = root.getAttribute('data-cat-filter') || '';
 
-      // Projekt-Optionen: nach Client filtern
+      // Projekt-Optionen: nach Client UND Projektart filtern
       filterOptions(project, function (o) {
-        return cid === '' || o.getAttribute('data-client') === cid;
+        if (cid !== '' && o.getAttribute('data-client') !== cid) { return false; }
+        if (catFilterCkey !== '' && o.getAttribute('data-cat-ckey') !== catFilterCkey) { return false; }
+        return true;
       });
-      // Arbeitspaket-Optionen: nach Client UND Projekt filtern
+      // Arbeitspaket-Optionen: nach Client + Projekt filtern.
+      // (Keine ckey-Pruefung noetig: wenn Projekt schon durch ckey
+      // gefiltert ist, filtert pid die WPs automatisch mit.)
       filterOptions(wp, function (o) {
         if (cid !== '' && o.getAttribute('data-client')  !== cid) { return false; }
         if (pid !== '' && o.getAttribute('data-project') !== pid) { return false; }

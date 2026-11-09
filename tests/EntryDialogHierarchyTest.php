@@ -211,4 +211,25 @@ final class EntryDialogHierarchyTest extends TestCase
         self::assertStringContainsString("k === 'absence' && absenceAccountOf(v) === 'overtime'", $js,
             'Stunden-Feld nur bei Ueberstundenabbau');
     }
+
+    /**
+     * Felix-Feedback 2026-11-09 (Fix #158): Projektart-Filter greift nicht,
+     * weil applyFilters() in app.js den o.hidden-State der Projekte
+     * ueberschreibt. Jetzt wird wantCkey am picker-Root als data-cat-filter
+     * persistiert und applyFilters liest + filtert zusaetzlich.
+     */
+    public function testProjectDropdownRespectsCategoryFilterAcrossCascadeUpdates(): void
+    {
+        $js = $this->js();
+        self::assertStringContainsString("taskPicker.setAttribute('data-cat-filter'", $js,
+            'calendar.js muss den wantCkey am Picker-Root persistieren');
+        $appJs = (string) file_get_contents(dirname(__DIR__) . '/assets/app.js');
+        self::assertStringContainsString("root.getAttribute('data-cat-filter')", $appJs,
+            'applyFilters muss data-cat-filter vom Root einlesen');
+        self::assertMatchesRegularExpression(
+            "~catFilterCkey\\s*!==\\s*''\\s*&&\\s*o\\.getAttribute\\('data-cat-ckey'\\)\\s*!==\\s*catFilterCkey~",
+            $appJs,
+            'Projekt-Filter muss cat-ckey beruecksichtigen, sonst werden alle Projekte sichtbar'
+        );
+    }
 }
