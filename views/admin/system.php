@@ -112,19 +112,9 @@
       </form>
     </div>
 
-    <div class="card">
-      <h2><?= h(t('system.sentiment_granularity_h2', 'Stimmungs-Rhythmus')) ?><?= tip('system.sentiment_granularity_hint', 'Wie oft wird nach Mood und Flow gefragt? Taeglich = ein Eintrag pro Tag; Woechentlich = ein Preset fuer die ganze Woche (bereits einzeln gesetzte Tage werden nicht ueberschrieben).') ?></h2>
-      <form method="post" action="<?= h(route('sentiment_granularity_save')) ?>">
-        <?= csrf_field() ?>
-        <?php foreach (Sentiment::GRANULARITIES as $__g => $__defaultLabel): ?>
-          <label class="check">
-            <input type="radio" name="granularity" value="<?= h($__g) ?>" <?= $sentiment_granularity === $__g ? 'checked' : '' ?>>
-            <?= h(t('sent.granularity_' . $__g, $__defaultLabel)) ?>
-          </label>
-        <?php endforeach; ?>
-        <div class="form-actions"><button class="btn btn-primary" type="submit"><?= h(t('common.save')) ?></button></div>
-      </form>
-    </div>
+    <?php /* Felix-Feedback 2026-11-09 (#121): Stimmungs-Rhythmus-Karte ist
+       komplett aus der Systemverwaltung raus - jeder Benutzer konfiguriert
+       ihn im Profil fuer sich selbst (siehe views/profile/index.php). */ ?>
 
     <div class="card">
       <h2><?= h(t('admin.language_section', 'Sprache')) ?><?= tip('admin.language_hint') ?></h2>

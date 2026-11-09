@@ -18,7 +18,6 @@ function ctrl_profile_index(): void
     $uid = (int) Auth::id();
     view('profile/index', [
         'sentimentGranularity' => Sentiment::granularity($uid),
-        'systemDefault'        => (string) Settings::get('sentiment_granularity', 'week'),
     ], t('profile.title', 'Meine Einstellungen'));
 }
 

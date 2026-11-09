@@ -41,6 +41,17 @@ final class ProfileGranularityTest extends TestCase
         self::assertFalse(Sentiment::setUserGranularity($uid, 'monthly'));
     }
 
+    public function testAdminSystemViewHasNoRhythmCardAnymore(): void
+    {
+        // Felix-Feedback 2026-11-09 (#121): "Stimmungs-Rhythmus-Karte in der
+        // Systemverwaltung geht komplett weg - das muss in den Benutzerbereich."
+        $sys = (string) file_get_contents(dirname(__DIR__) . '/views/admin/system.php');
+        self::assertStringNotContainsString('system.sentiment_granularity_h2', $sys,
+            'Rhythmus-Karte darf nicht mehr in der Admin-System-Seite stehen');
+        self::assertStringNotContainsString("route('sentiment_granularity_save')", $sys,
+            'Save-Form fuer System-Default-Rhythmus muss aus der Admin-System-Seite raus');
+    }
+
     public function testCalendarViewsNoLongerShowGranularityToggle(): void
     {
         // Felix-Feedback 2026-11-09: "Diese Umschalter, die muessen in den

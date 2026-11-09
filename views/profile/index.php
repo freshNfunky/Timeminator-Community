@@ -23,9 +23,5 @@
     <div class="form-actions">
       <button class="btn btn-primary" type="submit"><?= h(t('common.save', 'Speichern')) ?></button>
     </div>
-    <p class="muted" style="margin-top:6px"><?= h(sprintf(
-      t('profile.sentiment_system_default', 'System-Default: %s.'),
-      $systemDefault === 'day' ? t('sent.granularity_day', 'Taeglich') : t('sent.granularity_week', 'Woechentlich')
-    )) ?></p>
   </form>
 </div>
