@@ -4,7 +4,8 @@
  * Prozessarten für die Buchung interner Prozesse (v1.0 F6).
  */
 ?>
-<h1 class="page-title"><?= h(t('process_cat.h1', 'Prozessarten')) ?><?= tip('process_cat.help', 'Nicht-projektbezogene Taetigkeiten wie Angebotserstellung, Akquise, Weiterbildung. Werden ueber den Menuepunkt „Interne Prozesse" gebucht.') ?></h1>
+<?php /* Fix #144: page-title via Layout-Shell + $__titleTip. */
+$__titleTip = 'process_cat.help'; ?>
 
 <div class="card">
   <table class="table">

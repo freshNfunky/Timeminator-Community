@@ -46,7 +46,11 @@ $__banner    = Banners::isVisible();
   <?php foreach (flash_take() as $f): ?>
     <div class="flash flash-<?= h($f['type']) ?>"><?= h($f['msg']) ?></div>
   <?php endforeach; ?>
-  <h1 class="page-title"><?= h($__title) ?></h1>
+  <?php /* Felix-Feedback 2026-11-09 (Fix #144): Die EINZIGE page-title-H1
+     in der App. Views duerfen keine zweite rendern. Fuer Tooltip neben dem
+     Titel setzt die View $__titleTip = 'i18n.key' am Anfang (Variable
+     ueberlebt dank gemeinsamem view()-Scope ins Layout). */ ?>
+  <h1 class="page-title"><?= h($__title) ?><?php if (!empty($__titleTip ?? null)): ?><?= tip((string) $__titleTip) ?><?php endif; ?></h1>
   <?= $__content ?>
 </main>
 <?php if ($__banner): ?>

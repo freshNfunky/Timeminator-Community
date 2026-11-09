@@ -34,7 +34,9 @@ if ($__canUsers) {
     // HR-Ansicht: knappe Liste der Mitarbeiter als Linkstarter fuer den
     // Vertragsdaten-Edit; keine Rolle/Passwort-Felder.
     ?>
-    <h1 class="page-title"><?= h(t('cockpit.emp_edit_terms', 'Vertragsdaten bearbeiten')) ?></h1>
+    <?php /* Fix #144: keine zweite page-title-H1 - der HR-Branch bekommt
+       stattdessen einen semantischen Sub-Header unter dem Layout-Titel. */ ?>
+    <p class="page-sub muted"><?= h(t('cockpit.emp_edit_terms', 'Vertragsdaten bearbeiten')) ?></p>
     <?php if (!$edit): ?>
       <div class="card">
         <table class="table">
