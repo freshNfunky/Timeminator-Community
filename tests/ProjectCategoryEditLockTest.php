@@ -27,9 +27,26 @@ final class ProjectCategoryEditLockTest extends TestCase
             $tpl,
             'Optionen mit gegensaetzlicher Projektart muessen uebersprungen werden'
         );
-        // Hinweis fuer den Nutzer, dass es Absicht ist.
-        self::assertStringContainsString('projects.category_lock_hint', $tpl,
-            'Hinweistext zur Sperre muss vorhanden sein');
+    }
+
+    public function testEditFormForInternalProjectShowsReadonlyLabelWithoutProse(): void
+    {
+        // Felix-Feedback 2026-11-09 (Fix #177): bei internen Projekten
+        // KEINE Combobox und KEIN Prosatext - nur readonly-Text "Internes
+        // Projekt" + hidden category_id.
+        $tpl = (string) file_get_contents(dirname(__DIR__) . '/views/partials/forms/project.php');
+        self::assertStringContainsString("if (\$edit && \$__editIsInternal === true", $tpl,
+            'View muss intern-Fall separat behandeln');
+        self::assertStringContainsString('class="input-readonly"', $tpl,
+            'Intern-Fall: readonly-Container fuer den Kategorie-Label');
+        self::assertStringContainsString('<input type="hidden" name="category_id"', $tpl,
+            'Hidden category_id muss die Projektart beim Save weiter transportieren');
+        // Der ehemalige Prosatext darf nicht mehr im Template stehen.
+        self::assertStringNotContainsString(
+            'projects.category_lock_hint',
+            $tpl,
+            'Prosa-Hinweis "Wechsel ab v1.2" muss aus der UI raus - hat keinen Informationswert fuer End-User'
+        );
     }
 
     public function testSaveRejectsCategorySwitchAcrossInternalBoundary(): void

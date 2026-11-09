@@ -26,29 +26,37 @@ $project_categories = $project_categories ?? Repo::projectCategories(true);
         }
     }
   ?>
-  <label><?= h(t('projects.category', 'Projektart')) ?><?= tip('projects.category_hint', 'Legt fest, ob ein Kunde Pflicht ist und wie er heisst (z. B. Foerdermittelgeber bei Foerderprojekten). Verwalten in Presets.') ?>
-    <select name="category_id" required>
-      <?php if (!$edit): ?>
-        <option value=""><?= h(t('projects.pick_category', 'Projektart waehlen …')) ?></option>
-      <?php endif; ?>
-      <?php foreach ($project_categories as $__pc):
-        // Edit-Modus + gegensaetzliche Projektart -> Option ueberspringen.
-        if ($edit && $__editIsInternal !== null) {
-            $__pcIsInternal = !((int) $__pc['needs_client']);
-            if ($__pcIsInternal !== $__editIsInternal) { continue; }
-        }
-      ?>
-        <option value="<?= (int) $__pc['id'] ?>" <?= ($edit['category_id'] ?? 0) == $__pc['id'] ? 'selected' : '' ?>
-                data-needs-client="<?= (int) $__pc['needs_client'] ?>"
-                data-client-label="<?= h($__pc['client_label'] ?: t('project_cat.client_default', 'Kunde')) ?>">
-          <?= h($__pc['label']) ?>
-        </option>
-      <?php endforeach; ?>
-    </select>
-    <?php if ($edit && $__editIsInternal !== null): ?>
-      <small class="muted"><?= h(t('projects.category_lock_hint', 'Wechsel intern <-> nicht-intern erfolgt erst ab v1.2 (Pro-Issue).')) ?></small>
-    <?php endif; ?>
-  </label>
+  <?php if ($edit && $__editIsInternal === true && $__editCategoryRow): ?>
+    <?php /* Felix-Feedback 2026-11-09 (Fix #177): Interne Projekte haben
+       in v1.0 keinen Wechsel - statt Combobox nur den readonly-Label
+       "Internes Projekt" + hidden category_id. Keine Prosa-Hinweise. */ ?>
+    <label><?= h(t('projects.category', 'Projektart')) ?><?= tip('projects.category_hint', 'Legt fest, ob ein Kunde Pflicht ist und wie er heisst (z. B. Foerdermittelgeber bei Foerderprojekten). Verwalten in Presets.') ?>
+      <div class="input-readonly"><?= h($__editCategoryRow['label']) ?></div>
+      <input type="hidden" name="category_id" value="<?= (int) $__editCategoryRow['id'] ?>">
+    </label>
+  <?php else: ?>
+    <label><?= h(t('projects.category', 'Projektart')) ?><?= tip('projects.category_hint', 'Legt fest, ob ein Kunde Pflicht ist und wie er heisst (z. B. Foerdermittelgeber bei Foerderprojekten). Verwalten in Presets.') ?>
+      <select name="category_id" required>
+        <?php if (!$edit): ?>
+          <option value=""><?= h(t('projects.pick_category', 'Projektart waehlen …')) ?></option>
+        <?php endif; ?>
+        <?php foreach ($project_categories as $__pc):
+          // Edit-Modus + gegensaetzliche Projektart -> Option ueberspringen
+          // (nicht-interne Projekte sehen also nur nicht-interne Optionen).
+          if ($edit && $__editIsInternal !== null) {
+              $__pcIsInternal = !((int) $__pc['needs_client']);
+              if ($__pcIsInternal !== $__editIsInternal) { continue; }
+          }
+        ?>
+          <option value="<?= (int) $__pc['id'] ?>" <?= ($edit['category_id'] ?? 0) == $__pc['id'] ? 'selected' : '' ?>
+                  data-needs-client="<?= (int) $__pc['needs_client'] ?>"
+                  data-client-label="<?= h($__pc['client_label'] ?: t('project_cat.client_default', 'Kunde')) ?>">
+            <?= h($__pc['label']) ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
+    </label>
+  <?php endif; ?>
   <?php /* Felix-Feedback 2026-11-09 (Fix #175): Kunde-Feld folgt der
      Kaskaden-Hierarchie des Entry-Dialogs - erst Projektart waehlen,
      dann oeffnet sich das Kunde-Feld; bei Internes Projekt entfaellt
@@ -57,7 +65,8 @@ $project_categories = $project_categories ?? Repo::projectCategories(true);
   <label class="project-client-label"
          data-base-label="<?= h(t('struct.client', 'Kunde')) ?>"
          data-lock-hint="<?= h(t('projects.client_lock_hint', 'Zuerst Projektart waehlen')) ?>"
-         data-base-placeholder="<?= h(t('projects.pick_client', 'Kunde waehlen …')) ?>">
+         data-base-placeholder="<?= h(t('projects.pick_client', 'Kunde waehlen …')) ?>"
+         <?= ($edit && $__editIsInternal === true) ? 'hidden' : '' ?>>
     <span class="project-client-label-text"><?= h(t('struct.client', 'Kunde')) ?></span>
     <select name="client_id" class="project-client-select">
       <option value=""><?= h(t('projects.pick_client', 'Kunde waehlen …')) ?></option>

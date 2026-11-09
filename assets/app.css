@@ -528,6 +528,12 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .form-inline{display:flex;flex-direction:column;gap:10px;max-width:720px}
 .form-inline label{display:flex;flex-direction:column;gap:4px}
 .form-inline-title{margin:0 0 8px;font-size:16px}
+/* Fix #177: readonly-Textfeld (z.B. "Internes Projekt" bei gesperrter
+   Projektart) - sieht aus wie ein Input, aber ist nur Text, nicht
+   fokussierbar. */
+.input-readonly{padding:9px 11px;margin-top:4px;background:var(--panel);color:var(--ink);
+  font-size:13px;border:1px solid var(--line);border-radius:9px;
+  opacity:.85;cursor:default}
 /* Felix-Feedback 2026-11-09 (Fix #136): persoenliches Profil - kompakte,
    auf einer Baseline ausgerichtete Radio-Row. .form-inline mit
    flex-direction:column stapelte die Labels und deren Inputs waren wegen
