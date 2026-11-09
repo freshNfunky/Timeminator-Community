@@ -136,6 +136,36 @@ final class CalendarWeekStickyHeaderTest extends TestCase
         );
     }
 
+    public function testNarrowViewportAlignsHeadAndDaysWithSameMinColumnWidth(): void
+    {
+        // Felix-Feedback 2026-11-09 (#125): bei max-width:820px haben die
+        // .cal-day-Spalten min-width:120px und scrollen horizontal; die
+        // .cal-week-head-Spalten mussten denselben Vertrag bekommen, sonst
+        // rutschen die Wochentag-Labels relativ zu den Uhrzeit-Spalten.
+        $css = $this->css();
+        // Beide Regeln koennen in derselben max-width:820px-Media-Query
+        // irgendwo zusammenstehen. Wir pruefen ihre Nachbarschaft.
+        $pos = strpos($css, '@media(max-width:820px)');
+        if ($pos === false) {
+            $pos = strpos($css, '@media (max-width:820px)');
+        }
+        self::assertNotFalse($pos, '820-px-Media-Query fehlt');
+        // Block-Ende: naechste Zeile, die nur "}" am Zeilen-Anfang hat.
+        $end = strpos($css, "\n}\n", $pos);
+        self::assertNotFalse($end, 'Ende der 820-px-Media-Query nicht gefunden');
+        $block = substr($css, $pos, $end - $pos);
+        self::assertMatchesRegularExpression(
+            '~\.cal-day\s*\{\s*min-width:\s*120px~',
+            $block,
+            '.cal-day muss unter 820 px min-width:120px haben (bestehender Vertrag)'
+        );
+        self::assertMatchesRegularExpression(
+            '~\.cal-week-head\s*\{[^}]*grid-template-columns:\s*52px\s+repeat\(7,\s*minmax\(120px,\s*1fr\)\)~',
+            $block,
+            '.cal-week-head muss unter 820 px denselben minmax(120px,1fr)-Spalten-Vertrag haben, damit Head und cal-days synchron bleiben'
+        );
+    }
+
     public function testHoursColumnStickyLeftKeepsLabelsVisibleWhenHorizontalScroll(): void
     {
         self::assertMatchesRegularExpression(

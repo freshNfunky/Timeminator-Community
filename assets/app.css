@@ -1086,6 +1086,13 @@ body:has(.sidepanel) .foot{padding-right:200px}
   .ref{columns:1}
   .update-banner{position:static;width:auto;margin:12px 0 0}
   .cal-day{min-width:120px}
+  /* Felix-Feedback 2026-11-09 (#125): bei schmaler Viewport laeuft die
+     cal-days-Row horizontal ueber (min-width 120px pro Spalte), aber die
+     Head-Row scalierte mit 1fr und wurde reingequetscht. Dadurch rutschte
+     oben der Wochentag auf die falsche Spalte (Neujahr landete optisch
+     auf 03.01.). Fix: Kopfzeile bekommt denselben minmax-Vertrag wie die
+     cal-day-Spalten, damit beide synchron bleiben. */
+  .cal-week-head{grid-template-columns:52px repeat(7, minmax(120px, 1fr))}
   .external-cal-items{grid-template-columns:1fr}
 }
 
