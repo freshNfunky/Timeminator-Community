@@ -173,9 +173,6 @@
   // Pfad, neuer Entry ohne Kalender-Kontext).
   function openForNew(ymd, startMin, endMin) {
     reset();
-    // Felix-Debug 2026-11-09 Hardening 4: logging, damit wir in DevTools
-    // sehen, welcher Pfad den Dialog oeffnet und mit welchen Werten.
-    try { console.log('[TM-CAL-V4] openForNew(', ymd, startMin, endMin, ')', new Error().stack); } catch (e) {}
     if (ymd) {
       var sMin = (typeof startMin === 'number' && startMin >= 0) ? startMin : 9 * 60;
       var eMin = (typeof endMin   === 'number' && endMin   > sMin) ? endMin  : sMin + 60;
@@ -289,16 +286,10 @@
       var raw = (y / rect.height) * 24 * 60;
       return Math.round(raw / 15) * 15;
     }
-    var gridNodes = document.querySelectorAll('.cal-day-grid');
-    try { console.log('[TM-CAL-V4] wireGrid: cal-day-grid count =', gridNodes.length); } catch (e) {}
-    gridNodes.forEach(function (grid) {
+    document.querySelectorAll('.cal-day-grid').forEach(function (grid) {
       grid.addEventListener('mousedown', function (ev) {
-        try { console.log('[TM-CAL-V4] grid.mousedown day=', grid.getAttribute('data-day'), 'button=', ev.button, 'y=', ev.clientY, 'target=', ev.target && ev.target.className); } catch (e) {}
         if (ev.button !== 0) return;
-        if (ev.target.closest('.cal-event, .cal-process, .cal-day-absence, .cal-absbar-pill, .cal-day-bracket')) {
-          try { console.log('[TM-CAL-V4] grid.mousedown ignored (closest match)'); } catch (e) {}
-          return;
-        }
+        if (ev.target.closest('.cal-event, .cal-process, .cal-day-absence, .cal-absbar-pill, .cal-day-bracket')) return;
         gDragGrid  = grid;
         gDragStart = minuteFromEventOnGrid(ev, grid);
         gDragEnd   = gDragStart;
@@ -315,9 +306,7 @@
       var lo = Math.min(gDragStart, gDragEnd);
       var hi = Math.max(gDragStart, gDragEnd);
       var day = gDragGrid.getAttribute('data-day');
-      try { console.log('[TM-CAL-V4] document.mouseup day=', day, 'lo=', lo, 'hi=', hi); } catch (e) {}
       gDragGrid = null; gDragStart = gDragEnd = null;
-      // Reiner Click (keine Bewegung) -> 60min Standardblock.
       if (hi - lo < 15) { hi = lo + 60; }
       openForNew(day, lo, hi);
     });
@@ -538,25 +527,27 @@
     // den Nutzer auf die Legacy entry_form-Seite zu schicken. Pro-Parity.
     try {
       var params = new URLSearchParams(window.location.search);
-      try { console.log('[TM-CAL-V4] URL deep-link check: edit=', params.get('edit'), 'new=', params.get('new'), 'full=', window.location.search); } catch (e) {}
       var editId = parseInt(params.get('edit'), 10);
-      if (editId && !isNaN(editId)) {
-        openForEntry(editId);
-      } else if (params.get('new') === '1') {
-        var t = new Date();
-        var y = t.getFullYear() + '-'
-          + String(t.getMonth() + 1).padStart(2, '0') + '-'
-          + String(t.getDate()).padStart(2, '0');
-        try { console.log('[TM-CAL-V4] DEEP-LINK new=1 oeffnet openForNew(today) - das erklaert 9.11. 09-10!'); } catch (e) {}
-        openForNew(y);
-      }
-      if ((editId && !isNaN(editId)) || params.get('new') === '1') {
-        // Clean URL, damit Reload keinen Dialog erneut aufpoppt.
+      var hasNew = params.get('new') === '1';
+      // Felix-Feedback 2026-11-09 Hardening 4: URL ZUERST cleanen, DANACH
+      // Dialog oeffnen. Sonst triggert jeder spaetere window.location.reload()
+      // (z.B. nach save) den Deep-Link erneut und oeffnet 09:00-10:00 auf
+      // today. Das war der eigentliche "Drag landet immer bei 9.11. 09-10"-Bug.
+      if ((editId && !isNaN(editId)) || hasNew) {
         if (window.history && window.history.replaceState) {
           params.delete('new'); params.delete('edit');
           var qs = params.toString();
           window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
         }
+      }
+      if (editId && !isNaN(editId)) {
+        openForEntry(editId);
+      } else if (hasNew) {
+        var t = new Date();
+        var y = t.getFullYear() + '-'
+          + String(t.getMonth() + 1).padStart(2, '0') + '-'
+          + String(t.getDate()).padStart(2, '0');
+        openForNew(y);
       }
     } catch (e) { /* URLSearchParams nicht supported -> egal */ }
   }
