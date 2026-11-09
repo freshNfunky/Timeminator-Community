@@ -372,6 +372,13 @@
       // dann direkt freigeschaltet.
       var clientLabel = root.querySelector('.tp-client-label');
       var clientSkipped = !!(clientLabel && clientLabel.hidden);
+      // Felix-Feedback 2026-11-09 (Fix #168): wenn NOCH keine Projektart
+      // gewaehlt ist (data-cat-filter leer) und Kunden-Feld sichtbar,
+      // bekommt der Kunden-Select den Placeholder "Zuerst Projektart
+      // waehlen" + wird disabled. Sonst wirkt "Alle Kunden" wie eine
+      // sinnvolle Vorbelegung, obwohl die ganze Kaskade noch wartet.
+      var catFilterCkey = root.getAttribute('data-cat-filter') || '';
+      updateLockState(client,  !clientSkipped && !catFilterCkey, 'Zuerst Projektart waehlen');
       updateLockState(project, !clientSkipped && !client.value, 'Zuerst Kunde waehlen');
       updateLockState(wp,      !project.value, 'Zuerst Projekt waehlen');
       updateLockState(task,    !project.value, 'Zuerst Projekt waehlen');

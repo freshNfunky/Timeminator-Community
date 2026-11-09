@@ -185,12 +185,23 @@ final class EntryDialogHierarchyTest extends TestCase
         $js = $this->appjs();
         self::assertStringContainsString('function enforceHierarchy', $js,
             'enforceHierarchy-Funktion fehlt im Task-Picker-JS');
+        // Fix #168: Kunden-Select ist disabled solange keine Projektart
+        // gewaehlt - Placeholder wird zu "Zuerst Projektart waehlen".
+        self::assertStringContainsString("'Zuerst Projektart waehlen'", $js,
+            'Placeholder "Zuerst Projektart waehlen" fehlt (fuer Kunden-Select ohne Projektart)');
         self::assertStringContainsString("'Zuerst Kunde waehlen'", $js,
             'Placeholder "Zuerst Kunde waehlen" fehlt');
         self::assertStringContainsString("'Zuerst Projekt waehlen'", $js,
             'Placeholder "Zuerst Projekt waehlen" fehlt');
         self::assertStringContainsString('sel.disabled = lock', $js,
             'Lock-State muss Child-Select wirklich disabled setzen');
+        // Lock des Kunden-Select nutzt die data-cat-filter am Root als
+        // Signal fuer "noch keine Projektart gewaehlt".
+        self::assertMatchesRegularExpression(
+            '~updateLockState\(client[^)]*catFilterCkey~s',
+            $js,
+            'updateLockState fuer client-Select muss catFilterCkey beruecksichtigen'
+        );
     }
 
     public function testNewTaskHintProseIsRemoved(): void
