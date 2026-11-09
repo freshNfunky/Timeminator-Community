@@ -157,9 +157,31 @@
     setType('project');
   }
   function openDialog() {
-    if (typeof dlg.showModal === 'function') dlg.showModal();
-    else dlg.setAttribute('open', '');
-    (taskSel.hidden ? startIn : taskSel).focus();
+    try {
+      console.log('[TM-CAL-V7] openDialog: dlg=', dlg, 'tagName=', dlg && dlg.tagName,
+        'hasShowModal=', typeof dlg.showModal === 'function',
+        'isOpen=', dlg && dlg.open);
+    } catch (e) {}
+    try {
+      if (typeof dlg.showModal === 'function') {
+        dlg.showModal();
+      } else {
+        dlg.setAttribute('open', '');
+      }
+    } catch (ex) {
+      try { console.error('[TM-CAL-V7] openDialog: showModal threw', ex); } catch (e) {}
+      dlg.setAttribute('open', '');
+    }
+    try {
+      var target = taskSel && !taskSel.hidden ? taskSel : startIn;
+      if (target && typeof target.focus === 'function') {
+        // preventScroll verhindert, dass Firefox beim focus() auf ein weit
+        // oben stehendes Form-Element die Seite nach ganz oben scrollt.
+        target.focus({preventScroll: true});
+      }
+    } catch (e) {
+      try { console.error('[TM-CAL-V7] openDialog: focus threw', e); } catch (ee) {}
+    }
   }
   function closeDialog() {
     if (typeof dlg.close === 'function') dlg.close();
