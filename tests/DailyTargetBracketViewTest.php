@@ -77,11 +77,53 @@ final class DailyTargetBracketViewTest extends TestCase
     {
         TestSupport::bootInMemoryDb();
         $uid = TestSupport::seedUser('freelancer');
-        self::assertNull(EmployeeRepo::dailyTargetMinutes($uid, '2026-11-08'),
+        self::assertNull(EmployeeRepo::dailyTargetMinutes($uid, '2026-11-09'),
             'Ohne terms-Row darf dailyTargetMinutes null liefern (keine Klammer rendern)');
 
         // Angestellter mit 40h-Woche + 5-Tage-Preset -> 8h/Tag = 480 Minuten.
+        // 2026-11-09 ist ein Montag (Werktag).
         EmployeeRepo::saveTerms($uid, '2026-01-01', EmployeeRepo::TYPE_EMPLOYEE, 40.0, 25.0, null);
-        self::assertSame(480, EmployeeRepo::dailyTargetMinutes($uid, '2026-11-08'));
+        self::assertSame(480, EmployeeRepo::dailyTargetMinutes($uid, '2026-11-09'));
+    }
+
+    public function testWeekendsAreZeroHourDays(): void
+    {
+        // Felix-Feedback 2026-11-09 (#119): Wochenenden duerfen NICHT mit
+        // 8h als Soll gerechnet werden. In den Presets sind Mo-Fr Arbeitstage;
+        // Samstag/Sonntag muessen 0 liefern.
+        TestSupport::bootInMemoryDb();
+        $uid = TestSupport::seedUser('employee');
+        EmployeeRepo::saveTerms($uid, '2026-01-01', EmployeeRepo::TYPE_EMPLOYEE, 40.0, 25.0, null);
+        // 2026-11-07 = Samstag, 2026-11-08 = Sonntag (Default-Preset Mo-Fr).
+        self::assertSame(0, EmployeeRepo::dailyTargetMinutes($uid, '2026-11-07'),
+            'Samstag muss Tagessoll 0 liefern (kein Werktag in Default-Presets)');
+        self::assertSame(0, EmployeeRepo::dailyTargetMinutes($uid, '2026-11-08'),
+            'Sonntag muss Tagessoll 0 liefern');
+    }
+
+    public function testHolidayInUserRegionIsZeroHourDay(): void
+    {
+        // Felix-Feedback 2026-11-09 (#119): "Feiertage gelten auch natuerlich
+        // als freie Tage." DE-BY: Allerheiligen ist 1. November. Falls
+        // 1.11.2026 ein Werktag ist (das ist ein Sonntag), nehmen wir
+        // stattdessen den Nationalfeiertag 3.10.2026 (Samstag) oder
+        // Tag der Deutschen Einheit - 2026-10-03 ist ein Samstag.
+        // Fester Werktag-Feiertag in DE: 2026-05-01 (Fr Tag der Arbeit).
+        TestSupport::bootInMemoryDb();
+        $uid = TestSupport::seedUser('employee_bavaria');
+        EmployeeRepo::saveTerms($uid, '2026-01-01', EmployeeRepo::TYPE_EMPLOYEE, 40.0, 25.0, 'DE-BY');
+        self::assertSame(0, EmployeeRepo::dailyTargetMinutes($uid, '2026-05-01'),
+            'Werktag-Feiertag (Tag der Arbeit, Freitag) muss Tagessoll 0 liefern fuer DE-BY');
+    }
+
+    public function testNoHolidayRegionLeavesTargetUntouched(): void
+    {
+        // Wenn der User keine holiday_region hat, zaehlen Feiertage nicht
+        // als frei - er bekommt den regulaeren Werktag-Tagessoll.
+        TestSupport::bootInMemoryDb();
+        $uid = TestSupport::seedUser('employee_no_region');
+        EmployeeRepo::saveTerms($uid, '2026-01-01', EmployeeRepo::TYPE_EMPLOYEE, 40.0, 25.0, null);
+        self::assertSame(480, EmployeeRepo::dailyTargetMinutes($uid, '2026-05-01'),
+            'Ohne holiday_region bleibt der Tagessoll am 1. Mai bei 480 Min.');
     }
 }

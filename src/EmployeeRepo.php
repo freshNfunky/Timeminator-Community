@@ -126,12 +126,31 @@ final class EmployeeRepo
      * braucht genau diesen Wert. Freelancer (kein employee_terms-Row,
      * employment_type != EMPLOYEE) bekommen `null`, dann wird keine
      * Klammer gerendert.
+     *
+     * Felix-Feedback 2026-11-09 (#119): Wochenenden (!working_days) und
+     * gesetzliche Feiertage (holiday_region des Nutzers) sind FREIE Tage
+     * -> Rueckgabe 0. Die View unterscheidet: null=kein Vertrag (kein Badge),
+     * 0=freier Tag (kein Badge, zaehlt nicht), >0=Werktag mit Sollwert.
      */
     public static function dailyTargetMinutes(int $userId, string $date): ?int
     {
         $terms = self::termsAt($userId, $date);
         if (!$terms || $terms['employment_type'] !== self::TYPE_EMPLOYEE) {
             return null;
+        }
+        // Wochenende: ISO-Dow (1..7) nicht in den konfigurierten working_days.
+        try {
+            $iso = (int) (new DateTimeImmutable($date))->format('N');
+        } catch (Throwable) {
+            return null;
+        }
+        if (!in_array($iso, Holidays::workingDays(), true)) {
+            return 0;
+        }
+        // Feiertag in der Region des Users.
+        $region = (string) ($terms['holiday_region'] ?? '');
+        if ($region !== '' && Holidays::on($region, $date) !== null) {
+            return 0;
         }
         return (int) round(self::dailyTarget($terms) * 60);
     }

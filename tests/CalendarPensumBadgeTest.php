@@ -52,19 +52,19 @@ final class CalendarPensumBadgeTest extends TestCase
         );
     }
 
-    public function testBadgeIsOnlyRenderedWhenDailyTargetExists(): void
+    public function testBadgeIsOnlyRenderedWhenDailyTargetIsAPositiveNumber(): void
     {
-        // Das Badge haengt im View an `if ($__dayTargetMin !== null)`:
-        // Freelancer (kein employee_terms) bekommen null, also kein Badge.
+        // Felix-Feedback 2026-11-09 (#119): Badge nur bei WERKTAG mit Soll > 0.
+        // Freelancer (null) UND Wochenende/Feiertag (0) rendern beide KEIN Badge.
         $view = $this->view();
-        // Die Markup-Branch sitzt direkt vor dem cal-day-pensum-Div in der
-        // Kopfzeile; davor steht `if ($__dayTargetMin !== null):` als
-        // Template-Branch (nicht die Berechnungs-Zeile weiter oben).
         $pos = strpos($view, 'cal-day-pensum');
         self::assertNotFalse($pos);
         $before = substr($view, max(0, $pos - 900), 900);
-        self::assertStringContainsString('if ($__dayTargetMin !== null)', $before,
-            'Badge-Markup muss hinter einem Null-Check fuer $__dayTargetMin stehen');
+        self::assertMatchesRegularExpression(
+            '~if\s*\(\s*\$__dayTgt\s*!==\s*null\s*&&\s*\$__dayTgt\s*>\s*0\s*\)~',
+            $before,
+            'Badge-Markup muss hinter "if ($__dayTgt !== null && $__dayTgt > 0)" stehen, damit Wochenenden + Feiertage kein Badge bekommen'
+        );
     }
 
     public function testZoneClassificationRulesMatchFelixSpec(): void

@@ -144,12 +144,20 @@ foreach (($processes ?? []) as $__p) {
 // Pro Tag kumulierte Minuten aus Entries + Prozessen (Abwesenheiten zaehlen
 // nicht fuer die Klammer); Grenze wird mitten in einer Buchung gesetzt,
 // wenn das Tagessoll dort erreicht ist. Freelancer bekommen keine Klammer.
-$__dayTargetMin = null;
-$__dayBrackets  = [];
-if (function_exists('Auth::id') || true) {
-    $__uid = (int) Auth::id();
-    if ($__uid > 0) {
-        $__dayTargetMin = EmployeeRepo::dailyTargetMinutes($__uid, $week_start->format('Y-m-d'));
+// Felix-Feedback 2026-11-09 (#119): Tagessoll pro Tag, nicht pauschal.
+// Wochenenden + Feiertage haben Tagessoll 0 (freier Tag). Freelancer
+// ohne Vertragsdaten haben Tagessoll null (kein Badge, keine Klammer).
+$__dayTargetByOffset = [];
+$__dayTargetMin      = null; // Rueckwaerts-Kompat fuer Tests + Rendering-Check im Head.
+$__dayBrackets       = [];
+$__uid = (int) Auth::id();
+if ($__uid > 0) {
+    foreach ($__days as $__i => $__day) {
+        $__dayTargetByOffset[$__i] = EmployeeRepo::dailyTargetMinutes($__uid, $__day['ymd']);
+    }
+    // Ein nicht-null Wert fuer die "Grundsicht" (irgendein Werktag der Woche).
+    foreach ($__dayTargetByOffset as $__t) {
+        if ($__t !== null) { $__dayTargetMin = $__t; break; }
     }
 }
 if ($__dayTargetMin !== null) {
@@ -181,8 +189,14 @@ if ($__dayTargetMin !== null) {
         ];
     }
     foreach ($__eventsByDay as $__off => $__evs) {
+        // Pro Tag: eigenes Tagessoll. Wochenenden / Feiertage (Soll=0)
+        // bekommen keine Klammer, weil Buchungen dort als Ueberstunden
+        // zaehlen - die entsprechende Darstellung macht die Overtime-
+        // Klammer selbst.
+        $__dayTgt = $__dayTargetByOffset[$__off] ?? null;
+        if ($__dayTgt === null || $__dayTgt <= 0) { continue; }
         usort($__evs, static fn($a, $b) => $a['start_min'] <=> $b['start_min']);
-        $__b = DayBracket::compute($__evs, $__dayTargetMin);
+        $__b = DayBracket::compute($__evs, $__dayTgt);
         if ($__b !== null) {
             $__dayBrackets[$__off] = $__b;
         }
@@ -336,12 +350,14 @@ $__calInk = static function (string $hex): string {
       ?>
         <div class="<?= h($__hdCls) ?>" role="columnheader" data-day="<?= h($__day['ymd']) ?>">
           <div class="cal-week-dayhead-label"><?= h($__day['label']) ?></div>
-          <?php /* Felix-Feedback 2026-11-09 (#118): Pensum-Badge pro Tag in
-             der Kopfzeile - gruen unter Soll, gelb genau drauf, rot ueber
-             Soll. Freelancer (kein Tagessoll) bekommen kein Badge. */ ?>
-          <?php if ($__dayTargetMin !== null):
+          <?php /* Felix-Feedback 2026-11-09 (#118/#119): Pensum-Badge pro Tag
+             in der Kopfzeile - gruen unter Soll, gelb genau drauf, rot
+             ueber Soll. Freelancer (Tagessoll=null) + Wochenenden /
+             Feiertage (Tagessoll=0) bekommen kein Badge. */ ?>
+          <?php $__dayTgt = $__dayTargetByOffset[$__i] ?? null; ?>
+          <?php if ($__dayTgt !== null && $__dayTgt > 0):
             $__sum = isset($__dayBrackets[$__i]) ? (int) $__dayBrackets[$__i]['sum'] : 0;
-            $__diff = $__sum - $__dayTargetMin;
+            $__diff = $__sum - $__dayTgt;
             $__toleranceMin = 5;
             if (abs($__diff) <= $__toleranceMin)      $__pensumCls = 'is-ok';
             elseif ($__diff < 0)                      $__pensumCls = 'is-under';
@@ -350,7 +366,7 @@ $__calInk = static function (string $hex): string {
           ?>
             <div class="cal-day-pensum <?= $__pensumCls ?>"
                  title="<?= h(t('cal.day_pensum_tip', 'Gebuchte Stunden heute / Tagessoll')) ?>">
-              <?= h($__fmtH($__sum)) ?> / <?= h($__fmtH($__dayTargetMin)) ?> h
+              <?= h($__fmtH($__sum)) ?> / <?= h($__fmtH($__dayTgt)) ?> h
             </div>
           <?php endif; ?>
           <?php /* Felix-Feedback 2026-11-09 (#110): Daily-Mood-Picker sitzt
