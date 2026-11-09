@@ -358,6 +358,7 @@ return [
     'tp.all_wp'                 => 'Alle Arbeitspakete',
     'tp.wp_none_inline'         => '(ohne Arbeitspaket)',
     'tp.pick_task'              => 'Aufgabe waehlen …',
+    'tp.all_categories'         => 'Alle Projektarten',
     'tp.new_task'               => 'Neue Aufgabe',
     'tp.new_task_name'          => 'Name der neuen Aufgabe',
     'tp.new_task_placeholder'   => 'z.B. Konzept, Review, Deployment',

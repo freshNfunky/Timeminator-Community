@@ -211,23 +211,30 @@ foreach (($processes ?? []) as $__p) {
       </select>
     </label>
 
-    <label id="calTaskWrap"><?= h(t('cal.dialog_task', 'Aufgabe')) ?>
-      <select id="calTask">
-        <option value=""><?= h(t('dash.task_placeholder', 'Aufgabe waehlen …')) ?></option>
-        <?php
-          $__curGroup = null;
-          foreach (($tasks ?? []) as $__t):
-            $__g = (string) ($__t['client_name'] ?? '') . ' / ' . (string) ($__t['project_name'] ?? '');
-            if ($__g !== $__curGroup) {
-              if ($__curGroup !== null) echo '</optgroup>';
-              echo '<optgroup label="' . h($__g) . '">';
-              $__curGroup = $__g;
-            }
-        ?>
-          <option value="<?= (int) $__t['id'] ?>"><?= h((string) $__t['name']) ?></option>
-        <?php endforeach; if ($__curGroup !== null) echo '</optgroup>'; ?>
-      </select>
-    </label>
+    <?php /* Felix-Feedback 2026-11-09 (Fix #149): Pro-Variante hat
+       hierarchische Auswahl Projektart -> Kunde -> Projekt -> Arbeitspaket
+       -> Aufgabe mit kaskadierender Filterung, plus "+ Neue Aufgabe" inline.
+       Statt hunderte flache Aufgaben-Optionen zu rendern, binden wir hier
+       das task_picker-Partial ein - das hat die kaskadierende UX bereits. */ ?>
+    <div id="calTaskWrap" class="cal-dialog-task-picker">
+      <?php /* Projektart-Filter als erster Schritt (noch einen Level oberhalb
+         von Kunde). Felix: "Internes Projekt braucht keinen Kunden; bei
+         Foerderprojekt steht statt Kunde der Projekttraeger." */ ?>
+      <label><?= h(t('projects.category', 'Projektart')) ?>
+        <select class="tp-cat" aria-label="<?= h(t('projects.category', 'Projektart')) ?>">
+          <option value=""><?= h(t('tp.all_categories', 'Alle Projektarten')) ?></option>
+          <?php foreach (($projectCategories ?? []) as $__pc): ?>
+            <option value="<?= (int) $__pc['id'] ?>"><?= h((string) $__pc['label']) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </label>
+      <?php
+        // Partial rendert die vier Kaskaden-Selects + Inline-"+ Neue Aufgabe".
+        $selectedTaskId = 0;
+        $wrapClass = 'tp-stack';
+        require __DIR__ . '/../partials/task_picker.php';
+      ?>
+    </div>
 
     <div class="row" id="calTimeRow">
       <label class="grow"><?= h(t('entries.start', 'Start')) ?>
@@ -294,5 +301,11 @@ foreach (($processes ?? []) as $__p) {
         // Urlaubsoption im Dialog findet.
         'group_absences' => t('cal.group_absences', 'Abwesenheiten'),
     ],
+    // #149: Mapping project-category-id -> ckey, damit das Projektart-
+    // Dropdown im Dialog die Projekt-Optionen clientseitig filtern kann.
+    'projectCats' => array_reduce(($projectCategories ?? []), static function (array $acc, array $c): array {
+        $acc[(string) $c['id']] = (string) ($c['ckey'] ?? '');
+        return $acc;
+    }, []),
 ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
 <script src="<?= h(asset('calendar.js')) ?>" nonce="<?= h(csp_nonce()) ?>"></script>

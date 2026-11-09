@@ -9,8 +9,17 @@
   var typeSel  = document.getElementById('calType');
   var titleEl  = document.getElementById('calDialogTitle');
   var idInput  = document.getElementById('calEntryId');
-  var taskSel  = document.getElementById('calTask');
   var taskWrap = document.getElementById('calTaskWrap');
+  // Felix-Feedback 2026-11-09 (Fix #149): Dialog nutzt jetzt das
+  // task_picker-Partial mit kaskadierender Hierarchie (Projektart ->
+  // Kunde -> Projekt -> Arbeitspaket -> Aufgabe). Der Aufgaben-Select
+  // ist .tp-task, zusaetzlich gibt es .tp-cat als erste Filterstufe.
+  var catFilter  = taskWrap ? taskWrap.querySelector('.tp-cat') : null;
+  var taskPicker = taskWrap ? taskWrap.querySelector('.task-picker') : null;
+  var clientSel  = taskPicker ? taskPicker.querySelector('.tp-client')  : null;
+  var projectSel = taskPicker ? taskPicker.querySelector('.tp-project') : null;
+  var wpSel      = taskPicker ? taskPicker.querySelector('.tp-wp')      : null;
+  var taskSel    = taskPicker ? taskPicker.querySelector('.tp-task')    : null;
   var startIn  = document.getElementById('calStart');
   var endIn    = document.getElementById('calEnd');
   var timeRow  = document.getElementById('calTimeRow');
@@ -41,10 +50,33 @@
     timeRow.hidden  = (k === 'absence');
     dateRow.hidden  = (k !== 'absence');
     hoursWrap.hidden = !(k === 'absence' && absenceAccountOf(v) === 'overtime');
-    taskSel.required = (k === 'project');
+    if (taskSel) taskSel.required = (k === 'project');
     startIn.required = endIn.required = (k !== 'absence');
     fromIn.required  = (k === 'absence');
   }
+  // Projektart-Filter: filtert die Projekt-Optionen im Dialog nach ckey/id.
+  // Child-Selects (WP + Task) werden in applyFilters() dann automatisch
+  // nach Projekt gefiltert - die bestehende Kaskaden-Logik aus task_picker.
+  function applyCategoryFilter() {
+    if (!catFilter || !projectSel || !taskSel) return;
+    var catId = catFilter.value;
+    // Projekt-Optionen filtern nach data-cat-ckey. Wenn kein Filter aktiv
+    // ist, alle sichtbar (data-cat-ckey wird dann nicht geprueft).
+    var cats = D.projectCats || {};
+    var want = catId ? (cats[catId] || '') : '';
+    Array.prototype.forEach.call(projectSel.options, function (o) {
+      if (o.value === '') return;
+      var ckey = o.getAttribute('data-cat-ckey') || '';
+      var ok = (want === '' || ckey === want);
+      o.hidden = !ok; o.disabled = !ok;
+    });
+    // Wenn aktuelles Projekt nicht mehr passt: Projekt zuruecksetzen.
+    var cur = projectSel.selectedOptions[0];
+    if (cur && cur.hidden) { projectSel.value = ''; }
+    // Kaskade stossen (task_picker hoert auf change-Events).
+    projectSel.dispatchEvent(new Event('change', {bubbles: true}));
+  }
+  if (catFilter) catFilter.addEventListener('change', applyCategoryFilter);
   function showError(msg) {
     errorEl.textContent = msg || D.i18n.err_generic;
     errorEl.hidden = false;
@@ -58,7 +90,19 @@
   function reset() {
     idInput.value = '';
     typeSel.value = 'project';
-    taskSel.value = '';
+    if (catFilter)  catFilter.value  = '';
+    if (clientSel)  clientSel.value  = '';
+    if (projectSel) projectSel.value = '';
+    if (wpSel)      wpSel.value      = '';
+    if (taskSel)    taskSel.value    = '';
+    // Auch tp-new-task-Panel zuruecksetzen (hidden + leer).
+    if (taskPicker) {
+      var np = taskPicker.querySelector('.tp-new-task');
+      if (np) { np.hidden = true; }
+      var ni = taskPicker.querySelector('.tp-new-task-name');
+      if (ni) { ni.value = ''; ni.required = false; }
+    }
+    applyCategoryFilter();
     startIn.value = endIn.value = '';
     fromIn.value = toIn.value = '';
     hoursIn.value = '';
@@ -120,7 +164,14 @@
     reset();
     typeSel.value = 'project';
     idInput.value = String(e.id);
-    taskSel.value = String(e.task_id || '');
+    // #149: Taskpicker-Hierarchie-Preselect: Task waehlen, Cascader
+    // fuellt Parents automatisch.
+    if (taskSel) {
+      taskSel.value = String(e.task_id || '');
+      // task_picker initPicker setzt die Parents aus data-* beim Init;
+      // wir triggern einen change, damit auch bei Bestandsentry filterOk.
+      taskSel.dispatchEvent(new Event('change', {bubbles: true}));
+    }
     startIn.value = toLocalInput(e.start_ts);
     endIn.value   = toLocalInput(e.end_ts);
     noteIn.value  = e.note || '';
@@ -312,14 +363,26 @@
     var note = noteIn.value;
 
     if (k === 'project') {
-      if (!taskSel.value || !startIn.value || !endIn.value) {
+      if (!taskSel || !taskSel.value || !startIn.value || !endIn.value) {
         showError('Aufgabe, Start und Ende sind erforderlich.');
         return;
       }
-      postForm(D.urls.entry_save, {
+      // #149/#141: "+ Neue Aufgabe"-Fall - name + parent IDs mitgeben.
+      var payload = {
         id: id, task_id: taskSel.value,
         start_ts: startIn.value, end_ts: endIn.value, note: note,
-      }).then(function (res) {
+      };
+      if (taskSel.value === '__new__' && taskPicker) {
+        var ni = taskPicker.querySelector('.tp-new-task-name');
+        var np = taskPicker.querySelector('.tp-new-task-project');
+        var nw = taskPicker.querySelector('.tp-new-task-wp');
+        if (!ni || !ni.value.trim()) { showError('Bitte Namen der neuen Aufgabe eingeben.'); return; }
+        if (!projectSel || !projectSel.value) { showError('Fuer eine neue Aufgabe muss ein Projekt ausgewaehlt sein.'); return; }
+        payload.new_task_name       = ni.value.trim();
+        payload.new_task_project_id = (np && np.value) || projectSel.value;
+        payload.new_task_wp_id      = (nw && nw.value) || (wpSel ? wpSel.value : '');
+      }
+      postForm(D.urls.entry_save, payload).then(function (res) {
         if (!res.ok) { showError(res.error); return; }
         window.location.reload();
       });

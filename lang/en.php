@@ -367,6 +367,7 @@ return [
     'tp.all_wp'                 => 'All work packages',
     'tp.wp_none_inline'         => '(no work package)',
     'tp.pick_task'              => 'Pick a task …',
+    'tp.all_categories'         => 'All project types',
     'tp.new_task'               => 'New task',
     'tp.new_task_name'          => 'Name of the new task',
     'tp.new_task_placeholder'   => 'e.g. Concept, Review, Deployment',

@@ -573,6 +573,13 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .task-picker .tp-new-task[hidden]{display:none}
 .task-picker .tp-new-task input[type=text]{width:100%}
 .task-picker .tp-new-task-hint{margin:0;font-size:12px}
+/* Felix-Feedback 2026-11-09 (Fix #149): Im Dialog ist der Picker vertikal
+   gestapelt (tp-stack), damit die 5 Dropdowns (Projektart + Kunde +
+   Projekt + Arbeitspaket + Aufgabe) auf schmaler Dialog-Breite nicht
+   zusammenbrechen. Ausserhalb des Dialogs bleibt das 4-Spalten-Grid. */
+.task-picker.tp-stack{display:flex;flex-direction:column;gap:8px}
+.cal-dialog-task-picker{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.cal-dialog-task-picker > label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);margin:0}
 /* Felix-Feedback 2026-11-09 (#143): Projektart-Pills in der Projekt-Liste.
    Farbkodierung nach ckey - kundenprojekt=blau, internes_projekt=grau,
    foerderprojekt=gold - eigene pro Pill, sodass sie auch dann sinnvoll

@@ -137,6 +137,10 @@ function ctrl_entries_index(): void
     $absenceCats = AbsenceRepo::categories(true);
     $processCats = ProcessRepo::categories(true);
     $tasks       = Repo::tasks(true);
+    // Felix-Feedback 2026-11-09 (Fix #149): Projektart im Dialog als
+    // erste Filter-Stufe (Pro-Parity: Projektart -> Kunde -> Projekt ->
+    // Arbeitspaket -> Aufgabe).
+    $projectCategories = Repo::projectCategories(true);
 
     // Sentiment-Daten im sichtbaren Bereich + aktueller Rhythmus
     // (Felix-Feedback 2026-11-04 / 2026-11-08): damit der Kalender pro Tag
@@ -184,6 +188,7 @@ function ctrl_entries_index(): void
         'absenceCats' => $absenceCats,
         'processCats' => $processCats,
         'tasks'       => $tasks,
+        'projectCategories' => $projectCategories,
         'weekSentiment' => $weekSentiment,
         'sentimentGranularity' => $sentimentGranularity,
         'canRecordSentiment'   => Auth::can('sentiment.record'),
