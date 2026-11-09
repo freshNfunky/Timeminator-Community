@@ -96,4 +96,95 @@ final class AbsenceDragBarMonthTest extends TestCase
         self::assertStringContainsString('cal-month-abs-pill', $js,
             'Click-Handler fuer Monats-Pillen (Edit-Dialog) fehlt');
     }
+
+    /**
+     * Felix-Feedback 2026-11-09 nach dem #148/#153/#154-Fix:
+     * "Ja, genau so ist richtig. Und jetzt funktioniert auch diese
+     * Click-and-Track-Funktionalitaet. Bitte festhalten in Regressions-
+     * tests, dass das auf jeden Fall so erhalten bleibt."
+     *
+     * Der komplette Drag-Flow (Screenshot: 02.11.-06.11. Urlaub):
+     *   1. mousedown auf Monats-Kachel startet Drag (preventDefault).
+     *   2. mousemove ueber weitere Kacheln setzt mDragMoved + Range.
+     *   3. mouseup ruft openForNewAbsenceRange(from, to) auf.
+     *   4. Overlay-Dialog oeffnet mit Typ=Urlaub praeselektiert,
+     *      Von/Bis vorbelegt, OHNE Projekt-Hierarchie, OHNE Start/Ende-
+     *      Datetime, OHNE Stunden-Feld.
+     */
+    public function testDragOpensDialogWithVacationPreselectedAndReducedFields(): void
+    {
+        $js = (string) file_get_contents(dirname(__DIR__) . '/assets/calendar.js');
+
+        self::assertStringContainsString('function openForNewAbsenceRange', $js,
+            'openForNewAbsenceRange-Funktion fehlt');
+        self::assertMatchesRegularExpression(
+            "~ckey\\.indexOf\\('urlaub'\\) !== -1~",
+            $js,
+            'Pre-Select muss "Urlaub"-Option praeferiert waehlen'
+        );
+        self::assertMatchesRegularExpression(
+            "~ckey\\.indexOf\\('sonder'\\) === -1~",
+            $js,
+            'Pre-Select darf nicht auf Sonderurlaub fallen (bewusste zweite Wahl)'
+        );
+        self::assertStringContainsString('fromIn.value = fromYmd;', $js,
+            'Von-Feld muss aus Drag-Range vorbelegt werden');
+        self::assertStringContainsString('toIn.value   = toYmd', $js,
+            'Bis-Feld muss aus Drag-Range vorbelegt werden');
+
+        // setType-Logik: taskWrap + timeRow + hoursWrap sind bei Absence
+        // hidden, dateRow ist bei Absence sichtbar.
+        self::assertMatchesRegularExpression(
+            "~taskWrap\\.hidden = \\(k !== 'project'\\)~",
+            $js,
+            'Task-Picker muss bei Absence hidden werden'
+        );
+        self::assertMatchesRegularExpression(
+            "~timeRow\\.hidden\\s*=\\s*\\(k === 'absence'\\)~",
+            $js,
+            'Start/Ende-Datetime muss bei Absence verschwinden'
+        );
+        self::assertMatchesRegularExpression(
+            "~dateRow\\.hidden\\s*=\\s*\\(k !== 'absence'\\)~",
+            $js,
+            'Von/Bis-Date muss bei Absence sichtbar sein'
+        );
+        self::assertMatchesRegularExpression(
+            "~hoursWrap\\.hidden\\s*=\\s*!\\(k === 'absence' && absenceAccountOf\\(v\\) === 'overtime'\\)~",
+            $js,
+            'Stunden-Feld nur bei Ueberstundenabbau (bei Urlaub hidden)'
+        );
+    }
+
+    public function testMonthDragGuardsAllowPillsAndMoodNotToTriggerRangeSelection(): void
+    {
+        $js = (string) file_get_contents(dirname(__DIR__) . '/assets/calendar.js');
+        // Click auf Pille oder Mood-Picker darf KEINEN Drag starten -
+        // sie haben eigene Edit/Record-Flows.
+        self::assertMatchesRegularExpression(
+            "~closest\\('\\.cal-month-abs-pill, \\.cal-sent-cell, \\.cal-sent-day, \\.cal-sent-week'\\)~",
+            $js,
+            'mousedown-Guard muss Pills und Mood/Flow-Picker vom Drag-Start ausnehmen'
+        );
+        // Aber cal-month-link darf NICHT im Guard stehen - das war Fix #154:
+        // sonst fangen Links jedes mousedown ab und Drag startet nie.
+        self::assertStringNotContainsString(
+            "closest('.cal-month-abs-pill, .cal-sent-cell, .cal-month-link",
+            $js,
+            'cal-month-link darf NICHT im mousedown-Guard stehen (hat frueher den Drag unterbunden)'
+        );
+    }
+
+    public function testMonthViewHasNoPhpSyntaxErrors(): void
+    {
+        // Letzter Guard: Fix #153 hatte zwischenzeitlich ein endif
+        // verschluckt und der Monat warf 500. Dieser Test laesst PHP die
+        // Datei parsen, damit das nicht wieder passiert.
+        $view = dirname(__DIR__) . '/views/entries/calendar_month.php';
+        $out  = [];
+        $ret  = 0;
+        exec('php -l ' . escapeshellarg($view) . ' 2>&1', $out, $ret);
+        self::assertSame(0, $ret,
+            'php -l schlaegt in calendar_month.php fehl: ' . implode("\n", $out));
+    }
 }
