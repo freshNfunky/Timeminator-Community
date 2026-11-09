@@ -147,6 +147,14 @@ final class EntryDialogHierarchyTest extends TestCase
             'calTimeRow[hidden] (Start/Ende) muss bei Abwesenheit komplett verschwinden');
         self::assertStringContainsString('#calDateRow[hidden]', $css,
             'calDateRow[hidden] (Von/Bis) muss bei Projekt + Prozess verschwinden');
+        // Fix #156: Kunde-Label muss bei Internem Projekt per hidden=true
+        // wirklich verschwinden - .cal-dialog-task-picker > label{display:
+        // flex} ueberschreibt sonst das Default [hidden]{display:none}.
+        self::assertMatchesRegularExpression(
+            '~\.task-picker\s+\.tp-client-label\[hidden\]\s*\{\s*display:\s*none|\.cal-dialog-task-picker\s*>\s*label\[hidden\][^{]*\{\s*display:\s*none~s',
+            $css,
+            'Kunden-Label muss bei hidden=true via CSS wirklich verschwinden (Fix #156)'
+        );
     }
 
     public function testJsHideLogicCoversProcessAndAbsence(): void

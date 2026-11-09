@@ -12,44 +12,50 @@ use PHPUnit\Framework\TestCase;
  */
 final class AbsenceDragBarWeekTest extends TestCase
 {
-    public function testWeekViewRendersAbsBandBeforeHeadRow(): void
+    public function testWeekViewRendersPillsInsideDayheadCells(): void
     {
+        // Felix-Feedback 2026-11-09 (Fix #155): Pillen sitzen jetzt
+        // INNERHALB der jeweiligen Dayhead-Zelle (zwischen Wochentag-Label
+        // und Pensum-Badge), nicht mehr als separate Band-Zone oberhalb.
         $view = (string) file_get_contents(dirname(__DIR__) . '/views/entries/calendar_week.php');
-        self::assertStringContainsString('cal-week-absbar', $view,
-            'Band-Zone cal-week-absbar fehlt im Markup');
         self::assertStringContainsString('cal-absbar-pill', $view,
             'Pillen-Klasse cal-absbar-pill fehlt');
-        // Pillen-Build iteriert ueber $__absBand (pre-computed Werktags-Spans).
-        self::assertStringContainsString('foreach ($__absBand', $view,
-            'Pillen muessen aus $__absBand gebaut werden');
-        // WorkdaySpans wird benutzt, um die Werktags-Spans zu erzeugen.
+        // Pillen werden nach from-YMD gruppiert und in die dayhead der
+        // ersten Spalte ihres Spans gerendert.
+        self::assertStringContainsString('$__absBandByYmd', $view,
+            'Pillen muessen pro ymd gruppiert werden, damit sie in der jeweiligen Zelle gerendert werden');
         self::assertStringContainsString('WorkdaySpans::workdaySpans', $view,
-            'Werktags-Zerlegung muss ueber WorkdaySpans::workdaySpans laufen');
-        // Alter Pro-Tag-Button ist raus - Band ersetzt ihn.
+            'Werktags-Zerlegung muss ueber WorkdaySpans laufen');
+        // Alter Pro-Tag-Button ist raus - Pillen ersetzen ihn.
         self::assertStringNotContainsString('class="cal-day-absence"', $view,
-            'Alte cal-day-absence-Buttons in der Wochenansicht duerfen nicht mehr gerendert werden - Band ersetzt sie');
+            'Alte cal-day-absence-Buttons in der Wochenansicht duerfen nicht mehr gerendert werden');
+        // Die separate Band-Row ist entfernt - Pillen sitzen in der Dayhead.
+        self::assertStringNotContainsString('<div class="cal-week-absbar"', $view,
+            'Separate cal-week-absbar-Row darf nicht mehr existieren - Pillen sitzen in dayhead');
     }
 
-    public function testCssDefinesAbsBarGridAndPillVariants(): void
+    public function testCssDefinesPillPositionAbsoluteInsideDayhead(): void
     {
         $css = (string) file_get_contents(dirname(__DIR__) . '/assets/app.css');
+        // Fix #155: Pillen sind position:absolute innerhalb der dayhead,
+        // Breite wird pro Pill via nonce-Style auf span*100% gesetzt.
         self::assertMatchesRegularExpression(
-            '~\.cal-week-absbar\s*\{[^}]*grid-template-columns:\s*52px\s+repeat\(7~s',
+            '~\.cal-absbar-pill\s*\{[^}]*position:\s*absolute~s',
             $css,
-            'Absbar muss 52px + 7 Spalten im Grid haben (synchron zu .cal-week-head)'
+            'Pills muessen position:absolute sein, damit sie ueber die Nachbar-Cells laufen koennen'
         );
-        self::assertStringContainsString('.cal-absbar-pill-urlaub', $css,
-            'Urlaubs-Pill-Variante fehlt');
-        self::assertStringContainsString('.cal-absbar-pill-sonderurlaub', $css,
-            'Sonderurlaubs-Pill-Variante fehlt');
-        // Drag-Hover: cursor:crosshair + is-drag-range.
+        self::assertMatchesRegularExpression(
+            '~\.cal-week-dayhead\s*\{[^}]*position:\s*relative[^}]*overflow:\s*visible~s',
+            $css,
+            'Dayhead braucht position:relative + overflow:visible fuer die absolute Pille'
+        );
+        self::assertStringContainsString('.cal-absbar-pill-urlaub', $css);
+        self::assertStringContainsString('.cal-absbar-pill-sonderurlaub', $css);
         self::assertMatchesRegularExpression(
             '~\.cal-week-head\.is-dragging\s*\{[^}]*cursor:\s*crosshair~s',
-            $css,
-            'Drag-Zustand muss cursor:crosshair haben'
+            $css
         );
-        self::assertStringContainsString('.cal-week-dayhead.is-drag-range', $css,
-            'Drag-Range-Highlight-Klasse fehlt');
+        self::assertStringContainsString('.cal-week-dayhead.is-drag-range', $css);
     }
 
     public function testJsExposesOpenForNewAbsenceRangeAndDragHandlers(): void

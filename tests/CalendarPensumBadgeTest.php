@@ -33,7 +33,9 @@ final class CalendarPensumBadgeTest extends TestCase
         // damit es sticky mitwandert - NICHT in der cal-day-Column.
         $pos = strpos($view, 'cal-week-dayhead-label');
         self::assertNotFalse($pos, 'Kopfzeilen-Label fehlt');
-        $tail = substr($view, $pos, 1500);
+        // Fenster 3000 Zeichen, damit die neu eingefuegten Abwesenheits-
+        // Pillen zwischen Label und Pensum-Badge nicht aus dem Window fallen.
+        $tail = substr($view, $pos, 3000);
         self::assertStringContainsString('cal-day-pensum', $tail,
             'Pensum-Badge muss innerhalb der Kopfzeile stehen');
     }

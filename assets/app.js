@@ -430,7 +430,13 @@
     // ohne Projekt anklicken, was Felix als "flache Hierarchie" kritisiert
     // hat.
     function enforceHierarchy() {
-      updateLockState(project, !client.value,  'Zuerst Kunde waehlen');
+      // Fix #156: wenn Kunde-Feld durch Projektart-Auswahl (needs_client=0)
+      // komplett ausgeblendet ist (z.B. Internes Projekt), gibt es keinen
+      // Parent-Kunde, der zuerst gewaehlt werden muesste - Projekt wird
+      // dann direkt freigeschaltet.
+      var clientLabel = root.querySelector('.tp-client-label');
+      var clientSkipped = !!(clientLabel && clientLabel.hidden);
+      updateLockState(project, !clientSkipped && !client.value, 'Zuerst Kunde waehlen');
       updateLockState(wp,      !project.value, 'Zuerst Projekt waehlen');
       updateLockState(task,    !project.value, 'Zuerst Projekt waehlen');
     }

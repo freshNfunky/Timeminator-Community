@@ -249,29 +249,25 @@ $__weekEndYmd   = $week_start->modify('+6 days')->format('Y-m-d');
 $__workingDows  = Holidays::workingDays();
 $__holidayFlags = [];
 foreach (($holidays ?? []) as $__k => $__v) { $__holidayFlags[(string) $__k] = true; }
-$__absBand = []; // list<array{abs_id,cat,cat_ckey,col,span,title,from,to}>
+$__absBand = []; // list<array{abs_id,cat,cat_ckey,span,from,to,note}>
+$__absBandByYmd = []; // ymd (from) => list<idx in $__absBand>
 foreach (($absences ?? []) as $__a) {
     $__aFrom = max((string) $__a['start_date'], $__weekStartYmd);
     $__aTo   = min((string) ($__a['end_date'] ?? $__a['start_date']), $__weekEndYmd);
     if ($__aFrom > $__aTo) { continue; }
     $__spans = WorkdaySpans::workdaySpans($__aFrom, $__aTo, $__workingDows, $__holidayFlags);
     foreach ($__spans as $__span) {
-        try {
-            $__d1 = new DateTimeImmutable($__span['from']);
-            // %r = Vorzeichen (nur '-' bei negativ), %a = Anzahl Tage.
-            $__col = (int) $week_start->diff($__d1)->format('%r%a');
-        } catch (Throwable) { continue; }
-        if ($__col < 0 || $__col > 6) { continue; }
+        $__idx = count($__absBand);
         $__absBand[] = [
             'abs_id'   => (int) $__a['id'],
             'cat'      => (string) ($__a['category_label'] ?? ''),
             'cat_ckey' => (string) ($__a['category_ckey'] ?? ''),
-            'col'      => $__col,       // 0..6 (Mo..So)
             'span'     => (int) $__span['days'],
             'from'     => $__span['from'],
             'to'       => $__span['to'],
             'note'     => (string) ($__a['note'] ?? ''),
         ];
+        $__absBandByYmd[$__span['from']][] = $__idx;
     }
 }
 
@@ -331,13 +327,12 @@ $__calInk = static function (string $hex): string {
 <?php if ($__nowPct !== null): ?>
 .cal-now-line{top:<?= $__nowPct ?>%}
 <?php endif; ?>
-<?php /* Felix-Feedback 2026-11-09 (#146): Abwesenheits-Pillen in der
-   Band-Zone - grid-column pro Pill per nonce-Style (CSP-strict). */ ?>
+<?php /* Fix #155: Abwesenheits-Pillen sitzen INNERHALB der ersten
+   Dayhead-Zelle, Breite via nonce-Style = span * 100% - padding. */ ?>
 <?php foreach ($__absBand as $__k => $__p):
-    $__gcStart = $__p['col'] + 2;
-    $__gcEnd   = $__gcStart + $__p['span'];
+    $__wPct = (int) $__p['span'] * 100;
 ?>
-.cal-absbar-slot-<?= (int) $__k ?>{grid-column:<?= $__gcStart ?>/<?= $__gcEnd ?>}
+.cal-absbar-slot-<?= (int) $__k ?>{width:calc(<?= $__wPct ?>% - 8px)}
 <?php endforeach; ?>
 </style>
 
@@ -402,24 +397,14 @@ $__calInk = static function (string $hex): string {
        keine echte durchgehende Zeile. Kopfzeile ist ein eigener Grid-Row
        innerhalb von .cal-week und tritt horizontal mit den Day-Columns
        in den gleichen Raster. */ ?>
-    <?php /* Felix-Feedback 2026-11-09 (#146): Pillen-Band fuer ganztaegige
-       Abwesenheiten OBERHALB der Dayhead-Row. Jede Pille entspricht einem
-       zusammenhaengenden Werktags-Span - Wochenende/Feiertag erzeugen
-       Luecken. Spans werden via CSS-Grid ueber mehrere Spalten platziert. */ ?>
-    <div class="cal-week-absbar" role="row" data-week-start="<?= h($__weekStartYmd) ?>">
-      <div class="cal-week-absbar-corner" aria-hidden="true"></div>
-      <?php foreach ($__absBand as $__k => $__p):
-        $__ckeyCss = preg_replace('~[^a-z0-9_-]~', '_', strtolower($__p['cat_ckey'] ?: 'absence'));
-      ?>
-        <button type="button"
-                class="cal-absbar-pill cal-absbar-pill-<?= h($__ckeyCss) ?> cal-absbar-slot-<?= (int) $__k ?>"
-                data-abs-id="<?= $__p['abs_id'] ?>"
-                title="<?= h($__p['cat'] . ' (' . $__p['from'] . ' – ' . $__p['to'] . ')' . ($__p['note'] !== '' ? ' · ' . $__p['note'] : '')) ?>">
-          <span class="cal-absbar-pill-label"><?= h($__p['cat']) ?></span>
-        </button>
-      <?php endforeach; ?>
-    </div>
-    <div class="cal-week-head" role="row">
+    <?php /* Felix-Feedback 2026-11-09 (Fix #155): Pillen fuer ganztaegige
+       Abwesenheiten sitzen jetzt INNERHALB der jeweiligen Kopfzelle,
+       zwischen Wochentag-Label (oben) und Pensum-Badge (unten). Das
+       vermeidet die separate Band-Row ueber dem Head und loest zugleich
+       das Verzerren bei schmalen Viewports: die Pille ist absolute in
+       der ersten Dayhead-Zelle ihres Spans platziert, Breite = span *
+       100%, skaliert damit sauber mit der Spaltenbreite. */ ?>
+    <div class="cal-week-head" role="row" data-week-start="<?= h($__weekStartYmd) ?>">
       <div class="cal-week-corner" aria-hidden="true"></div>
       <?php foreach ($__days as $__i => $__day):
         $__hd = $holidays[$__day['ymd']] ?? null;
@@ -430,6 +415,22 @@ $__calInk = static function (string $hex): string {
       ?>
         <div class="<?= h($__hdCls) ?>" role="columnheader" data-day="<?= h($__day['ymd']) ?>">
           <div class="cal-week-dayhead-label"><?= h($__day['label']) ?></div>
+          <?php /* Fix #155: Abwesenheits-Pille unter dem Datums-Label, als
+             absolute Overlay mit width = span * 100% (skaliert mit der
+             Spaltenbreite). Die Pille wird nur in der ERSTEN Cell ihres
+             Spans gerendert und laeuft ueber die Nachbar-Cells hinweg
+             (overflow:visible auf dayhead). */ ?>
+          <?php foreach ($__absBandByYmd[$__day['ymd']] ?? [] as $__pIdx):
+            $__p = $__absBand[$__pIdx];
+            $__ckeyCss = preg_replace('~[^a-z0-9_-]~', '_', strtolower($__p['cat_ckey'] ?: 'absence'));
+          ?>
+            <button type="button"
+                    class="cal-absbar-pill cal-absbar-pill-<?= h($__ckeyCss) ?> cal-absbar-slot-<?= (int) $__pIdx ?>"
+                    data-abs-id="<?= $__p['abs_id'] ?>"
+                    title="<?= h($__p['cat'] . ' (' . $__p['from'] . ' – ' . $__p['to'] . ')' . ($__p['note'] !== '' ? ' · ' . $__p['note'] : '')) ?>">
+              <span class="cal-absbar-pill-label"><?= h($__p['cat']) ?></span>
+            </button>
+          <?php endforeach; ?>
           <?php /* Felix-Feedback 2026-11-09 (#118/#119): Pensum-Badge pro Tag
              in der Kopfzeile - gruen unter Soll, gelb genau drauf, rot
              ueber Soll. Freelancer (Tagessoll=null) + Wochenenden /
