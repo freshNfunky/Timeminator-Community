@@ -303,6 +303,74 @@
         if (dragFrom) finishDrag();
       });
     }
+
+    // Felix-Feedback 2026-11-09 (#148): Monatsansicht - Drag-Range ueber
+    // Kacheln (horizontal in Woche, vertikal ueber mehrere Wochen) oeffnet
+    // den Abwesenheits-Dialog mit vorbelegtem Range.
+    var mgrid = document.querySelector('.cal-month-grid');
+    if (mgrid) {
+      var mDragFrom = null;
+      var mDragTo   = null;
+      function monthCells() {
+        return Array.prototype.slice.call(mgrid.querySelectorAll('.cal-month-cell'));
+      }
+      function monthCellFromEvent(ev) {
+        var t = ev.target;
+        while (t && t !== mgrid) {
+          if (t.classList && t.classList.contains('cal-month-cell')) return t;
+          t = t.parentNode;
+        }
+        return null;
+      }
+      function mClearHighlight() {
+        monthCells().forEach(function (c) { c.classList.remove('is-drag-range'); });
+      }
+      function mHighlight(fromYmd, toYmd) {
+        var lo = fromYmd < toYmd ? fromYmd : toYmd;
+        var hi = fromYmd < toYmd ? toYmd : fromYmd;
+        monthCells().forEach(function (c) {
+          var day = c.getAttribute('data-day') || '';
+          c.classList.toggle('is-drag-range', day >= lo && day <= hi);
+        });
+      }
+      mgrid.addEventListener('mousedown', function (ev) {
+        var cell = monthCellFromEvent(ev);
+        if (!cell) return;
+        // Click auf Pill / Mood-Picker / Link darf nicht triggern.
+        if (ev.target.closest('.cal-month-abs-pill, .cal-sent-cell, .cal-month-link, .cal-sent-day, .cal-sent-week')) return;
+        mDragFrom = mDragTo = cell.getAttribute('data-day');
+        mgrid.classList.add('is-dragging');
+        mHighlight(mDragFrom, mDragTo);
+        ev.preventDefault();
+      });
+      mgrid.addEventListener('mousemove', function (ev) {
+        if (!mDragFrom) return;
+        var cell = monthCellFromEvent(ev);
+        if (!cell) return;
+        mDragTo = cell.getAttribute('data-day');
+        mHighlight(mDragFrom, mDragTo);
+      });
+      function mFinishDrag() {
+        if (!mDragFrom) return;
+        var lo = mDragFrom < mDragTo ? mDragFrom : mDragTo;
+        var hi = mDragFrom < mDragTo ? mDragTo : mDragFrom;
+        mgrid.classList.remove('is-dragging');
+        mClearHighlight();
+        mDragFrom = mDragTo = null;
+        openForNewAbsenceRange(lo, hi);
+      }
+      mgrid.addEventListener('mouseup', mFinishDrag);
+      mgrid.addEventListener('mouseleave', function () {
+        if (mDragFrom) mFinishDrag();
+      });
+      document.querySelectorAll('.cal-month-abs-pill').forEach(function (p) {
+        p.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          openForAbsence(parseInt(p.getAttribute('data-abs-id'), 10));
+        });
+      });
+    }
+
     // Edit-Buttons in der Liste (alle 3 Typen).
     document.querySelectorAll('.entry-edit-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
