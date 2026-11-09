@@ -31,8 +31,10 @@ $__banner    = Banners::isVisible();
     <?php require __DIR__ . '/partials/nav.php'; ?>
   </nav>
   <div class="userbox">
-    <span class="who"><?= h(Auth::user()['display_name'] ?: Auth::user()['username']) ?>
-      <em><?= h(Auth::user()['role_label'] ?? '') ?></em></span>
+    <?php /* Felix-Feedback 2026-11-09 (#111): Benutzername ist ein Link auf
+       das Profil (persoenliche Einstellungen, u.a. der Stimmungs-Rhythmus). */ ?>
+    <a class="who" href="<?= h(route('profile')) ?>"><?= h(Auth::user()['display_name'] ?: Auth::user()['username']) ?>
+      <em><?= h(Auth::user()['role_label'] ?? '') ?></em></a>
     <a class="btn btn-ghost" href="<?= h(route('logout')) ?>"><?= h(t('nav.logout')) ?></a>
   </div>
 </header>

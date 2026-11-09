@@ -12,11 +12,16 @@ $selectedMood = $today && isset($today['mood']) && $today['mood'] !== null ? (in
 $selectedFlow = $today && isset($today['flow']) && $today['flow'] !== null ? (int) $today['flow'] : 0;
 $noteValue    = (string) ($today['note'] ?? '');
 $canRecord    = $canRecord ?? Auth::can('sentiment.record');
+$__weekMode   = ($granularity ?? 'day') === 'week';
+$__cardTitle  = $__weekMode
+    ? t('sent.week_title', 'Dein Eintrag diese Woche')
+    : t('sent.today_title', 'Dein Eintrag heute');
+$__saveRoute  = $__weekMode ? route('sentiment_save_week') : route('sentiment_save');
 ?>
 <?php if ($canRecord): ?>
 <div class="card">
-  <h2><?= h(t('sent.today_title', 'Dein Eintrag heute')) ?><?= tip('sent.today_intro_v2') ?></h2>
-  <form method="post" action="<?= h(route('sentiment_save')) ?>" class="sentiment-form">
+  <h2><?= h($__cardTitle) ?><?= tip('sent.today_intro_v2') ?></h2>
+  <form method="post" action="<?= h($__saveRoute) ?>" class="sentiment-form">
     <?= csrf_field() ?>
     <input type="hidden" name="as_of" value="<?= h((new DateTimeImmutable('today'))->format('Y-m-d')) ?>">
 
@@ -73,29 +78,10 @@ $canRecord    = $canRecord ?? Auth::can('sentiment.record');
 </div>
 <?php endif; /* canRecord personal edit */ ?>
 
-<?php if ($canRecord && ($granularity ?? 'day') === 'week'): ?>
-<div class="card">
-  <h2><?= h(t('sent.week_preset_h2', 'Wochen-Preset')) ?><?= tip('sent.week_preset_hint', 'Setzt eine Dimension (Mood oder Flow) auf einmal fuer alle noch leeren Tage der laufenden Woche. Tage mit bereits individuell gesetztem Wert bleiben unberuehrt.') ?></h2>
-  <div class="row">
-    <?php foreach (Sentiment::DIMENSIONS as $__dim): ?>
-      <form method="post" action="<?= h(route('sentiment_fill_week')) ?>" class="sentiment-week-form">
-        <?= csrf_field() ?>
-        <input type="hidden" name="dim" value="<?= h($__dim) ?>">
-        <h3 style="margin:0 0 8px"><?= h($__dim === 'mood' ? t('sent.mood_label', 'Mood') : t('sent.flow_label', 'Flow')) ?> <?= h(t('sent.for_week', 'fuer diese Woche')) ?></h3>
-        <div class="sentiment-scale" role="radiogroup">
-          <?php for ($__s = 1; $__s <= 5; $__s++): ?>
-            <label class="sentiment-pick">
-              <input type="radio" name="score" value="<?= $__s ?>" required>
-              <span class="sentiment-emoji" aria-hidden="true"><?= h($__dim === 'mood' ? Sentiment::moodEmoji($__s) : Sentiment::flowEmoji($__s)) ?></span>
-            </label>
-          <?php endfor; ?>
-        </div>
-        <div class="form-actions"><button class="btn btn-sm" type="submit"><?= h(t('sent.fill_week_btn', 'Woche vorbelegen')) ?></button></div>
-      </form>
-    <?php endforeach; ?>
-  </div>
-</div>
-<?php endif; ?>
+<?php /* Felix-Feedback 2026-11-09 (#117): "Wochen-Preset"-Karte komplett
+   entfernt. Die Entscheidung woechentlich-vs-taeglich liegt jetzt in den
+   Benutzereinstellungen, und die "Dein Eintrag heute"-Karte darueber ist
+   dynamisch - zweimal die gleichen Buttons waere redundant. */ ?>
 
 <?php if ($canRecord): ?>
 <div class="card">

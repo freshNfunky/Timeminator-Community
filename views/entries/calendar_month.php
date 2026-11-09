@@ -82,12 +82,8 @@ $gridClass = 'cal-month-grid' . ($weekMode ? ' cal-month-grid-with-sent' : '');
         <a class="btn btn-sm" href="<?= h(route('entries', $filterQp + ['view' => 'calendar'])) ?>"><?= h(t('cal.span_week', 'Woche')) ?></a>
         <a class="btn btn-sm is-active" aria-current="page" href="<?= h($monthLink($monthStart)) ?>"><?= h(t('cal.span_month', 'Monat')) ?></a>
       </span>
-      <?php if (!empty($canAdminSentiment)): ?>
-        <span class="cal-sent-toggle" data-current="<?= h($sentGranularity) ?>" data-csrf="<?= h(csrf_token()) ?>" role="group" aria-label="<?= h(t('sent.granularity', 'Stimmungs-Rhythmus')) ?>">
-          <button type="button" class="btn btn-sm<?= $sentGranularity === 'week' ? ' is-active' : '' ?>" data-g="week"><?= h(t('sent.granularity_week', 'Woechentlich')) ?></button>
-          <button type="button" class="btn btn-sm<?= $sentGranularity === 'day'  ? ' is-active' : '' ?>" data-g="day"><?= h(t('sent.granularity_day',  'Taeglich')) ?></button>
-        </span>
-      <?php endif; ?>
+      <?php /* Felix-Feedback 2026-11-09 (#111): Rhythmus-Umschalter ist im
+         Benutzerbereich (Profil), nicht mehr im Kalender-Head. */ ?>
       <a class="btn btn-sm" href="<?= h($monthLink($prevMonth)) ?>"><?= h(t('cal.prev_month', '← Vormonat')) ?></a>
       <a class="btn btn-sm" href="<?= h(route('entries', $filterQp + ['view' => 'calendar', 'span' => 'month'])) ?>"><?= h(t('dash.today', 'Heute')) ?></a>
       <a class="btn btn-sm" href="<?= h($monthLink($nextMonth)) ?>"><?= h(t('cal.next_month', 'Folgemonat →')) ?></a>

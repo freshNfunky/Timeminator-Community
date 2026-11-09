@@ -157,6 +157,42 @@ function ctrl_sentiment_save(): void
 }
 
 /**
+ * Felix-Feedback 2026-11-09 (#117): Wochen-Save fuer die "Dein Eintrag diese
+ * Woche"-Karte. Setzt Mood und/oder Flow als Wochenwerte: fuer alle noch
+ * leeren Tage der aktuellen Woche (konservativ, uebersteuert nichts).
+ */
+function ctrl_sentiment_save_week(): void
+{
+    require_perm('sentiment.record');
+    csrf_check();
+
+    $uid = Auth::id();
+    if ($uid === null) {
+        redirect_route('login');
+    }
+
+    $mood = Sentiment::normalizeScore(post('mood'));
+    $flow = Sentiment::normalizeScore(post('flow'));
+    if ($mood === null && $flow === null) {
+        flash(t('sent.err_pick_any', 'Bitte setze Mood oder Flow (oder beides) auf 1-5.'), 'err');
+        redirect_route('sentiment');
+    }
+
+    $monday = CalendarLocale::weekStart(new DateTimeImmutable('today'))->format('Y-m-d');
+    $today  = Sentiment::today();
+
+    if ($mood !== null) {
+        Sentiment::fillRange($uid, $monday, $today, 'mood', $mood);
+    }
+    if ($flow !== null) {
+        Sentiment::fillRange($uid, $monday, $today, 'flow', $flow);
+    }
+
+    flash(t('sent.flash_week_saved', 'Danke, Woche gespeichert.'));
+    redirect_route('sentiment');
+}
+
+/**
  * JSON-API fuer den Kalender-Mood-Picker (Felix-Feedback 2026-11-04):
  * setzt mood ODER flow fuer einen bestimmten Tag und liefert den neuen
  * Zustand zurueck (kein Redirect, kein Flash).

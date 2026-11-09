@@ -276,16 +276,10 @@ $__calInk = static function (string $hex): string {
         <a class="btn btn-sm is-active" aria-current="page" href="<?= h(route('entries', $__filterQp + ['view' => 'calendar'])) ?>"><?= h(t('cal.span_week', 'Woche')) ?></a>
         <a class="btn btn-sm" href="<?= h(route('entries', $__filterQp + ['view' => 'calendar', 'span' => 'month'])) ?>"><?= h(t('cal.span_month', 'Monat')) ?></a>
       </span>
-      <?php if (!empty($canAdminSentiment)): ?>
-        <?php /* Granularitaets-Toggle (Felix-Feedback 2026-11-04): Admin-only,
-           Default = woechentlich (Felix-Feedback "default habe ich gesagt ist
-           nicht die tägliche meldung. die bleibt im hintergrund."). */ ?>
-        <?php $__g = $sentimentGranularity ?: 'week'; ?>
-        <span class="cal-sent-toggle" data-current="<?= h($__g) ?>" data-csrf="<?= h(csrf_token()) ?>" role="group" aria-label="<?= h(t('sent.granularity', 'Stimmungs-Rhythmus')) ?>">
-          <button type="button" class="btn btn-sm<?= $__g === 'week' ? ' is-active' : '' ?>" data-g="week"><?= h(t('sent.granularity_week', 'Woechentlich')) ?></button>
-          <button type="button" class="btn btn-sm<?= $__g === 'day'  ? ' is-active' : '' ?>" data-g="day"><?= h(t('sent.granularity_day',  'Taeglich')) ?></button>
-        </span>
-      <?php endif; ?>
+      <?php /* Felix-Feedback 2026-11-09 (#111): Rhythmus-Umschalter ist aus
+         der Kalender-Oberflaeche ausgezogen - er liegt jetzt in den
+         Benutzereinstellungen (?r=profile). Hier bleibt nur die Woche/Monat-
+         Navigation. */ ?>
       <a class="btn btn-sm" href="<?= h(route('entries', $__weekQp($__prevWeek))) ?>"><?= h(t('cal.prev_week', '← Vorige Woche')) ?></a>
       <a class="btn btn-sm" href="<?= h(route('entries', $__filterQp + ['view' => 'calendar'])) ?>"><?= h(t('dash.today')) ?></a>
       <a class="btn btn-sm" href="<?= h(route('entries', $__weekQp($__nextWeek))) ?>"><?= h(t('cal.next_week', 'Naechste Woche →')) ?></a>

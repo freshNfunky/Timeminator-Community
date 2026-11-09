@@ -49,6 +49,7 @@ require __DIR__ . '/src/controllers/imports_ctrl.php';
 require __DIR__ . '/src/controllers/pro_teaser_ctrl.php';
 require __DIR__ . '/src/controllers/banners_ctrl.php';
 require __DIR__ . '/src/controllers/password_reset_ctrl.php';
+require __DIR__ . '/src/controllers/profile_ctrl.php';
 require __DIR__ . '/src/controllers/cron_ctrl.php';
 require __DIR__ . '/src/Sentiment.php';
 require __DIR__ . '/src/controllers/sentiment_ctrl.php';
@@ -143,11 +144,14 @@ $routes = [
     'stats_data'   => 'ctrl_stats_data',
     'sentiment'            => 'ctrl_sentiment_index',
     'sentiment_save'       => 'ctrl_sentiment_save',
+    'sentiment_save_week'  => 'ctrl_sentiment_save_week',
     'sentiment_quick'      => 'ctrl_sentiment_quick',
     'sentiment_fill_week'  => 'ctrl_sentiment_fill_week',
     'sentiment_api_save'       => 'ctrl_sentiment_api_save',
     'sentiment_api_fill_week'  => 'ctrl_sentiment_api_fill_week',
     'sentiment_granularity_api'=> 'ctrl_sentiment_granularity_api',
+    'profile'                  => 'ctrl_profile_index',
+    'profile_save'             => 'ctrl_profile_save',
     'scopes'       => 'ctrl_scopes_index',
     'scope_save'   => 'ctrl_scope_save',
     'scope_delete' => 'ctrl_scope_delete',

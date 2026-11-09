@@ -33,10 +33,37 @@ final class Sentiment
      */
     public const GRANULARITIES = ['day' => 'Taeglich', 'week' => 'Woechentlich'];
 
-    public static function granularity(): string
+    /**
+     * Felix-Feedback 2026-11-09 (#111): "Diese woechentliche oder taegliche
+     * Messung der Stimmung bitte in den Benutzerbereich reinlegen. Das kann
+     * dann jeder fuer sich selbst festlegen."
+     *
+     * Reihenfolge: User-Preference (Settings-Key sentiment_granularity_u<uid>)
+     * uebersteuert den System-Default. Ohne User (CLI, Login-Screen) oder
+     * ohne persoenliche Einstellung faellt der Aufruf auf
+     * sentiment_granularity (System-Default) + Fallback 'week' zurueck.
+     */
+    public static function granularity(?int $userId = null): string
     {
+        $uid = $userId ?? Auth::id();
+        if ($uid !== null) {
+            $own = (string) Settings::get('sentiment_granularity_u' . (int) $uid, '');
+            if (array_key_exists($own, self::GRANULARITIES)) {
+                return $own;
+            }
+        }
         $g = (string) Settings::get('sentiment_granularity', 'week');
         return array_key_exists($g, self::GRANULARITIES) ? $g : 'week';
+    }
+
+    /** Setzt die persoenliche Rhythmus-Preference eines Users. */
+    public static function setUserGranularity(int $userId, string $granularity): bool
+    {
+        if (!array_key_exists($granularity, self::GRANULARITIES)) {
+            return false;
+        }
+        Settings::set('sentiment_granularity_u' . $userId, $granularity);
+        return true;
     }
 
     /** Clamp a user-supplied value to the valid 1..5 range, or null if garbage. */

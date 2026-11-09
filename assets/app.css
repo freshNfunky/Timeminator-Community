@@ -252,6 +252,14 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .sentiment-tick.is-s3{background:#eab308;height:70%}
 .sentiment-tick.is-s4{background:#84cc16;height:85%}
 .sentiment-tick.is-s5{background:#22c55e;height:100%}
+/* Felix-Feedback 2026-11-09 (#116): Wochen-Preset stapelt Mood + Flow
+   untereinander, damit die 5 Smileys einer Dimension in einer Zeile
+   bleiben und nicht komisch umbrechen. */
+.sentiment-week-stack{display:flex;flex-direction:column;gap:14px;margin-top:6px}
+.sentiment-week-stack .sentiment-week-form{display:block}
+.sentiment-week-stack .sentiment-week-h3{margin:0 0 8px;font-size:14px;color:var(--muted);font-weight:600}
+.sentiment-week-stack .sentiment-scale{flex-wrap:nowrap}
+.sentiment-week-stack .form-actions{margin-top:8px}
 .sentiment-team-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:10px 0 16px;text-align:center}
 /* Felix-Feedback 2026-11-08 (#101/#102/#104): Teammitglieder-Liste + Mood-Matrix. */
 .sent-team-members{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px}

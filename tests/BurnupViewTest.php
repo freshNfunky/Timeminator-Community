@@ -399,7 +399,10 @@ final class BurnupViewTest extends TestCase
 
         // Default-Granularitaet ist WEEK (Felix-Feedback 2026-11-04: "default
         // habe ich gesagt ist nicht die tägliche meldung").
-        $this->assertStringContainsString("sentimentGranularity ?: 'week'", $cal, 'Default-Granularitaet muss "week" sein, nicht "day"');
+        // Felix-Feedback 2026-11-09 (#111): Default-Fallback liegt jetzt auf
+        // dem Daily-Picker-Branch (?? 'week'), weil der Granularity-Toggle
+        // aus dem Kalender-Head rausgezogen ist.
+        $this->assertStringContainsString("sentimentGranularity ?? 'week'", $cal, 'Default-Granularitaet muss "week" sein, nicht "day"');
 
         // Weekly-Picker: Pro-Style wie Daily - EIN Current-Button pro Dimension
         // + Popover, Prosa-Hinweis als ⓘ-Tooltip (Felix-Feedback 2026-11-04:
@@ -413,10 +416,11 @@ final class BurnupViewTest extends TestCase
         $this->assertStringContainsString("tip('cal.sent_week_hint')", $cal, 'Prosa "Setzt die Woche …" muss als ⓘ-Tooltip sitzen, nicht als Text');
         $this->assertStringNotContainsString('class="muted cal-sent-hint"', $cal, 'Alter Prosa-Absatz (.cal-sent-hint) muss weg - Pro-Vorgabe: Tooltip');
 
-        // Toggle Daily/Weekly (admin-only).
-        $this->assertStringContainsString('class="cal-sent-toggle"', $cal, 'Granularitaets-Toggle Daily/Weekly fehlt');
-        $this->assertStringContainsString('data-g="day"',  $cal, 'Toggle-Option "day" fehlt');
-        $this->assertStringContainsString('data-g="week"', $cal, 'Toggle-Option "week" fehlt');
+        // Felix-Feedback 2026-11-09 (#111): Granularitaets-Toggle ist aus
+        // dem Kalender-Head rausgezogen (lebt jetzt im Profil). Hier nur noch
+        // pinnen, dass er NICHT zurueckkommt.
+        $this->assertStringNotContainsString('class="cal-sent-toggle"', $cal,
+            'Granularity-Toggle gehoert in den Benutzerbereich, nicht in den Kalender-Head');
 
         // Controller + Routes.
         $this->assertStringContainsString('ctrl_sentiment_api_save', $ctrl, 'API-Controller fuer Daily-Save fehlt');
