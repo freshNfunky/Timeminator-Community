@@ -47,14 +47,17 @@ final class CalendarWeekGridTimeDragTest extends TestCase
     public function testCalDayGridHasMouseDragHandlers(): void
     {
         $js = $this->js();
+        // Mousedown am Grid markiert den Start; mousemove/mouseup laufen auf
+        // document, damit der Drag auch dann korrekt endet, wenn die Maus
+        // das Grid waehrend des Drags verlaesst (Hardening 2026-11-09).
         self::assertStringContainsString("grid.addEventListener('mousedown'", $js,
             'Mousedown-Handler auf cal-day-grid fehlt');
-        self::assertStringContainsString("grid.addEventListener('mousemove'", $js,
-            'Mousemove-Handler auf cal-day-grid fehlt');
-        self::assertStringContainsString("grid.addEventListener('mouseup'", $js,
-            'Mouseup-Handler auf cal-day-grid fehlt');
+        self::assertStringContainsString("document.addEventListener('mousemove'", $js,
+            'Mousemove muss am document haengen, sonst reisst der Drag ab, wenn die Maus das Grid verlaesst');
+        self::assertStringContainsString("document.addEventListener('mouseup'", $js,
+            'Mouseup muss am document haengen, sonst wird der Drag nie aufgeloest, wenn die Maus das Grid verlaesst');
         // Minuten aus Y-Position berechnen, 15-Minuten-Snap.
-        self::assertStringContainsString('function minuteFromEvent', $js,
+        self::assertStringContainsString('function minuteFromEventOnGrid', $js,
             'Pixel->Minute-Mapping-Helper fehlt');
         self::assertMatchesRegularExpression(
             '~Math\.round\(raw\s*/\s*15\)\s*\*\s*15~',

@@ -267,61 +267,49 @@
   function wireGrid() {
     // Felix-Feedback 2026-11-09 (Fix #160): Click/Drag im Stunden-Grid
     // soll die tatsaechlich geklickte Uhrzeit uebergeben (vorher: immer
-    // 09:00-10:00). Mousedown -> Minute berechnen; mousemove ueber die
-    // gleiche Spalte erweitert Range; mouseup oeffnet Dialog mit
-    // gesnappten Minuten. Minute-Mapping: (y - gridTop) / gridHeight *
-    // 24 * 60, 15-Minuten-Snap.
+    // 09:00-10:00).
+    //
+    // Felix-Feedback 2026-11-09 (Hardening 3, auch Firefox): mouseup+
+    // mousemove gehen bei realem User-Drag oft NICHT ans Grid, wenn die
+    // Maus das Grid kurz verlaesst (Browser setzt Capture nur mit
+    // explizitem setPointerCapture). Deshalb: mousemove+mouseup leben
+    // auf DOCUMENT, nicht auf dem jeweiligen Grid. Der Grid-Handler
+    // weiss nur ueber den mousedown Bescheid, der Rest ist global.
+    var gDragGrid  = null;
+    var gDragStart = null;
+    var gDragEnd   = null;
+    function minuteFromEventOnGrid(ev, grid) {
+      var rect = grid.getBoundingClientRect();
+      var y = ev.clientY - rect.top;
+      if (y < 0) y = 0;
+      if (y > rect.height) y = rect.height;
+      var raw = (y / rect.height) * 24 * 60;
+      return Math.round(raw / 15) * 15;
+    }
     document.querySelectorAll('.cal-day-grid').forEach(function (grid) {
-      var gDragStart = null;
-      var gDragEnd   = null;
-      function minuteFromEvent(ev) {
-        var rect = grid.getBoundingClientRect();
-        var y = ev.clientY - rect.top;
-        if (y < 0) y = 0;
-        if (y > rect.height) y = rect.height;
-        var raw = (y / rect.height) * 24 * 60;
-        return Math.round(raw / 15) * 15;
-      }
       grid.addEventListener('mousedown', function (ev) {
         if (ev.button !== 0) return;
         if (ev.target.closest('.cal-event, .cal-process, .cal-day-absence, .cal-absbar-pill, .cal-day-bracket')) return;
-        gDragStart = minuteFromEvent(ev);
+        gDragGrid  = grid;
+        gDragStart = minuteFromEventOnGrid(ev, grid);
         gDragEnd   = gDragStart;
         ev.preventDefault();
       });
-      grid.addEventListener('mousemove', function (ev) {
-        if (gDragStart === null) return;
-        gDragEnd = minuteFromEvent(ev);
-      });
-      grid.addEventListener('mouseup', function (ev) {
-        if (gDragStart === null) return;
-        var lo = Math.min(gDragStart, gDragEnd);
-        var hi = Math.max(gDragStart, gDragEnd);
-        gDragStart = gDragEnd = null;
-        // Reine Clicks (keine Bewegung) -> 60min Standardblock.
-        if (hi - lo < 15) { hi = lo + 60; }
-        openForNew(grid.getAttribute('data-day'), lo, hi);
-      });
-      grid.addEventListener('mouseleave', function () {
-        if (gDragStart !== null) {
-          var lo = Math.min(gDragStart, gDragEnd);
-          var hi = Math.max(gDragStart, gDragEnd);
-          gDragStart = gDragEnd = null;
-          if (hi - lo < 15) { hi = lo + 60; }
-          openForNew(grid.getAttribute('data-day'), lo, hi);
-        }
-      });
-      // Fix #160 Fallback: falls mousedown/mouseup auseinandergerissen
-      // werden (natives Browser-Drag auf text, alte Cache-Version, etc.),
-      // feuert zumindest click reliable - dann Y-Position aus dem Click
-      // auswerten und 60min-Block oeffnen.
-      grid.addEventListener('click', function (ev) {
-        if (ev.target.closest('.cal-event, .cal-process, .cal-day-absence, .cal-absbar-pill, .cal-day-bracket')) return;
-        // Wenn der Drag-Flow den Dialog schon geoeffnet hat, nichts tun.
-        if (dlg.open) return;
-        var startMin = minuteFromEvent(ev);
-        openForNew(grid.getAttribute('data-day'), startMin, startMin + 60);
-      });
+    });
+    document.addEventListener('mousemove', function (ev) {
+      if (!gDragGrid || gDragStart === null) return;
+      gDragEnd = minuteFromEventOnGrid(ev, gDragGrid);
+    });
+    document.addEventListener('mouseup', function (ev) {
+      if (!gDragGrid || gDragStart === null) return;
+      gDragEnd = minuteFromEventOnGrid(ev, gDragGrid);
+      var lo = Math.min(gDragStart, gDragEnd);
+      var hi = Math.max(gDragStart, gDragEnd);
+      var day = gDragGrid.getAttribute('data-day');
+      gDragGrid = null; gDragStart = gDragEnd = null;
+      // Reiner Click (keine Bewegung) -> 60min Standardblock.
+      if (hi - lo < 15) { hi = lo + 60; }
+      openForNew(day, lo, hi);
     });
     document.querySelectorAll('.cal-event').forEach(function (btn) {
       btn.addEventListener('click', function () {
