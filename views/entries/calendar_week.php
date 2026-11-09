@@ -100,7 +100,14 @@ foreach ($entries as $__e) {
         $__minTop = $__topPct;
     }
 
-    $__color = strtolower((string) ($__e['client_color'] ?? ''));
+    // Felix-Feedback 2026-11-09 (Fix #169): Kalender-Bloecke werden
+    // primaer nach PROJEKT-Farbe eingefaerbt, Kunden-Farbe nur als
+    // Fallback. Vorher war es umgekehrt - alle Projekt-Entries eines
+    // Kunden sahen gleich aus, egal welche Farbe im Projekt gesetzt war.
+    $__color = strtolower((string) ($__e['project_color'] ?? ''));
+    if ($__color === '' || !preg_match('/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/', $__color)) {
+        $__color = strtolower((string) ($__e['client_color'] ?? ''));
+    }
     if ($__color !== '' && !preg_match('/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/', $__color)) {
         $__color = '';
     }
