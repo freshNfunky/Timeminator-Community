@@ -381,26 +381,25 @@ function client_ip(): string
 }
 
 /**
- * Felix-Feedback 2026-11-09 (Fix #166): Projekt-Entries werden in Listen
- * und im Kalender als "Kunde / Projekt" angezeigt. Bei INTERNEN Projekten
- * ist der zugeordnete Kunde technisch ein Platzhalter - Felix will dort
- * stattdessen den Kategorie-Label ("Internes Projekt") sehen, damit die
- * Buchung nicht falschlich dem Kundennamen zugeschlagen wird.
+ * Felix-Feedback 2026-11-09 (Fix #166 / #179): Projekt-Entries werden
+ * in Listen und im Kalender als "Kunde / Projekt" angezeigt. Bei
+ * INTERNEN Projekten gibt es keinen Kunde - Felix will dort einen
+ * em-dash (—) sehen, damit klar ist "es gibt keinen Kunde" (nicht
+ * "Internes Projekt" als Kundenname getarnt).
  *
  * Fix #178: der Helper akzeptiert beide Feldnamen - Entry-Rows tragen
  * project_category_ckey (prefixed, aus Repo::entries), Projekt-Rows nur
  * category_ckey (direkt aus projects JOIN project_categories). Beide
- * fuehren zum gleichen Label-Switch bei intern.
+ * fuehren zum gleichen Switch.
  *
- * @param array $e  Row mit (project_)category_ckey + (project_)category_label
- * @return string   Display-Label: category_label bei ckey='intern', sonst client_name.
+ * @param array $e  Row mit (project_)category_ckey + client_name
+ * @return string   em-dash bei ckey='intern', sonst client_name.
  */
 function entry_client_display(array $e): string
 {
-    $ckey  = (string) ($e['project_category_ckey']  ?? $e['category_ckey']  ?? '');
-    $label = (string) ($e['project_category_label'] ?? $e['category_label'] ?? '');
-    if ($ckey === 'intern' && $label !== '') {
-        return $label;
+    $ckey = (string) ($e['project_category_ckey'] ?? $e['category_ckey'] ?? '');
+    if ($ckey === 'intern') {
+        return '—';
     }
     return (string) ($e['client_name'] ?? '');
 }

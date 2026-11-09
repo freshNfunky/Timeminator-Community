@@ -17,14 +17,17 @@ use PHPUnit\Framework\TestCase;
  */
 final class EntryClientDisplayTest extends TestCase
 {
-    public function testReturnsCategoryLabelForInternalProjects(): void
+    public function testReturnsEmDashForInternalProjects(): void
     {
+        // Fix #179: Felix will bei internen Projekten in der Kunden-Spalte
+        // einen em-dash sehen statt "Internes Projekt" - macht deutlicher
+        // dass es keinen Kunden gibt.
         $e = [
             'client_name'              => 'Nordlicht Consulting',
             'project_category_ckey'    => 'intern',
             'project_category_label'   => 'Internes Projekt',
         ];
-        self::assertSame('Internes Projekt', entry_client_display($e));
+        self::assertSame('—', entry_client_display($e));
     }
 
     public function testFallsBackToClientNameForKundenprojekt(): void
@@ -54,14 +57,15 @@ final class EntryClientDisplayTest extends TestCase
         self::assertSame('Falkenflug GmbH', entry_client_display($e));
     }
 
-    public function testFallsBackToClientNameWhenInternLabelEmpty(): void
+    public function testEmDashEvenWhenInternLabelMissing(): void
     {
+        // Fix #179: intern -> immer em-dash, egal ob ein Label gesetzt ist.
         $e = [
             'client_name'              => 'Platzhalter-Kunde',
             'project_category_ckey'    => 'intern',
             'project_category_label'   => '',
         ];
-        self::assertSame('Platzhalter-Kunde', entry_client_display($e));
+        self::assertSame('—', entry_client_display($e));
     }
 
     public function testRepoEntriesQueryIncludesCategoryColumns(): void
