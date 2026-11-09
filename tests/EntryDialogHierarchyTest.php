@@ -80,20 +80,63 @@ final class EntryDialogHierarchyTest extends TestCase
     public function testJsHidesClientForInternalProjectsAndSwapsLabelForFoerder(): void
     {
         $js = $this->js();
-        // Logik-Vertrag: needs_client===0 versteckt das Label; sonst wird
-        // client_label (falls gesetzt) als Text eingesetzt.
-        self::assertStringContainsString('needs_client !== 0', $js,
-            'needs_client-Pruefung muss im JS stehen');
+        // Fix #157: Logik ist jetzt HARDCODED nach ckey. Die 3 Default-
+        // Kategorien tragen feste Semantik; andere Kategorien werden wie
+        // "kunde" behandelt. Pro-Issue 478 (M1.4) parkt die dynamische
+        // Config.
+        self::assertStringContainsString('HARDCODED_CAT_CONFIG', $js,
+            'Hardcode-Config fuer Projektart-Logik fehlt (Fix #157)');
+        self::assertMatchesRegularExpression(
+            "~'intern':\\s*\\{needsClient:\\s*false~",
+            $js,
+            'intern muss needsClient:false hardcoded sein'
+        );
+        self::assertMatchesRegularExpression(
+            "~'foerderung':\\s*\\{needsClient:\\s*true,\\s*clientLabel:\\s*'Projekttraeger'~",
+            $js,
+            'foerderung muss clientLabel:Projekttraeger hardcoded sein'
+        );
+        self::assertMatchesRegularExpression(
+            "~'kunde':\\s*\\{needsClient:\\s*true~",
+            $js,
+            'kunde (Kundenprojekt) muss als Default-Variante im hardcoded config stehen'
+        );
         self::assertStringContainsString('clientLabel.hidden = !needsClient', $js,
             'Internes Projekt muss das Kunde-Label komplett verstecken');
-        self::assertStringContainsString('clientLabelOverride', $js,
-            'client_label-Override (Foerdermittelgeber/Projekttraeger) muss im JS gelesen werden');
         // Partial trainiert den Dialog durch data-base-label-Attribut:
         $picker = $this->picker();
         self::assertStringContainsString('tp-client-label', $picker,
             'Marker-Klasse fuer das umschaltbare Kunde-Label fehlt');
         self::assertStringContainsString('data-base-label', $picker,
             'data-base-label fuer Reset auf "Kunde" fehlt');
+    }
+
+    /**
+     * Felix-Feedback 2026-11-09 (Fix #157): Admin-eigene Projektarten
+     * (alle ckeys ausser kunde/intern/foerderung) werden wie Kundenprojekt
+     * behandelt - Kunde sichtbar, Label "Kunde". Pro-Issue #478 (M1.4)
+     * macht die Logik dynamisch, Community bleibt bis dahin hardcoded.
+     */
+    public function testUnknownCategoryCkeysFallBackToKundeSemantics(): void
+    {
+        $js = $this->js();
+        self::assertStringContainsString("HARDCODED_CAT_CONFIG[ckey] || HARDCODED_CAT_CONFIG['kunde']", $js,
+            'catConfig muss unbekannte ckeys auf kunde-Default mappen');
+    }
+
+    public function testHierarchyEnforceAllowsProjectWhenClientFieldIsHidden(): void
+    {
+        $js = (string) file_get_contents(dirname(__DIR__) . '/assets/app.js');
+        // Fix #156: wenn Kunde-Feld durch Projektart (needs_client=false)
+        // komplett ausgeblendet ist, darf der Hierarchie-Enforce das
+        // Projekt-Dropdown NICHT mit "Zuerst Kunde waehlen" sperren.
+        self::assertStringContainsString('clientSkipped', $js,
+            'enforceHierarchy braucht einen clientSkipped-Flag');
+        self::assertMatchesRegularExpression(
+            '~!clientSkipped\s*&&\s*!client\.value~',
+            $js,
+            'Projekt-Lock soll nur greifen wenn Kunde-Feld sichtbar und leer ist'
+        );
     }
 
     public function testTaskPickerEnforcesHierarchyThroughDisabledChildren(): void

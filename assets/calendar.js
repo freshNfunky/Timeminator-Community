@@ -54,22 +54,34 @@
     startIn.required = endIn.required = (k !== 'absence');
     fromIn.required  = (k === 'absence');
   }
-  // Felix-Feedback 2026-11-09 (Fix #149/#150): Projektart-Filter:
-  // - filtert Projekt-Optionen nach ckey
-  // - bei Internes Projekt (needs_client=0) entfaellt Kunde-Feld komplett;
-  //   Projekte werden dann direkt ohne Client-Filter freigeschaltet
-  // - bei Foerderprojekt wird das Label "Kunde" durch "Projekttraeger"
-  //   (bzw. client_label der Kategorie) ersetzt
+  // Felix-Feedback 2026-11-09 (Fix #149/#150/#157): Projektart-Filter.
+  // #157: Logik wird HARDCODED nach ckey. Die 3 Default-Kategorien tragen
+  // feste Semantik; alle anderen (Admin-eigene Projektarten) werden wie
+  // "kunde" behandelt (Kunde sichtbar, Label "Kunde"). Die DB-Felder
+  // needs_client / client_label werden hier bewusst ignoriert, bis fuer
+  // M1.4 eine dynamische Config-Logik implementiert ist (siehe Pro-Issue).
+  var HARDCODED_CAT_CONFIG = {
+    'kunde':      {needsClient: true,  clientLabel: ''},
+    'intern':     {needsClient: false, clientLabel: ''},
+    'foerderung': {needsClient: true,  clientLabel: 'Projekttraeger'}
+  };
+  function catConfig(ckey) {
+    return HARDCODED_CAT_CONFIG[ckey] || HARDCODED_CAT_CONFIG['kunde'];
+  }
   function applyCategoryFilter() {
     if (!catFilter || !projectSel || !taskSel) return;
     var catId = catFilter.value;
     var cats = D.projectCats || {};
-    var cfg = catId ? cats[catId] : null;
+    var catEntry = catId ? cats[catId] : null;
     // Backwards-compat: in alten Dumps ist der Wert ein einfacher ckey-String.
-    if (typeof cfg === 'string') { cfg = {ckey: cfg, needs_client: 1, client_label: ''}; }
-    var wantCkey = cfg ? (cfg.ckey || '') : '';
-    var needsClient = cfg ? (cfg.needs_client !== 0) : true;
-    var clientLabelOverride = cfg ? (cfg.client_label || '') : '';
+    if (typeof catEntry === 'string') { catEntry = {ckey: catEntry}; }
+    var wantCkey = catEntry ? (catEntry.ckey || '') : '';
+    // #157: Logik kommt NICHT aus den DB-Feldern, sondern aus der
+    // Hardcode-Config. Fuer unbekannte ckeys (Admin-eigene Kategorien)
+    // greift die Default-Logik "wie kunde".
+    var cfg = catEntry ? catConfig(wantCkey) : {needsClient: true, clientLabel: ''};
+    var needsClient = cfg.needsClient;
+    var clientLabelOverride = cfg.clientLabel;
 
     // Projekt-Optionen nach ckey filtern.
     Array.prototype.forEach.call(projectSel.options, function (o) {
