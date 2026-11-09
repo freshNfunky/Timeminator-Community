@@ -13,13 +13,22 @@ use PHPUnit\Framework\TestCase;
  */
 final class EntryOverlayDialogTest extends TestCase
 {
-    public function testDashboardAddManualLinksToEntriesWithNewFlag(): void
+    public function testDashboardAddManualLinksToEntriesCalendar(): void
     {
         $view = (string) file_get_contents(dirname(__DIR__) . '/views/dashboard.php');
+        // Hardening 6: Dashboard-Button fuehrt NUR auf den Kalender,
+        // nicht mehr per Deep-Link &new=1. Der Deep-Link hat bewirkt,
+        // dass jeder reload den Dialog wieder mit heute/09:00-10:00
+        // vorbelegt und den Grid-Drag ueberschrieben hat.
         self::assertStringContainsString(
-            "route('entries', ['view' => 'calendar', 'new' => 1])",
+            "route('entries', ['view' => 'calendar'])",
             $view,
-            'Dashboard-Button muss zu entries?view=calendar&new=1 verlinken, nicht zur Legacy-Form-Seite'
+            'Dashboard-Button muss zu entries?view=calendar verlinken (ohne Deep-Link)'
+        );
+        self::assertStringNotContainsString(
+            "'new' => 1",
+            $view,
+            'Dashboard-Link darf keinen new=1-Deep-Link mehr setzen'
         );
         self::assertStringNotContainsString(
             "route('entry_form')",
@@ -69,10 +78,19 @@ final class EntryOverlayDialogTest extends TestCase
             $ctrl,
             'Edit-Fall muss ?view=calendar&edit=X liefern, damit JS openForEntry triggert'
         );
+        // Hardening 6 (2026-11-09): "Neu"-Fall OHNE new=1 - der Deep-Link
+        // hat dazu gefuehrt, dass jeder reload den Dialog erneut mit
+        // heute/09:00-10:00 vorbelegt und den Grid-Drag ueberschrieb.
+        // Jetzt landet der Nutzer auf dem Kalender und draggt selbst.
         self::assertStringContainsString(
+            "redirect_route('entries', ['view' => 'calendar']);",
+            $ctrl,
+            'Neu-Fall muss zum Kalender redirecten (ohne new=1-Deep-Link)'
+        );
+        self::assertStringNotContainsString(
             "redirect_route('entries', ['view' => 'calendar', 'new' => 1])",
             $ctrl,
-            'Neu-Fall muss ?view=calendar&new=1 liefern, damit JS openForNew triggert'
+            'new=1 darf nicht mehr zwangsweise vom Controller gesetzt werden'
         );
     }
 

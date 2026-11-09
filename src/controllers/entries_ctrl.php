@@ -312,10 +312,11 @@ function entries_export_row(array $r): array
 function ctrl_entry_form(): void
 {
     require_perm('entries.manage');
-    // Felix-Feedback 2026-11-09 (Fix #142 hardened): Die Legacy-Full-Page-
-    // Form ist tot. Jeder Aufruf dieser Route - direkt oder ueber einen
-    // vergessenen Link - redirectet zum Entries-Kalender und oeffnet dort
-    // das Overlay-Panel. Edit mit ?id=X -> edit=X, Neu -> new=1.
+    // Felix-Feedback 2026-11-09 Hardening 6: Legacy-Full-Page-Form ist
+    // tot - aber ein Default-"Neu" per Deep-Link oeffnet wieder den
+    // ueberschreibenden 9.11. 09-10-Dialog, wenn der Nutzer per reload
+    // zurueckkommt. Daher: Edit via ?edit=X weiterhin (eindeutig gewollt),
+    // Neu ohne Parameter -> Nutzer landet im Kalender und dragged selbst.
     $id = (int) get('id', 0);
     if ($id) {
         $entry = Repo::entry($id);
@@ -324,7 +325,7 @@ function ctrl_entry_form(): void
         }
         redirect_route('entries', ['view' => 'calendar', 'edit' => $id]);
     }
-    redirect_route('entries', ['view' => 'calendar', 'new' => 1]);
+    redirect_route('entries', ['view' => 'calendar']);
 }
 
 function entry_form_prefill_from_request(): ?array
@@ -369,7 +370,10 @@ function ctrl_entry_save(): void
 
     // Felix-Feedback 2026-11-09: Fehlerpfade duerfen den User NIE auf die
     // Legacy entry_form-Seite werfen - immer zurueck zum Overlay-Dialog.
-    $overlayParams = $id ? ['view' => 'calendar', 'edit' => $id] : ['view' => 'calendar', 'new' => 1];
+    // Hardening 6: fuer "Neu"-Fehlerfall KEIN ?new=1 mehr, sondern nur
+    // zum Kalender - der Nutzer sieht seinen Fehler-Flash und entscheidet
+    // selbst neu per Grid-Drag.
+    $overlayParams = $id ? ['view' => 'calendar', 'edit' => $id] : ['view' => 'calendar'];
     if (!$taskId || !$start || !$end) {
         flash(t('entries.err_required', 'Aufgabe, Start und Ende sind erforderlich.'), 'err');
         redirect_route('entries', $overlayParams);

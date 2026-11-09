@@ -163,11 +163,13 @@
 <div class="card">
   <div class="card-head">
     <h2><?= h(t('dash.recent')) ?></h2>
-    <?php /* Felix-Feedback 2026-11-09 (Fix #142): Dashboard-Link fuehrt auf
-       die Entries-Seite (Kalender), oeffnet dort direkt den Overlay-Dialog
-       via ?new=1. Vorher landete der Klick auf der Legacy entry_form-
-       Seite - Pro hat statt dessen immer den Overlay-Dialog. */ ?>
-    <a class="btn btn-sm" href="<?= h(route('entries', ['view' => 'calendar', 'new' => 1])) ?>"><?= h(t('dash.add_manual')) ?></a>
+    <?php /* Felix-Feedback 2026-11-09 Hardening 6: Dashboard-Link fuehrt
+       NUR auf die Kalender-Seite, OHNE den Deep-Link ?new=1. Fix #142
+       hat zum "Dialog ueberschreibt Grid-Drag mit heute/09-10"-Bug
+       gefuehrt, weil der Deep-Link bei jedem reload erneut 9.11. 09-10
+       vorbelegte. Dialog oeffnet jetzt ueber Grid-Drag ODER den
+       "+Eintrag"-Button in der Kalender-Toolbar. */ ?>
+    <a class="btn btn-sm" href="<?= h(route('entries', ['view' => 'calendar'])) ?>"><?= h(t('dash.add_manual')) ?></a>
   </div>
   <?php if (!$recent): ?>
     <p class="muted"><?= h(t('dash.recent_empty')) ?></p>

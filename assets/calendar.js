@@ -172,7 +172,6 @@
   // optional - fallen auf 09:00-10:00 zurueck, wenn beide null (Dashboard-
   // Pfad, neuer Entry ohne Kalender-Kontext).
   function openForNew(ymd, startMin, endMin) {
-    try { console.log('[TM-CAL-V5] openForNew(', ymd, startMin, endMin, ') url=', window.location.href); console.trace('[TM-CAL-V5] openForNew trace'); } catch (e) {}
     reset();
     if (ymd) {
       var sMin = (typeof startMin === 'number' && startMin >= 0) ? startMin : 9 * 60;
@@ -182,13 +181,8 @@
       endIn.value   = ymd + 'T' + pad2(Math.floor(eMin / 60)) + ':' + pad2(eMin % 60);
       fromIn.value  = ymd;
       toIn.value    = ymd;
-      try { console.log('[TM-CAL-V5] openForNew: Werte gesetzt startIn=', startIn.value, 'endIn=', endIn.value); } catch (e) {}
     }
     openDialog();
-    // Nach einem kurzen Tick nochmal loggen, um zu sehen, ob irgendwas
-    // async die Werte ueberschreibt (Felix' Flicker-Beobachtung).
-    try { setTimeout(function () { console.log('[TM-CAL-V5] openForNew: Werte NACH 50ms startIn=', startIn.value, 'endIn=', endIn.value); }, 50); } catch (e) {}
-    try { setTimeout(function () { console.log('[TM-CAL-V5] openForNew: Werte NACH 500ms startIn=', startIn.value, 'endIn=', endIn.value); }, 500); } catch (e) {}
   }
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
@@ -312,7 +306,6 @@
       var lo = Math.min(gDragStart, gDragEnd);
       var hi = Math.max(gDragStart, gDragEnd);
       var day = gDragGrid.getAttribute('data-day');
-      try { console.log('[TM-CAL-V5] document.mouseup day=', day, 'lo=', lo, 'hi=', hi); } catch (e) {}
       gDragGrid = null; gDragStart = gDragEnd = null;
       if (hi - lo < 15) { hi = lo + 60; }
       openForNew(day, lo, hi);
@@ -544,7 +537,6 @@
       var params = new URLSearchParams(window.location.search);
       var editId = parseInt(params.get('edit'), 10);
       var hasNew = params.get('new') === '1';
-      try { console.log('[TM-CAL-V6] deep-link check: edit=', editId, 'hasNew=', hasNew, 'url=', window.location.search); } catch (e) {}
 
       // Flag-Check: Haben wir vom vorigen Redirect das "oeffne Dialog"-
       // Signal mitbekommen? Dann jetzt Dialog oeffnen und Flag loeschen.
@@ -567,7 +559,6 @@
         params.delete('new'); params.delete('edit');
         var qs = params.toString();
         var cleanUrl = window.location.pathname + (qs ? '?' + qs : '');
-        try { console.log('[TM-CAL-V6] cleaning URL via location.replace ->', cleanUrl); } catch (e) {}
         window.location.replace(cleanUrl);
         return; // weiterer Code laeuft im naechsten Load
       }
