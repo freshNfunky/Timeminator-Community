@@ -51,14 +51,34 @@ final class AbsenceDragBarWeekTest extends TestCase
             $view,
             'Top-Offset pro Row (22 + row*24) muss in der inline-CSS gesetzt werden'
         );
-        // Pro ymd Max-Row-Anzahl, damit das Dayhead-Label dynamisch
-        // genug Platz nach unten freihaelt (Pensum-Badge sitzt unter).
+        // Pro ymd Max-Row-Anzahl - aggregiert zum wochenweiten maxWeekRows
+        // fuer einheitliches Label-Margin (Fix #173).
         self::assertStringContainsString('$__absRowsByYmd', $view,
-            'Max-Row-Anzahl pro ymd muss berechnet werden fuer dynamisches Label-Margin');
+            'Max-Row-Anzahl pro ymd muss berechnet werden (als Input fuer wochenweites Max)');
+    }
+
+    public function testPensumBadgesAlignAcrossWeek(): void
+    {
+        // Felix-Feedback 2026-11-09 (Fix #173): Pensum-Badges sitzen pro
+        // Woche auf GLEICHER Hoehe (bottom), egal wie viele Pillen ein
+        // einzelner Tag hat. Dafuer muss das Label-Margin wochenweit
+        // einheitlich via max rows ueber alle Tage gesetzt werden, nicht
+        // mehr per Tag (data-day).
+        $view = (string) file_get_contents(dirname(__DIR__) . '/views/entries/calendar_week.php');
+        self::assertStringContainsString('$__maxWeekRows', $view,
+            'Wochenweites Max rows muss aus $__absRowsByYmd aggregiert werden');
+        // Einheitlicher Selector .cal-week-head .cal-week-dayhead-label
+        // statt data-day-individuell.
         self::assertMatchesRegularExpression(
-            '~\.cal-week-dayhead\[data-day="[^"]*"\]\s+\.cal-week-dayhead-label\{margin-bottom:~',
+            '~\.cal-week-head\s+\.cal-week-dayhead-label\{margin-bottom:~',
             $view,
-            'Pro Tag muss das Label-Margin-Bottom dynamisch per inline-CSS gesetzt werden'
+            'Label-Margin muss wochenweit via .cal-week-head gesetzt werden (Fix #173)'
+        );
+        // Alte per-Tag-Regel darf nicht mehr auftauchen.
+        self::assertStringNotContainsString(
+            '.cal-week-dayhead[data-day="',
+            $view,
+            'Kein data-day-individuelles Label-Margin mehr (Fix #173)'
         );
     }
 
@@ -77,14 +97,14 @@ final class AbsenceDragBarWeekTest extends TestCase
             $css,
             'Dayhead braucht position:relative + overflow:visible fuer die absolute Pille'
         );
-        // Fix #161 (Korrektur): Pille sitzt ZWISCHEN Datum-Label (oben)
-        // und Pensum-Badge (darunter). :has() setzt margin-bottom auf
-        // dem Label, sodass Pensum nach unten rutscht und die Pille in
-        // den Zwischenraum passt. Pille selbst auf top:22px (unter Label).
-        self::assertMatchesRegularExpression(
-            '~\.cal-week-dayhead:has\(\.cal-absbar-pill\)\s+\.cal-week-dayhead-label\s*\{[^}]*margin-bottom~s',
+        // Fix #173: der feste :has()-Selector wurde durch eine wochenweite
+        // inline-Regel ersetzt (margin-bottom pro Woche, nicht pro Tag),
+        // damit Pensum-Badges auf gleicher Hoehe sitzen. In app.css steht
+        // nur noch ein Kommentar statt der alten festen 26px-Regel.
+        self::assertStringNotContainsString(
+            '.cal-week-dayhead:has(.cal-absbar-pill) .cal-week-dayhead-label{margin-bottom:26px}',
             $css,
-            ':has()-Selector muss margin-bottom auf dem Label setzen, damit Pensum unter der Pille sitzt'
+            'Alte feste :has()-Regel ist obsolet (Fix #173) - wochenweite inline-Regel uebernimmt'
         );
         self::assertMatchesRegularExpression(
             '~\.cal-absbar-pill\s*\{[^}]*top:\s*2\dpx~s',

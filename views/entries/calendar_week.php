@@ -373,14 +373,22 @@ $__calInk = static function (string $hex): string {
 ?>
 .cal-absbar-slot-<?= (int) $__k ?>{width:calc(<?= $__wPct ?>% - 8px);top:<?= $__top ?>px}
 <?php endforeach; ?>
-<?php /* Dayhead-Label-Margin dynamisch nach max. Row-Anzahl pro Tag,
-   damit Pensum-Badge immer unter allen Pillen sitzt. */ ?>
-<?php foreach (($__absRowsByYmd ?? []) as $__ymd => $__rows):
-    $__mb = 4 + $__rows * 24; // 24px pro Row + Basis-Luft
-    $__ymdCls = preg_replace('~[^0-9]~', '', $__ymd);
+<?php /* Felix-Feedback 2026-11-09 (Fix #173): Pensum-Badges sitzen pro
+   Woche auf GLEICHER Hoehe (bottom), egal wie viele ganztaegige Pillen
+   ein einzelner Tag hat. Dafuer eine einheitliche Pill-Zone ueber die
+   ganze Woche reservieren = max rows ueber alle Tage der Woche.
+   Vorher: pro Tag individuell -> Pensum sprang je nach Pill-Anzahl
+   hoch/runter (optisch "zackig"). */ ?>
+<?php
+    $__maxWeekRows = 0;
+    foreach (($__absRowsByYmd ?? []) as $__rows) {
+        if ($__rows > $__maxWeekRows) { $__maxWeekRows = $__rows; }
+    }
+    $__weekLabelMb = 4 + $__maxWeekRows * 24; // 24px pro Row + Basis-Luft
 ?>
-.cal-week-dayhead[data-day="<?= h($__ymd) ?>"] .cal-week-dayhead-label{margin-bottom:<?= $__mb ?>px}
-<?php endforeach; ?>
+<?php if ($__maxWeekRows > 0): ?>
+.cal-week-head .cal-week-dayhead-label{margin-bottom:<?= $__weekLabelMb ?>px}
+<?php endif; ?>
 </style>
 
 <div class="card">
