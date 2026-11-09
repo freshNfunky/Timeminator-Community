@@ -312,27 +312,19 @@ function entries_export_row(array $r): array
 function ctrl_entry_form(): void
 {
     require_perm('entries.manage');
+    // Felix-Feedback 2026-11-09 (Fix #142 hardened): Die Legacy-Full-Page-
+    // Form ist tot. Jeder Aufruf dieser Route - direkt oder ueber einen
+    // vergessenen Link - redirectet zum Entries-Kalender und oeffnet dort
+    // das Overlay-Panel. Edit mit ?id=X -> edit=X, Neu -> new=1.
     $id = (int) get('id', 0);
-    $entry = $id ? Repo::entry($id) : null;
-    if ($entry && (int) $entry['user_id'] !== Auth::id() && !Auth::isAdmin()) {
-        redirect_route('entries');
-    }
-    // For brand-new entries the week calendar can pre-fill start/end via
-    // ?start_ts=…&end_ts=… (both as 'Y-m-d\TH:i' or 'Y-m-d H:i:s'). Values
-    // are parsed through DateTimeImmutable so an invalid format just drops
-    // the pre-fill rather than crashing.
-    if (!$entry) {
-        $prefill = entry_form_prefill_from_request();
-        if ($prefill !== null) {
-            $entry = $prefill;
+    if ($id) {
+        $entry = Repo::entry($id);
+        if (!$entry || ((int) $entry['user_id'] !== Auth::id() && !Auth::isAdmin())) {
+            redirect_route('entries');
         }
+        redirect_route('entries', ['view' => 'calendar', 'edit' => $id]);
     }
-    view('entries/form', [
-        'entry'    => $entry,
-        'clients'  => Repo::clients(true),
-        'projects' => Repo::projects(true),
-        'tasks'    => Repo::tasks(true),
-    ], $entry && !empty($entry['id']) ? 'Eintrag bearbeiten' : 'Neuer Eintrag');
+    redirect_route('entries', ['view' => 'calendar', 'new' => 1]);
 }
 
 function entry_form_prefill_from_request(): ?array
@@ -375,13 +367,16 @@ function ctrl_entry_save(): void
     $end = parse_dtlocal((string) post('end_ts'));
     $note = trim((string) post('note'));
 
+    // Felix-Feedback 2026-11-09: Fehlerpfade duerfen den User NIE auf die
+    // Legacy entry_form-Seite werfen - immer zurueck zum Overlay-Dialog.
+    $overlayParams = $id ? ['view' => 'calendar', 'edit' => $id] : ['view' => 'calendar', 'new' => 1];
     if (!$taskId || !$start || !$end) {
         flash(t('entries.err_required', 'Aufgabe, Start und Ende sind erforderlich.'), 'err');
-        redirect_route('entry_form', $id ? ['id' => $id] : []);
+        redirect_route('entries', $overlayParams);
     }
     if ($end <= $start) {
         flash(t('entries.err_end_before_start', 'Ende muss nach dem Start liegen.'), 'err');
-        redirect_route('entry_form', $id ? ['id' => $id] : []);
+        redirect_route('entries', $overlayParams);
     }
 
     if ($id) {
@@ -391,14 +386,14 @@ function ctrl_entry_save(): void
         }
         if ($msg = Repo::bookingConflict((int) $existing['user_id'], $start, $end, $id)) {
             flash($msg, 'err');
-            redirect_route('entry_form', ['id' => $id]);
+            redirect_route('entries', $overlayParams);
         }
         Repo::updateEntry($id, $taskId, $start, $end, $note);
         flash(t('entries.flash_updated', 'Eintrag aktualisiert.'));
     } else {
         if ($msg = Repo::bookingConflict(Auth::id(), $start, $end)) {
             flash($msg, 'err');
-            redirect_route('entry_form');
+            redirect_route('entries', $overlayParams);
         }
         Repo::createEntry(Auth::id(), $taskId, $start, $end, $note, 'manual');
         flash(t('entries.flash_saved', 'Eintrag gespeichert.'));

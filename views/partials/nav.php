@@ -5,7 +5,7 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
 <a href="<?= h(route('dashboard')) ?>"<?= $active(['dashboard']) ?>><?= h(t('nav.dashboard')) ?></a>
 
 <?php if (Auth::can('entries.manage')): ?>
-  <a href="<?= h(route('entries')) ?>"<?= $active(['entries', 'entry_form']) ?>><?= h(t('nav.entries')) ?></a>
+  <a href="<?= h(route('entries')) ?>"<?= $active(['entries']) ?>><?= h(t('nav.entries')) ?></a>
 <?php endif; ?>
 
 <?php

@@ -70,6 +70,48 @@ $sentGranularity = ($sentimentGranularity ?? 'week') === 'day' ? 'day' : 'week';
 $weekMode = $sentGranularity === 'week' && !empty($canRecordSentiment);
 $dayMode  = $sentGranularity === 'day'  && !empty($canRecordSentiment);
 $gridClass = 'cal-month-grid' . ($weekMode ? ' cal-month-grid-with-sent' : '');
+
+// Felix-Feedback 2026-11-09 (#148): Monatsansicht - ganztaegige Abwesen-
+// heiten als Pillen ueber Monats-Kacheln. Werktage-only (Wochenende +
+// Feiertag erzeugen Luecken, Pille bricht ab). Ein Span, der ueber die
+// Wochengrenze geht, hat per Definition eine Wochenend-Luecke und wird
+// als mehrere Spans zurueckkommen - also eine Pille pro Zeile.
+$__gridStartYmd = $gridStart->format('Y-m-d');
+$__gridEndYmd   = $gridEnd->format('Y-m-d');
+$__workingDows  = Holidays::workingDays();
+$__holidayFlags = [];
+foreach (($holidays ?? []) as $__k => $__v) { $__holidayFlags[(string) $__k] = true; }
+$__monthAbsPills = []; // list<array{abs_id,cat,cat_ckey,col,row,span,from,to,note}>
+// Spalte offset relativ zu gridStart:
+$__dowOffsetOfGridStart = (int) $gridStart->format('N'); // 1..7 (ISO) - gridStart ist Wochenanfang
+$__weekLenCol = 7;
+$__sentCol    = $weekMode ? 1 : 0; // vorgelagerte Mood-Spalte reserviert Col 1
+foreach (($absences ?? []) as $__a) {
+    $__aFrom = max((string) $__a['start_date'], $__gridStartYmd);
+    $__aTo   = min((string) ($__a['end_date'] ?? $__a['start_date']), $__gridEndYmd);
+    if ($__aFrom > $__aTo) { continue; }
+    $__spans = WorkdaySpans::workdaySpans($__aFrom, $__aTo, $__workingDows, $__holidayFlags);
+    foreach ($__spans as $__span) {
+        try {
+            $__d1 = new DateTimeImmutable($__span['from']);
+            $__totalOffset = (int) $gridStart->diff($__d1)->format('%r%a');
+        } catch (Throwable) { continue; }
+        if ($__totalOffset < 0) { continue; }
+        $__row = (int) floor($__totalOffset / $__weekLenCol) + 2; // +1 fuer DOW-Header-Zeile, +1 fuer 1-basiert Grid
+        $__col = ($__totalOffset % $__weekLenCol) + 1 + $__sentCol;
+        $__monthAbsPills[] = [
+            'abs_id'   => (int) $__a['id'],
+            'cat'      => (string) ($__a['category_label'] ?? ''),
+            'cat_ckey' => (string) ($__a['category_ckey'] ?? ''),
+            'col'      => $__col,
+            'row'      => $__row,
+            'span'     => (int) $__span['days'],
+            'from'     => $__span['from'],
+            'to'       => $__span['to'],
+            'note'     => (string) ($__a['note'] ?? ''),
+        ];
+    }
+}
 ?>
 <div class="card cal-month-card">
   <div class="card-head">
@@ -201,7 +243,29 @@ $gridClass = 'cal-month-grid' . ($weekMode ? ' cal-month-grid-with-sent' : '');
         <?php endif; ?>
       </div>
     <?php endfor; ?>
+    <?php /* Felix-Feedback 2026-11-09 (#148): Abwesenheits-Pillen ueber den
+       Kacheln - Grid-Items mit grid-column + grid-row per nonce-Style.
+       z-index hoch, damit sie ueber den Kachel-Inhalten sitzen. */ ?>
+    <?php foreach ($__monthAbsPills as $__k => $__p):
+      $__ckeyCss = preg_replace('~[^a-z0-9_-]~', '_', strtolower($__p['cat_ckey'] ?: 'absence'));
+    ?>
+      <button type="button"
+              class="cal-month-abs-pill cal-month-abs-pill-<?= h($__ckeyCss) ?> cal-month-abs-slot-<?= (int) $__k ?>"
+              data-abs-id="<?= $__p['abs_id'] ?>"
+              title="<?= h($__p['cat'] . ' (' . $__p['from'] . ' – ' . $__p['to'] . ')' . ($__p['note'] !== '' ? ' · ' . $__p['note'] : '')) ?>">
+        <?= h($__p['cat']) ?>
+      </button>
+    <?php endforeach; ?>
   </div>
 </div>
+
+<style nonce="<?= h(csp_nonce()) ?>">
+<?php foreach ($__monthAbsPills as $__k => $__p):
+    $__gcStart = $__p['col'];
+    $__gcEnd   = $__gcStart + $__p['span'];
+?>
+.cal-month-abs-slot-<?= (int) $__k ?>{grid-column:<?= $__gcStart ?>/<?= $__gcEnd ?>;grid-row:<?= $__p['row'] ?>}
+<?php endforeach; ?>
+</style>
 
 <?php require __DIR__ . '/_sentiment_picker_js.php'; ?>

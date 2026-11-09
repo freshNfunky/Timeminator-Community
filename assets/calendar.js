@@ -324,20 +324,25 @@
         openForNew(ymd);
       });
     }
-    // Felix-Feedback 2026-11-09 (Fix #142): Deep-Link vom Dashboard mit
-    // ?new=1 oeffnet den Overlay-Dialog sofort beim Seiten-Load, statt den
-    // Nutzer auf die separate entry_form-Seite zu schicken. Pro-Parity.
+    // Felix-Feedback 2026-11-09 (Fix #142): Deep-Link mit ?new=1 oder
+    // ?edit=X oeffnet den Overlay-Dialog sofort beim Seiten-Load, statt
+    // den Nutzer auf die Legacy entry_form-Seite zu schicken. Pro-Parity.
     try {
       var params = new URLSearchParams(window.location.search);
-      if (params.get('new') === '1') {
+      var editId = parseInt(params.get('edit'), 10);
+      if (editId && !isNaN(editId)) {
+        openForEntry(editId);
+      } else if (params.get('new') === '1') {
         var t = new Date();
         var y = t.getFullYear() + '-'
           + String(t.getMonth() + 1).padStart(2, '0') + '-'
           + String(t.getDate()).padStart(2, '0');
         openForNew(y);
+      }
+      if ((editId && !isNaN(editId)) || params.get('new') === '1') {
         // Clean URL, damit Reload keinen Dialog erneut aufpoppt.
         if (window.history && window.history.replaceState) {
-          params.delete('new');
+          params.delete('new'); params.delete('edit');
           var qs = params.toString();
           window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
         }
