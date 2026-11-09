@@ -249,7 +249,7 @@ $__weekEndYmd   = $week_start->modify('+6 days')->format('Y-m-d');
 $__workingDows  = Holidays::workingDays();
 $__holidayFlags = [];
 foreach (($holidays ?? []) as $__k => $__v) { $__holidayFlags[(string) $__k] = true; }
-$__absBand = []; // list<array{abs_id,cat,cat_ckey,span,from,to,note}>
+$__absBand = []; // list<array{abs_id,cat,cat_ckey,span,from,to,note,row}>
 $__absBandByYmd = []; // ymd (from) => list<idx in $__absBand>
 foreach (($absences ?? []) as $__a) {
     $__aFrom = max((string) $__a['start_date'], $__weekStartYmd);
@@ -266,8 +266,44 @@ foreach (($absences ?? []) as $__a) {
             'from'     => $__span['from'],
             'to'       => $__span['to'],
             'note'     => (string) ($__a['note'] ?? ''),
+            'row'      => 0, // wird gleich berechnet
         ];
         $__absBandByYmd[$__span['from']][] = $__idx;
+    }
+}
+// Felix-Feedback 2026-11-09 (#162): Pillen untereinander stapeln wie
+// Gantt-Chart - zwei Pillen die den gleichen Tag belegen muessen in
+// unterschiedlichen Rows liegen. Pensum-Badge sitzt unter allen.
+// Row-Assignment: Pillen nach from-Datum sortieren, dann greedy den
+// niedrigsten freien Row waehlen.
+usort($__absBand, static function (array $a, array $b): int {
+    $c = strcmp($a['from'], $b['from']);
+    return $c !== 0 ? $c : strcmp($a['to'], $b['to']);
+});
+$__rowOccupancy = []; // rowIdx => endYmd (inklusive) der aktuell belegten Pille
+foreach ($__absBand as $__k => &$__p) {
+    $__chosen = null;
+    foreach ($__rowOccupancy as $__r => $__endYmd) {
+        if ($__endYmd < $__p['from']) { $__chosen = $__r; break; }
+    }
+    if ($__chosen === null) { $__chosen = count($__rowOccupancy); }
+    $__rowOccupancy[$__chosen] = $__p['to'];
+    $__p['row'] = $__chosen;
+}
+unset($__p);
+// $__absBandByYmd nach Umsortierung neu aufbauen und pro Tag die max.
+// Anzahl Rows ausrechnen, damit das dayhead-Label den richtigen Platz
+// nach unten freihaelt.
+$__absBandByYmd = [];
+$__absRowsByYmd = []; // ymd => max Row+1 (= Anzahl benoetigter Zeilen an diesem Tag)
+foreach ($__absBand as $__k => $__p) {
+    $__absBandByYmd[$__p['from']][] = $__k;
+    // Fuer jeden Tag im Span die Row-Anzahl hochzaehlen.
+    $__dayCursor = $__p['from'];
+    while ($__dayCursor <= $__p['to']) {
+        $__cur = $__absRowsByYmd[$__dayCursor] ?? 0;
+        if ($__p['row'] + 1 > $__cur) { $__absRowsByYmd[$__dayCursor] = $__p['row'] + 1; }
+        $__dayCursor = (new DateTimeImmutable($__dayCursor))->modify('+1 day')->format('Y-m-d');
     }
 }
 
@@ -327,12 +363,23 @@ $__calInk = static function (string $hex): string {
 <?php if ($__nowPct !== null): ?>
 .cal-now-line{top:<?= $__nowPct ?>%}
 <?php endif; ?>
-<?php /* Fix #155: Abwesenheits-Pillen sitzen INNERHALB der ersten
-   Dayhead-Zelle, Breite via nonce-Style = span * 100% - padding. */ ?>
+<?php /* Fix #155 + #162: Pillen sitzen INNERHALB der ersten Dayhead-Zelle,
+   Breite = span * 100% - padding. Hoehen-Offset (top) pro Pille nach
+   Row-Assignment, damit sich mehrere Pillen pro Tag wie Gantt-Rows
+   untereinander anordnen statt zu ueberlappen. */ ?>
 <?php foreach ($__absBand as $__k => $__p):
     $__wPct = (int) $__p['span'] * 100;
+    $__top  = 22 + ((int) $__p['row']) * 24; // Basis 22px + 24px pro Row
 ?>
-.cal-absbar-slot-<?= (int) $__k ?>{width:calc(<?= $__wPct ?>% - 8px)}
+.cal-absbar-slot-<?= (int) $__k ?>{width:calc(<?= $__wPct ?>% - 8px);top:<?= $__top ?>px}
+<?php endforeach; ?>
+<?php /* Dayhead-Label-Margin dynamisch nach max. Row-Anzahl pro Tag,
+   damit Pensum-Badge immer unter allen Pillen sitzt. */ ?>
+<?php foreach (($__absRowsByYmd ?? []) as $__ymd => $__rows):
+    $__mb = 4 + $__rows * 24; // 24px pro Row + Basis-Luft
+    $__ymdCls = preg_replace('~[^0-9]~', '', $__ymd);
+?>
+.cal-week-dayhead[data-day="<?= h($__ymd) ?>"] .cal-week-dayhead-label{margin-bottom:<?= $__mb ?>px}
 <?php endforeach; ?>
 </style>
 

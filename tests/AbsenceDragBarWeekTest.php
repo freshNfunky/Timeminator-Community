@@ -34,6 +34,34 @@ final class AbsenceDragBarWeekTest extends TestCase
             'Separate cal-week-absbar-Row darf nicht mehr existieren - Pillen sitzen in dayhead');
     }
 
+    public function testPillsStackAsGanttRowsWhenOverlapping(): void
+    {
+        // Felix-Feedback 2026-11-09 (#162): Mehrere ganztaegige Pillen am
+        // gleichen Tag muessen sich wie Gantt-Rows UNTEREINANDER anordnen,
+        // nicht ueberlappen. Pensum-Badge sitzt unter allen Pillen.
+        $view = (string) file_get_contents(dirname(__DIR__) . '/views/entries/calendar_week.php');
+        // Row-Assignment im PHP ist greedy pro from-ymd sortiert.
+        self::assertStringContainsString("'row'", $view,
+            'Jede Pille braucht ein row-Feld fuer den Gantt-Slot');
+        self::assertStringContainsString('$__rowOccupancy', $view,
+            'Row-Occupancy-Logik (greedy slot picker) fehlt');
+        // Top-Offset pro Row in der inline CSS (22 + row * 24).
+        self::assertMatchesRegularExpression(
+            '~22\s*\+\s*\(\(int\)\s*\$__p\[\'row\'\]\)\s*\*\s*24~',
+            $view,
+            'Top-Offset pro Row (22 + row*24) muss in der inline-CSS gesetzt werden'
+        );
+        // Pro ymd Max-Row-Anzahl, damit das Dayhead-Label dynamisch
+        // genug Platz nach unten freihaelt (Pensum-Badge sitzt unter).
+        self::assertStringContainsString('$__absRowsByYmd', $view,
+            'Max-Row-Anzahl pro ymd muss berechnet werden fuer dynamisches Label-Margin');
+        self::assertMatchesRegularExpression(
+            '~\.cal-week-dayhead\[data-day="[^"]*"\]\s+\.cal-week-dayhead-label\{margin-bottom:~',
+            $view,
+            'Pro Tag muss das Label-Margin-Bottom dynamisch per inline-CSS gesetzt werden'
+        );
+    }
+
     public function testCssDefinesPillPositionAbsoluteInsideDayhead(): void
     {
         $css = (string) file_get_contents(dirname(__DIR__) . '/assets/app.css');

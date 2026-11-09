@@ -29,13 +29,14 @@ final class CalendarPensumBadgeTest extends TestCase
         $view = $this->view();
         self::assertStringContainsString('cal-day-pensum', $view,
             'Pensum-Badge-Markup fehlt');
-        // Badge muss im Kopfzeilen-Block (nach cal-week-dayhead-label) stehen,
-        // damit es sticky mitwandert - NICHT in der cal-day-Column.
-        $pos = strpos($view, 'cal-week-dayhead-label');
-        self::assertNotFalse($pos, 'Kopfzeilen-Label fehlt');
-        // Fenster 3000 Zeichen, damit die neu eingefuegten Abwesenheits-
-        // Pillen zwischen Label und Pensum-Badge nicht aus dem Window fallen.
-        $tail = substr($view, $pos, 3000);
+        // Badge muss im Kopfzeilen-Block (nach dem HTML-Markup fuer
+        // cal-week-dayhead-label) stehen, damit es sticky mitwandert -
+        // NICHT in der cal-day-Column. Suche explizit das Markup-Div
+        // (nicht den CSS-Selektor, der durch #162 weiter oben im Style-
+        // Block mehrfach vorkommt).
+        $pos = strpos($view, '<div class="cal-week-dayhead-label">');
+        self::assertNotFalse($pos, 'Kopfzeilen-Label-Div fehlt');
+        $tail = substr($view, $pos, 4500);
         self::assertStringContainsString('cal-day-pensum', $tail,
             'Pensum-Badge muss innerhalb der Kopfzeile stehen');
     }
