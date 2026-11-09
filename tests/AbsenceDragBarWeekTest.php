@@ -49,6 +49,20 @@ final class AbsenceDragBarWeekTest extends TestCase
             $css,
             'Dayhead braucht position:relative + overflow:visible fuer die absolute Pille'
         );
+        // Fix #161 (Korrektur): Pille sitzt ZWISCHEN Datum-Label (oben)
+        // und Pensum-Badge (darunter). :has() setzt margin-bottom auf
+        // dem Label, sodass Pensum nach unten rutscht und die Pille in
+        // den Zwischenraum passt. Pille selbst auf top:22px (unter Label).
+        self::assertMatchesRegularExpression(
+            '~\.cal-week-dayhead:has\(\.cal-absbar-pill\)\s+\.cal-week-dayhead-label\s*\{[^}]*margin-bottom~s',
+            $css,
+            ':has()-Selector muss margin-bottom auf dem Label setzen, damit Pensum unter der Pille sitzt'
+        );
+        self::assertMatchesRegularExpression(
+            '~\.cal-absbar-pill\s*\{[^}]*top:\s*2\dpx~s',
+            $css,
+            'Pille muss top:~22px haben (direkt unter dem Label, oberhalb von Pensum)'
+        );
         self::assertStringContainsString('.cal-absbar-pill-urlaub', $css);
         self::assertStringContainsString('.cal-absbar-pill-sonderurlaub', $css);
         self::assertMatchesRegularExpression(

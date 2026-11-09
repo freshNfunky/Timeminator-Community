@@ -311,6 +311,17 @@
           openForNew(grid.getAttribute('data-day'), lo, hi);
         }
       });
+      // Fix #160 Fallback: falls mousedown/mouseup auseinandergerissen
+      // werden (natives Browser-Drag auf text, alte Cache-Version, etc.),
+      // feuert zumindest click reliable - dann Y-Position aus dem Click
+      // auswerten und 60min-Block oeffnen.
+      grid.addEventListener('click', function (ev) {
+        if (ev.target.closest('.cal-event, .cal-process, .cal-day-absence, .cal-absbar-pill, .cal-day-bracket')) return;
+        // Wenn der Drag-Flow den Dialog schon geoeffnet hat, nichts tun.
+        if (dlg.open) return;
+        var startMin = minuteFromEvent(ev);
+        openForNew(grid.getAttribute('data-day'), startMin, startMin + 60);
+      });
     });
     document.querySelectorAll('.cal-event').forEach(function (btn) {
       btn.addEventListener('click', function () {
