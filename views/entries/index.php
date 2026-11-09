@@ -301,10 +301,16 @@ foreach (($processes ?? []) as $__p) {
         // Urlaubsoption im Dialog findet.
         'group_absences' => t('cal.group_absences', 'Abwesenheiten'),
     ],
-    // #149: Mapping project-category-id -> ckey, damit das Projektart-
-    // Dropdown im Dialog die Projekt-Optionen clientseitig filtern kann.
+    // #149/#150: Mapping project-category-id -> {ckey, needs_client,
+    // client_label}. Dialog braucht needs_client (bei Internes Projekt
+    // entfaellt das Kunde-Feld komplett) und client_label (bei
+    // Foerderprojekt steht statt "Kunde" dort "Projekttraeger").
     'projectCats' => array_reduce(($projectCategories ?? []), static function (array $acc, array $c): array {
-        $acc[(string) $c['id']] = (string) ($c['ckey'] ?? '');
+        $acc[(string) $c['id']] = [
+            'ckey'         => (string) ($c['ckey'] ?? ''),
+            'needs_client' => (int) ($c['needs_client'] ?? 1),
+            'client_label' => (string) ($c['client_label'] ?? ''),
+        ];
         return $acc;
     }, []),
 ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>

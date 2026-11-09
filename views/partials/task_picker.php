@@ -56,7 +56,11 @@ foreach ($tasks as $t) {
 }
 ?>
 <div class="task-picker <?= h($wrapClass) ?>" data-selected-task="<?= (int) $selectedTaskId ?>">
-  <label><?= h(t('nav.clients')) ?>
+  <?php /* Felix-Feedback 2026-11-09 (Fix #150): Label "Kunde" / "Projekt-
+     traeger" wird im Dialog dynamisch nach Projektart gesetzt; bei
+     internem Projekt wird das ganze Label versteckt. */ ?>
+  <label class="tp-client-label" data-base-label="<?= h(t('nav.clients')) ?>">
+    <span class="tp-client-label-text"><?= h(t('nav.clients')) ?></span>
     <select class="tp-client" aria-label="<?= h(t('tp.client_filter', 'Kunde filtern')) ?>">
       <option value=""><?= h(t('tp.all_clients', 'Alle Kunden')) ?></option>
       <?php foreach ($clients as $cid => $cname): ?>
@@ -122,6 +126,9 @@ foreach ($tasks as $t) {
     </label>
     <input type="hidden" name="new_task_project_id" class="tp-new-task-project" value="">
     <input type="hidden" name="new_task_wp_id"       class="tp-new-task-wp"      value="">
-    <p class="tp-new-task-hint muted"><?= h(t('tp.new_task_hint', 'Waehle Kunde und Projekt oben - die Aufgabe wird dort angelegt.')) ?></p>
+    <?php /* Felix-Feedback 2026-11-09 (Fix #150): Prosa-Hinweis "Waehle
+       Kunde und Projekt oben" entfernt - durch die Hierarchie-Enforce-
+       Logik kann "+ Neue Aufgabe" ohnehin erst gewaehlt werden, wenn der
+       Parent-Context steht. */ ?>
   </div>
 </div>

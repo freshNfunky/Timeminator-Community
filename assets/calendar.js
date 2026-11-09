@@ -54,26 +54,55 @@
     startIn.required = endIn.required = (k !== 'absence');
     fromIn.required  = (k === 'absence');
   }
-  // Projektart-Filter: filtert die Projekt-Optionen im Dialog nach ckey/id.
-  // Child-Selects (WP + Task) werden in applyFilters() dann automatisch
-  // nach Projekt gefiltert - die bestehende Kaskaden-Logik aus task_picker.
+  // Felix-Feedback 2026-11-09 (Fix #149/#150): Projektart-Filter:
+  // - filtert Projekt-Optionen nach ckey
+  // - bei Internes Projekt (needs_client=0) entfaellt Kunde-Feld komplett;
+  //   Projekte werden dann direkt ohne Client-Filter freigeschaltet
+  // - bei Foerderprojekt wird das Label "Kunde" durch "Projekttraeger"
+  //   (bzw. client_label der Kategorie) ersetzt
   function applyCategoryFilter() {
     if (!catFilter || !projectSel || !taskSel) return;
     var catId = catFilter.value;
-    // Projekt-Optionen filtern nach data-cat-ckey. Wenn kein Filter aktiv
-    // ist, alle sichtbar (data-cat-ckey wird dann nicht geprueft).
     var cats = D.projectCats || {};
-    var want = catId ? (cats[catId] || '') : '';
+    var cfg = catId ? cats[catId] : null;
+    // Backwards-compat: in alten Dumps ist der Wert ein einfacher ckey-String.
+    if (typeof cfg === 'string') { cfg = {ckey: cfg, needs_client: 1, client_label: ''}; }
+    var wantCkey = cfg ? (cfg.ckey || '') : '';
+    var needsClient = cfg ? (cfg.needs_client !== 0) : true;
+    var clientLabelOverride = cfg ? (cfg.client_label || '') : '';
+
+    // Projekt-Optionen nach ckey filtern.
     Array.prototype.forEach.call(projectSel.options, function (o) {
       if (o.value === '') return;
       var ckey = o.getAttribute('data-cat-ckey') || '';
-      var ok = (want === '' || ckey === want);
+      var ok = (wantCkey === '' || ckey === wantCkey);
       o.hidden = !ok; o.disabled = !ok;
     });
-    // Wenn aktuelles Projekt nicht mehr passt: Projekt zuruecksetzen.
-    var cur = projectSel.selectedOptions[0];
-    if (cur && cur.hidden) { projectSel.value = ''; }
-    // Kaskade stossen (task_picker hoert auf change-Events).
+    var curP = projectSel.selectedOptions[0];
+    if (curP && curP.hidden) { projectSel.value = ''; }
+
+    // Kunde-Feld show/hide + Label-Switch.
+    var clientLabel = taskPicker ? taskPicker.querySelector('.tp-client-label') : null;
+    if (clientLabel) {
+      clientLabel.hidden = !needsClient;
+      var labelText = clientLabel.querySelector('.tp-client-label-text');
+      if (labelText) {
+        var baseLabel = clientLabel.getAttribute('data-base-label') || labelText.textContent;
+        labelText.textContent = (needsClient && clientLabelOverride) ? clientLabelOverride : baseLabel;
+      }
+    }
+    if (clientSel) {
+      if (!needsClient) {
+        // Internes Projekt: Kunde leer + aus dem Weg, Projekte duerfen
+        // trotzdem gewaehlt werden.
+        clientSel.value = '';
+        clientSel.disabled = true;
+      } else {
+        clientSel.disabled = false;
+      }
+    }
+    // Kaskade stossen (task_picker haengt an change).
+    if (clientSel)  clientSel.dispatchEvent(new Event('change', {bubbles: true}));
     projectSel.dispatchEvent(new Event('change', {bubbles: true}));
   }
   if (catFilter) catFilter.addEventListener('change', applyCategoryFilter);

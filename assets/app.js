@@ -420,6 +420,30 @@
         if (wid !== '' && o.getAttribute('data-wp')      !== wid) { return false; }
         return true;
       });
+      enforceHierarchy();
+    }
+
+    // Felix-Feedback 2026-11-09 (Fix #150): Hierarchie wird strikt
+    // durchgesetzt - Child-Selects sind disabled bis zum Parent-Set, und
+    // der Placeholder wird zu "Zuerst X waehlen" mutiert, damit der
+    // Grund fuer die Sperre sichtbar ist. Ohne das koennte man Aufgaben
+    // ohne Projekt anklicken, was Felix als "flache Hierarchie" kritisiert
+    // hat.
+    function enforceHierarchy() {
+      updateLockState(project, !client.value,  'Zuerst Kunde waehlen');
+      updateLockState(wp,      !project.value, 'Zuerst Projekt waehlen');
+      updateLockState(task,    !project.value, 'Zuerst Projekt waehlen');
+    }
+    function updateLockState(sel, lock, placeholderText) {
+      sel.disabled = lock;
+      var ph = sel.querySelector('option[value=""]');
+      if (ph) {
+        if (!ph.getAttribute('data-base-text')) {
+          ph.setAttribute('data-base-text', ph.textContent);
+        }
+        ph.textContent = lock ? placeholderText : ph.getAttribute('data-base-text');
+      }
+      if (lock) { sel.value = ''; }
     }
 
     function filterOptions(select, keep) {

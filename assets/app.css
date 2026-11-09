@@ -580,6 +580,13 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .task-picker.tp-stack{display:flex;flex-direction:column;gap:8px}
 .cal-dialog-task-picker{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .cal-dialog-task-picker > label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);margin:0}
+/* Felix-Feedback 2026-11-09 (Fix #150/#151): [hidden] ist default
+   display:none, aber die Klassenregel oben (display:flex) ueberschreibt
+   das mit gleicher Spezifitaet. Deshalb hier den Hidden-Zustand explizit
+   festhalten - der Task-Picker verschwindet bei Prozess + Abwesenheit
+   komplett (nur bei Projekt-Zeit sichtbar). */
+#calTaskWrap[hidden]{display:none}
+#calHoursWrap[hidden],#calTimeRow[hidden],#calDateRow[hidden]{display:none}
 /* Felix-Feedback 2026-11-09 (#143): Projektart-Pills in der Projekt-Liste.
    Farbkodierung nach ckey - kundenprojekt=blau, internes_projekt=grau,
    foerderprojekt=gold - eigene pro Pill, sodass sie auch dann sinnvoll
