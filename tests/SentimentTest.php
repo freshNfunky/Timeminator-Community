@@ -228,4 +228,63 @@ final class SentimentTest extends TestCase
             'sentiment_quick muss den back-Parameter gegen whitelist pruefen und per Default auf dashboard fallen'
         );
     }
+
+    /**
+     * Felix-Feedback 2026-11-09 (Code-Review Fix #127): leerer Score-Wert
+     * aus dem Clear-Pfad (JS re-klickt das aktuelle Smiley) MUSS mood/flow
+     * auf SQL NULL setzen, nicht auf 0. 0 liegt ausserhalb von 1..5 und
+     * kippt Downstream (moodEmoji, teamDaily-Averages, weeklyMoodMatrix).
+     */
+    public function testSetDimensionNullClearsInsteadOfWritingZero(): void
+    {
+        $uid = TestSupport::seedUser('alice');
+        $day = '2026-10-04';
+
+        // Erst Wert setzen.
+        Sentiment::setDimension($uid, $day, 'mood', 4);
+        $row = DB::one('SELECT mood, flow FROM sentiment_entries WHERE user_id = ? AND as_of = ?', [$uid, $day]);
+        self::assertSame(4, (int) $row['mood']);
+        self::assertNull($row['flow']);
+
+        // Clear via null.
+        Sentiment::setDimension($uid, $day, 'mood', null);
+        $row = DB::one('SELECT mood, flow FROM sentiment_entries WHERE user_id = ? AND as_of = ?', [$uid, $day]);
+        self::assertNull($row['mood'], 'setDimension(null) muss NULL in die Spalte schreiben, nicht 0');
+        self::assertNull($row['flow']);
+    }
+
+    public function testSetDimensionNullOnFreshDayCreatesRowWithNulls(): void
+    {
+        // Nebeneffekt der Fix: INSERT-Pfad bei leerer DB erzeugt eine Zeile
+        // mit NULL fuer die Dimension. Das ist nicht nuetzlich, aber es darf
+        // nicht abstuerzen und keinesfalls 0 schreiben.
+        $uid = TestSupport::seedUser('alice');
+        $day = '2026-10-04';
+
+        Sentiment::setDimension($uid, $day, 'flow', null);
+        $row = DB::one('SELECT mood, flow FROM sentiment_entries WHERE user_id = ? AND as_of = ?', [$uid, $day]);
+        self::assertNotNull($row);
+        self::assertNull($row['mood']);
+        self::assertNull($row['flow']);
+    }
+
+    public function testApiSaveControllerBranchClearsOnEmptyScore(): void
+    {
+        // Kontrakt im Controller: empty String / null = Clear, ungueltiger
+        // Score (ausserhalb 1..5) = bad_request. Pruefen wir am Quelltext,
+        // damit der Clear-Pfad nicht wieder in setDimension(..., 0) kippt.
+        $ctrl = (string) file_get_contents(dirname(__DIR__) . '/src/controllers/sentiment_ctrl.php');
+        self::assertStringContainsString("\$isClear = \$rawScore === '' || \$rawScore === null;", $ctrl,
+            'ctrl_sentiment_api_save muss Clear-Pfad explizit erkennen');
+        self::assertStringContainsString(
+            'Sentiment::setDimension($uid, $day, $dim, $isClear ? null : $score);',
+            $ctrl,
+            'ctrl_sentiment_api_save muss bei Clear null uebergeben, kein 0-Fallback'
+        );
+        self::assertStringNotContainsString(
+            "(int) (\$score ?? 0)",
+            $ctrl,
+            'Der 0-Fallback-Cast darf nicht wieder zurueckkommen'
+        );
+    }
 }

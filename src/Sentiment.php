@@ -431,7 +431,17 @@ final class Sentiment
     }
 
     /** Set a single dimension of the day, leaving the other dimension and the note untouched. */
-    public static function setDimension(int $userId, string $asOf, string $dim, int $score): void
+    /**
+     * Setzt (oder loescht) eine Dimension (mood|flow) fuer einen Tag.
+     *
+     * Felix-Feedback 2026-11-09 (Code-Review Fix #127): `$score === null`
+     * loescht den Wert (SQL NULL), statt 0 in die Spalte zu schreiben. Die
+     * JS-Picker (views/entries/_sentiment_picker_js.php) schicken bei einem
+     * Clear-Click `score=''`, der Controller normalisiert das zu null - hier
+     * muss das zu echtem NULL werden, sonst landet 0 in mood/flow (ausserhalb
+     * des dokumentierten 1..5-Range).
+     */
+    public static function setDimension(int $userId, string $asOf, string $dim, ?int $score): void
     {
         $col = $dim === 'flow' ? 'flow' : 'mood';
         $now = now();

@@ -107,4 +107,75 @@ final class DayBracketTest extends TestCase
         self::assertSame(19 * 60, $r['over']['to']);
         self::assertSame(10 * 60, $r['sum']);
     }
+
+    /**
+     * Felix-Feedback 2026-11-09 (Code-Review Fix #128): wenn ein Entry
+     * 08-10 (2h) mit einem Prozess 09-11 (2h) ueberlappt, sollen nur die
+     * realen Wandminuten 08-11 (= 3h) gezaehlt werden, nicht 4h. Sonst
+     * kippt die Pensum-Pille faelschlich auf rot und die Overtime-Klammer
+     * sitzt an der falschen Stelle.
+     */
+    public function testOverlappingEventsAreDedupedBeforeSumming(): void
+    {
+        $events = [
+            ['start_min' =>  8 * 60, 'end_min' => 10 * 60],  // Entry
+            ['start_min' =>  9 * 60, 'end_min' => 11 * 60],  // Prozess, 1h Overlap
+        ];
+        $r = DayBracket::compute($events, 8 * 60);
+        self::assertNotNull($r);
+        self::assertSame( 8 * 60, $r['target']['from']);
+        self::assertSame(11 * 60, $r['target']['to']);
+        self::assertSame( 3 * 60, $r['sum'],
+            'Overlap 09-10 darf nicht doppelt gezaehlt werden - reale Zeit ist 3h, nicht 4h');
+        self::assertNull($r['over']);
+    }
+
+    public function testFullyContainedOverlapCountsOnce(): void
+    {
+        // Innenliegender Prozess 10-11 komplett IN einer Entry-Buchung 08-17.
+        // Erwartete Summe: 9h (nur die Entry), nicht 9h + 1h = 10h.
+        $events = [
+            ['start_min' =>  8 * 60, 'end_min' => 17 * 60],
+            ['start_min' => 10 * 60, 'end_min' => 11 * 60],
+        ];
+        $r = DayBracket::compute($events, 8 * 60);
+        self::assertNotNull($r);
+        self::assertSame( 8 * 60, $r['target']['from']);
+        self::assertSame(16 * 60, $r['target']['to'], 'Target endet mitten im 8-17-Block bei 16:00 (1h Overshoot)');
+        self::assertNotNull($r['over']);
+        self::assertSame(16 * 60, $r['over']['from']);
+        self::assertSame(17 * 60, $r['over']['to']);
+        self::assertSame( 9 * 60, $r['sum']);
+    }
+
+    public function testAdjacentEventsMergeIntoOneContiguousInterval(): void
+    {
+        // Direkt aneinandergrenzende Events (08-10 + 10-12) zaehlen als
+        // zusammenhaengende 4h-Buchung - KEINE Luecke, keine Doppelzaehlung.
+        $events = [
+            ['start_min' =>  8 * 60, 'end_min' => 10 * 60],
+            ['start_min' => 10 * 60, 'end_min' => 12 * 60],
+        ];
+        $r = DayBracket::compute($events, 8 * 60);
+        self::assertNotNull($r);
+        self::assertSame( 8 * 60, $r['target']['from']);
+        self::assertSame(12 * 60, $r['target']['to']);
+        self::assertSame( 4 * 60, $r['sum']);
+    }
+
+    public function testUnsortedInputStillProducesCorrectBrackets(): void
+    {
+        // Wichtig fuer die View: calendar_week schiebt Entries + Prozesse in
+        // beliebiger Reihenfolge rein; compute() muss selbst sortieren.
+        $events = [
+            ['start_min' => 13 * 60, 'end_min' => 17 * 60],
+            ['start_min' =>  8 * 60, 'end_min' => 12 * 60],
+        ];
+        $r = DayBracket::compute($events, 8 * 60);
+        self::assertNotNull($r);
+        self::assertSame( 8 * 60, $r['target']['from']);
+        self::assertSame(17 * 60, $r['target']['to']);
+        self::assertSame( 8 * 60, $r['sum']);
+        self::assertNull($r['over']);
+    }
 }

@@ -206,13 +206,18 @@ function ctrl_sentiment_api_save(): void
     $uid = Auth::id();
     if ($uid === null) { json_out(['ok' => false, 'error' => 'auth'], 401); }
 
-    $day   = Sentiment::parseDay((string) post('day', ''));
-    $dim   = (string) post('dim', '');
-    $score = Sentiment::normalizeScore(post('score'));
-    if (!$day || !in_array($dim, Sentiment::DIMENSIONS, true)) {
+    $day      = Sentiment::parseDay((string) post('day', ''));
+    $dim      = (string) post('dim', '');
+    $rawScore = post('score');
+    $score    = Sentiment::normalizeScore($rawScore);
+    // Felix-Feedback 2026-11-09 (Code-Review Fix #127): leerer String = Clear
+    // (JS schickt score='' beim Re-Klick auf das aktuelle Smiley). Nur echter
+    // Clear schreibt NULL; ein ungueltiger Wert (z.B. '7') ist ein bad_request.
+    $isClear = $rawScore === '' || $rawScore === null;
+    if (!$day || !in_array($dim, Sentiment::DIMENSIONS, true) || (!$isClear && $score === null)) {
         json_out(['ok' => false, 'error' => 'bad_request'], 400);
     }
-    Sentiment::setDimension($uid, $day, $dim, (int) ($score ?? 0));
+    Sentiment::setDimension($uid, $day, $dim, $isClear ? null : $score);
     $row = Sentiment::forDay($uid, $day) ?: [];
     json_out([
         'ok'    => true,
