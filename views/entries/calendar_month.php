@@ -96,7 +96,7 @@ $gridClass = 'cal-month-grid' . ($weekMode ? ' cal-month-grid-with-sent' : '');
 
   <div class="<?= h($gridClass) ?>" role="grid" aria-label="<?= h(t('cal.month_grid_aria', 'Monatsraster')) ?>">
     <?php if ($weekMode): ?>
-      <div class="cal-month-dow cal-month-dow-sent" role="columnheader" title="<?= h(t('sent.mood_short', 'Mood')) . ' / ' . h(t('sent.flow_short', 'Flow')) ?>"><?= h(t('sent.mood_short', 'Mood')) ?></div>
+      <div class="cal-month-dow cal-month-dow-sent" role="columnheader"><?= h(t('sent.mood_short', 'Mood')) ?><?= tip('cal.mood_column_hint') ?></div>
     <?php endif; ?>
     <?php foreach ($dayHeaders as $__dh): ?>
       <div class="cal-month-dow" role="columnheader"><?= h($__dh) ?></div>

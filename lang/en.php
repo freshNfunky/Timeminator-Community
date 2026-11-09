@@ -217,6 +217,7 @@ return [
 
     'cal.day_bracket_target'    => 'Daily target',
     'cal.day_bracket_over'      => 'Overtime',
+    'cal.mood_column_hint'      => 'Mood rhythm: one Mood/Flow value per week by default, or - when switched to daily in your preferences - a picker per day. "—" = no responses that week/day.',
     'sent.team_members_h3'      => 'Team members (%d)',
     'sent.matrix_team_title'    => 'Mood matrix (team)',
     'sent.matrix_team_hint'     => 'Weekly averages per team member. Smiley = rounded average; "—" = no responses that week.',

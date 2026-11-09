@@ -214,6 +214,7 @@ return [
 
     'cal.day_bracket_target'    => 'Tagessoll',
     'cal.day_bracket_over'      => 'Ueberstunden',
+    'cal.mood_column_hint'      => 'Stimmungs-Rhythmus: pro Woche ein Mood/Flow-Wert (Default), oder - in den Benutzereinstellungen auf taeglich umgestellt - ein Picker pro Tag. "—" = keine Antworten in dieser Woche bzw. an diesem Tag.',
     'sent.team_members_h3'      => 'Teammitglieder (%d)',
     'sent.matrix_team_title'    => 'Stimmungs-Matrix (Team)',
     'sent.matrix_team_hint'     => 'Wochen-Durchschnitt pro Teammitglied. Smiley = gerundeter Durchschnitt; "—" = keine Antworten in dieser Woche.',
