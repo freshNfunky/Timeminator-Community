@@ -217,6 +217,7 @@ return [
 
     'cal.day_bracket_target'    => 'Daily target',
     'cal.day_bracket_over'      => 'Overtime',
+    'cal.day_pensum_tip'        => 'Booked hours today / daily target. Green = under target, yellow = on target, red = over target.',
     'cal.mood_column_hint'      => 'Mood rhythm: one Mood/Flow value per week by default, or - when switched to daily in your preferences - a picker per day. "—" = no responses that week/day.',
     'sent.week_title'            => 'Your entry this week',
     'sent.flash_week_saved'      => 'Thanks, week saved.',

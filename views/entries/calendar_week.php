@@ -327,7 +327,7 @@ $__calInk = static function (string $hex): string {
        in den gleichen Raster. */ ?>
     <div class="cal-week-head" role="row">
       <div class="cal-week-corner" aria-hidden="true"></div>
-      <?php foreach ($__days as $__day):
+      <?php foreach ($__days as $__i => $__day):
         $__hd = $holidays[$__day['ymd']] ?? null;
         $__hdCls = 'cal-week-dayhead cal-day-head';
         if ($__day['isToday'])  $__hdCls .= ' is-today';
@@ -336,6 +336,23 @@ $__calInk = static function (string $hex): string {
       ?>
         <div class="<?= h($__hdCls) ?>" role="columnheader" data-day="<?= h($__day['ymd']) ?>">
           <div class="cal-week-dayhead-label"><?= h($__day['label']) ?></div>
+          <?php /* Felix-Feedback 2026-11-09 (#118): Pensum-Badge pro Tag in
+             der Kopfzeile - gruen unter Soll, gelb genau drauf, rot ueber
+             Soll. Freelancer (kein Tagessoll) bekommen kein Badge. */ ?>
+          <?php if ($__dayTargetMin !== null):
+            $__sum = isset($__dayBrackets[$__i]) ? (int) $__dayBrackets[$__i]['sum'] : 0;
+            $__diff = $__sum - $__dayTargetMin;
+            $__toleranceMin = 5;
+            if (abs($__diff) <= $__toleranceMin)      $__pensumCls = 'is-ok';
+            elseif ($__diff < 0)                      $__pensumCls = 'is-under';
+            else                                      $__pensumCls = 'is-over';
+            $__fmtH = static fn(int $m): string => number_format($m / 60, 1, ',', '.');
+          ?>
+            <div class="cal-day-pensum <?= $__pensumCls ?>"
+                 title="<?= h(t('cal.day_pensum_tip', 'Gebuchte Stunden heute / Tagessoll')) ?>">
+              <?= h($__fmtH($__sum)) ?> / <?= h($__fmtH($__dayTargetMin)) ?> h
+            </div>
+          <?php endif; ?>
           <?php /* Felix-Feedback 2026-11-09 (#110): Daily-Mood-Picker sitzt
              in der STICKY Kopfzeile, nicht in der Uhrzeiten-Tabelle - sonst
              scrollt er mit dem Auto-Scroll zur ersten Buchungsstunde aus

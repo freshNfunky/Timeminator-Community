@@ -214,6 +214,7 @@ return [
 
     'cal.day_bracket_target'    => 'Tagessoll',
     'cal.day_bracket_over'      => 'Ueberstunden',
+    'cal.day_pensum_tip'        => 'Gebuchte Stunden heute / Tagessoll. Gruen = unter Soll, gelb = genau drauf, rot = ueber Soll.',
     'cal.mood_column_hint'      => 'Stimmungs-Rhythmus: pro Woche ein Mood/Flow-Wert (Default), oder - in den Benutzereinstellungen auf taeglich umgestellt - ein Picker pro Tag. "—" = keine Antworten in dieser Woche bzw. an diesem Tag.',
     'sent.week_title'            => 'Dein Eintrag diese Woche',
     'sent.flash_week_saved'      => 'Danke, Woche gespeichert.',
