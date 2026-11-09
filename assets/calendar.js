@@ -287,9 +287,10 @@
     // explizitem setPointerCapture). Deshalb: mousemove+mouseup leben
     // auf DOCUMENT, nicht auf dem jeweiligen Grid. Der Grid-Handler
     // weiss nur ueber den mousedown Bescheid, der Rest ist global.
-    var gDragGrid  = null;
-    var gDragStart = null;
-    var gDragEnd   = null;
+    var gDragGrid    = null;
+    var gDragStart   = null;
+    var gDragEnd     = null;
+    var gDragDraft   = null; // .cal-event-draft Placeholder waehrend Drag
     function minuteFromEventOnGrid(ev, grid) {
       var rect = grid.getBoundingClientRect();
       var y = ev.clientY - rect.top;
@@ -298,6 +299,20 @@
       var raw = (y / rect.height) * 24 * 60;
       return Math.round(raw / 15) * 15;
     }
+    function updateDraftPreview() {
+      if (!gDragGrid || !gDragDraft || gDragStart === null || gDragEnd === null) return;
+      var lo = Math.min(gDragStart, gDragEnd);
+      var hi = Math.max(gDragStart, gDragEnd);
+      if (hi - lo < 15) { hi = lo + 15; } // mind. 1 Snap-Slot sichtbar
+      gDragDraft.style.setProperty('--draft-top',    (lo / (24 * 60) * 100) + '%');
+      gDragDraft.style.setProperty('--draft-height', ((hi - lo) / (24 * 60) * 100) + '%');
+    }
+    function clearDraftPreview() {
+      if (gDragDraft && gDragDraft.parentNode) {
+        gDragDraft.parentNode.removeChild(gDragDraft);
+      }
+      gDragDraft = null;
+    }
     document.querySelectorAll('.cal-day-grid').forEach(function (grid) {
       grid.addEventListener('mousedown', function (ev) {
         if (ev.button !== 0) return;
@@ -305,12 +320,18 @@
         gDragGrid  = grid;
         gDragStart = minuteFromEventOnGrid(ev, grid);
         gDragEnd   = gDragStart;
+        // Live-Preview: draft-div ins Grid einhaengen (CSS .cal-event-draft).
+        gDragDraft = document.createElement('div');
+        gDragDraft.className = 'cal-event cal-event-draft';
+        grid.appendChild(gDragDraft);
+        updateDraftPreview();
         ev.preventDefault();
       });
     });
     document.addEventListener('mousemove', function (ev) {
       if (!gDragGrid || gDragStart === null) return;
       gDragEnd = minuteFromEventOnGrid(ev, gDragGrid);
+      updateDraftPreview();
     });
     document.addEventListener('mouseup', function (ev) {
       if (!gDragGrid || gDragStart === null) return;
@@ -318,6 +339,7 @@
       var lo = Math.min(gDragStart, gDragEnd);
       var hi = Math.max(gDragStart, gDragEnd);
       var day = gDragGrid.getAttribute('data-day');
+      clearDraftPreview();
       gDragGrid = null; gDragStart = gDragEnd = null;
       if (hi - lo < 15) { hi = lo + 60; }
       openForNew(day, lo, hi);

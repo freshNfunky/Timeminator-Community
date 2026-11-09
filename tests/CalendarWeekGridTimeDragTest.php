@@ -109,6 +109,27 @@ final class CalendarWeekGridTimeDragTest extends TestCase
         );
     }
 
+    public function testGridDragShowsLiveDraftPreview(): void
+    {
+        // Felix-Feedback 2026-11-09 (#165): Waehrend des Drags muss ein
+        // .cal-event-draft Placeholder im Grid sichtbar sein und mit der
+        // Maus mitwachsen - sonst wirkt der Drag "blind" bis zum mouseup.
+        $js = $this->js();
+        self::assertStringContainsString("'cal-event cal-event-draft'", $js,
+            'Drag muss einen .cal-event-draft Placeholder erzeugen');
+        self::assertStringContainsString("setProperty('--draft-top'", $js,
+            'Draft-Position via CSS custom property --draft-top (CSP-strict)');
+        self::assertStringContainsString("setProperty('--draft-height'", $js,
+            'Draft-Hoehe via CSS custom property --draft-height');
+        self::assertStringContainsString('function clearDraftPreview', $js,
+            'Draft muss nach mouseup wieder entfernt werden');
+        // CSS .cal-event-draft muss existieren (sonst waere die Preview
+        // unsichtbar).
+        $css = (string) file_get_contents(dirname(__DIR__) . '/assets/app.css');
+        self::assertMatchesRegularExpression('~\.cal-event-draft\s*\{~', $css,
+            'CSS-Regel fuer .cal-event-draft fehlt');
+    }
+
     public function testOpenDialogUsesPreventScrollOnFocus(): void
     {
         $js = $this->js();
