@@ -532,32 +532,58 @@
     // Felix-Feedback 2026-11-09 (Fix #142): Deep-Link mit ?new=1 oder
     // ?edit=X oeffnet den Overlay-Dialog sofort beim Seiten-Load, statt
     // den Nutzer auf die Legacy entry_form-Seite zu schicken. Pro-Parity.
+    // Felix-Feedback 2026-11-09 Hardening 5: Deep-Link ?new=1 / ?edit=X
+    // zwingend AUS DER URL entfernen - sonst feuert jeder spaetere
+    // window.location.reload() (Save-Flow) den Deep-Link erneut und
+    // ueberschreibt den gerade gewaehlten Grid-Drag mit heute/09-10.
+    // Hardening 4 (history.replaceState) hat laut Felix nicht gegriffen.
+    // Hardening 5: sessionStorage-Flag + location.replace() mit sauberer
+    // URL. Nach dem Redirect ist ?new=1 definitiv raus und Dialog oeffnet
+    // trotzdem einmal via Flag. Save -> reload -> Flag leer -> kein Dialog.
     try {
       var params = new URLSearchParams(window.location.search);
       var editId = parseInt(params.get('edit'), 10);
       var hasNew = params.get('new') === '1';
-      try { console.log('[TM-CAL-V5] deep-link check at wireGrid: edit=', editId, 'hasNew=', hasNew, 'full=', window.location.search); } catch (e) {}
-      // Felix-Feedback 2026-11-09 Hardening 4: URL ZUERST cleanen, DANACH
-      // Dialog oeffnen. Sonst triggert jeder spaetere window.location.reload()
-      // (z.B. nach save) den Deep-Link erneut und oeffnet 09:00-10:00 auf
-      // today. Das war der eigentliche "Drag landet immer bei 9.11. 09-10"-Bug.
+      try { console.log('[TM-CAL-V6] deep-link check: edit=', editId, 'hasNew=', hasNew, 'url=', window.location.search); } catch (e) {}
+
+      // Flag-Check: Haben wir vom vorigen Redirect das "oeffne Dialog"-
+      // Signal mitbekommen? Dann jetzt Dialog oeffnen und Flag loeschen.
+      var pendingNew  = null;
+      var pendingEdit = null;
+      try {
+        pendingNew  = window.sessionStorage.getItem('tm-cal-pending-new');
+        pendingEdit = window.sessionStorage.getItem('tm-cal-pending-edit');
+      } catch (e) {}
+
       if ((editId && !isNaN(editId)) || hasNew) {
-        if (window.history && window.history.replaceState) {
-          params.delete('new'); params.delete('edit');
-          var qs = params.toString();
-          window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
-        }
+        // URL hat Deep-Link-Param - Flag setzen, URL cleanen, neu laden.
+        try {
+          if (editId && !isNaN(editId)) {
+            window.sessionStorage.setItem('tm-cal-pending-edit', String(editId));
+          } else {
+            window.sessionStorage.setItem('tm-cal-pending-new', '1');
+          }
+        } catch (e) {}
+        params.delete('new'); params.delete('edit');
+        var qs = params.toString();
+        var cleanUrl = window.location.pathname + (qs ? '?' + qs : '');
+        try { console.log('[TM-CAL-V6] cleaning URL via location.replace ->', cleanUrl); } catch (e) {}
+        window.location.replace(cleanUrl);
+        return; // weiterer Code laeuft im naechsten Load
       }
-      if (editId && !isNaN(editId)) {
-        openForEntry(editId);
-      } else if (hasNew) {
+
+      if (pendingEdit && !isNaN(parseInt(pendingEdit, 10))) {
+        try { window.sessionStorage.removeItem('tm-cal-pending-edit'); } catch (e) {}
+        openForEntry(parseInt(pendingEdit, 10));
+      } else if (pendingNew) {
+        try { window.sessionStorage.removeItem('tm-cal-pending-new'); } catch (e) {}
         var t = new Date();
         var y = t.getFullYear() + '-'
           + String(t.getMonth() + 1).padStart(2, '0') + '-'
           + String(t.getDate()).padStart(2, '0');
         openForNew(y);
       }
-    } catch (e) { /* URLSearchParams nicht supported -> egal */ }
+    } catch (e) { /* URLSearchParams / sessionStorage nicht supported -> egal */ }
   }
 
   function postForm(url, data) {

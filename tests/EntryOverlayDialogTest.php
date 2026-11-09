@@ -81,8 +81,14 @@ final class EntryOverlayDialogTest extends TestCase
         $js = (string) file_get_contents(dirname(__DIR__) . '/assets/calendar.js');
         self::assertStringContainsString("params.get('edit')", $js,
             'calendar.js muss auch den edit-Query-Param pruefen');
-        self::assertStringContainsString('openForEntry(editId)', $js,
-            'Bei edit=X muss openForEntry den Bestandseintrag im Overlay oeffnen');
+        // Hardening 5: deep-link geht ueber sessionStorage-Flag, damit
+        // Save-Reload nicht erneut triggert. openForEntry wird mit
+        // parseInt(pendingEdit, 10) gerufen, weil das Flag den String traegt.
+        self::assertMatchesRegularExpression(
+            '~openForEntry\(\s*(editId|parseInt\(pendingEdit,\s*10\))\s*\)~',
+            $js,
+            'Bei edit=X muss openForEntry den Bestandseintrag im Overlay oeffnen (direkt oder via sessionStorage-Flag)'
+        );
     }
 
     /**
