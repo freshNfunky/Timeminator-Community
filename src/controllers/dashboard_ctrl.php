@@ -42,6 +42,11 @@ function ctrl_dashboard(): void
     $sentimentToday = Sentiment::todayForUser($uid) ?? [];
     $sentimentGran  = Sentiment::granularity();
 
+    // Felix-Feedback 2026-11-09 (Fix #182): Timer-Card bekommt eine
+    // Projektart-Combobox oberhalb der task-picker-Hierarchie, analog
+    // zum Entry-Dialog. Dafuer brauchen wir die Projektart-Liste.
+    $projectCategories = Repo::projectCategories(true);
+
     view('dashboard', [
         'running'              => $running,
         'recent'               => $recent,
@@ -52,5 +57,6 @@ function ctrl_dashboard(): void
         'planning'             => Repo::projectPlanningSnapshot(),
         'sentimentToday'       => $sentimentToday,
         'sentimentGranularity' => $sentimentGran,
+        'projectCategories'    => $projectCategories,
     ], t('nav.dashboard', 'Dashboard'));
 }

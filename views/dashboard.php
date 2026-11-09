@@ -25,8 +25,26 @@
       </form>
     </div>
   <?php else: ?>
-    <form method="post" action="<?= h(route('timer_start')) ?>" class="timer-start">
+    <form method="post" action="<?= h(route('timer_start')) ?>" class="timer-start" id="timerStartForm">
       <?= csrf_field() ?>
+      <?php /* Felix-Feedback 2026-11-09 (Fix #182): Projektart-Combobox
+         ueber der Kaskade - analog Entry-Dialog. Ohne diese Stufe stand
+         im Kunden-Select "Zuerst Projektart waehlen", aber die Projektart
+         war nirgends auswaehlbar. */ ?>
+      <label class="timer-cat-label">
+        <?= h(t('projects.category', 'Projektart')) ?>
+        <select class="timer-cat" aria-label="<?= h(t('projects.category', 'Projektart')) ?>">
+          <option value=""><?= h(t('projects.pick_category', 'Projektart waehlen …')) ?></option>
+          <?php foreach (($projectCategories ?? []) as $__pc): ?>
+            <option value="<?= (int) $__pc['id'] ?>"
+                    data-ckey="<?= h((string) $__pc['ckey']) ?>"
+                    data-needs-client="<?= (int) $__pc['needs_client'] ?>"
+                    data-client-label="<?= h($__pc['client_label'] ?: t('project_cat.client_default', 'Kunde')) ?>">
+              <?= h($__pc['label']) ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+      </label>
       <?php
       $selectedTaskId = 0;
       $wrapClass = 'tp-stack grow';
@@ -37,6 +55,47 @@
       </label>
       <button class="btn btn-primary" type="submit"><?= h(t('dash.timer_start')) ?></button>
     </form>
+    <script nonce="<?= h(csp_nonce()) ?>">
+    (function () {
+      var form   = document.getElementById('timerStartForm');
+      if (!form) return;
+      var catSel = form.querySelector('.timer-cat');
+      var picker = form.querySelector('.task-picker');
+      if (!catSel || !picker) return;
+      var clientLabel  = picker.querySelector('.tp-client-label');
+      var clientText   = clientLabel ? clientLabel.querySelector('.tp-client-label-text') : null;
+      var clientSel    = picker.querySelector('.tp-client');
+      var projectSel   = picker.querySelector('.tp-project');
+      var baseLabel    = clientLabel && clientText
+        ? (clientLabel.getAttribute('data-base-label') || clientText.textContent)
+        : '';
+      function apply() {
+        var opt = catSel.selectedOptions[0];
+        var ckey        = opt ? (opt.getAttribute('data-ckey') || '')         : '';
+        var needsClient = opt && opt.value ? opt.getAttribute('data-needs-client') === '1' : true;
+        var customLabel = opt ? (opt.getAttribute('data-client-label') || '') : '';
+        // Fix #157: data-cat-filter am Picker-Root treibt die Projekt-
+        // Options-Filterung in enforceHierarchy/applyFilters.
+        if (ckey) { picker.setAttribute('data-cat-filter', ckey); }
+        else      { picker.removeAttribute('data-cat-filter'); }
+        // Internes Projekt: Kunden-Feld ausblenden.
+        if (clientLabel) { clientLabel.hidden = !needsClient; }
+        if (clientSel) {
+          if (!needsClient) { clientSel.value = ''; clientSel.disabled = true; }
+          else              { clientSel.disabled = false; }
+        }
+        // Label-Swap bei Foerderprojekt.
+        if (clientText) {
+          clientText.textContent = (needsClient && customLabel) ? customLabel : baseLabel;
+        }
+        // Kaskade stossen (task_picker haengt an change).
+        if (clientSel)  clientSel.dispatchEvent(new Event('change', {bubbles: true}));
+        if (projectSel) projectSel.dispatchEvent(new Event('change', {bubbles: true}));
+      }
+      catSel.addEventListener('change', apply);
+      apply();
+    })();
+    </script>
     <?php if (!$tasks): ?>
       <p class="muted"><?= h(t('dash.no_tasks')) ?>
         <a href="<?= h(route('clients')) ?>"><?= h(t('nav.clients')) ?></a>,
