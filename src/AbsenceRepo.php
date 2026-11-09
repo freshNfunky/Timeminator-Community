@@ -141,6 +141,26 @@ final class AbsenceRepo
         if ($d['end_date'] < $d['start_date']) {
             throw new RuntimeException('Bis-Datum darf nicht vor dem Von-Datum liegen.');
         }
+        // Felix-Feedback 2026-11-09 (Fix #170): Overlap-Guard. Zwei
+        // Abwesenheiten desselben Users duerfen sich nicht ueberlappen
+        // (keine zwei Urlaube am gleichen Tag, keine Krankheit auf einen
+        // Urlaubstag drauf, etc.). Zwei Zeitraeume [a_from..a_to] und
+        // [b_from..b_to] ueberlappen, wenn a_from <= b_to UND b_from <= a_to.
+        $conflict = self::findOverlap(
+            (int) $d['user_id'],
+            (string) $d['start_date'],
+            (string) $d['end_date'],
+            $id ?: null
+        );
+        if ($conflict !== null) {
+            $label = (string) ($conflict['category_label'] ?? 'Abwesenheit');
+            throw new RuntimeException(sprintf(
+                'Ueberlappt mit bestehender Abwesenheit "%s" (%s - %s).',
+                $label,
+                $conflict['start_date'],
+                $conflict['end_date']
+            ));
+        }
         if ($id) {
             DB::run(
                 'UPDATE absences SET category_id=?, start_date=?, end_date=?, note=?, hours=?, updated_at=? WHERE id=?',
@@ -153,6 +173,32 @@ final class AbsenceRepo
              VALUES (?,?,?,?,?,?,?,?)',
             [$d['user_id'], $d['category_id'], $d['start_date'], $d['end_date'], $d['note'], $d['hours'] ?? null, now(), now()]
         );
+    }
+
+    /**
+     * Findet eine existierende Abwesenheit desselben Users, deren
+     * [start_date..end_date]-Bereich sich mit dem uebergebenen Bereich
+     * ueberlappt. Beim Update (ignoreId gesetzt) wird die eigene Zeile
+     * ausgeschlossen.
+     *
+     * @return array<string,mixed>|null  Konflikt-Row (inkl. category_label) oder null
+     */
+    public static function findOverlap(int $userId, string $startDate, string $endDate, ?int $ignoreId = null): ?array
+    {
+        $sql = 'SELECT a.*, c.label AS category_label
+                  FROM absences a
+             LEFT JOIN absence_categories c ON c.id = a.category_id
+                 WHERE a.user_id = ?
+                   AND a.start_date <= ?
+                   AND a.end_date   >= ?';
+        $args = [$userId, $endDate, $startDate];
+        if ($ignoreId !== null) {
+            $sql  .= ' AND a.id <> ?';
+            $args[] = $ignoreId;
+        }
+        $sql .= ' LIMIT 1';
+        $row = DB::one($sql, $args);
+        return $row ?: null;
     }
 
     public static function delete(int $id): void

@@ -44,6 +44,7 @@ require APP_ROOT . '/src/AccountRepo.php';
 require APP_ROOT . '/src/EmployeeStats.php';
 require APP_ROOT . '/src/DateShiftRepo.php';
 require APP_ROOT . '/src/PlanRepo.php';
+require APP_ROOT . '/src/AbsenceRepo.php';
 require APP_ROOT . '/src/controllers/cockpit_ctrl.php';
 require APP_ROOT . '/src/ProcessRepo.php';
 require APP_ROOT . '/src/controllers/company_cockpit_ctrl.php';
