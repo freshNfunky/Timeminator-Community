@@ -520,15 +520,19 @@
         else if (kind === 'absence') openForAbsence(id);
       });
     });
-    // "+ Eintrag"-Button im Tab-Row oeffnet leeren Dialog mit heutigem Datum.
+    // "+ Eintrag"-Button im Tab-Row oeffnet leeren Dialog mit heutigem
+    // Datum und AKTUELLER Uhrzeit (gerundet auf 15 Min) statt hardcoded
+    // 09:00-10:00 - weniger Klicks, wenn Felix "jetzt" buchen will.
     var addBtn = document.getElementById('entryAddBtn');
     if (addBtn) {
       addBtn.addEventListener('click', function () {
-        var today = new Date();
-        var ymd = today.getFullYear() + '-'
-          + String(today.getMonth() + 1).padStart(2, '0') + '-'
-          + String(today.getDate()).padStart(2, '0');
-        openForNew(ymd);
+        var now = new Date();
+        var ymd = now.getFullYear() + '-'
+          + String(now.getMonth() + 1).padStart(2, '0') + '-'
+          + String(now.getDate()).padStart(2, '0');
+        var startMin = now.getHours() * 60 + now.getMinutes();
+        startMin = Math.floor(startMin / 15) * 15;
+        openForNew(ymd, startMin, startMin + 60);
       });
     }
     // Felix-Feedback 2026-11-09 (Fix #142): Deep-Link mit ?new=1 oder
