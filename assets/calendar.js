@@ -533,48 +533,39 @@
     // Hardening 5: sessionStorage-Flag + location.replace() mit sauberer
     // URL. Nach dem Redirect ist ?new=1 definitiv raus und Dialog oeffnet
     // trotzdem einmal via Flag. Save -> reload -> Flag leer -> kein Dialog.
+    // Felix-Feedback 2026-11-09 Hardening 7: komplett deklarativ.
+    // Nach Hardening 6 (keine Quelle mehr fuer ?new=1) ist auch der
+    // sessionStorage-Flag-Trick obsolet und hat selbst Flash/kein-Dialog
+    // produziert. Ich loesche beim Load JEDE pending-Flag als
+    // Sicherheits-Reset und mache nur noch das Minimum: wenn ?edit=X in
+    // URL, Edit-Dialog oeffnen + URL-cleanup. Sonst: nichts tun. Dialog
+    // kommt dann ausschliesslich ueber Grid-Drag oder +Eintrag-Button.
+    try {
+      window.sessionStorage.removeItem('tm-cal-pending-new');
+      window.sessionStorage.removeItem('tm-cal-pending-edit');
+    } catch (e) {}
     try {
       var params = new URLSearchParams(window.location.search);
       var editId = parseInt(params.get('edit'), 10);
       var hasNew = params.get('new') === '1';
+      try { console.log('[TM-CAL-V7] load: editId=', editId, 'hasNew=', hasNew, 'url=', window.location.search); } catch (e) {}
 
-      // Flag-Check: Haben wir vom vorigen Redirect das "oeffne Dialog"-
-      // Signal mitbekommen? Dann jetzt Dialog oeffnen und Flag loeschen.
-      var pendingNew  = null;
-      var pendingEdit = null;
-      try {
-        pendingNew  = window.sessionStorage.getItem('tm-cal-pending-new');
-        pendingEdit = window.sessionStorage.getItem('tm-cal-pending-edit');
-      } catch (e) {}
-
-      if ((editId && !isNaN(editId)) || hasNew) {
-        // URL hat Deep-Link-Param - Flag setzen, URL cleanen, neu laden.
-        try {
-          if (editId && !isNaN(editId)) {
-            window.sessionStorage.setItem('tm-cal-pending-edit', String(editId));
-          } else {
-            window.sessionStorage.setItem('tm-cal-pending-new', '1');
-          }
-        } catch (e) {}
-        params.delete('new'); params.delete('edit');
+      // ?new=1 wird KOMPLETT ignoriert (kein Dialog mehr erzwingen).
+      // Edit-Deep-Link weiterhin unterstuetzt - aber URL dabei cleanen.
+      if (hasNew && window.history && window.history.replaceState) {
+        params.delete('new');
         var qs = params.toString();
-        var cleanUrl = window.location.pathname + (qs ? '?' + qs : '');
-        window.location.replace(cleanUrl);
-        return; // weiterer Code laeuft im naechsten Load
+        window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
       }
-
-      if (pendingEdit && !isNaN(parseInt(pendingEdit, 10))) {
-        try { window.sessionStorage.removeItem('tm-cal-pending-edit'); } catch (e) {}
-        openForEntry(parseInt(pendingEdit, 10));
-      } else if (pendingNew) {
-        try { window.sessionStorage.removeItem('tm-cal-pending-new'); } catch (e) {}
-        var t = new Date();
-        var y = t.getFullYear() + '-'
-          + String(t.getMonth() + 1).padStart(2, '0') + '-'
-          + String(t.getDate()).padStart(2, '0');
-        openForNew(y);
+      if (editId && !isNaN(editId)) {
+        if (window.history && window.history.replaceState) {
+          params.delete('edit');
+          var qs2 = params.toString();
+          window.history.replaceState(null, '', window.location.pathname + (qs2 ? '?' + qs2 : ''));
+        }
+        openForEntry(editId);
       }
-    } catch (e) { /* URLSearchParams / sessionStorage nicht supported -> egal */ }
+    } catch (e) { /* URLSearchParams nicht supported -> egal */ }
   }
 
   function postForm(url, data) {

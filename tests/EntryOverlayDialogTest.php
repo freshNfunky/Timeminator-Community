@@ -37,15 +37,18 @@ final class EntryOverlayDialogTest extends TestCase
         );
     }
 
-    public function testCalendarJsHandlesNewOneParamToAutoOpenDialog(): void
+    public function testCalendarJsCleansNewOneParamSilently(): void
     {
+        // Hardening 7 (2026-11-09): ?new=1 wird erkannt und aus der URL
+        // ENTFERNT, aber oeffnet KEINEN Dialog mehr automatisch - der
+        // Deep-Link-Automatismus hat Felix' Grid-Drag ueberschrieben.
+        // Dialog kommt jetzt ausschliesslich ueber Grid-Drag oder den
+        // +Eintrag-Button.
         $js = (string) file_get_contents(dirname(__DIR__) . '/assets/calendar.js');
         self::assertStringContainsString("params.get('new') === '1'", $js,
-            'calendar.js muss den new=1-Query-Param pruefen');
-        self::assertStringContainsString('openForNew(y);', $js,
-            'Bei new=1 muss der Dialog via openForNew geoeffnet werden');
+            'calendar.js muss den new=1-Query-Param pruefen (und aus der URL entfernen)');
         self::assertStringContainsString('history.replaceState', $js,
-            'Nach dem Oeffnen muss die URL entschaerft werden (keine Dialog-Wiederoeffnung bei Reload)');
+            'URL muss gecleant werden (damit Reload keine new=1-Spur mehr sieht)');
     }
 
     public function testEntriesIndexStillHostsTheOverlayDialogMarkup(): void
