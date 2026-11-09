@@ -236,6 +236,7 @@ foreach (($absences ?? []) as $__a) {
               </div>
             </div>
           </div>
+        <?php endif; ?>
         <?php /* Felix-Feedback 2026-11-09 (Fix #153): Abwesenheits-Pillen
            sitzen jetzt INNERHALB der jeweiligen ersten Monats-Kachel
            ihres Spans als position:absolute-Overlays. Grid-Auto-Flow
