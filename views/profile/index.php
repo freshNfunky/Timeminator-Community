@@ -3,7 +3,6 @@
  * Benutzer-Profil / Meine Einstellungen (Felix-Feedback 2026-11-09, #111).
  *
  * @var string $sentimentGranularity  aktuelle User-Preference ('day' | 'week')
- * @var string $systemDefault         System-Default (Admin-weit)
  */
 ?>
 <h1 class="page-title"><?= h(t('profile.title', 'Meine Einstellungen')) ?></h1>

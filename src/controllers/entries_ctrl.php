@@ -39,11 +39,14 @@ function ctrl_entries_index(): void
                 $monthStart = new DateTimeImmutable('first day of this month');
             }
             $monthEnd = $monthStart->modify('last day of this month');
-            // Filter deckt den sichtbaren Bereich (ggf. mit Rand-Padding zu
-            // Mo/So) ab, damit Zellen aus dem Vor-/Folgemonat ebenfalls
-            // Buchungen zeigen.
-            $padStart = $monthStart->modify('monday this week');
-            $padEnd   = $monthEnd->modify('sunday this week');
+            // Filter deckt den sichtbaren Bereich (ggf. mit Rand-Padding
+            // zum konfigurierten Wochenanfang/-ende) ab, damit Zellen aus
+            // dem Vor-/Folgemonat ebenfalls Buchungen zeigen. CalendarLocale
+            // ist die EINE Stelle fuer Wochen-Grenzen (Felix-Feedback
+            // 2026-11-09, Code-Review Fix #129): dieselbe Logik wie in
+            // views/entries/calendar_month.php, nicht mehr hardcoded Mo/So.
+            $padStart = CalendarLocale::weekStart($monthStart);
+            $padEnd   = CalendarLocale::weekEnd($monthEnd);
             $f['from'] = $padStart->format('Y-m-d');
             $f['to']   = $padEnd->format('Y-m-d');
         } else {
@@ -393,17 +396,29 @@ function ctrl_entry_api_save(): void
         echo json_encode(['ok' => false, 'error' => t('entries.err_end_before_start', 'Ende muss nach dem Start liegen.')]);
         exit;
     }
+    // Felix-Feedback 2026-11-09 (Code-Review Fix #134): Auth::id() kann
+    // theoretisch null sein (Edge-Case: Session-Rennen, Test-Stubs).
+    // Vorher wurde das stillschweigend zu user_id=0 gecastet und
+    // Repo::bookingConflict traf dann auf keinen Datensatz -> Konflikt-
+    // Pruefung wurde No-Op. Lieber hart 401, bevor etwas gespeichert wird.
+    $actorUid = Auth::id();
+    if ($actorUid === null || (int) $actorUid <= 0) {
+        http_response_code(401);
+        echo json_encode(['ok' => false, 'error' => 'auth']);
+        exit;
+    }
+    $actorUid = (int) $actorUid;
     try {
-        $uidForCheck = $id ? null : Auth::id();
+        $uidForCheck = $actorUid;
         if ($id) {
             $existing = Repo::entry($id);
-            if (!$existing || ((int) $existing['user_id'] !== Auth::id() && !Auth::isAdmin())) {
+            if (!$existing || ((int) $existing['user_id'] !== $actorUid && !Auth::isAdmin())) {
                 echo json_encode(['ok' => false, 'error' => 'forbidden']);
                 exit;
             }
             $uidForCheck = (int) $existing['user_id'];
         }
-        if ($msg = Repo::bookingConflict((int) $uidForCheck, $start, $end, $id ?: null)) {
+        if ($msg = Repo::bookingConflict($uidForCheck, $start, $end, $id ?: null)) {
             echo json_encode(['ok' => false, 'error' => $msg]);
             exit;
         }
@@ -412,7 +427,7 @@ function ctrl_entry_api_save(): void
             echo json_encode(['ok' => true, 'entry' => Repo::entry($id)]);
             exit;
         }
-        $newId = Repo::createEntry(Auth::id(), $taskId, $start, $end, $note, 'manual');
+        $newId = Repo::createEntry($actorUid, $taskId, $start, $end, $note, 'manual');
         echo json_encode(['ok' => true, 'entry' => Repo::entry($newId)]);
     } catch (Throwable $e) {
         echo json_encode(['ok' => false, 'error' => $e->getMessage()]);

@@ -147,20 +147,22 @@ foreach (($processes ?? []) as $__p) {
 // Felix-Feedback 2026-11-09 (#119): Tagessoll pro Tag, nicht pauschal.
 // Wochenenden + Feiertage haben Tagessoll 0 (freier Tag). Freelancer
 // ohne Vertragsdaten haben Tagessoll null (kein Badge, keine Klammer).
+// Felix-Feedback 2026-11-09 (Code-Review Fix #131): keine parallele
+// $__dayTargetMin-Variable mehr - der per-Tag-Map ist die einzige Quelle.
 $__dayTargetByOffset = [];
-$__dayTargetMin      = null; // Rueckwaerts-Kompat fuer Tests + Rendering-Check im Head.
 $__dayBrackets       = [];
 $__uid = (int) Auth::id();
 if ($__uid > 0) {
     foreach ($__days as $__i => $__day) {
         $__dayTargetByOffset[$__i] = EmployeeRepo::dailyTargetMinutes($__uid, $__day['ymd']);
     }
-    // Ein nicht-null Wert fuer die "Grundsicht" (irgendein Werktag der Woche).
-    foreach ($__dayTargetByOffset as $__t) {
-        if ($__t !== null) { $__dayTargetMin = $__t; break; }
-    }
 }
-if ($__dayTargetMin !== null) {
+// Gate: nur rechnen, wenn mindestens ein Werktag mit Tagessoll > 0 im Grid.
+$__hasAnyTarget = false;
+foreach ($__dayTargetByOffset as $__t) {
+    if ($__t !== null && $__t > 0) { $__hasAnyTarget = true; break; }
+}
+if ($__hasAnyTarget) {
     $__eventsByDay = [];
     foreach ($entries as $__e) {
         try {

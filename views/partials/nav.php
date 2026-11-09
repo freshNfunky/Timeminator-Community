@@ -36,10 +36,13 @@ $active = fn(array $keys) => in_array($r, $keys, true) ? ' class="active"' : '';
 <?php endif; ?>
 
 <?php
-  // --- Monitoring-Gruppe (nach Pro-Schema): Statistik, Abwesenheiten,
-  // interne Prozesse und Stimmung — alles, was einen laufenden Zustand
-  // anzeigt / erfasst, aber keine Soll-vs-Ist-Projektsicht ist.
-  $__monRoutes = ['stats', 'processes', 'absences', 'sentiment', 'scopes'];
+  // --- Monitoring-Gruppe (nach Pro-Schema): Statistik, Stimmung und
+  // Sichten (scopes) - alles, was einen laufenden Zustand anzeigt /
+  // erfasst, aber keine Soll-vs-Ist-Projektsicht ist. Prozesse +
+  // Abwesenheiten sind seit v1.0 im Kalender-Dialog integriert und haben
+  // keinen eigenen Nav-Eintrag mehr (Felix-Feedback 2026-11-09,
+  // Code-Review Fix #132: tote Routen-Refs raus).
+  $__monRoutes = ['stats', 'sentiment', 'scopes'];
   $__monActive = in_array($r, $__monRoutes, true);
   // Stimmung-Link gezeigt bei: eigene Erfassung ODER Team-/Belegschafts-Aggregat.
   $__sentimentNavAny = Auth::can('sentiment.record')

@@ -119,9 +119,12 @@ function ctrl_sentiment_quick(): void
 
     $today = Sentiment::today();
     if ($scope === 'week') {
-        // Pro-Vorbild: fuellt leere Tage bis Sonntag konservativ, ohne
-        // bereits gesetzte Werte zu ueberschreiben.
-        $end = (new DateTimeImmutable($today))->modify('sunday this week')->format('Y-m-d');
+        // Pro-Vorbild: fuellt leere Tage bis zum Wochenende konservativ,
+        // ohne bereits gesetzte Werte zu ueberschreiben. Wochenende folgt
+        // dem konfigurierten Wochenanfang (CalendarLocale) - Felix-Feedback
+        // 2026-11-09, Code-Review Fix #130. Vorher hardcoded "sunday this
+        // week", was mit calendar.week_start_dow != 1 auseinanderfaellt.
+        $end = CalendarLocale::weekEnd(new DateTimeImmutable($today))->format('Y-m-d');
         Sentiment::fillRange($uid, $today, $end, $dim, $score);
     } else {
         Sentiment::setDimension($uid, $today, $dim, $score);
