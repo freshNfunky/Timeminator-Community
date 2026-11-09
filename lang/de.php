@@ -991,6 +991,7 @@ return [
     'cal.err_new_task_project'      => 'Fuer eine neue Aufgabe muss ein Projekt ausgewaehlt sein.',
     'cal.err_time_required'         => 'Start und Ende sind erforderlich.',
     'cal.err_from_date_required'    => 'Von-Datum ist erforderlich.',
+    'dash.timer_type'               => 'Typ',
     'cal.confirm_delete_fallback'   => 'Wirklich loeschen?',
     'cat.foerder_client_label'      => 'Projekttraeger',
 

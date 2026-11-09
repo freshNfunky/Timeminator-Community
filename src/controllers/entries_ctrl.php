@@ -507,20 +507,35 @@ function ctrl_timer_start(): void
 {
     require_perm('entries.manage');
     csrf_check();
-    $taskId = post_int('task_id');
-    if (!$taskId) {
+    // Felix-Feedback 2026-11-09 (Fix #186): Timer kann Projekt-Zeit ODER
+    // Interner Prozess starten. Internet Prozess liefert
+    // process_category_id statt task_id - keine Hierarchie, direkter Bezug.
+    $uid = (int) Auth::id();
+    $processCategoryId = post_int('process_category_id');
+    $taskId            = post_int('task_id');
+    if (!$processCategoryId && !$taskId) {
         flash(t('entries.err_pick_task', 'Bitte eine Aufgabe waehlen.'), 'err');
         redirect_route('dashboard');
     }
-    // Overlap-Check: Timer-Start darf nicht in eine andere Buchung fallen.
-    // Ein laufender Timer wird von startTimer() vorher gestoppt - er darf
-    // nicht als Konflikt zaehlen (Pro-PR #444).
-    $running = Repo::running(Auth::id());
-    if ($msg = Repo::bookingConflict(Auth::id(), now(), null, $running ? (int) $running['id'] : null)) {
+    // Vorhandenen Timer (egal ob Projekt oder Prozess) als Overlap-Ignore
+    // merken und beide Richtungen stoppen, damit nie zwei parallele Timer
+    // laufen.
+    $runningTask    = Repo::running($uid);
+    $runningProcess = ProcessRepo::running($uid);
+    if ($runningTask)    { Repo::stopTimer($uid); }
+    if ($runningProcess) { ProcessRepo::stopTimer($uid); }
+    // Overlap-Check jetzt mit frischem "now" (die alten Timer sind
+    // gestoppt) - verhindert nur Konflikte mit abgeschlossenen Buchungen.
+    if ($msg = Repo::bookingConflict($uid, now(), null, null)) {
         flash($msg, 'err');
         redirect_route('dashboard');
     }
-    Repo::startTimer(Auth::id(), $taskId, trim((string) post('note')));
+    $note = trim((string) post('note'));
+    if ($processCategoryId) {
+        ProcessRepo::startTimer($uid, $processCategoryId, $note);
+    } else {
+        Repo::startTimer($uid, $taskId, $note);
+    }
     flash(t('entries.flash_timer_started', 'Timer gestartet.'));
     redirect_route('dashboard');
 }
@@ -529,7 +544,11 @@ function ctrl_timer_stop(): void
 {
     require_perm('entries.manage');
     csrf_check();
-    Repo::stopTimer(Auth::id());
+    // Fix #186: beide Timer-Typen stoppen. Ein User hat maximal einen,
+    // aber falls bei einer Rennbedingung beide liegen, raeumen wir beides.
+    $uid = (int) Auth::id();
+    Repo::stopTimer($uid);
+    ProcessRepo::stopTimer($uid);
     flash(t('entries.flash_timer_stopped', 'Timer gestoppt und gebucht.'));
     redirect_route('dashboard');
 }
