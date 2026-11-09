@@ -103,4 +103,42 @@ final class ProcessRepo
     {
         DB::run('DELETE FROM process_entries WHERE id = ?', [$id]);
     }
+
+    /**
+     * Felix-Feedback 2026-11-09 (Fix #186): Timer fuer Interne Prozesse.
+     * Analog zu Repo::running / startTimer / stopTimer, aber auf
+     * process_entries. end_ts + duration_min bleiben NULL solange der
+     * Timer laeuft (Migration 2026-11-09-05 macht sie nullable).
+     */
+    public static function running(int $userId): ?array
+    {
+        return DB::one(
+            'SELECT p.*, c.label AS category_label, c.ckey AS category_ckey
+               FROM process_entries p JOIN process_categories c ON c.id = p.category_id
+              WHERE p.user_id = ? AND p.end_ts IS NULL
+              ORDER BY p.start_ts DESC LIMIT 1',
+            [$userId]
+        );
+    }
+
+    public static function startTimer(int $userId, int $categoryId, string $note = ''): int
+    {
+        return DB::insert(
+            'INSERT INTO process_entries (user_id, category_id, start_ts, end_ts, duration_min, note, created_at, updated_at)
+             VALUES (?,?,?,NULL,NULL,?,?,?)',
+            [$userId, $categoryId, now(), $note !== '' ? $note : null, now(), now()]
+        );
+    }
+
+    public static function stopTimer(int $userId): void
+    {
+        $row = self::running($userId);
+        if (!$row) { return; }
+        $endTs = now();
+        $duration = Repo::minutesBetween((string) $row['start_ts'], $endTs);
+        DB::run(
+            'UPDATE process_entries SET end_ts=?, duration_min=?, updated_at=? WHERE id=?',
+            [$endTs, $duration, $endTs, (int) $row['id']]
+        );
+    }
 }

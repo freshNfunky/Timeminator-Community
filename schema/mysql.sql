@@ -127,8 +127,9 @@ CREATE TABLE IF NOT EXISTS process_entries (
   user_id       INT NOT NULL,
   category_id   INT NOT NULL,
   start_ts      DATETIME NOT NULL,
-  end_ts        DATETIME NOT NULL,
-  duration_min  INT      NOT NULL,
+  -- Fix #186: nullable fuer laufenden Timer (analog time_entries)
+  end_ts        DATETIME NULL,
+  duration_min  INT      NULL,
   note          VARCHAR(255) NULL,
   created_at    DATETIME NOT NULL,
   updated_at    DATETIME NOT NULL,
