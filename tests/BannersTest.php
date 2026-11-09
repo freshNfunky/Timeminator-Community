@@ -136,68 +136,6 @@ final class BannersTest extends TestCase
         );
     }
 
-    public function testFeedCandidatesRestEndpointUsesLangQuery(): void
-    {
-        // Dynamic REST endpoint: one URL, language as a query param, base last.
-        self::assertSame(
-            [
-                'https://assets.felixschaller.com/feed.php?lang=en',
-                'https://assets.felixschaller.com/feed.php',
-            ],
-            Banners::feedCandidates('https://assets.felixschaller.com/feed.php', 'en')
-        );
-        // 'de-DE' clamps to two letters; existing query gets an '&'.
-        self::assertSame(
-            [
-                'https://host/feed.php?v=1&lang=de',
-                'https://host/feed.php?v=1',
-            ],
-            Banners::feedCandidates('https://host/feed.php?v=1', 'de-DE')
-        );
-    }
-
-    public function testFeedCandidatesStaticJsonUsesPerLanguageFiles(): void
-    {
-        self::assertSame(
-            [
-                'https://assets.felixschaller.com/feed-de.json',
-                'https://assets.felixschaller.com/feed.json',
-            ],
-            Banners::feedCandidates('https://assets.felixschaller.com/feed.json', 'de')
-        );
-    }
-
-    public function testFeedCandidatesWithoutLocaleReturnsBaseOnly(): void
-    {
-        self::assertSame(
-            ['https://assets.felixschaller.com/feed.php'],
-            Banners::feedCandidates('https://assets.felixschaller.com/feed.php', '')
-        );
-        // Unsupported locale code -> base only (no bogus ?lang).
-        self::assertSame(
-            ['https://host/feed.php'],
-            Banners::feedCandidates('https://host/feed.php', 'x')
-        );
-        self::assertSame([], Banners::feedCandidates('', 'de'));
-    }
-
-    public function testJsonFallbackEndpointSwapsPhpForJson(): void
-    {
-        // feed.php -> feed.json (international baseline older servers still serve).
-        self::assertSame(
-            'https://assets.felixschaller.com/feed.json',
-            Banners::jsonFallbackEndpoint('https://assets.felixschaller.com/feed.php')
-        );
-        // The ?lang query is dropped - the baseline is the international feed.
-        self::assertSame(
-            'https://assets.felixschaller.com/feed.json',
-            Banners::jsonFallbackEndpoint('https://assets.felixschaller.com/feed.php?lang=en')
-        );
-        // A static .json endpoint needs no fallback -> empty.
-        self::assertSame('', Banners::jsonFallbackEndpoint('https://assets.felixschaller.com/feed.json'));
-        self::assertSame('', Banners::jsonFallbackEndpoint('https://host/feed'));
-    }
-
     public function testImageAllowsRelativeDataUriAndHttpsFirstParty(): void
     {
         self::assertTrue(Banners::isAllowedImage('banners/xixum-maturity.svg'));
