@@ -67,6 +67,47 @@ final class EntryDialogHierarchyTest extends TestCase
         self::assertStringContainsString('class="tp-task"',    $picker);
     }
 
+    public function testOpenForEntryResolvesFullHierarchyFromTaskDataAttrs(): void
+    {
+        // Felix-Feedback 2026-11-09 (Fix #167): Edit-Dialog muss die
+        // komplette Hierarchie (Projektart / Kunde / Projekt / WP / Task)
+        // aus den data-Attributen der Task-Option resolven und alle
+        // Selects in der RICHTIGEN Reihenfolge setzen. Vorher waren nur
+        // Uhrzeit + Task gesetzt, Rest blieb auf Default.
+        $js = $this->js();
+        // openForEntry liest die Task-Option und zieht client/project/wp
+        // aus den data-* Attributen.
+        self::assertMatchesRegularExpression(
+            '~taskOpt\.getAttribute\(\'data-client\'\)~',
+            $js,
+            'openForEntry muss data-client aus der Task-Option lesen'
+        );
+        self::assertMatchesRegularExpression(
+            '~taskOpt\.getAttribute\(\'data-project\'\)~',
+            $js,
+            'openForEntry muss data-project aus der Task-Option lesen'
+        );
+        self::assertMatchesRegularExpression(
+            '~taskOpt\.getAttribute\(\'data-wp\'\)~',
+            $js,
+            'openForEntry muss data-wp aus der Task-Option lesen'
+        );
+        // Projektart kommt aus der zugehoerigen Projekt-Option.
+        self::assertStringContainsString("getAttribute('data-cat-ckey')", $js,
+            'openForEntry muss data-cat-ckey aus der Projekt-Option lesen (fuer catFilter)');
+        // catFilter wird gesetzt und dispatched change.
+        self::assertMatchesRegularExpression(
+            '~catFilter\.value\s*=\s*catId~',
+            $js,
+            'openForEntry muss catFilter.value setzen'
+        );
+        self::assertMatchesRegularExpression(
+            '~catFilter\.dispatchEvent\(new Event\(\'change\'~',
+            $js,
+            'openForEntry muss change auf catFilter dispatchen (loest applyCategoryFilter)'
+        );
+    }
+
     public function testDialogDataExposesCategoryConfigForClientLabelSwitching(): void
     {
         $view = $this->dialog();

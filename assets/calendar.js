@@ -228,12 +228,52 @@
     reset();
     typeSel.value = 'project';
     idInput.value = String(e.id);
-    // #149: Taskpicker-Hierarchie-Preselect: Task waehlen, Cascader
-    // fuellt Parents automatisch.
+    // Felix-Feedback 2026-11-09 (Fix #167): Edit-Dialog MUSS die komplette
+    // Hierarchie des gewaehlten Tasks resolven - Projektart, Kunde,
+    // Projekt, Arbeitspaket aus den data-Attributen der Task-Option lesen
+    // und die Selects in der RICHTIGEN Reihenfolge setzen (catFilter ->
+    // clientSel -> projectSel -> wpSel -> taskSel), damit die Kaskade
+    // (applyCategoryFilter + task_picker applyFilters) die Optionen nicht
+    // wieder versteckt und den Task resetet.
+    var taskOpt = taskSel ? taskSel.querySelector('option[value="' + String(e.task_id || '') + '"]') : null;
+    if (taskOpt) {
+      var cid = taskOpt.getAttribute('data-client')  || '';
+      var pid = taskOpt.getAttribute('data-project') || '';
+      var wid = taskOpt.getAttribute('data-wp')      || '';
+      // Projektart (catFilter) rueckwaerts aus der Projekt-Option lesen.
+      var projOpt = projectSel ? projectSel.querySelector('option[value="' + pid + '"]') : null;
+      var catCkey = projOpt ? (projOpt.getAttribute('data-cat-ckey') || '') : '';
+      if (catFilter && catCkey) {
+        // D.projectCats ist {catId: {ckey, needs_client, client_label}}.
+        var cats = D.projectCats || {};
+        var catId = '';
+        Object.keys(cats).forEach(function (k) {
+          var entry = cats[k];
+          var entryCkey = typeof entry === 'string' ? entry : (entry && entry.ckey);
+          if (entryCkey === catCkey) { catId = k; }
+        });
+        if (catId) {
+          catFilter.value = catId;
+          // applyCategoryFilter: setzt data-cat-filter + sichtbarkeit von
+          // Kunden-Label + dispatched change auf clientSel/projectSel.
+          catFilter.dispatchEvent(new Event('change', {bubbles: true}));
+        }
+      }
+      if (clientSel && cid) {
+        clientSel.value = cid;
+        clientSel.dispatchEvent(new Event('change', {bubbles: true}));
+      }
+      if (projectSel && pid) {
+        projectSel.value = pid;
+        projectSel.dispatchEvent(new Event('change', {bubbles: true}));
+      }
+      if (wpSel) {
+        wpSel.value = wid;
+        wpSel.dispatchEvent(new Event('change', {bubbles: true}));
+      }
+    }
     if (taskSel) {
       taskSel.value = String(e.task_id || '');
-      // task_picker initPicker setzt die Parents aus data-* beim Init;
-      // wir triggern einen change, damit auch bei Bestandsentry filterOk.
       taskSel.dispatchEvent(new Event('change', {bubbles: true}));
     }
     startIn.value = toLocalInput(e.start_ts);
