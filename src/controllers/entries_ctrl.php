@@ -57,13 +57,30 @@ function ctrl_entries_index(): void
 
     $entries = Repo::entries($f);
     $holidays = [];
-    if ($view === 'calendar' && isset($weekStart, $weekEnd)) {
-        $region = Holidays::currentRegion();
-        $holidays = Holidays::byDate(
-            $weekStart->format('Y-m-d'),
-            $weekEnd->format('Y-m-d'),
-            $region
-        );
+    if ($view === 'calendar') {
+        // Felix-Feedback 2026-11-09 (#123): die Feiertagsregion kommt aus
+        // employee_terms.holiday_region des eingeloggten Users - nicht aus
+        // dem System-Default. Sonst sieht ein Bayern-User den 6. Januar
+        // (Heilige Drei Koenige) nicht als Feiertag.
+        $__uid = (int) Auth::id();
+        $__today = (new DateTimeImmutable('today'))->format('Y-m-d');
+        $__terms = $__uid > 0 ? EmployeeRepo::termsAt($__uid, $__today) : null;
+        $region = (string) ($__terms['holiday_region'] ?? '') ?: Holidays::currentRegion();
+
+        // Felix-Feedback 2026-11-09 (#122 Vorbereitung): auch die
+        // Monatsansicht laedt Feiertage fuer ihren padStart..padEnd-Bereich.
+        if ($calendarSpan === 'month' && isset($padStart, $padEnd)) {
+            $__hFrom = $padStart->format('Y-m-d');
+            $__hTo   = $padEnd->format('Y-m-d');
+        } elseif (isset($weekStart, $weekEnd)) {
+            $__hFrom = $weekStart->format('Y-m-d');
+            $__hTo   = $weekEnd->format('Y-m-d');
+        } else {
+            $__hFrom = $__hTo = null;
+        }
+        if ($__hFrom !== null) {
+            $holidays = Holidays::byDate($__hFrom, $__hTo, $region);
+        }
     }
     // v1.0 Kalender-Dialog (konsistent mit Pro): im Kalender-Modus laedt
     // der Entries-Controller zusaetzlich Abwesenheiten + Prozess-Buchungen

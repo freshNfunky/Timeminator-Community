@@ -131,14 +131,19 @@ $gridClass = 'cal-month-grid' . ($weekMode ? ' cal-month-grid-with-sent' : '');
       $inMonth  = (int) $d->format('n') === (int) $monthStart->format('n');
       $isToday  = $ymd === $today->format('Y-m-d');
       $holiday  = $holidays[$ymd] ?? null;
+      // Felix-Feedback 2026-11-09 (#122): Wochenenden farblich wie in der
+      // Wochenansicht hervorheben - Werktag-Erkennung ueber das gleiche
+      // working_days-Preset.
+      $isWorkDay = in_array((int) $d->format('N'), Holidays::workingDays(), true);
       $projects = $byDayProject[$ymd] ?? [];
       arsort($projects);
       $daySum   = array_sum($projects);
       $cls = 'cal-month-cell';
-      if (!$inMonth) $cls .= ' is-out';
-      if ($isToday)  $cls .= ' is-today';
-      if ($holiday)  $cls .= ' is-holiday';
-      if ($projects) $cls .= ' has-entries';
+      if (!$inMonth)    $cls .= ' is-out';
+      if ($isToday)     $cls .= ' is-today';
+      if ($holiday)     $cls .= ' is-holiday';
+      if (!$isWorkDay)  $cls .= ' is-weekend';
+      if ($projects)    $cls .= ' has-entries';
     ?>
       <div class="<?= h($cls) ?>" data-day="<?= h($ymd) ?>" role="gridcell">
         <a class="cal-month-link" href="<?= h($weekLink($d)) ?>" aria-label="<?= h($d->format('d.m.Y')) ?>">
