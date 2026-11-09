@@ -163,7 +163,11 @@
 <div class="card">
   <div class="card-head">
     <h2><?= h(t('dash.recent')) ?></h2>
-    <a class="btn btn-sm" href="<?= h(route('entry_form')) ?>"><?= h(t('dash.add_manual')) ?></a>
+    <?php /* Felix-Feedback 2026-11-09 (Fix #142): Dashboard-Link fuehrt auf
+       die Entries-Seite (Kalender), oeffnet dort direkt den Overlay-Dialog
+       via ?new=1. Vorher landete der Klick auf der Legacy entry_form-
+       Seite - Pro hat statt dessen immer den Overlay-Dialog. */ ?>
+    <a class="btn btn-sm" href="<?= h(route('entries', ['view' => 'calendar', 'new' => 1])) ?>"><?= h(t('dash.add_manual')) ?></a>
   </div>
   <?php if (!$recent): ?>
     <p class="muted"><?= h(t('dash.recent_empty')) ?></p>
