@@ -158,29 +158,19 @@
   }
   function openDialog() {
     try {
-      console.log('[TM-CAL-V7] openDialog: dlg=', dlg, 'tagName=', dlg && dlg.tagName,
-        'hasShowModal=', typeof dlg.showModal === 'function',
-        'isOpen=', dlg && dlg.open);
-    } catch (e) {}
-    try {
       if (typeof dlg.showModal === 'function') {
         dlg.showModal();
       } else {
         dlg.setAttribute('open', '');
       }
     } catch (ex) {
-      try { console.error('[TM-CAL-V7] openDialog: showModal threw', ex); } catch (e) {}
       dlg.setAttribute('open', '');
     }
-    try {
-      var target = taskSel && !taskSel.hidden ? taskSel : startIn;
-      if (target && typeof target.focus === 'function') {
-        // preventScroll verhindert, dass Firefox beim focus() auf ein weit
-        // oben stehendes Form-Element die Seite nach ganz oben scrollt.
-        target.focus({preventScroll: true});
-      }
-    } catch (e) {
-      try { console.error('[TM-CAL-V7] openDialog: focus threw', e); } catch (ee) {}
+    var target = taskSel && !taskSel.hidden ? taskSel : startIn;
+    if (target && typeof target.focus === 'function') {
+      // preventScroll: sonst springt Firefox beim focus() auf ein weit
+      // oben stehendes Form-Element (startIn, taskSel) an den Seitenanfang.
+      target.focus({preventScroll: true});
     }
   }
   function closeDialog() {
@@ -570,7 +560,6 @@
       var params = new URLSearchParams(window.location.search);
       var editId = parseInt(params.get('edit'), 10);
       var hasNew = params.get('new') === '1';
-      try { console.log('[TM-CAL-V7] load: editId=', editId, 'hasNew=', hasNew, 'url=', window.location.search); } catch (e) {}
 
       // ?new=1 wird KOMPLETT ignoriert (kein Dialog mehr erzwingen).
       // Edit-Deep-Link weiterhin unterstuetzt - aber URL dabei cleanen.

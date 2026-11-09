@@ -88,4 +88,37 @@ final class CalendarWeekGridTimeDragTest extends TestCase
             'Reine Clicks (keine Drag-Bewegung) muessen auf 60min-Block fallen'
         );
     }
+
+    public function testAppJsHasNoLegacyGridDragToEntryForm(): void
+    {
+        // Felix-Feedback 2026-11-09 (Hardening 8): assets/app.js hatte
+        // einen zweiten Grid-Drag-Handler, der parallel zu calendar.js
+        // feuerte und via ?r=entry_form&start_ts=... navigierte. Dialog
+        // blinkte auf (calendar.js) und verschwand sofort (app.js lud
+        // die Legacy-Seite). Dieser Handler ist ERSATZLOS WEG.
+        $appJs = (string) file_get_contents(dirname(__DIR__) . '/assets/app.js');
+        self::assertStringNotContainsString(
+            'r=entry_form&start_ts',
+            $appJs,
+            'app.js darf NICHT mehr via ?r=entry_form navigieren - sonst Dialog-Flicker'
+        );
+        self::assertStringNotContainsString(
+            "document.querySelectorAll('.cal-day-grid')",
+            $appJs,
+            'app.js darf KEINEN eigenen cal-day-grid-Handler mehr registrieren - calendar.js macht das'
+        );
+    }
+
+    public function testOpenDialogUsesPreventScrollOnFocus(): void
+    {
+        $js = $this->js();
+        // Firefox scrollt beim focus() auf ein weit oben stehendes Form-
+        // Element (startIn, taskSel) an den Seitenanfang. preventScroll
+        // haelt den Viewport an seiner Position.
+        self::assertMatchesRegularExpression(
+            '~\.focus\(\s*\{\s*preventScroll\s*:\s*true\s*\}\s*\)~',
+            $js,
+            'openDialog muss focus() mit preventScroll aufrufen - sonst springt die Seite nach oben'
+        );
+    }
 }
