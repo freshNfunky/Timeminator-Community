@@ -340,6 +340,7 @@
     if (mgrid) {
       var mDragFrom = null;
       var mDragTo   = null;
+      var mDragMoved = false;
       function monthCells() {
         return Array.prototype.slice.call(mgrid.querySelectorAll('.cal-month-cell'));
       }
@@ -362,31 +363,66 @@
           c.classList.toggle('is-drag-range', day >= lo && day <= hi);
         });
       }
+      // Felix-Feedback 2026-11-09 (Fix #154): vorher scheiterte Drag im
+      // Monat an .cal-month-link, das die ganze Zelle ueberspannt - der
+      // ev.target.closest('.cal-month-link')-Guard verhinderte Drag-Start.
+      // Jetzt: Drag startet IMMER (preventDefault haelt die Link-Navigation
+      // zurueck). Beim mouseup unterscheiden wir:
+      //   - mDragMoved=false (same cell): normaler Link-Click, Navigation
+      //     zur Wochenansicht wird manuell ausgeloest.
+      //   - mDragMoved=true: openForNewAbsenceRange mit vorbelegtem Range.
       mgrid.addEventListener('mousedown', function (ev) {
+        if (ev.button !== 0) return; // nur linke Maustaste
         var cell = monthCellFromEvent(ev);
         if (!cell) return;
-        // Click auf Pill / Mood-Picker / Link darf nicht triggern.
-        if (ev.target.closest('.cal-month-abs-pill, .cal-sent-cell, .cal-month-link, .cal-sent-day, .cal-sent-week')) return;
+        // Pillen + Mood-Picker triggern keinen Drag (eigener Edit-Flow).
+        if (ev.target.closest('.cal-month-abs-pill, .cal-sent-cell, .cal-sent-day, .cal-sent-week')) return;
         mDragFrom = mDragTo = cell.getAttribute('data-day');
+        mDragMoved = false;
         mgrid.classList.add('is-dragging');
         mHighlight(mDragFrom, mDragTo);
-        ev.preventDefault();
+        ev.preventDefault(); // Drag-Image unterdruecken
       });
       mgrid.addEventListener('mousemove', function (ev) {
         if (!mDragFrom) return;
         var cell = monthCellFromEvent(ev);
         if (!cell) return;
-        mDragTo = cell.getAttribute('data-day');
-        mHighlight(mDragFrom, mDragTo);
+        var newDay = cell.getAttribute('data-day');
+        if (newDay && newDay !== mDragTo) {
+          mDragMoved = true;
+          mDragTo = newDay;
+          mHighlight(mDragFrom, mDragTo);
+        }
       });
-      function mFinishDrag() {
+      // Click-Fallback: Link innerhalb cal-month-cell wuerde beim mousedown
+      // schon navigieren. preventDefault im mousedown verhindert den
+      // Default; der tatsaechliche click-Event wird hier abgefangen und
+      // bei NICHT-Drag zur Wochenansicht geleitet.
+      mgrid.addEventListener('click', function (ev) {
+        var link = ev.target.closest('.cal-month-link');
+        if (link && mDragMoved) {
+          ev.preventDefault();
+          ev.stopPropagation();
+        }
+      }, true);
+      function mFinishDrag(ev) {
         if (!mDragFrom) return;
+        var moved = mDragMoved;
         var lo = mDragFrom < mDragTo ? mDragFrom : mDragTo;
         var hi = mDragFrom < mDragTo ? mDragTo : mDragFrom;
+        var startDay = mDragFrom;
         mgrid.classList.remove('is-dragging');
         mClearHighlight();
         mDragFrom = mDragTo = null;
-        openForNewAbsenceRange(lo, hi);
+        mDragMoved = false;
+        if (moved) {
+          openForNewAbsenceRange(lo, hi);
+        } else {
+          // Single-Click ohne Drag: Link-Navigation zur Wochenansicht.
+          var cell = mgrid.querySelector('.cal-month-cell[data-day="' + startDay + '"]');
+          var link = cell ? cell.querySelector('.cal-month-link') : null;
+          if (link && link.href) { window.location = link.href; }
+        }
       }
       mgrid.addEventListener('mouseup', mFinishDrag);
       mgrid.addEventListener('mouseleave', function () {

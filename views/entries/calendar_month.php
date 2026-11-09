@@ -71,45 +71,41 @@ $weekMode = $sentGranularity === 'week' && !empty($canRecordSentiment);
 $dayMode  = $sentGranularity === 'day'  && !empty($canRecordSentiment);
 $gridClass = 'cal-month-grid' . ($weekMode ? ' cal-month-grid-with-sent' : '');
 
-// Felix-Feedback 2026-11-09 (#148): Monatsansicht - ganztaegige Abwesen-
-// heiten als Pillen ueber Monats-Kacheln. Werktage-only (Wochenende +
-// Feiertag erzeugen Luecken, Pille bricht ab). Ein Span, der ueber die
-// Wochengrenze geht, hat per Definition eine Wochenend-Luecke und wird
-// als mehrere Spans zurueckkommen - also eine Pille pro Zeile.
+// Felix-Feedback 2026-11-09 (#148/#153): Monatsansicht - ganztaegige
+// Abwesenheiten als Pillen ueber Monats-Kacheln. Werktage-only
+// (Wochenende + Feiertag erzeugen Luecken, Pille bricht ab). Ein Span,
+// der ueber die Wochengrenze geht, hat per Definition eine Wochenend-
+// Luecke und wird als mehrere Spans zurueckkommen - also eine Pille pro
+// Zeile.
+// Fix #153: Pillen werden NICHT mehr via grid-row/column als Grid-Items
+// platziert - das verdrangte den auto-flow der Monats-Kacheln (1. Nov
+// landete auf Dienstag statt Sonntag). Stattdessen gruppieren wir die
+// Pillen nach ihrem from-YMD und rendern sie INNERHALB der entsprechenden
+// Monats-Kachel als position:absolute-Overlays mit span-abhaengiger Breite.
 $__gridStartYmd = $gridStart->format('Y-m-d');
 $__gridEndYmd   = $gridEnd->format('Y-m-d');
 $__workingDows  = Holidays::workingDays();
 $__holidayFlags = [];
 foreach (($holidays ?? []) as $__k => $__v) { $__holidayFlags[(string) $__k] = true; }
-$__monthAbsPills = []; // list<array{abs_id,cat,cat_ckey,col,row,span,from,to,note}>
-// Spalte offset relativ zu gridStart:
-$__dowOffsetOfGridStart = (int) $gridStart->format('N'); // 1..7 (ISO) - gridStart ist Wochenanfang
-$__weekLenCol = 7;
-$__sentCol    = $weekMode ? 1 : 0; // vorgelagerte Mood-Spalte reserviert Col 1
+$__monthAbsPills = []; // list<array{abs_id,cat,cat_ckey,span,from,to,note}>
+$__monthPillsByDay = []; // ymd => list<pill-index>
 foreach (($absences ?? []) as $__a) {
     $__aFrom = max((string) $__a['start_date'], $__gridStartYmd);
     $__aTo   = min((string) ($__a['end_date'] ?? $__a['start_date']), $__gridEndYmd);
     if ($__aFrom > $__aTo) { continue; }
     $__spans = WorkdaySpans::workdaySpans($__aFrom, $__aTo, $__workingDows, $__holidayFlags);
     foreach ($__spans as $__span) {
-        try {
-            $__d1 = new DateTimeImmutable($__span['from']);
-            $__totalOffset = (int) $gridStart->diff($__d1)->format('%r%a');
-        } catch (Throwable) { continue; }
-        if ($__totalOffset < 0) { continue; }
-        $__row = (int) floor($__totalOffset / $__weekLenCol) + 2; // +1 fuer DOW-Header-Zeile, +1 fuer 1-basiert Grid
-        $__col = ($__totalOffset % $__weekLenCol) + 1 + $__sentCol;
+        $__idx = count($__monthAbsPills);
         $__monthAbsPills[] = [
             'abs_id'   => (int) $__a['id'],
             'cat'      => (string) ($__a['category_label'] ?? ''),
             'cat_ckey' => (string) ($__a['category_ckey'] ?? ''),
-            'col'      => $__col,
-            'row'      => $__row,
             'span'     => (int) $__span['days'],
             'from'     => $__span['from'],
             'to'       => $__span['to'],
             'note'     => (string) ($__a['note'] ?? ''),
         ];
+        $__monthPillsByDay[$__span['from']][] = $__idx;
     }
 }
 ?>
@@ -240,31 +236,35 @@ foreach (($absences ?? []) as $__a) {
               </div>
             </div>
           </div>
-        <?php endif; ?>
+        <?php /* Felix-Feedback 2026-11-09 (Fix #153): Abwesenheits-Pillen
+           sitzen jetzt INNERHALB der jeweiligen ersten Monats-Kachel
+           ihres Spans als position:absolute-Overlays. Grid-Auto-Flow
+           der Kacheln bleibt damit intakt - 1. November landet wieder
+           korrekt auf Sonntag. */ ?>
+        <?php foreach ($__monthPillsByDay[$ymd] ?? [] as $__pIdx):
+            $__p = $__monthAbsPills[$__pIdx];
+            $__ckeyCss = preg_replace('~[^a-z0-9_-]~', '_', strtolower($__p['cat_ckey'] ?: 'absence'));
+        ?>
+          <button type="button"
+                  class="cal-month-abs-pill cal-month-abs-pill-<?= h($__ckeyCss) ?> cal-month-abs-slot-<?= (int) $__pIdx ?>"
+                  data-abs-id="<?= $__p['abs_id'] ?>"
+                  title="<?= h($__p['cat'] . ' (' . $__p['from'] . ' – ' . $__p['to'] . ')' . ($__p['note'] !== '' ? ' · ' . $__p['note'] : '')) ?>">
+            <?= h($__p['cat']) ?>
+          </button>
+        <?php endforeach; ?>
       </div>
     <?php endfor; ?>
-    <?php /* Felix-Feedback 2026-11-09 (#148): Abwesenheits-Pillen ueber den
-       Kacheln - Grid-Items mit grid-column + grid-row per nonce-Style.
-       z-index hoch, damit sie ueber den Kachel-Inhalten sitzen. */ ?>
-    <?php foreach ($__monthAbsPills as $__k => $__p):
-      $__ckeyCss = preg_replace('~[^a-z0-9_-]~', '_', strtolower($__p['cat_ckey'] ?: 'absence'));
-    ?>
-      <button type="button"
-              class="cal-month-abs-pill cal-month-abs-pill-<?= h($__ckeyCss) ?> cal-month-abs-slot-<?= (int) $__k ?>"
-              data-abs-id="<?= $__p['abs_id'] ?>"
-              title="<?= h($__p['cat'] . ' (' . $__p['from'] . ' – ' . $__p['to'] . ')' . ($__p['note'] !== '' ? ' · ' . $__p['note'] : '')) ?>">
-        <?= h($__p['cat']) ?>
-      </button>
-    <?php endforeach; ?>
   </div>
 </div>
 
 <style nonce="<?= h(csp_nonce()) ?>">
+<?php /* Fix #153: Pro-Pill nur noch Width setzen (Span * 100% bezogen auf
+   die erste Zelle). CSS .cal-month-abs-pill traegt bereits
+   position:absolute + top/left. */ ?>
 <?php foreach ($__monthAbsPills as $__k => $__p):
-    $__gcStart = $__p['col'];
-    $__gcEnd   = $__gcStart + $__p['span'];
+    $__wPct = (int) $__p['span'] * 100;
 ?>
-.cal-month-abs-slot-<?= (int) $__k ?>{grid-column:<?= $__gcStart ?>/<?= $__gcEnd ?>;grid-row:<?= $__p['row'] ?>}
+.cal-month-abs-slot-<?= (int) $__k ?>{width:calc(<?= $__wPct ?>% - 8px)}
 <?php endforeach; ?>
 </style>
 

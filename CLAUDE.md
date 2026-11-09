@@ -27,6 +27,20 @@ Konkret:
 4. **Pro-Issues als Paper-Trail**: wenn Felix "erstelle das Issue auch
    fuer Pro" sagt, ist das ein eigener Task, nicht ein Nebensatz. Pro-
    Issue zaehlt auch zum Abschluss der Aufgabe.
+5. **Erst Plan-Sammlung, dann Umsetzung** (Felix-Feedback 2026-11-09):
+   Neue Anweisungen landen ZUERST im Task-Plan - nicht sofort auf
+   halber Strecke die laufende Aufgabe verlassen. Nacheinander: der
+   aktuelle Task wird erst fertig (Code + Test gruen + Commit), BEVOR
+   ein neuer Task begonnen wird. Es darf immer nur EINE Task auf
+   `in_progress` stehen, der Rest wartet in `pending`.
+6. **Task-Liste aktuell halten** (Felix-Feedback 2026-11-09): die
+   sichtbare Task-Liste zeigt nur offene (pending / in_progress) Tasks.
+   Abgehakte `completed` Tasks werden bewusst aus dem aktiven Fokus
+   entfernt (status=deleted via TaskUpdate), sobald sie committed und
+   verifiziert sind. Felix will nicht 100+ erledigte Tasks neben
+   laufenden sehen - Plan-Signal/Rausch muss hoch bleiben. Der
+   git-history ist der dauerhafte Paper-Trail, die Task-Liste ist der
+   Arbeitsplan.
 
 ## Regressionstest-Pflicht fuer Features
 
