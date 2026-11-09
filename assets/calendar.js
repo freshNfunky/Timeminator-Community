@@ -174,6 +174,10 @@
     }
   }
   function closeDialog() {
+    // Fix #172: Confirm-armed-State beim Schliessen immer zuruecksetzen,
+    // sonst ist beim naechsten Oeffnen der Delete-Button noch "Wirklich
+    // loeschen?"-beschriftet.
+    resetDeleteConfirm();
     if (typeof dlg.close === 'function') dlg.close();
     else dlg.removeAttribute('open');
   }
@@ -707,9 +711,33 @@
     }
   }
 
+  // Felix-Feedback 2026-11-09 (Fix #172): Zwei-Klick-Confirm direkt im
+  // Dialog. window.confirm() kann in manchen Browsern innerhalb <dialog
+  // showModal()> unterdrueckt werden (Firefox-Flag "Weitere Dialoge dieser
+  // Seite verhindern" bzw. Chrome-Setting fuer wiederholte Prompts),
+  // sodass der Loeschen-Click "keine Reaktion" zeigt. Stattdessen:
+  // erster Klick aendert Button-Label auf "Wirklich loeschen?" und wartet
+  // auf zweiten Klick; abbrechen loescht die Confirm-Phase.
+  var deleteConfirmArmed = false;
+  var deleteOrigLabel = null;
+  function resetDeleteConfirm() {
+    if (deleteOrigLabel !== null) {
+      deleteBtn.textContent = deleteOrigLabel;
+      deleteBtn.classList.remove('is-confirm-armed');
+    }
+    deleteConfirmArmed = false;
+  }
   function doDelete() {
     if (!idInput.value) return;
-    if (!window.confirm(D.i18n.confirm_delete)) return;
+    if (!deleteConfirmArmed) {
+      if (deleteOrigLabel === null) { deleteOrigLabel = deleteBtn.textContent; }
+      deleteBtn.textContent = D.i18n.confirm_delete || 'Wirklich loeschen?';
+      deleteBtn.classList.add('is-confirm-armed');
+      deleteConfirmArmed = true;
+      return;
+    }
+    // zweiter Klick -> tatsaechlich loeschen
+    resetDeleteConfirm();
     var k = typeKind(typeSel.value);
     var url = k === 'absence' ? D.urls.absence_delete
             : k === 'process' ? D.urls.process_delete

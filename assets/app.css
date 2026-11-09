@@ -112,6 +112,11 @@ code{background:var(--code-bg);padding:1px 5px;border-radius:5px;font-size:.85em
 .btn-primary:hover{background:var(--brand-d)}
 .btn-danger{background:var(--panel);border-color:var(--btn-danger-border);color:var(--err)}
 .btn-danger:hover{background:var(--btn-danger-hover)}
+/* Fix #172: Zwei-Klick-Confirm fuer Loeschen im Entry-Dialog - der
+   armed-State faerbt den Button rot (statt roter Border + roter Text)
+   und erhoeht die Breite leicht, damit "Wirklich loeschen?" nicht
+   umbricht. Ohne diese Klasse wirkt der erste Klick "wirkungslos". */
+.btn-danger.is-confirm-armed{background:var(--err);color:#fff;border-color:var(--err)}
 .btn-ghost{background:transparent;border-color:transparent;color:var(--muted)}
 .btn-sm{padding:5px 9px;font-size:12px}
 .btn-block{width:100%;padding:11px}
