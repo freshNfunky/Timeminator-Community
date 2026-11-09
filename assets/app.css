@@ -622,7 +622,11 @@ body:has(.sidepanel) .foot{padding-right:200px}
   .sidepanel{position:static;width:auto;height:auto;padding:16px 0 0;
     margin-top:8px;border-top:1px solid var(--line);background:transparent;z-index:auto}
   .sp-brand{margin:0 0 10px}
-  .sp-rotator{flex:0 0 auto;min-height:420px;height:60vw;max-height:600px}
+  /* Stacked layout: cap the banner to a centered card instead of a full-width
+     strip, so it reads as a tidy promo and keeps a sane aspect for the
+     creatives (which now fit landscape too). */
+  .sp-rotator{flex:0 0 auto;width:100%;max-width:520px;margin-inline:auto;
+    min-height:400px;height:62vw;max-height:560px}
 }
 
 /* --- Collapsible nav groups (Kaufmaennisch, Systemverwaltung) --- */
