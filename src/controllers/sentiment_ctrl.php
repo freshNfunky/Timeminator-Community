@@ -16,7 +16,13 @@ declare(strict_types=1);
 
 function ctrl_sentiment_index(): void
 {
-    require_perm('sentiment.record');
+    // Felix-Feedback 2026-11-08 (#101): die persoenliche Stimmung bleibt
+    // fuer sentiment.record erreichbar, aber die Seite oeffnet sich auch
+    // fuer HR/Assistenz/GL (sentiment.view_team / sentiment.view_company),
+    // damit sie die Aggregate sehen koennen - auch wenn sie selbst nicht
+    // erfassen muessen. Der persoenliche Eingabe-Bereich wird in der View
+    // dann hinter sentiment.record versteckt.
+    require_any_perm('sentiment.record', 'sentiment.view_team', 'sentiment.view_company');
     $uid = Auth::id();
     if ($uid === null) {
         redirect_route('login');
@@ -24,16 +30,38 @@ function ctrl_sentiment_index(): void
 
     $today      = Sentiment::todayForUser($uid);
     $history    = Sentiment::historyForUser($uid, 60);
-    $canTeam    = Auth::can('sentiment.view_team');
+
+    // Team-Aggregat: #101 team-gefiltert ueber plan_allocations.
+    $canTeam     = Auth::can('sentiment.view_team');
+    $teamIds     = $canTeam ? Sentiment::teamMemberIds() : [];
     $teamSummary = $canTeam ? Sentiment::teamSummary(30) : null;
     $teamDaily   = $canTeam ? Sentiment::teamDaily(60)   : [];
+    $teamLabels  = $canTeam ? Sentiment::userLabels($teamIds) : [];
+    $teamMatrix  = $canTeam ? Sentiment::weeklyMoodMatrix($teamIds, 12) : [];
+
+    // Belegschafts-Matrix (#104): alle aktiven User, nur fuer sentiment.view_company.
+    $canCompany   = Auth::can('sentiment.view_company');
+    $companyMatrix = [];
+    $companyLabels = [];
+    if ($canCompany) {
+        $rows = DB::all('SELECT id FROM users WHERE active = 1 ORDER BY id');
+        $companyIds = array_map(static fn($r) => (int) $r['id'], $rows);
+        $companyMatrix = Sentiment::weeklyMoodMatrix($companyIds, 12);
+        $companyLabels = Sentiment::userLabels($companyIds);
+    }
 
     view('sentiment/index', [
         'today'        => $today,
         'history'      => $history,
+        'canRecord'    => Auth::can('sentiment.record'),
         'canTeam'      => $canTeam,
+        'canCompany'   => $canCompany,
         'teamSummary'  => $teamSummary,
         'teamDaily'    => $teamDaily,
+        'teamLabels'   => $teamLabels,
+        'teamMatrix'   => $teamMatrix,
+        'companyLabels'=> $companyLabels,
+        'companyMatrix'=> $companyMatrix,
         'granularity'  => Sentiment::granularity(),
     ], t('nav.sentiment'));
 }
@@ -67,6 +95,45 @@ function ctrl_sentiment_fill_week(): void
     redirect_route('sentiment');
 }
 
+/**
+ * Felix-Feedback 2026-11-08 (Dashboard-Sentiment-Widget, Pro-Parity):
+ * ein einziger Submit setzt EINE Dimension (mood oder flow) fuer HEUTE,
+ * optional ueber den Rest der Woche (scope=week fuellt leere Tage konservativ).
+ * Redirect kehrt zum Dashboard zurueck, nicht zur Sentiment-Uebersicht.
+ */
+function ctrl_sentiment_quick(): void
+{
+    require_perm('sentiment.record');
+    csrf_check();
+    $uid = Auth::id();
+    if ($uid === null) { redirect_route('login'); }
+
+    $dim   = (string) post('dim', '');
+    $score = Sentiment::normalizeScore(post('score'));
+    $scope = post('scope') === 'week' ? 'week' : 'day';
+
+    if ($score === null || !in_array($dim, Sentiment::DIMENSIONS, true)) {
+        flash(t('sent.err_pick_any', 'Bitte setze Mood oder Flow (oder beides) auf 1-5.'), 'err');
+        redirect_route('dashboard');
+    }
+
+    $today = Sentiment::today();
+    if ($scope === 'week') {
+        // Pro-Vorbild: fuellt leere Tage bis zum Wochenende konservativ,
+        // ohne bereits gesetzte Werte zu ueberschreiben. Wochenende folgt
+        // dem konfigurierten Wochenanfang (CalendarLocale) - Felix-Feedback
+        // 2026-11-09, Code-Review Fix #130. Vorher hardcoded "sunday this
+        // week", was mit calendar.week_start_dow != 1 auseinanderfaellt.
+        $end = CalendarLocale::weekEnd(new DateTimeImmutable($today))->format('Y-m-d');
+        Sentiment::fillRange($uid, $today, $end, $dim, $score);
+    } else {
+        Sentiment::setDimension($uid, $today, $dim, $score);
+    }
+
+    $back = (string) post('back', 'dashboard');
+    redirect_route(in_array($back, ['dashboard', 'sentiment'], true) ? $back : 'dashboard');
+}
+
 function ctrl_sentiment_save(): void
 {
     require_perm('sentiment.record');
@@ -90,4 +157,118 @@ function ctrl_sentiment_save(): void
 
     flash(sprintf(t('sent.flash_saved', 'Danke, Eintrag fuer %s gespeichert.'), $asOf));
     redirect_route('sentiment');
+}
+
+/**
+ * Felix-Feedback 2026-11-09 (#117): Wochen-Save fuer die "Dein Eintrag diese
+ * Woche"-Karte. Setzt Mood und/oder Flow als Wochenwerte: fuer alle noch
+ * leeren Tage der aktuellen Woche (konservativ, uebersteuert nichts).
+ */
+function ctrl_sentiment_save_week(): void
+{
+    require_perm('sentiment.record');
+    csrf_check();
+
+    $uid = Auth::id();
+    if ($uid === null) {
+        redirect_route('login');
+    }
+
+    $mood = Sentiment::normalizeScore(post('mood'));
+    $flow = Sentiment::normalizeScore(post('flow'));
+    if ($mood === null && $flow === null) {
+        flash(t('sent.err_pick_any', 'Bitte setze Mood oder Flow (oder beides) auf 1-5.'), 'err');
+        redirect_route('sentiment');
+    }
+
+    $monday = CalendarLocale::weekStart(new DateTimeImmutable('today'))->format('Y-m-d');
+    $today  = Sentiment::today();
+
+    if ($mood !== null) {
+        Sentiment::fillRange($uid, $monday, $today, 'mood', $mood);
+    }
+    if ($flow !== null) {
+        Sentiment::fillRange($uid, $monday, $today, 'flow', $flow);
+    }
+
+    flash(t('sent.flash_week_saved', 'Danke, Woche gespeichert.'));
+    redirect_route('sentiment');
+}
+
+/**
+ * JSON-API fuer den Kalender-Mood-Picker (Felix-Feedback 2026-11-04):
+ * setzt mood ODER flow fuer einen bestimmten Tag und liefert den neuen
+ * Zustand zurueck (kein Redirect, kein Flash).
+ *
+ * POST: csrf, day=YYYY-MM-DD, dim=mood|flow, score=1..5 (oder leer = clear).
+ */
+function ctrl_sentiment_api_save(): void
+{
+    require_perm('sentiment.record');
+    csrf_check();
+    $uid = Auth::id();
+    if ($uid === null) { json_out(['ok' => false, 'error' => 'auth'], 401); }
+
+    $day      = Sentiment::parseDay((string) post('day', ''));
+    $dim      = (string) post('dim', '');
+    $rawScore = post('score');
+    $score    = Sentiment::normalizeScore($rawScore);
+    // Felix-Feedback 2026-11-09 (Code-Review Fix #127): leerer String = Clear
+    // (JS schickt score='' beim Re-Klick auf das aktuelle Smiley). Nur echter
+    // Clear schreibt NULL; ein ungueltiger Wert (z.B. '7') ist ein bad_request.
+    $isClear = $rawScore === '' || $rawScore === null;
+    if (!$day || !in_array($dim, Sentiment::DIMENSIONS, true) || (!$isClear && $score === null)) {
+        json_out(['ok' => false, 'error' => 'bad_request'], 400);
+    }
+    Sentiment::setDimension($uid, $day, $dim, $isClear ? null : $score);
+    $row = Sentiment::forDay($uid, $day) ?: [];
+    json_out([
+        'ok'    => true,
+        'day'   => $day,
+        'dim'   => $dim,
+        'score' => $score,
+        'row'   => [
+            'mood' => $row['mood'] ?? null,
+            'flow' => $row['flow'] ?? null,
+        ],
+    ]);
+}
+
+/**
+ * JSON-API fuer Wochen-Bulk-Befuellung (Felix-Feedback 2026-11-04,
+ * "wöchentliche Meldung"): setzt eine Dimension (mood|flow) auf $score
+ * fuer alle Tage von $monday bis $monday+6, UEBERSCHREIBT nicht.
+ */
+function ctrl_sentiment_api_fill_week(): void
+{
+    require_perm('sentiment.record');
+    csrf_check();
+    $uid = Auth::id();
+    if ($uid === null) { json_out(['ok' => false, 'error' => 'auth'], 401); }
+
+    $monday = Sentiment::parseDay((string) post('monday', ''));
+    $dim    = (string) post('dim', '');
+    $score  = Sentiment::normalizeScore(post('score'));
+    if (!$monday || !in_array($dim, Sentiment::DIMENSIONS, true) || $score === null) {
+        json_out(['ok' => false, 'error' => 'bad_request'], 400);
+    }
+    $end = (new DateTimeImmutable($monday))->modify('+6 days')->format('Y-m-d');
+    $filled = Sentiment::fillRange($uid, $monday, $end, $dim, $score);
+    json_out(['ok' => true, 'filled' => $filled, 'monday' => $monday, 'dim' => $dim, 'score' => $score]);
+}
+
+/**
+ * Setzt den globalen Sentiment-Rhythmus per API (Admin-only). Fuer den
+ * Kalender-Toggle Taeglich/Woechentlich: braucht admin.system, sonst 403.
+ */
+function ctrl_sentiment_granularity_api(): void
+{
+    require_perm('admin.system');
+    csrf_check();
+    $g = (string) post('granularity', '');
+    if (!array_key_exists($g, Sentiment::GRANULARITIES)) {
+        json_out(['ok' => false, 'error' => 'bad_value'], 400);
+    }
+    Settings::set('sentiment_granularity', $g);
+    json_out(['ok' => true, 'granularity' => $g]);
 }

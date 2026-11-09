@@ -84,9 +84,44 @@ function ctrl_absence_api_save(): void
     header('Content-Type: application/json');
     $id         = post_int('id');
     $categoryId = post_int('category_id');
-    $start      = trim((string) post('start_date'));
-    $end        = trim((string) post('end_date')) ?: $start;
-    $note       = trim((string) post('note'));
+    // Felix-Feedback 2026-11-09 (Fix #171): Ueberstundenabbau kommt mit
+    // start_ts/end_ts (Zeit-basiert), alles andere mit start_date/end_date.
+    // Wir akzeptieren beides und normalisieren auf start_date/end_date +
+    // optional hours (aus der Differenz berechnet).
+    $startTs = trim((string) post('start_ts'));
+    $endTs   = trim((string) post('end_ts'));
+    $start   = trim((string) post('start_date'));
+    $end     = trim((string) post('end_date'));
+    $note    = trim((string) post('note'));
+    $hoursPost = post('hours');
+    $startTsPersist = null;
+    $endTsPersist   = null;
+    if ($startTs !== '' && $endTs !== '') {
+        // Zeit-basierte Eingabe: Datum aus start_ts ableiten, hours aus
+        // Diff in Minuten.
+        try {
+            $sObj = new DateTimeImmutable(str_replace('T', ' ', $startTs));
+            $eObj = new DateTimeImmutable(str_replace('T', ' ', $endTs));
+        } catch (Throwable) {
+            echo json_encode(['ok' => false, 'error' => 'invalid_timestamps']);
+            exit;
+        }
+        if ($eObj <= $sObj) {
+            echo json_encode(['ok' => false, 'error' => t('entries.err_end_before_start', 'Ende muss nach dem Start liegen.')]);
+            exit;
+        }
+        $start = $sObj->format('Y-m-d');
+        $end   = $eObj->format('Y-m-d');
+        $diffMin = (int) round(($eObj->getTimestamp() - $sObj->getTimestamp()) / 60);
+        $hoursPost = $diffMin / 60.0;
+        // Fix #180: Zeit-basierte Abwesenheiten (Ueberstundenabbau) speichern
+        // start_ts/end_ts zusaetzlich, damit der Kalender-View sie als
+        // Zeit-Block statt ganztaegige Pille rendern kann.
+        $startTsPersist = $sObj->format('Y-m-d H:i:s');
+        $endTsPersist   = $eObj->format('Y-m-d H:i:s');
+    } else {
+        $end = $end !== '' ? $end : $start;
+    }
     if (!$categoryId || $start === '') {
         echo json_encode(['ok' => false, 'error' => t('absences.err_fields_required', 'Kategorie und Von-Datum sind erforderlich.')]);
         exit;
@@ -105,8 +140,10 @@ function ctrl_absence_api_save(): void
             'category_id' => $categoryId,
             'start_date'  => $start,
             'end_date'    => $end,
+            'start_ts'    => $startTsPersist,
+            'end_ts'      => $endTsPersist,
             'note'        => $note ?: null,
-            'hours'       => AbsenceRepo::parseHours(post('hours'), $cat),
+            'hours'       => AbsenceRepo::parseHours($hoursPost, $cat),
         ], $id ?: null);
         $row = AbsenceRepo::absence($savedId);
         echo json_encode(['ok' => true, 'absence' => $row]);

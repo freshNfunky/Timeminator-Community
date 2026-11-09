@@ -59,85 +59,13 @@
     }
   }
 
-  // Week-calendar click & drag — fixes #64. Mousedown on a free spot in
-  // a `.cal-day-grid`, drag down, release → `?r=entry_form&start_ts=…
-  // &end_ts=…`. 15-min snap, so a 10-second drag still produces useful
-  // times. Clicks shorter than ~4 px drop the end so the entry form
-  // starts at that instant with no end — the user can then dial in both.
-  // CSP-strict: all positioning uses CSS variables set via
-  // element.style.setProperty, never inline `style=""` from JS.
-  var SNAP_MIN = 15;
-  document.querySelectorAll('.cal-day-grid').forEach(function (grid) {
-    var day = grid.getAttribute('data-day');
-    if (!day) { return; }
-
-    var active = null; // { startPct, endPct, placeholder, startedAtY }
-
-    function minutesFromClientY(ev) {
-      var r = grid.getBoundingClientRect();
-      var y = Math.max(0, Math.min(r.height, ev.clientY - r.top));
-      var mins = Math.round((y / r.height) * 1440);
-      return Math.max(0, Math.min(1440, Math.round(mins / SNAP_MIN) * SNAP_MIN));
-    }
-    function fmtTs(mins) {
-      var h = Math.floor(mins / 60);
-      var m = mins % 60;
-      return day + 'T' + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
-    }
-    function cancel() {
-      if (active && active.placeholder && active.placeholder.parentNode) {
-        active.placeholder.parentNode.removeChild(active.placeholder);
-      }
-      active = null;
-    }
-
-    grid.addEventListener('mousedown', function (ev) {
-      // Only react to left click on an empty slot (not on an existing event).
-      if (ev.button !== 0) { return; }
-      if (ev.target.closest('.cal-event')) { return; }
-      ev.preventDefault();
-      var startMin = minutesFromClientY(ev);
-      var ph = document.createElement('div');
-      ph.className = 'cal-event cal-event-draft';
-      ph.style.setProperty('--draft-top', (startMin / 1440 * 100) + '%');
-      ph.style.setProperty('--draft-height', (SNAP_MIN / 1440 * 100) + '%');
-      grid.appendChild(ph);
-      active = { startMin: startMin, endMin: startMin + SNAP_MIN, placeholder: ph, startedAtY: ev.clientY };
-    });
-
-    document.addEventListener('mousemove', function (ev) {
-      if (!active) { return; }
-      var now = minutesFromClientY(ev);
-      // Allow dragging up or down. Normalize so start < end.
-      var lo = Math.min(active.startMin, now);
-      var hi = Math.max(active.startMin, now);
-      if (hi - lo < SNAP_MIN) { hi = lo + SNAP_MIN; }
-      active.endMin = hi;
-      active.placeholder.style.setProperty('--draft-top', (lo / 1440 * 100) + '%');
-      active.placeholder.style.setProperty('--draft-height', ((hi - lo) / 1440 * 100) + '%');
-      active._lo = lo;
-      active._hi = hi;
-    });
-
-    document.addEventListener('mouseup', function (ev) {
-      if (!active) { return; }
-      var dragged = Math.abs(ev.clientY - active.startedAtY) > 4;
-      var lo = active._lo != null ? active._lo : active.startMin;
-      var hi = active._hi != null ? active._hi : active.endMin;
-      cancel();
-      var qs = 'r=entry_form&start_ts=' + encodeURIComponent(fmtTs(lo));
-      if (dragged) {
-        qs += '&end_ts=' + encodeURIComponent(fmtTs(hi));
-      }
-      // Keep whatever path prefix the current page used (handles installs
-      // under a sub-path) by using location.pathname.
-      window.location.href = window.location.pathname + '?' + qs;
-    });
-
-    document.addEventListener('keydown', function (ev) {
-      if (ev.key === 'Escape') { cancel(); }
-    });
-  });
+  // Felix-Feedback 2026-11-09 (Fix #160 Hardening 8): Der alte Grid-Drag-
+  // Handler, der zur Legacy-Erfassungs-Seite navigierte, ist raus.
+  // calendar.js hat laengst einen eigenen Drag-Handler, der direkt den
+  // Overlay-Dialog oeffnet. Zwei Handler auf dem gleichen mouseup haben
+  // aber beide gefeuert: calendar.js oeffnete den Dialog, dieser hier
+  // navigierte zur Legacy-Seite -> Dialog blinkte auf und verschwand,
+  // Seite scrollte nach oben. Deshalb: ERSATZLOS WEG.
 
   // Collapsible nav groups: close an open .nav-group when clicking outside
   // of it. The native <details> element handles open/close on the summary
@@ -401,12 +329,20 @@
       var cid = client.value;
       var pid = project.value;
       var wid = wp.value;
+      // Fix #158: Projektart-Filter (data-cat-filter am Root) wird mit
+      // beruecksichtigt - sonst werden alle Projekte wieder sichtbar und
+      // ueberschreiben den Projektart-Filter aus calendar.js.
+      var catFilterCkey = root.getAttribute('data-cat-filter') || '';
 
-      // Projekt-Optionen: nach Client filtern
+      // Projekt-Optionen: nach Client UND Projektart filtern
       filterOptions(project, function (o) {
-        return cid === '' || o.getAttribute('data-client') === cid;
+        if (cid !== '' && o.getAttribute('data-client') !== cid) { return false; }
+        if (catFilterCkey !== '' && o.getAttribute('data-cat-ckey') !== catFilterCkey) { return false; }
+        return true;
       });
-      // Arbeitspaket-Optionen: nach Client UND Projekt filtern
+      // Arbeitspaket-Optionen: nach Client + Projekt filtern.
+      // (Keine ckey-Pruefung noetig: wenn Projekt schon durch ckey
+      // gefiltert ist, filtert pid die WPs automatisch mit.)
       filterOptions(wp, function (o) {
         if (cid !== '' && o.getAttribute('data-client')  !== cid) { return false; }
         if (pid !== '' && o.getAttribute('data-project') !== pid) { return false; }
@@ -414,11 +350,54 @@
       });
       // Aufgaben: ganze Chain
       filterOptions(task, function (o) {
+        if (o.value === '__new__') { return true; } // "+ Neue Aufgabe" immer sichtbar
         if (cid !== '' && o.getAttribute('data-client')  !== cid) { return false; }
         if (pid !== '' && o.getAttribute('data-project') !== pid) { return false; }
         if (wid !== '' && o.getAttribute('data-wp')      !== wid) { return false; }
         return true;
       });
+      enforceHierarchy();
+    }
+
+    // Felix-Feedback 2026-11-09 (Fix #150): Hierarchie wird strikt
+    // durchgesetzt - Child-Selects sind disabled bis zum Parent-Set, und
+    // der Placeholder wird zu "Zuerst X waehlen" mutiert, damit der
+    // Grund fuer die Sperre sichtbar ist. Ohne das koennte man Aufgaben
+    // ohne Projekt anklicken, was Felix als "flache Hierarchie" kritisiert
+    // hat.
+    function enforceHierarchy() {
+      // Fix #156: wenn Kunde-Feld durch Projektart-Auswahl (needs_client=0)
+      // komplett ausgeblendet ist (z.B. Internes Projekt), gibt es keinen
+      // Parent-Kunde, der zuerst gewaehlt werden muesste - Projekt wird
+      // dann direkt freigeschaltet.
+      var clientLabel = root.querySelector('.tp-client-label');
+      var clientSkipped = !!(clientLabel && clientLabel.hidden);
+      // Felix-Feedback 2026-11-09 (Fix #168): wenn NOCH keine Projektart
+      // gewaehlt ist (data-cat-filter leer) und Kunden-Feld sichtbar,
+      // bekommt der Kunden-Select den Placeholder "Zuerst Projektart
+      // waehlen" + wird disabled. Sonst wirkt "Alle Kunden" wie eine
+      // sinnvolle Vorbelegung, obwohl die ganze Kaskade noch wartet.
+      var catFilterCkey = root.getAttribute('data-cat-filter') || '';
+      // #184: Lock-Hints kommen aus data-Attributen (i18n in PHP gewrappt),
+      // damit DE/EN-Switch keine deutschen Reste im JS laesst.
+      var hintCat     = root.getAttribute('data-lock-hint-cat')     || 'Zuerst Projektart waehlen';
+      var hintClient  = root.getAttribute('data-lock-hint-client')  || 'Zuerst Kunde waehlen';
+      var hintProject = root.getAttribute('data-lock-hint-project') || 'Zuerst Projekt waehlen';
+      updateLockState(client,  !clientSkipped && !catFilterCkey, hintCat);
+      updateLockState(project, !clientSkipped && !client.value, hintClient);
+      updateLockState(wp,      !project.value, hintProject);
+      updateLockState(task,    !project.value, hintProject);
+    }
+    function updateLockState(sel, lock, placeholderText) {
+      sel.disabled = lock;
+      var ph = sel.querySelector('option[value=""]');
+      if (ph) {
+        if (!ph.getAttribute('data-base-text')) {
+          ph.setAttribute('data-base-text', ph.textContent);
+        }
+        ph.textContent = lock ? placeholderText : ph.getAttribute('data-base-text');
+      }
+      if (lock) { sel.value = ''; }
     }
 
     function filterOptions(select, keep) {
@@ -429,6 +408,46 @@
         o.hidden = !ok;
         o.disabled = !ok;
       });
+    }
+
+    // Felix-Feedback 2026-11-09 (Fix #141): Inline-Create fuer Aufgaben.
+    // Wenn im Task-Select "+ Neue Aufgabe" (value="__new__") gewaehlt wird,
+    // blendet sich das tp-new-task-Panel ein. Beim Submit kopieren wir
+    // Projekt- und Arbeitspaket-ID aus den UX-Selects in Hidden-Felder,
+    // damit der Server die Aufgabe dem richtigen Projekt zuordnen kann.
+    var newPanel = root.querySelector('.tp-new-task');
+    if (newPanel) {
+      var newInput   = newPanel.querySelector('.tp-new-task-name');
+      var newProjIn  = newPanel.querySelector('.tp-new-task-project');
+      var newWpIn    = newPanel.querySelector('.tp-new-task-wp');
+      function syncNewPanel() {
+        var isNew = task.value === '__new__';
+        newPanel.hidden = !isNew;
+        if (newInput) { newInput.required = isNew; }
+        if (isNew) {
+          if (newProjIn) { newProjIn.value = project.value || ''; }
+          if (newWpIn)   { newWpIn.value   = wp.value      || ''; }
+        } else {
+          if (newInput)  { newInput.value  = ''; }
+          if (newProjIn) { newProjIn.value = ''; }
+          if (newWpIn)   { newWpIn.value   = ''; }
+        }
+      }
+      task.addEventListener('change', syncNewPanel);
+      project.addEventListener('change', syncNewPanel);
+      wp.addEventListener('change', syncNewPanel);
+      syncNewPanel();
+      // Submit-Handler des umliegenden Forms: Projekt + WP final mirrorn,
+      // falls der User die Parents zuletzt geaendert hat.
+      var form = root.closest('form');
+      if (form) {
+        form.addEventListener('submit', function () {
+          if (task.value === '__new__') {
+            if (newProjIn) { newProjIn.value = project.value || ''; }
+            if (newWpIn)   { newWpIn.value   = wp.value      || ''; }
+          }
+        });
+      }
     }
   }
 })();

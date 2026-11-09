@@ -158,4 +158,133 @@ final class SentimentTest extends TestCase
         self::assertNotSame(Sentiment::moodEmoji(5), Sentiment::flowEmoji(5));
         self::assertNotSame(Sentiment::moodEmoji(1), Sentiment::flowEmoji(1));
     }
+
+    public function testDashboardRendersPersonalSentimentWidgetAndQuickRoute(): void
+    {
+        // Felix-Feedback 2026-11-08: das persoenliche Sentiment-Tracking-
+        // Widget im Dashboard war verschwunden - Pro hat es, Community soll
+        // Parity halten. View + Controller + Route + Quick-Save-Pfad muessen
+        // zusammen vorhanden sein, sonst ist das Widget stillschweigend weg.
+        $root  = dirname(__DIR__);
+        $view  = (string) file_get_contents($root . '/views/dashboard.php');
+        $ctrl  = (string) file_get_contents($root . '/src/controllers/dashboard_ctrl.php');
+        $sent  = (string) file_get_contents($root . '/src/controllers/sentiment_ctrl.php');
+        $index = (string) file_get_contents($root . '/index.php');
+
+        // Dashboard-Controller reicht sentimentToday + sentimentGranularity.
+        self::assertStringContainsString(
+            "Sentiment::todayForUser(\$uid)",
+            $ctrl,
+            'Dashboard-Controller muss Sentiment::todayForUser($uid) laden'
+        );
+        self::assertStringContainsString(
+            "'sentimentToday'",
+            $ctrl,
+            'Dashboard-View braucht sentimentToday als Daten'
+        );
+        self::assertStringContainsString(
+            "'sentimentGranularity'",
+            $ctrl,
+            'Dashboard-View braucht sentimentGranularity'
+        );
+
+        // View rendert das Widget (card.sentiment-widget), beide Dimensionen,
+        // 1..5-Emojis und ein Scope-Dropdown (day|week).
+        self::assertStringContainsString('class="card sentiment-widget"', $view, 'Sentiment-Widget-Karte fehlt im Dashboard');
+        self::assertStringContainsString('class="sentiment-form"', $view, 'Sentiment-Form pro Dimension fehlt');
+        self::assertStringContainsString('name="dim"', $view, 'Form-Feld dim (mood/flow) fehlt');
+        // Scope folgt dem Granularity-Preset (Felix-Feedback 2026-11-08) und
+        // steht als hidden-Input in der Form; das sichtbare <select> ist raus.
+        self::assertStringContainsString('name="scope"', $view, 'Scope-Feld (hidden, Preset-abgeleitet) fehlt');
+        self::assertStringNotContainsString('<select name="scope"', $view, 'Scope-Combo-Box muss raus (redundant zum Preset)');
+        self::assertStringContainsString("input type=\"hidden\" name=\"scope\"", $view, 'Scope muss als hidden input gesetzt sein');
+        self::assertStringContainsString("dashboard.mood_question_week", $view, 'Titel-Variante fuer Woche fehlt');
+        self::assertStringContainsString("\$__isWeekScope", $view, 'Scope-Flag aus Granularity-Preset fehlt');
+        self::assertStringContainsString('foreach (Sentiment::DIMENSIONS', $view, 'Widget iteriert nicht ueber Sentiment::DIMENSIONS');
+        self::assertStringContainsString('Sentiment::moodEmoji', $view, 'Mood-Emoji-Renderer fehlt im Widget');
+        self::assertStringContainsString('Sentiment::flowEmoji', $view, 'Flow-Emoji-Renderer fehlt im Widget');
+        self::assertStringContainsString("name=\"back\" value=\"dashboard\"", $view, 'back=dashboard muss im Form stehen, damit Save zurueck ins Dashboard fuehrt');
+
+        // Route + Controller sentiment_quick existieren.
+        self::assertStringContainsString("'sentiment_quick'", $index, 'Route sentiment_quick fehlt');
+        self::assertStringContainsString("'ctrl_sentiment_quick'", $index, 'Controller-Mapping ctrl_sentiment_quick fehlt');
+        self::assertStringContainsString('function ctrl_sentiment_quick', $sent, 'ctrl_sentiment_quick nicht definiert');
+
+        // Quick-Save: fuellt scope=week ueber fillRange, sonst setDimension.
+        self::assertMatchesRegularExpression(
+            '/\$scope\s*===\s*\'week\'.*?Sentiment::fillRange/s',
+            $sent,
+            'sentiment_quick muss scope=week ueber Sentiment::fillRange auf den Rest der Woche anwenden'
+        );
+        self::assertStringContainsString(
+            'Sentiment::setDimension($uid, $today, $dim, $score)',
+            $sent,
+            'sentiment_quick muss scope=day via Sentiment::setDimension schreiben'
+        );
+        // Redirect geht zurueck zum Dashboard (oder zur zulaessigen back-Route).
+        self::assertMatchesRegularExpression(
+            '/in_array\(\$back,\s*\[\'dashboard\',\s*\'sentiment\'\],\s*true\)/s',
+            $sent,
+            'sentiment_quick muss den back-Parameter gegen whitelist pruefen und per Default auf dashboard fallen'
+        );
+    }
+
+    /**
+     * Felix-Feedback 2026-11-09 (Code-Review Fix #127): leerer Score-Wert
+     * aus dem Clear-Pfad (JS re-klickt das aktuelle Smiley) MUSS mood/flow
+     * auf SQL NULL setzen, nicht auf 0. 0 liegt ausserhalb von 1..5 und
+     * kippt Downstream (moodEmoji, teamDaily-Averages, weeklyMoodMatrix).
+     */
+    public function testSetDimensionNullClearsInsteadOfWritingZero(): void
+    {
+        $uid = TestSupport::seedUser('alice');
+        $day = '2026-10-04';
+
+        // Erst Wert setzen.
+        Sentiment::setDimension($uid, $day, 'mood', 4);
+        $row = DB::one('SELECT mood, flow FROM sentiment_entries WHERE user_id = ? AND as_of = ?', [$uid, $day]);
+        self::assertSame(4, (int) $row['mood']);
+        self::assertNull($row['flow']);
+
+        // Clear via null.
+        Sentiment::setDimension($uid, $day, 'mood', null);
+        $row = DB::one('SELECT mood, flow FROM sentiment_entries WHERE user_id = ? AND as_of = ?', [$uid, $day]);
+        self::assertNull($row['mood'], 'setDimension(null) muss NULL in die Spalte schreiben, nicht 0');
+        self::assertNull($row['flow']);
+    }
+
+    public function testSetDimensionNullOnFreshDayCreatesRowWithNulls(): void
+    {
+        // Nebeneffekt der Fix: INSERT-Pfad bei leerer DB erzeugt eine Zeile
+        // mit NULL fuer die Dimension. Das ist nicht nuetzlich, aber es darf
+        // nicht abstuerzen und keinesfalls 0 schreiben.
+        $uid = TestSupport::seedUser('alice');
+        $day = '2026-10-04';
+
+        Sentiment::setDimension($uid, $day, 'flow', null);
+        $row = DB::one('SELECT mood, flow FROM sentiment_entries WHERE user_id = ? AND as_of = ?', [$uid, $day]);
+        self::assertNotNull($row);
+        self::assertNull($row['mood']);
+        self::assertNull($row['flow']);
+    }
+
+    public function testApiSaveControllerBranchClearsOnEmptyScore(): void
+    {
+        // Kontrakt im Controller: empty String / null = Clear, ungueltiger
+        // Score (ausserhalb 1..5) = bad_request. Pruefen wir am Quelltext,
+        // damit der Clear-Pfad nicht wieder in setDimension(..., 0) kippt.
+        $ctrl = (string) file_get_contents(dirname(__DIR__) . '/src/controllers/sentiment_ctrl.php');
+        self::assertStringContainsString("\$isClear = \$rawScore === '' || \$rawScore === null;", $ctrl,
+            'ctrl_sentiment_api_save muss Clear-Pfad explizit erkennen');
+        self::assertStringContainsString(
+            'Sentiment::setDimension($uid, $day, $dim, $isClear ? null : $score);',
+            $ctrl,
+            'ctrl_sentiment_api_save muss bei Clear null uebergeben, kein 0-Fallback'
+        );
+        self::assertStringNotContainsString(
+            "(int) (\$score ?? 0)",
+            $ctrl,
+            'Der 0-Fallback-Cast darf nicht wieder zurueckkommen'
+        );
+    }
 }

@@ -95,6 +95,11 @@ CREATE TABLE IF NOT EXISTS absences (
   category_id   INTEGER NOT NULL,
   start_date    TEXT    NOT NULL,
   end_date      TEXT    NOT NULL,
+  -- Fix #180: Zeit-basierte Abwesenheiten (Ueberstundenabbau): nullable
+  -- start_ts/end_ts speichern die exakte Uhrzeit, falls das Konto
+  -- Zeit-basiert ist. Urlaub/Krankheit/Sonderurlaub lassen beide NULL.
+  start_ts      TEXT    NULL,
+  end_ts        TEXT    NULL,
   note          TEXT    NULL,
   hours         REAL    NULL,
   created_at    TEXT    NOT NULL,

@@ -15,7 +15,7 @@ declare(strict_types=1);
 function pro_teaser_context(): array
 {
     return [
-        'pro_url' => (string) cfg('pro_url', 'https://timeminator.felixschaller.com'),
+        'pro_url' => (string) cfg('pro_url', 'https://timeminator.com'),
     ];
 }
 

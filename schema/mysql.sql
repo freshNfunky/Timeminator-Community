@@ -101,6 +101,9 @@ CREATE TABLE IF NOT EXISTS absences (
   category_id   INT NOT NULL,
   start_date    DATE NOT NULL,
   end_date      DATE NOT NULL,
+  -- Fix #180: Zeit-basierte Abwesenheiten (Ueberstundenabbau)
+  start_ts      DATETIME NULL,
+  end_ts        DATETIME NULL,
   note          VARCHAR(255) NULL,
   hours         DECIMAL(4,2) NULL,
   created_at    DATETIME NOT NULL,

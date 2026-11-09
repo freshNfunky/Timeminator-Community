@@ -103,10 +103,22 @@ $today = (new DateTimeImmutable('today'))->format('Y-m-d');
     <?= csrf_field() ?>
     <input type="hidden" name="user_id" value="<?= (int) $edit['id'] ?>">
     <input type="hidden" name="year" value="<?= (int) $carryover_year ?>">
+    <?php
+    // Felix-Feedback 2026-11-07: Default beim NEUEN Carryover ist der volle
+    // Jahres-Urlaubsanspruch aus den aktuellen Vertragsdaten (Jahresanfang
+    // = 100 % verfuegbar). Nur wenn der Nutzer schon mal gespeichert hat,
+    // zeigen wir den persistierten Wert.
+    $carryVacDefault = $carryover !== null
+        ? (string) ($carryover['vacation_days'] ?? 0)
+        : (string) ($current['vacation_days'] ?? 0);
+    $carryOtDefault = $carryover !== null
+        ? (string) ($carryover['overtime_hours'] ?? 0)
+        : '0';
+    ?>
     <label><?= h(t('employee.carry_vacation', 'Resturlaub (Tage)'))
-      ?> <input type="number" name="vacation_days" min="0" max="60" step="0.5" value="<?= h((string) ($carryover['vacation_days'] ?? 0)) ?>"></label>
+      ?> <input type="number" name="vacation_days" min="0" max="60" step="0.5" value="<?= h($carryVacDefault) ?>"></label>
     <label><?= h(t('employee.carry_overtime', 'Ueberstunden (Stunden)'))
-      ?> <input type="number" name="overtime_hours" step="0.25" value="<?= h((string) ($carryover['overtime_hours'] ?? 0)) ?>"></label>
+      ?> <input type="number" name="overtime_hours" step="0.25" value="<?= h($carryOtDefault) ?>"></label>
     <div class="form-actions">
       <button class="btn btn-primary" type="submit"><?= h(t('common.save')) ?></button>
     </div>

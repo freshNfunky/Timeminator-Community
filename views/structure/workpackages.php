@@ -9,7 +9,7 @@ $list_headers = [
     t('struct.name'),
 ];
 $list_row_renderer = static function (array $w): string {
-    $out  = '<td>' . h($w['client_name'] . ' / ' . $w['project_name']) . '</td>';
+    $out  = '<td>' . h(entry_client_display($w) . ' / ' . $w['project_name']) . '</td>';
     $out .= '<td><code>' . h($w['code']) . '</code></td>';
     $out .= '<td>' . h($w['name'])
           . ($w['active'] ? '' : ' <span class="pill">' . h(t('struct.inactive')) . '</span>')

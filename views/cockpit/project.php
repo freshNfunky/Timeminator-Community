@@ -109,20 +109,22 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
   <?php if (!$matrix_members): ?>
     <p class="muted"><?= h(t('cockpit.plan_no_members', 'Noch keine Buchungen oder Planungen auf diesem Projekt. Mitarbeiter erscheinen hier nach der ersten Buchung bzw. Wochen-Planung.')) ?></p>
   <?php else: ?>
-    <div style="overflow-x:auto">
+    <?php $todayWeekKey = (new DateTimeImmutable('today'))->format('o-\WW'); ?>
+    <div class="plan-matrix-scroll">
       <table class="table" id="planMatrix" data-project-id="<?= (int) $project['id'] ?>"
              data-save-url="<?= h(route('cockpit_plan_cell_save')) ?>"
              data-csrf="<?= h(csrf_token()) ?>">
         <thead>
           <tr>
-            <th><?= h(t('cockpit.plan_col_member', 'Mitarbeiter')) ?></th>
+            <th class="plan-col-name"><?= h(t('cockpit.plan_col_member', 'Mitarbeiter')) ?></th>
             <?php foreach ($matrix_weeks as $wk):
               $wkStart = $weekMonday($wk);
-              $isCurrent = $wk === (new DateTimeImmutable('today'))->format('o-\WW');
+              $isCurrent = $wk === $todayWeekKey;
+              $thClass = 'r plan-wk' . ($isCurrent ? ' is-current-week' : '');
             ?>
-              <th class="r" title="ab <?= h($wkStart) ?>" <?= $isCurrent ? 'style="background:var(--panel-alt,#f0f0f0)"' : '' ?>>
-                <?= h(substr($wk, -2)) ?>
-                <br><span class="muted" style="font-weight:normal;font-size:11px"><?= h((new DateTimeImmutable($wkStart))->format('d.m.')) ?></span>
+              <th class="<?= $thClass ?>" title="<?= h(t('cockpit.plan_wk_tooltip', 'ab')) ?> <?= h($wkStart) ?>">
+                KW<?= h(substr($wk, -2)) ?>
+                <br><span class="plan-wk-date"><?= h((new DateTimeImmutable($wkStart))->format('d.m.')) ?></span>
               </th>
             <?php endforeach; ?>
           </tr>
@@ -133,18 +135,34 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
           $name = $u['display_name'] ?: $u['username'];
         ?>
           <tr data-user-id="<?= $uid ?>">
-            <td><strong><?= h($name) ?></strong></td>
+            <td class="plan-col-name"><strong><?= h($name) ?></strong></td>
             <?php foreach ($matrix_weeks as $wk):
               $ist  = $matrix_ist[$uid][$wk]  ?? 0;
               $soll = $matrix_soll[$uid][$wk] ?? 0;
               $wkStart = $weekMonday($wk);
+              $isCurrent = $wk === $todayWeekKey;
+              // Farbkodierung analog Pro-Variante (Felix-Feedback 2026-11-03):
+              //   Ist > 1.15 * Soll → rot     (deutlich ueberbucht)
+              //   Ist > 1.00 * Soll → orange  (leichte Ueberbuchung)
+              //   Ist <= Soll (Soll > 0) → gruen (im Plan)
+              //   Soll=0 & Ist>0 → orange     (ungeplanter Aufwand)
+              //   Beides 0 → keine Farbe
+              $cellClass = '';
+              if ($soll > 0) {
+                  $ratio = $ist / $soll;
+                  $cellClass = $ratio > 1.15 ? 'cell-red'
+                             : ($ratio > 1.0 ? 'cell-orange' : 'cell-green');
+              } elseif ($ist > 0) {
+                  $cellClass = 'cell-orange';
+              }
+              $tdClass = 'r plan-cell' . ($cellClass ? ' ' . $cellClass : '') . ($isCurrent ? ' is-current-week' : '');
             ?>
-              <td class="r plan-cell" data-week="<?= h($wkStart) ?>">
+              <td class="<?= $tdClass ?>" data-week="<?= h($wkStart) ?>" data-ist="<?= (int) $ist ?>" data-soll="<?= (int) $soll ?>">
                 <div class="plan-ist"><?= h($minToHr((int) $ist)) ?: '—' ?></div>
                 <?php if (Auth::can('structure.manage')): ?>
                   <input class="plan-soll-input" type="text" inputmode="decimal"
                          value="<?= h($minToHr((int) $soll)) ?>"
-                         placeholder="—" style="width:4.5em;text-align:right">
+                         placeholder="—">
                 <?php else: ?>
                   <div class="plan-soll"><?= h($minToHr((int) $soll)) ?: '—' ?></div>
                 <?php endif; ?>
@@ -155,6 +173,18 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
         </tbody>
       </table>
     </div>
+    <script nonce="<?= h(csp_nonce()) ?>">
+    (function () {
+      // Felix-Feedback 2026-11-06: die Matrix zeigt viele Wochen; die aktuelle
+      // KW ist meistens irgendwo in der Mitte. Beim Laden dorthin scrollen,
+      // damit der senkrechte Rahmen (brand-farbig) im Sichtfeld landet.
+      var scroll = document.querySelector('.plan-matrix-scroll');
+      var cur = scroll && scroll.querySelector('thead th.is-current-week');
+      if (!scroll || !cur) return;
+      var left = cur.offsetLeft - (scroll.clientWidth - cur.offsetWidth) / 2;
+      scroll.scrollLeft = Math.max(0, left);
+    })();
+    </script>
   <?php endif; ?>
 </div>
 
@@ -197,6 +227,19 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
           var hrs = mins ? (mins / 60).toFixed(1).replace('.', ',') : '';
           inp.value = hrs;
           orig = inp.value;
+          // Zellen-Farbe nach neuem Soll live aktualisieren (Pro-Vorbild,
+          // Felix-Feedback 2026-11-03): gruen/orange/rot je nach Ist-Soll-
+          // Verhaeltnis, sonst keine Markierung.
+          var ist  = parseInt(cell.getAttribute('data-ist')  || '0', 10);
+          cell.setAttribute('data-soll', String(mins));
+          cell.classList.remove('cell-green', 'cell-orange', 'cell-red');
+          if (mins > 0) {
+            var ratio = ist / mins;
+            cell.classList.add(ratio > 1.15 ? 'cell-red'
+                             : (ratio > 1.0 ? 'cell-orange' : 'cell-green'));
+          } else if (ist > 0) {
+            cell.classList.add('cell-orange');
+          }
         })
         .catch(function (e) { inp.disabled = false; alert(String(e)); inp.value = orig; });
     });
@@ -221,12 +264,194 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
   <div id="cockpitBurnupLegend"></div>
 </div>
 
+<?php // ============== Projekt-Sentiment (Mood-Trend) ================ ?>
+<?php /* Felix-Feedback 2026-11-03/04: komplettes Sentiment-Tracking (Mood-
+        Trend-Chart aus den Fortschrittsmeldungen). Eigene Card, damit die
+        zwei Mood-Skalen (Projekt + Kunde) ueber Zeit sichtbar werden - sonst
+        verstecken sich die Werte nur in der Timeline-Textzeile. */ ?>
+<div class="card" style="margin-top:16px">
+  <div class="card-head">
+    <h3><?= h(t('cockpit.sentiment_h3', 'Projekt-Sentiment')) ?><?= tip('cockpit.sentiment_subtitle') ?></h3>
+  </div>
+  <p class="muted" id="cockpitSentimentEmpty" hidden><?= h(t('cockpit.sentiment_empty', 'Noch keine Stimmung erfasst. Beim Buchen einer Fortschrittsmeldung Projekt-/Kunden-Stimmung mit angeben.')) ?></p>
+  <div class="chart-box" style="height:220px"><canvas id="cockpitSentiment"></canvas></div>
+  <div id="cockpitSentimentLegend"></div>
+  <div class="sentiment-latest" id="cockpitSentimentLatest" hidden style="margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;font-size:14px">
+    <span><strong><?= h(t('cockpit.sentiment_latest', 'Zuletzt')) ?>:</strong></span>
+    <span id="cockpitSentimentPm" class="tt-mood"></span>
+    <span id="cockpitSentimentCm" class="tt-mood"></span>
+  </div>
+</div>
+
+<script src="<?= h(asset('charts.js')) ?>"></script>
+<script nonce="<?= h(csp_nonce()) ?>">
+(function () {
+  var canvas = document.getElementById('cockpitSentiment');
+  if (!canvas || !window.TmCharts || !TmCharts.lines) return;
+  var legend = document.getElementById('cockpitSentimentLegend');
+  var empty  = document.getElementById('cockpitSentimentEmpty');
+  var latest = document.getElementById('cockpitSentimentLatest');
+  var pmEl   = document.getElementById('cockpitSentimentPm');
+  var cmEl   = document.getElementById('cockpitSentimentCm');
+  var url = <?= json_encode(route('cockpit_sentiment_data', ['id' => $project['id']])) ?>;
+  var i18n = <?= json_encode([
+      'pm'    => t('cockpit.tt_proj_mood', 'Projekt-Mood'),
+      'cm'    => t('cockpit.tt_cust_mood', 'Kunden-Mood'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
+  // Mood-Emoji-Lookup (muss mit Sentiment::moodEmoji synchron bleiben).
+  var moodEmoji = {1:'\u{1F61E}',2:'\u{1F615}',3:'\u{1F610}',4:'\u{1F642}',5:'\u{1F604}'};
+  fetch(url, {credentials: 'same-origin'}).then(function (r) { return r.json(); }).then(function (d) {
+    if (!d.ok || !d.points || !d.points.length) {
+      empty.hidden = false;
+      canvas.parentNode.style.display = 'none';
+      return;
+    }
+    function render() {
+      // Felix-Feedback 2026-11-06: echte Zeitachse. Backend liefert labels
+      // Tag-fuer-Tag von der ersten bis zur letzten Meldung + linear
+      // interpolierte pm_series/cm_series; markers sitzen an den echten
+      // Meldetagen (x=Index in labels).
+      var labels = d.labels && d.labels.length ? d.labels : d.points.map(function (p) { return p.d; });
+      var pmData = d.pm_series && d.pm_series.length ? d.pm_series
+                 : d.points.map(function (p) { return p.pm === null || p.pm === undefined ? null : p.pm; });
+      var cmData = d.cm_series && d.cm_series.length ? d.cm_series
+                 : d.points.map(function (p) { return p.cm === null || p.cm === undefined ? null : p.cm; });
+      var series = [
+        {label: i18n.pm, color: '#8b5cf6', data: pmData},
+        {label: i18n.cm, color: '#06b6d4', data: cmData, dashed: true},
+      ];
+      var pts = [];
+      (d.markers && d.markers.length ? d.markers : d.points.map(function (p, i) {
+        return {x: i, d: p.d, pm: p.pm, cm: p.cm};
+      })).forEach(function (m) {
+        if (m.pm !== null && m.pm !== undefined) pts.push({x: m.x, y: m.pm, color: '#8b5cf6'});
+        if (m.cm !== null && m.cm !== undefined) pts.push({x: m.x, y: m.cm, color: '#06b6d4'});
+      });
+      TmCharts.lines(canvas, {xLabels: labels, series: series, points: pts, unit: '/5'}, legend);
+    }
+    render();
+    if (d.latest) {
+      latest.hidden = false;
+      var pmV = d.latest.pm, cmV = d.latest.cm;
+      pmEl.textContent = (pmV !== null && pmV !== undefined) ? (moodEmoji[pmV] + ' ' + i18n.pm + ' ' + pmV + '/5') : '';
+      cmEl.textContent = (cmV !== null && cmV !== undefined) ? (moodEmoji[cmV] + ' ' + i18n.cm + ' ' + cmV + '/5') : '';
+    }
+    // Container-Resize: Chart neu zeichnen (Felix-Feedback 2026-11-06).
+    var chartBox = canvas.parentNode;
+    if (chartBox && typeof ResizeObserver !== 'undefined') {
+      var lastW = chartBox.clientWidth, resizeT = null;
+      var ro = new ResizeObserver(function () {
+        var w = chartBox.clientWidth;
+        if (w === lastW) return;
+        lastW = w;
+        if (resizeT) clearTimeout(resizeT);
+        resizeT = setTimeout(render, 80);
+      });
+      ro.observe(chartBox);
+    }
+  });
+})();
+</script>
+
 <?php if (Auth::can('structure.manage')): ?>
 <div class="card" style="margin-top:16px">
   <div class="card-head">
-    <h3><?= h(t('cockpit.date_shift_h3', 'Terminverschiebung')) ?><?= tip('cockpit.date_shift_subtitle') ?></h3>
+    <h3><?= h(t('cockpit.tracker_entry_h3', 'Tracker-Eintrag')) ?><?= tip('cockpit.tracker_entry_subtitle') ?></h3>
   </div>
-  <form method="post" action="<?= h(route('cockpit_date_shift_save')) ?>" class="form-inline">
+
+  <?php
+    // Pro-UI-Paritaet (Felix-Feedback 2026-11-03: "wieder pro variante als
+    // vorlage"): ein Typ-Switcher statt stapelweise Einzel-Cards. Community hat
+    // zwei aktive Typen (Fortschritt + Terminverschiebung), sieben weitere sind
+    // als Pro-Teaser disabled - markiert mit dem Suffix (Pro). So wird die
+    // vollstaendige Palette sichtbar, ohne die kaufmaennischen Backend-Pfade zu
+    // benoetigen.
+    $todayIso = (new DateTimeImmutable('today'))->format('Y-m-d');
+    $moodOptions = function (): string {
+        // Emoji-Paritaet zur Pro-Variante: 1=😞 bis 5=😄 (Sentiment::moodEmoji).
+        $labels = [
+            1 => t('cockpit.mood_1', 'sehr schlecht'),
+            2 => t('cockpit.mood_2', 'schlecht'),
+            3 => t('cockpit.mood_3', 'neutral'),
+            4 => t('cockpit.mood_4', 'gut'),
+            5 => t('cockpit.mood_5', 'sehr gut'),
+        ];
+        $out = '';
+        foreach ($labels as $v => $lbl) {
+            $out .= '<option value="' . $v . '">' . Sentiment::moodEmoji($v) . ' ' . $v . ' — ' . h($lbl) . '</option>';
+        }
+        return $out;
+    };
+    // Pro-Teaser-Typen (deaktiviert in Community, aktiv in Pro).
+    // Meeting-Protokolle gehoeren NICHT dazu (Felix-Feedback 2026-11-03:
+    // "kundenmeeting ist nicht pro") - Projektmeetings mit Kunde/Team sind
+    // eine Grundfunktion und bleiben in Community aktiv (s.u.).
+    $proTypes = [
+        'risk'             => t('cockpit.tt_risk',             'Risiko'),
+        'decision'         => t('cockpit.tt_decision',         'Entscheidung'),
+        'cost'             => t('cockpit.tt_cost',             'Kosten'),
+        'budget_increase'  => t('cockpit.tt_budget_increase',  'Budget-Erhoehung'),
+        'invoice_sent'     => t('cockpit.tt_invoice_sent',     'Rechnung versendet'),
+        'invoice_payment'  => t('cockpit.tt_invoice_payment',  'Zahlung erhalten'),
+    ];
+    $proSuffix = ' (' . t('cockpit.tt_pro_suffix', 'Pro') . ')';
+  ?>
+
+  <div class="row tracker-entry-row" style="align-items:flex-end;margin-bottom:.6em">
+    <label>
+      <?= h(t('cockpit.booking_type', 'Buchungs-Typ')) ?>
+      <?php /* Tooltip statt Prosa-Absatz (Felix-Feedback 2026-11-03: "prosa-text.
+              hinter tooltip verstecken."): der Pro-Hinweis sitzt als ⓘ-Badge
+              neben dem Label und oeffnet den gleichen Text als Popover. */ ?>
+      <?= tip('cockpit.tracker_pro_hint') ?>
+      <select id="trackerType" class="tracker-type-select">
+        <option value="progress"><?= h(t('cockpit.tt_progress', 'Fortschritt')) ?></option>
+        <option value="date_shift"><?= h(t('cockpit.tt_date_shift', 'Terminverschiebung')) ?></option>
+        <option value="meeting"><?= h(t('cockpit.tt_meeting', 'Meeting-Protokoll')) ?></option>
+        <?php foreach ($proTypes as $key => $label): ?>
+          <option value="<?= h($key) ?>" disabled data-pro="1"><?= h($label . $proSuffix) ?></option>
+        <?php endforeach; ?>
+      </select>
+    </label>
+  </div>
+
+  <?php // === Fortschritts-Meldung (Community: progress) ================= ?>
+  <form method="post" action="<?= h(route('project_tracker_save')) ?>" class="row tracker-form" data-tracker-type="progress" style="flex-wrap:wrap;align-items:flex-end;gap:10px">
+    <?= csrf_field() ?>
+    <input type="hidden" name="project_id" value="<?= (int) $project['id'] ?>">
+    <input type="hidden" name="type" value="progress">
+    <input type="hidden" name="return_to" value="cockpit_project">
+    <label><?= h(t('cockpit.f_date', 'Stand')) ?>
+      <input type="date" name="date_value" value="<?= h($todayIso) ?>">
+    </label>
+    <label><?= h(t('cockpit.f_progress_pct', 'Fortschritt (%)')) ?>
+      <input type="number" name="value" min="0" max="100" step="1" required style="width:6em">
+    </label>
+    <label><?= h(t('cockpit.f_forecast_pct', 'Prognose (%)')) ?>
+      <input type="number" name="value_forecast" min="0" max="100" step="1" style="width:6em" placeholder="<?= h(t('cockpit.f_optional', 'optional')) ?>">
+    </label>
+    <label><?= h(t('cockpit.f_project_mood', 'Projekt-Stimmung')) ?>
+      <select name="project_mood">
+        <option value="">—</option>
+        <?= $moodOptions() ?>
+      </select>
+    </label>
+    <label><?= h(t('cockpit.f_customer_mood', 'Kunden-Stimmung')) ?>
+      <select name="customer_mood">
+        <option value="">—</option>
+        <?= $moodOptions() ?>
+      </select>
+    </label>
+    <label style="flex:1 1 20em"><?= h(t('cockpit.f_comment', 'Kommentar')) ?>
+      <input type="text" name="note" maxlength="4000" placeholder="<?= h(t('cockpit.f_comment_ph', 'optional, kurze Notiz')) ?>">
+    </label>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit"><?= h(t('cockpit.book_progress', 'Fortschritt buchen')) ?></button>
+    </div>
+  </form>
+
+  <?php // === Terminverschiebung (Community: date_shift) =================== ?>
+  <form method="post" action="<?= h(route('cockpit_date_shift_save')) ?>" class="row tracker-form" data-tracker-type="date_shift" hidden style="flex-wrap:wrap;align-items:flex-end;gap:10px">
     <?= csrf_field() ?>
     <input type="hidden" name="project_id" value="<?= (int) $project['id'] ?>">
     <label><?= h(t('cockpit.date_shift_current', 'Aktuell')) ?>:
@@ -241,7 +466,66 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
     </div>
   </form>
 
+  <?php // === Meeting-Protokoll (Community: meeting) =================== ?>
+  <?php /* Felix-Feedback 2026-11-03: "kundenmeeting ist nicht pro / fehlt zudem
+          hier in der community variante" - Projektmeetings bleiben Grund-
+          funktion. Kompakte 2-Spalten-Form: Datum + Titel, dann frei-text
+          Teilnehmer + Notizen/Beschluesse (als Note-Feld). */ ?>
+  <form method="post" action="<?= h(route('project_tracker_save')) ?>" class="row tracker-form" data-tracker-type="meeting" hidden style="flex-wrap:wrap;align-items:flex-end;gap:10px">
+    <?= csrf_field() ?>
+    <input type="hidden" name="project_id" value="<?= (int) $project['id'] ?>">
+    <input type="hidden" name="type" value="meeting">
+    <input type="hidden" name="return_to" value="cockpit_project">
+    <label><?= h(t('cockpit.f_meeting_date', 'Meeting-Datum')) ?>
+      <input type="date" name="date_value" value="<?= h($todayIso) ?>" required>
+    </label>
+    <label><?= h(t('cockpit.f_meeting_title', 'Titel')) ?>
+      <input type="text" name="meeting_title" maxlength="255" placeholder="<?= h(t('cockpit.f_meeting_title_ph', 'z. B. Kundentermin KW 45')) ?>">
+    </label>
+    <label class="grow"><?= h(t('cockpit.f_meeting_participants', 'Teilnehmer')) ?>
+      <input type="text" name="meeting_participants" maxlength="500" placeholder="<?= h(t('cockpit.f_meeting_participants_ph', 'optional, z. B. Max Mustermann, Erika Beispiel')) ?>">
+    </label>
+    <label class="grow"><?= h(t('cockpit.f_meeting_notes', 'Notizen / Beschluesse')) ?>
+      <textarea name="note" rows="4" required placeholder="<?= h(t('cockpit.f_meeting_notes_ph', 'Wesentliche Punkte, Beschluesse, Action Items …')) ?>"></textarea>
+    </label>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit"><?= h(t('cockpit.book_meeting', 'Meeting protokollieren')) ?></button>
+    </div>
+  </form>
+
+  <?php // Pro-only disabled Platzhalter-Panel (nur sichtbar, wenn im Select angewaehlt). ?>
+  <?php foreach ($proTypes as $key => $label): ?>
+    <div class="tracker-form tracker-pro-teaser" data-tracker-type="<?= h($key) ?>" hidden>
+      <p class="muted"><?= h(t('cockpit.tracker_pro_teaser', 'Dieser Buchungs-Typ ist Teil der Pro-Variante und hier nicht verfuegbar.')) ?></p>
+    </div>
+  <?php endforeach; ?>
+
+  <script nonce="<?= h(csp_nonce()) ?>">
+  (function () {
+    var sel = document.getElementById('trackerType');
+    if (!sel) return;
+    var forms = Array.prototype.slice.call(document.querySelectorAll('.tracker-form[data-tracker-type]'));
+    var key = 'tm_tracker_type_<?= (int) $project['id'] ?>';
+    function show(type) {
+      forms.forEach(function (f) { f.hidden = f.getAttribute('data-tracker-type') !== type; });
+    }
+    try {
+      var last = sessionStorage.getItem(key);
+      if (last) {
+        var opt = sel.querySelector('option[value="' + last + '"]');
+        if (opt && !opt.disabled) sel.value = last;
+      }
+    } catch (e) { /* storage unavailable */ }
+    show(sel.value);
+    sel.addEventListener('change', function () {
+      show(sel.value);
+      try { sessionStorage.setItem(key, sel.value); } catch (e) { /* storage unavailable */ }
+    });
+  })();
+  </script>
+
   <?php if ($date_shifts): ?>
+    <h4 style="margin:1.2em 0 .4em"><?= h(t('cockpit.date_shift_history', 'Terminverschiebungen (Historie)')) ?></h4>
     <table class="table" style="margin-top:10px">
       <thead>
         <tr>
@@ -280,33 +564,52 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
   <?php if (!$timeline): ?>
     <p class="muted"><?= h(t('cockpit.timeline_empty', 'Noch keine Tracker-Eintraege.')) ?></p>
   <?php else: ?>
+    <?php $canEditTracker = Auth::can('structure.manage'); ?>
     <ul class="tracker-timeline">
     <?php foreach ($timeline as $t):
-      $when = (new DateTimeImmutable($t['created_at']))->format('d.m.Y');
+      $when   = (new DateTimeImmutable($t['created_at']))->format('d.m.Y');
+      $tid    = (int) $t['id'];
+      $ttype  = (string) $t['type'];
+      $editable = $canEditTracker && in_array($ttype, ['progress', 'date_shift', 'meeting', 'status_report'], true);
+      $createdLocal = (new DateTimeImmutable($t['created_at']))->format('Y-m-d\TH:i');
     ?>
-      <li class="tt-item tt-<?= h($t['type']) ?>">
+      <li class="tt-item tt-<?= h($ttype) ?>">
         <div class="tt-head">
           <strong><?= h($when) ?></strong>
           <span class="muted"><?= h((string) ($t['user_username'] ?? '')) ?></span>
-          <span class="pill pill-<?= h($t['type']) ?>">
-            <?php switch ((string) $t['type']) {
+          <span class="pill pill-<?= h($ttype) ?>">
+            <?php switch ($ttype) {
               case 'progress':      echo h(t('cockpit.tt_progress',   'Fortschritt')); break;
               case 'date_shift':    echo h(t('cockpit.tt_date_shift', 'Terminverschiebung')); break;
+              case 'meeting':       echo h(t('cockpit.tt_meeting',    'Meeting-Protokoll')); break;
               case 'status_report': echo h(t('cockpit.tt_status',     'Status')); break;
-              default:              echo h((string) $t['type']);
+              default:              echo h($ttype);
             } ?>
           </span>
+          <?php if ($editable): ?>
+            <div class="tt-actions">
+              <button type="button" class="btn btn-ghost btn-sm tt-edit-toggle" aria-expanded="false" aria-controls="tt-edit-<?= $tid ?>"><?= h(t('cockpit.edit', 'Bearbeiten')) ?></button>
+              <form method="post" action="<?= h(route('project_tracker_delete')) ?>" class="tt-del-form"
+                    onsubmit="return confirm('<?= h(t('cockpit.delete_entry_confirm', 'Eintrag wirklich loeschen?')) ?>')">
+                <?= csrf_field() ?>
+                <input type="hidden" name="id" value="<?= $tid ?>">
+                <input type="hidden" name="project_id" value="<?= (int) $project['id'] ?>">
+                <input type="hidden" name="return_to" value="cockpit_project">
+                <button class="tt-del" type="submit" title="<?= h(t('cockpit.delete', 'Loeschen')) ?>" aria-label="<?= h(t('cockpit.delete', 'Loeschen')) ?>">&times;</button>
+              </form>
+            </div>
+          <?php endif; ?>
         </div>
         <div class="tt-body">
-          <?php if ($t['type'] === 'progress'): ?>
+          <?php if ($ttype === 'progress'): ?>
             <strong><?= h(number_format((float) $t['value'], 0, ',', '.')) ?>%</strong>
             <?php if ($t['value_forecast'] !== null): ?>
               <span class="muted">(<?= h(t('cockpit.tt_forecast', 'Prognose')) ?>: <?= h(number_format((float) $t['value_forecast'], 0, ',', '.')) ?>%)</span>
             <?php endif; ?>
             <?php if ($t['date_value']): ?><span class="muted"> · <?= h(t('cockpit.tt_as_of', 'Stand')) ?> <?= h((new DateTimeImmutable($t['date_value']))->format('d.m.Y')) ?></span><?php endif; ?>
-            <?php if (!empty($t['project_mood'])):  ?><span class="muted"> · <?= h(t('cockpit.tt_proj_mood', 'Projekt-Mood')) ?> <?= (int) $t['project_mood'] ?>/5</span><?php endif; ?>
-            <?php if (!empty($t['customer_mood'])): ?><span class="muted"> · <?= h(t('cockpit.tt_cust_mood', 'Kunde')) ?> <?= (int) $t['customer_mood'] ?>/5</span><?php endif; ?>
-          <?php elseif ($t['type'] === 'date_shift'): ?>
+            <?php if (!empty($t['project_mood'])):  ?><span class="tt-mood" title="<?= h(t('cockpit.tt_proj_mood', 'Projekt-Mood')) ?> <?= (int) $t['project_mood'] ?>/5 (<?= h(Sentiment::moodLabel((int) $t['project_mood'])) ?>)"> · <?= Sentiment::moodEmoji((int) $t['project_mood']) ?> <span class="muted"><?= h(t('cockpit.tt_proj_mood', 'Projekt-Mood')) ?> <?= (int) $t['project_mood'] ?>/5</span></span><?php endif; ?>
+            <?php if (!empty($t['customer_mood'])): ?><span class="tt-mood" title="<?= h(t('cockpit.tt_cust_mood', 'Kunde')) ?> <?= (int) $t['customer_mood'] ?>/5 (<?= h(Sentiment::moodLabel((int) $t['customer_mood'])) ?>)"> · <?= Sentiment::moodEmoji((int) $t['customer_mood']) ?> <span class="muted"><?= h(t('cockpit.tt_cust_mood', 'Kunde')) ?> <?= (int) $t['customer_mood'] ?>/5</span></span><?php endif; ?>
+          <?php elseif ($ttype === 'date_shift'): ?>
             <?= h(t('cockpit.tt_shift_to', 'Neues Enddatum')) ?>:
             <strong><?= $t['date_value'] ? h((new DateTimeImmutable($t['date_value']))->format('d.m.Y')) : '—' ?></strong>
           <?php else: ?>
@@ -314,12 +617,106 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
             <?php if ($t['date_value']): ?><span class="muted"> · <?= h((new DateTimeImmutable($t['date_value']))->format('d.m.Y')) ?></span><?php endif; ?>
           <?php endif; ?>
           <?php if (!empty($t['note'])): ?>
-            <div class="muted" style="margin-top:4px"><?= nl2br(h((string) $t['note'])) ?></div>
+            <div class="muted tt-note"><?= nl2br(h((string) $t['note'])) ?></div>
           <?php endif; ?>
         </div>
+        <?php if ($editable): ?>
+          <div class="tt-edit" id="tt-edit-<?= $tid ?>" hidden>
+            <form method="post" action="<?= h(route('project_tracker_update')) ?>" class="tt-edit-form">
+              <?= csrf_field() ?>
+              <input type="hidden" name="id" value="<?= $tid ?>">
+              <input type="hidden" name="project_id" value="<?= (int) $project['id'] ?>">
+              <input type="hidden" name="return_to" value="cockpit_project">
+              <label><?= h(t('cockpit.f_entry_date', 'Eintrags-Datum')) ?>
+                <input type="datetime-local" name="created_at" value="<?= h($createdLocal) ?>">
+              </label>
+              <?php if ($ttype === 'progress'): ?>
+                <label><?= h(t('cockpit.f_as_of', 'Stand')) ?>
+                  <input type="date" name="date_value" value="<?= h((string) ($t['date_value'] ?? '')) ?>">
+                </label>
+                <label><?= h(t('cockpit.f_progress_pct', 'Fortschritt (%)')) ?>
+                  <input type="number" name="value" min="0" max="100" step="1" value="<?= h((string) (int) $t['value']) ?>">
+                </label>
+                <label><?= h(t('cockpit.f_forecast_pct', 'Prognose (%)')) ?>
+                  <input type="number" name="value_forecast" min="0" max="100" step="1" value="<?= $t['value_forecast'] !== null ? h((string) (int) $t['value_forecast']) : '' ?>">
+                </label>
+                <?php $pm = (int) ($t['project_mood'] ?? 0); $cm = (int) ($t['customer_mood'] ?? 0); ?>
+                <label><?= h(t('cockpit.tt_proj_mood', 'Projekt-Mood')) ?>
+                  <select name="project_mood">
+                    <option value="">–</option>
+                    <?php foreach (range(1, 5) as $i): ?>
+                      <option value="<?= $i ?>"<?= $pm === $i ? ' selected' : '' ?>><?= Sentiment::moodEmoji($i) ?> <?= $i ?>/5</option>
+                    <?php endforeach; ?>
+                  </select>
+                </label>
+                <label><?= h(t('cockpit.tt_cust_mood', 'Kunde')) ?>
+                  <select name="customer_mood">
+                    <option value="">–</option>
+                    <?php foreach (range(1, 5) as $i): ?>
+                      <option value="<?= $i ?>"<?= $cm === $i ? ' selected' : '' ?>><?= Sentiment::moodEmoji($i) ?> <?= $i ?>/5</option>
+                    <?php endforeach; ?>
+                  </select>
+                </label>
+              <?php elseif ($ttype === 'date_shift'): ?>
+                <label><?= h(t('cockpit.tt_shift_to', 'Neues Enddatum')) ?>
+                  <input type="date" name="date_value" value="<?= h((string) ($t['date_value'] ?? '')) ?>">
+                </label>
+              <?php elseif ($ttype === 'status_report'): ?>
+                <label><?= h(t('cockpit.f_status', 'Status')) ?>
+                  <input type="text" name="status" maxlength="32" value="<?= h((string) ($t['status'] ?? '')) ?>">
+                </label>
+                <label><?= h(t('cockpit.f_date', 'Datum')) ?>
+                  <input type="date" name="date_value" value="<?= h((string) ($t['date_value'] ?? '')) ?>">
+                </label>
+              <?php endif; ?>
+              <label class="tt-edit-note"><?= h(t('cockpit.f_note', 'Notiz')) ?>
+                <textarea name="note" rows="3"><?= h((string) ($t['note'] ?? '')) ?></textarea>
+              </label>
+              <div class="tt-edit-actions">
+                <button class="btn btn-primary btn-sm" type="submit"><?= h(t('common.save', 'Speichern')) ?></button>
+                <button class="btn btn-ghost btn-sm tt-edit-cancel" type="button"><?= h(t('common.cancel', 'Abbrechen')) ?></button>
+              </div>
+            </form>
+          </div>
+        <?php endif; ?>
       </li>
     <?php endforeach; ?>
     </ul>
+    <?php if ($canEditTracker): ?>
+    <script nonce="<?= h(csp_nonce()) ?>">
+    (function () {
+      // Tracker-Edit-Toggle (Felix-Feedback 2026-11-06): Bearbeiten-Button
+      // + X-Loeschen liegen rechts im Head (.tt-actions), das Edit-Panel
+      // laeuft unter dem Body in voller Breite. Klick auf "Bearbeiten"
+      // setzt .is-editing an der <li> (CSS versteckt dann das X in genau
+      // dieser Zeile und zeigt das .tt-edit-Panel). "Abbrechen" setzt
+      // alles zurueck.
+      var openEdit = function (li, open) {
+        var panel = li.querySelector('.tt-edit');
+        var btn   = li.querySelector('.tt-edit-toggle');
+        if (!panel || !btn) return;
+        li.classList.toggle('is-editing', open);
+        panel.hidden = !open;
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      };
+      document.querySelectorAll('.tracker-timeline .tt-edit-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          var li = btn.closest('.tt-item');
+          if (!li) return;
+          openEdit(li, !li.classList.contains('is-editing'));
+        });
+      });
+      document.querySelectorAll('.tracker-timeline .tt-edit-cancel').forEach(function (btn) {
+        btn.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          var li = btn.closest('.tt-item');
+          if (li) { openEdit(li, false); }
+        });
+      });
+    })();
+    </script>
+    <?php endif; ?>
   <?php endif; ?>
 </div>
 
@@ -332,7 +729,8 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
   var url = <?= json_encode(route('cockpit_burnup_data', ['id' => $project['id']])) ?>;
   var i18n = <?= json_encode([
       'cum_hours'    => t('cockpit.burnup_cum_hours', 'Ist (Stunden)'),
-      'target'       => t('cockpit.burnup_target',    'Soll'),
+      'target'       => t('cockpit.burnup_target',    'Budget'),
+      'soll'         => t('cockpit.burnup_soll',      'Soll (Plan-Matrix)'),
       'none'         => t('cockpit.burnup_none',      'Noch keine Buchungen auf diesem Projekt.'),
       'progress'     => t('cockpit.burnup_progress',  'Fortschritt'),
       'forecast'     => t('cockpit.burnup_forecast',  'Prognose'),
@@ -342,6 +740,19 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
       'within'       => t('cockpit.burnup_within',    'im Budget'),
       'over'         => t('cockpit.burnup_over',      'Budget ueberschritten'),
   ], JSON_UNESCAPED_UNICODE) ?>;
+  // Felix-Feedback 2026-11-06: jeder Legend-Eintrag togglet die zugehoerige
+  // Kurve/Area/Marker-Gruppe. Keys sind stabil und persistieren in
+  // localStorage, damit der Zustand ueber Reloads hinweg bleibt.
+  var HIDDEN_KEY = 'tm.cockpit.burnup.hidden';
+  var hidden = new Set();
+  try {
+    var raw = localStorage.getItem(HIDDEN_KEY);
+    if (raw) { JSON.parse(raw).forEach(function (k) { hidden.add(k); }); }
+  } catch (e) {}
+  var saveHidden = function () {
+    try { localStorage.setItem(HIDDEN_KEY, JSON.stringify(Array.from(hidden))); } catch (e) {}
+  };
+
   fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
     if (!d.ok || !d.points.length) {
       var ctx = canvas.getContext('2d');
@@ -351,86 +762,138 @@ $minToHr = fn(int $m) => $m === 0 ? '' : number_format($m / 60, 1, ',', '.');
       ctx.fillText(i18n.none, canvas.width / 2, canvas.height / 2);
       return;
     }
-    var labels = d.points.map(function (p) { return p.d; });
-    var series = [{ label: i18n.cum_hours, color: '#2563eb', data: d.points.map(function (p) { return p.h; }) }];
-    if (d.target_h) {
-      series.push({ label: i18n.target + ' ' + d.target_h + ' h', color: '#94a3b8', dashed: true,
-        data: labels.map(function () { return d.target_h; }) });
-    }
-    // Fortschritts-Linie: linear verbunden zwischen den Meldeterminen (Pro-Vorbild).
-    // Der Backend liefert progress_line step-forward-gefuellt (jeder Timestep traegt
-    // den letzten gemeldeten Wert bis zum naechsten Report) - das zeichnet optisch
-    // Stufen. Fuer die Pro-Optik interpolieren wir hier linear zwischen den
-    // progress_markers: vor dem ersten und nach dem letzten Report bleibt null
-    // (keine Linie), zwischen zwei Reports steigt bzw. faellt die Linie gerade.
-    var marks = (d.progress_markers || []).slice().sort(function (a, b) { return a.x - b.x; });
-    var hasProgress = marks.length > 0;
-    if (hasProgress) {
-      var progressLinear = labels.map(function (_, i) {
-        for (var k = 0; k < marks.length - 1; k++) {
-          if (i >= marks[k].x && i <= marks[k + 1].x) {
-            var span = marks[k + 1].x - marks[k].x;
-            if (span <= 0) return marks[k].y;
-            var t = (i - marks[k].x) / span;
-            return marks[k].y + t * (marks[k + 1].y - marks[k].y);
+
+    function render() {
+      var labels = d.points.map(function (p) { return p.d; });
+      // Alle Kandidaten mit stabilem Key definieren, danach die hidden-Keys
+      // ausfiltern (statt pro Zweig zu verzweigen).
+      var allSeries = [];
+      allSeries.push({ key: 'ist', label: i18n.cum_hours, color: '#2563eb', data: d.points.map(function (p) { return p.h; }) });
+      // Soll-Kurve = Integral der Plan-Matrix, cyan statt orange (orange ist
+      // fuer die Prognose reserviert).
+      var sollCurve = d.soll_curve || [];
+      var hasSoll = sollCurve.some(function (v) { return v !== null && v !== undefined && v > 0; });
+      if (hasSoll) {
+        allSeries.push({ key: 'soll', label: i18n.soll, color: '#06b6d4', dashed: true, data: sollCurve });
+      }
+      if (d.target_h) {
+        allSeries.push({ key: 'budget', label: i18n.target + ' ' + d.target_h + ' h', color: '#94a3b8', dashed: true,
+          data: labels.map(function () { return d.target_h; }) });
+      }
+      // Fortschritts-Linie: linear zwischen Meldeterminen.
+      var marks = (d.progress_markers || []).slice().sort(function (a, b) { return a.x - b.x; });
+      var hasProgress = marks.length > 0;
+      if (hasProgress) {
+        var progressLinear = labels.map(function (_, i) {
+          for (var k = 0; k < marks.length - 1; k++) {
+            if (i >= marks[k].x && i <= marks[k + 1].x) {
+              var span = marks[k + 1].x - marks[k].x;
+              if (span <= 0) return marks[k].y;
+              var t = (i - marks[k].x) / span;
+              return marks[k].y + t * (marks[k + 1].y - marks[k].y);
+            }
           }
-        }
-        if (marks.length === 1 && i === marks[0].x) return marks[0].y;
-        if (marks.length >= 1 && i === marks[marks.length - 1].x) return marks[marks.length - 1].y;
-        return null;
+          if (marks.length === 1 && i === marks[0].x) return marks[0].y;
+          if (marks.length >= 1 && i === marks[marks.length - 1].x) return marks[marks.length - 1].y;
+          return null;
+        });
+        allSeries.push({ key: 'progress', label: i18n.progress + ' (%)', color: '#8b5cf6', right: true, marker: 'dot', data: progressLinear });
+      }
+      // Ideal-Linie (0-100%): rechte Achse, grau gestrichelt.
+      var idealLine = d.ideal_line || [];
+      var hasIdeal = idealLine.some(function (v) { return v !== null && v !== undefined; });
+      if (hasIdeal) {
+        allSeries.push({ key: 'ideal', label: i18n.ideal + ' (%)', color: '#64748b', right: true, dashed: true, data: idealLine });
+      }
+
+      // Alle Serien gehen als series rein (nicht vorgefiltert): das Chart-
+      // Lib skippt das Zeichnen hidden-markierter Keys, laesst die Chips aber
+      // in der Legende und markiert sie als "aus". Ohne diesen Trick wuerde
+      // ein ausgeschalteter Chip komplett aus der Legende verschwinden und
+      // der Nutzer koennte ihn nicht mehr einschalten.
+      var series = allSeries;
+
+      // Progress-Marker + Prognose-Strahlen fahren an ihren eigenen Keys.
+      var pts = marks.map(function (m) {
+        return { x: m.x, y: m.y, color: '#8b5cf6', right: true, key: 'progress' };
       });
-      series.push({ label: i18n.progress + ' (%)', color: '#8b5cf6', right: true, marker: 'dot', data: progressLinear });
+      var rays = (d.forecast_rays || []).map(function (r) {
+        return { x0: r.x0, y0: r.y0, x1: r.x1, y1: r.y1, color: '#d97706', dashed: true, right: true, key: 'forecast' };
+      });
+      var pointLegend = [];
+      if ((d.forecast_rays || []).length) {
+        pointLegend.push({ key: 'forecast', label: i18n.forecast + ' (%, +' + (d.review_interval || 30) + ' d)',
+          color: '#d97706', dashed: true, marker: 'ring' });
+      }
+
+      // Deadline + Delay vlines: eigene Keys.
+      var vlines = [];
+      if (d.deadline && d.deadline.x !== null && d.deadline.x !== undefined) {
+        vlines.push({ key: 'deadline', index: d.deadline.x, label: '', color: '#94a3b8',
+          legend: i18n.deadline + ' ' + d.deadline.date });
+      }
+      if (d.delay && d.delay.x !== null && d.delay.x !== undefined) {
+        vlines.push({ key: 'delay', index: d.delay.x, label: '', color: '#d97706',
+          legend: i18n.delay + ' ' + d.delay.date });
+      }
+
+      // fillBetween Ist vs. Budget: gruen im Plan / rot ueber Plan. Die Labels
+      // bleiben immer gesetzt (Chips gehoeren zur Legende), das Verstecken
+      // passiert in TmCharts via spec.hidden - Kurve wird nicht mehr gefaerbt,
+      // Chip bleibt klickbar.
+      var fillBetween = null;
+      if (d.target_h) {
+        var istSeries  = d.points.map(function (p) { return p.h; });
+        var sollSeries = labels.map(function () { return d.target_h; });
+        fillBetween = {
+          a: istSeries, b: sollSeries,
+          belowKey: 'within', aboveKey: 'over',
+          belowColor: '#16a34a', aboveColor: '#ef4444',
+          belowLabel: i18n.within, aboveLabel: i18n.over,
+        };
+      }
+
+      TmCharts.lines(canvas, {
+        xLabels: labels, series: series, points: pts, rays: rays, vlines: vlines,
+        unit: 'h', rightUnit: '%', pointLegend: pointLegend, fillBetween: fillBetween,
+        hidden: hidden,
+      }, legend);
     }
-    var pts = marks.map(function (m) {
-      return { x: m.x, y: m.y, color: '#8b5cf6', right: true };
-    });
-    // Prognose-Strahlen vom Meldepunkt im Review-Turnus-Abstand zum Forecast-Wert.
-    // Pro-Vorbild: hohler Kreis am Ray-Ende (nur Umriss, kein Fill).
-    var rays = (d.forecast_rays || []).map(function (r) {
-      return { x0: r.x0, y0: r.y0, x1: r.x1, y1: r.y1, color: '#d97706', dashed: true, right: true };
-    });
-    // Legende: Prognose-Zeile als gestrichelter Linien-Swatch + hohler Kreis-Marker
-    // am Ende (visuell identisch zum tatsaechlich gezeichneten Strahl).
-    var pointLegend = [];
-    if (rays.length) {
-      pointLegend.push({ label: i18n.forecast + ' (%, +' + (d.review_interval || 30) + ' d)', color: '#d97706', dashed: true, marker: 'ring' });
-    }
-    // Ideal-Linie (0-100%): als rechte-Achse-Serie mit grau-gestrichelter Linie.
-    var idealLine = d.ideal_line || [];
-    var hasIdeal = idealLine.some(function (v) { return v !== null && v !== undefined; });
-    if (hasIdeal) {
-      series.push({ label: i18n.ideal + ' (%)', color: '#64748b', right: true, dashed: true, data: idealLine });
-    }
-    // Deadline (urspruengliches Enddatum, grau) + Delay (aktuelles nach Shift, orange).
-    var vlines = [];
-    if (d.deadline && d.deadline.x !== null && d.deadline.x !== undefined) {
-      vlines.push({
-        index: d.deadline.x, label: '', color: '#94a3b8',
-        legend: i18n.deadline + ' ' + d.deadline.date,
+
+    render();
+
+    // Klick-Delegation auf die Legende: Chip-Klick togglet den zugehoerigen
+    // Key in der hidden-Menge und re-rendert den Chart.
+    if (legend) {
+      legend.addEventListener('click', function (ev) {
+        var chip = ev.target.closest('.lg-chip');
+        if (!chip || !legend.contains(chip)) return;
+        var k = chip.getAttribute('data-k');
+        if (!k) return;
+        if (hidden.has(k)) { hidden.delete(k); } else { hidden.add(k); }
+        saveHidden();
+        render();
       });
     }
-    if (d.delay && d.delay.x !== null && d.delay.x !== undefined) {
-      vlines.push({
-        index: d.delay.x, label: '', color: '#d97706',
-        legend: i18n.delay + ' ' + d.delay.date,
+
+    // Felix-Feedback 2026-11-06: der Canvas verankert seine Pixel-Groesse
+    // beim ersten setup() am Container; waechst das umschliessende Layout
+    // (Fenster-Resize, Sidebar-Toggle, Dev-Tools auf/zu), zeichnet charts.js
+    // ohne weiteren Anstoss NICHT neu - die Kurve bleibt in der alten
+    // Pixel-Breite haengen. ResizeObserver am .chart-box triggert ein
+    // debounced re-render auf tatsaechliche Breitenaenderung.
+    var chartBox = canvas.parentNode;
+    if (chartBox && typeof ResizeObserver !== 'undefined') {
+      var lastW = chartBox.clientWidth, resizeT = null;
+      var ro = new ResizeObserver(function () {
+        var w = chartBox.clientWidth;
+        if (w === lastW) return;
+        lastW = w;
+        if (resizeT) clearTimeout(resizeT);
+        resizeT = setTimeout(render, 80);
       });
+      ro.observe(chartBox);
     }
-    // Flaechen-Integral unter der Ist-Kurve: gruen wo Ist <= Soll, rot wo Ist > Soll
-    // (Pro-Vorbild). Nur wenn target_h gesetzt ist - sonst fehlt der Vergleichswert.
-    var fillBetween = null;
-    if (d.target_h) {
-      var istSeries  = d.points.map(function (p) { return p.h; });
-      var sollSeries = labels.map(function () { return d.target_h; });
-      fillBetween = {
-        a: istSeries, b: sollSeries,
-        belowColor: '#16a34a', aboveColor: '#ef4444',
-        belowLabel: i18n.within, aboveLabel: i18n.over,
-      };
-    }
-    TmCharts.lines(canvas, {
-      xLabels: labels, series: series, points: pts, rays: rays, vlines: vlines,
-      unit: 'h', rightUnit: '%', pointLegend: pointLegend, fillBetween: fillBetween,
-    }, legend);
   });
 })();
 </script>

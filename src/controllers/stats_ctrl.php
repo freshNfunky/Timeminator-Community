@@ -16,8 +16,11 @@ function ctrl_stats_data(): void
 {
     require_perm('stats.view');
 
-    $from = (string) get('from', (new DateTimeImmutable('first day of this month'))->format('Y-m-d'));
+    // Default-Range muss mit der View (views/stats/index.php) synchron sein:
+    // letzte 90 Tage, damit am Monatsanfang und nach kurzen Buchungs-Pausen
+    // nicht leer gerendert wird.
     $to   = (string) get('to', (new DateTimeImmutable('now'))->format('Y-m-d'));
+    $from = (string) get('from', (new DateTimeImmutable('now'))->modify('-90 days')->format('Y-m-d'));
     $group = (string) get('group', 'project');       // client | project | track
     $gran  = (string) get('granularity', 'day');     // day | week | month
     $scopeId = (int) get('scope_id', 0);

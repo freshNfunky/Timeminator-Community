@@ -98,15 +98,16 @@ shows today / this week / this month at a glance, plus your latest entries.
 
 ![Dashboard with live timer and totals](Media/screenshots/01-dashboard.png)
 
-### Time entries — list and calendar
+### Time entries — list, week and month calendar
 
 Every booking lands in a filterable list with durations and running totals, or a
-color-coded **week calendar** you can drag to book. Each entry keeps its origin,
-so history stays stable.
+color-coded **week calendar** you can drag to book. The calendar also has a
+**month view** with a project breakdown per day. A single overlap guard enforces
+that one person has exactly one booking at any moment — manual entries, timers
+and internal processes all share the same check — and the dashboard's 8h bracket
+keeps the day counter honest. Each entry keeps its origin, so history stays stable.
 
-![Time entries list](Media/screenshots/02-entries-list.png)
-
-![Week calendar with color-coded bookings](Media/screenshots/04-calendar.png)
+![Time entries list and calendar](Media/screenshots/02-zeiteintraege.png)
 
 ### Clients → projects → work packages → tasks
 
@@ -114,12 +115,12 @@ A real hierarchy, not free-text tags. Clients hold projects, projects hold work
 packages, work packages and tasks classify each entry — with codes and colors.
 
 <p>
-  <img src="Media/screenshots/05-clients.png" width="49%" alt="Clients">
-  <img src="Media/screenshots/06-projects.png" width="49%" alt="Projects">
+  <img src="Media/screenshots/04-kunden.png" width="49%" alt="Clients">
+  <img src="Media/screenshots/05-projekte.png" width="49%" alt="Projects">
 </p>
 <p>
-  <img src="Media/screenshots/07-workpackages.png" width="49%" alt="Work packages">
-  <img src="Media/screenshots/08-tasks.png" width="49%" alt="Tasks">
+  <img src="Media/screenshots/06-arbeitspakete.png" width="49%" alt="Work packages">
+  <img src="Media/screenshots/07-aufgaben.png" width="49%" alt="Tasks">
 </p>
 
 ### Statistics, time series and proof views
@@ -130,8 +131,8 @@ rule-based filter with an optional cutover date — that works for any set of
 projects without hardcoding.
 
 <p>
-  <img src="Media/screenshots/03-statistics.png" width="49%" alt="Statistics">
-  <img src="Media/screenshots/09-proof-views.png" width="49%" alt="Saved proof views">
+  <img src="Media/screenshots/03-statistik.png" width="49%" alt="Statistics">
+  <img src="Media/screenshots/08-sichten.png" width="49%" alt="Saved proof views">
 </p>
 
 ### CSV import with per-batch rollback
@@ -142,10 +143,21 @@ a single batch if something was wrong.
 
 ### Team sentiment tracking
 
-Each user records a daily mood on a five-point scale with an optional note. The
+Each user records a **mood and flow score** on a five-point scale, either
+**daily** or in a single **weekly** take (admin choice). The picker lives right
+in the calendar as a compact emoji drop — same look as in Pro — and the
 **Stimmung** page shows a 60-day personal history as a colored sparkline and a
 team summary (average, response count, contributor count) over a 30-day window —
 aggregated only, with no individual rows and no names.
+
+### Project cockpit
+
+A dedicated **cockpit per project** shows a **Burn-Up** chart (actual vs. target
+hours, progress and forecast rays, ideal line to the deadline, and a budget-ok /
+over-budget area fill), a **Soll/Ist matrix** per team member × week with
+green/orange/red cells, a **tracker timeline** with progress, date-shift and
+meeting entries, and a **project-sentiment trend** (project vs. customer mood
+across progress reports).
 
 ### Roles, permissions, installer and updates
 
@@ -161,51 +173,34 @@ aggregated only, with no individual rows and no names.
 ## Community vs Pro
 
 The **Community Edition** is free, open source (MIT) and fully usable on its own.
-**[Timeminator Pro](https://timeminator.felixschaller.com)** is a separate,
-privately licensed codebase built on the same data model — so you are never
-locked in — that adds commercial-workflow features on top.
+**[Timeminator Pro](https://timeminator.com)** is a separate, privately licensed
+codebase built on the same data model — so you are never locked in — that adds
+commercial-workflow features on top.
 
 | | Community (free, MIT) | Pro |
 |---|:---:|:---:|
-| Live timer + manual bookings | ✓ | ✓ |
+| Live timer + manual bookings (no parallel bookings, 8h bracket) | ✓ | ✓ |
+| Week **and** month calendar views | ✓ | ✓ |
 | Clients → projects → work packages → tasks | ✓ | ✓ |
-| Time entries: filterable list + week calendar | ✓ | ✓ |
+| Time entries: filterable list + calendar | ✓ | ✓ |
 | Statistics, time series, two-group comparison | ✓ | ✓ |
 | Saved proof / "Nachweis" views | ✓ | ✓ |
 | CSV import with per-batch rollback | ✓ | ✓ |
-| Team sentiment tracking | ✓ | ✓ |
+| Team sentiment tracking (daily / weekly mood + flow) | ✓ | ✓ |
+| Project cockpit: burn-up, soll/ist matrix, tracker timeline | ✓ | ✓ |
+| Progress + date-shift + meeting tracker entries | ✓ | ✓ |
 | Roles & permissions (admin, user, custom roles) | ✓ | ✓ |
 | MySQL + SQLite, web installer, in-app updater | ✓ | ✓ |
-| Target/budget (Soll) planning + live progress report | — | ✓ |
+| Target/budget (Soll) planning + live progress reporting | — | ✓ |
 | Offer / quote calculator (reusable blocks, Typst output) | — | ✓ |
-| Invoicing + accounting connectors (lexoffice) | — | ✓ |
+| Invoicing + receivables / accounts management | — | ✓ |
+| Accounting connectors (lexoffice and partners) | — | ✓ |
+| Employee cockpit (contracts, overtime, carryovers) | — | ✓ |
+| Company cockpit (portfolio heatmap, resource conflicts) | — | ✓ |
 | Extended role management (Rollen Pro) | — | ✓ |
+| External calendar sources (CalDAV, iCal subscriptions) | — | ✓ |
 
-See the Pro feature list and pricing at **<https://timeminator.felixschaller.com>**.
-
----
-
-## Screenshots
-
-A quick tour of the app (anonymized demo data).
-
-**Dashboard** — live timer, today / week / month totals and your latest bookings
-![Dashboard](Media/screenshots/01-dashboard.png)
-
-**Statistics** — hours per project, weekly trend and a two-group comparison
-![Statistics](Media/screenshots/03-statistics.png)
-
-**Time entries** — a filterable list with durations and running totals
-![Time entries](Media/screenshots/02-entries-list.png)
-
-**Projects** — per-client projects with codes and colors
-![Projects](Media/screenshots/06-projects.png)
-
-**Tasks** — typed activities per project and work package
-![Tasks](Media/screenshots/08-tasks.png)
-
-**Audit views** — generic, rule-based filtering of entries (optional cutover date)
-![Audit views](Media/screenshots/09-proof-views.png)
+See the Pro feature list and pricing at **<https://timeminator.com>**.
 
 ## Requirements
 
@@ -370,5 +365,5 @@ Composer" constraint so the tool stays trivial to self-host.
 ---
 
 <sub>The Timeminator mascot and product art are shared with
-<a href="https://timeminator.felixschaller.com">Timeminator Pro</a>.
-Made by <a href="https://felixschaller.com">FelixSchallerCOM</a>.</sub>
+<a href="https://timeminator.com">Timeminator Pro</a>.
+Made by FelixSchallerCOM.</sub>
