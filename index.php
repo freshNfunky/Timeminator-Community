@@ -12,6 +12,9 @@ app_boot();
 require __DIR__ . '/src/Repo.php';
 require __DIR__ . '/src/Stats.php';
 require __DIR__ . '/src/Settings.php';
+require __DIR__ . '/src/CalendarLocale.php';
+require __DIR__ . '/src/DayBracket.php';
+require __DIR__ . '/src/WorkdaySpans.php';
 require __DIR__ . '/src/Updater.php';
 require __DIR__ . '/src/Registration.php';
 require __DIR__ . '/src/Banners.php';
@@ -47,6 +50,7 @@ require __DIR__ . '/src/controllers/imports_ctrl.php';
 require __DIR__ . '/src/controllers/pro_teaser_ctrl.php';
 require __DIR__ . '/src/controllers/banners_ctrl.php';
 require __DIR__ . '/src/controllers/password_reset_ctrl.php';
+require __DIR__ . '/src/controllers/profile_ctrl.php';
 require __DIR__ . '/src/controllers/cron_ctrl.php';
 require __DIR__ . '/src/Sentiment.php';
 require __DIR__ . '/src/controllers/sentiment_ctrl.php';
@@ -114,6 +118,7 @@ $routes = [
 
     // v1.0 F1: Mitarbeiter-Cockpit
     'cockpit_employees'       => 'ctrl_cockpit_employees',
+    'cockpit_employee'        => 'ctrl_cockpit_employee',
     'cockpit_employee_weeks'  => 'ctrl_cockpit_employee_weeks',
     'employee_terms_save'     => 'ctrl_employee_terms_save',
     'employee_terms_delete'   => 'ctrl_employee_terms_delete',
@@ -131,6 +136,7 @@ $routes = [
     'cockpit_plan_delete'          => 'ctrl_cockpit_plan_delete',
     'cockpit_date_shift_save'      => 'ctrl_cockpit_date_shift_save',
     'cockpit_burnup_data'          => 'ctrl_cockpit_burnup_data',
+    'cockpit_sentiment_data'       => 'ctrl_cockpit_sentiment_data',
 
     // v1.0 F3: Firmen-Cockpit (teaser-heavy)
     'cockpit_company'              => 'ctrl_cockpit_company',
@@ -139,7 +145,14 @@ $routes = [
     'stats_data'   => 'ctrl_stats_data',
     'sentiment'            => 'ctrl_sentiment_index',
     'sentiment_save'       => 'ctrl_sentiment_save',
+    'sentiment_save_week'  => 'ctrl_sentiment_save_week',
+    'sentiment_quick'      => 'ctrl_sentiment_quick',
     'sentiment_fill_week'  => 'ctrl_sentiment_fill_week',
+    'sentiment_api_save'       => 'ctrl_sentiment_api_save',
+    'sentiment_api_fill_week'  => 'ctrl_sentiment_api_fill_week',
+    'sentiment_granularity_api'=> 'ctrl_sentiment_granularity_api',
+    'profile'                  => 'ctrl_profile_index',
+    'profile_save'             => 'ctrl_profile_save',
     'scopes'       => 'ctrl_scopes_index',
     'scope_save'   => 'ctrl_scope_save',
     'scope_delete' => 'ctrl_scope_delete',

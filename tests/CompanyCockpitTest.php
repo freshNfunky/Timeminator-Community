@@ -133,4 +133,109 @@ final class CompanyCockpitTest extends TestCase
         self::assertSame(1,   (int) $rows[0]['project_count']);
         self::assertSame(120, (int) $rows[0]['minutes']);
     }
+
+    public function testCompanyCockpitMovesSubtitleProseIntoInfoTooltips(): void
+    {
+        // Felix-Feedback 2026-11-07: Prosa-Hinweise in den Card-Heads gehoeren
+        // als ⓘ-Tooltip, nicht als sichtbare muted-Zeile. Betrifft alle vier
+        // Subtitles im Firmen-Cockpit (Jahreskennzahlen, Woche Ist/Soll,
+        // Projekte nach Projektart, Interne Prozesse).
+        $view = (string) file_get_contents(dirname(__DIR__) . '/views/cockpit/company.php');
+
+        // Alle vier Prosa-span.muted sind weg (die kurzen muted-Zellen in der
+        // Matrix mit font-size:11px bleiben - das sind Daten, keine Prosa).
+        foreach ([
+            'company_kpis_subtitle',
+            'company_matrix_subtitle',
+            'company_cats_subtitle',
+            'company_processes_subtitle',
+        ] as $oldKey) {
+            self::assertStringNotContainsString(
+                "span class=\"muted\"><?= h(t('cockpit.$oldKey'",
+                $view,
+                "Prosa-Subtitle $oldKey darf nicht mehr als sichtbarer muted-span stehen"
+            );
+            self::assertStringNotContainsString(
+                "span class=\"muted\"><?= h(sprintf(t('cockpit.$oldKey'",
+                $view,
+                "Prosa-Subtitle $oldKey (sprintf-Variante) darf nicht mehr als muted-span stehen"
+            );
+        }
+
+        // Intro-Prosa am Firmen-Cockpit-Head muss ebenfalls Tooltip sein.
+        self::assertStringNotContainsString(
+            "p class=\"muted\" style=\"margin-bottom:0\">\n    <?= h(t('cockpit.company_intro'",
+            $view,
+            'Intro-Prosa am Firmen-Cockpit-Head muss als sichtbarer muted-Absatz entfallen'
+        );
+
+        // Stattdessen: tip()-Aufruf pro Card-Head.
+        foreach ([
+            'cockpit.company_intro',
+            'cockpit.company_kpis_subtitle',
+            'cockpit.company_matrix_subtitle',
+            'cockpit.company_cats_subtitle_tip',
+            'cockpit.company_processes_subtitle_tip',
+        ] as $tipKey) {
+            self::assertStringContainsString(
+                "tip('$tipKey')",
+                $view,
+                "tip()-Aufruf fuer $tipKey fehlt"
+            );
+        }
+
+        // Die Prosa-Fuss-Zeile unter der Matrix ist weg und ihre Erklaerung
+        // wandert in den Matrix-Tooltip mit rein.
+        self::assertStringNotContainsString(
+            'company_matrix_legend',
+            $view,
+            'Matrix-Legend-Prosa am Tabellen-Fuss muss entfallen (Inhalt landet im Head-Tooltip)'
+        );
+        $de = include dirname(__DIR__) . '/lang/de.php';
+        self::assertStringContainsString(
+            'gruen = Soll gesetzt',
+            $de['cockpit.company_matrix_subtitle'],
+            'Matrix-Tooltip muss die Farblegende enthalten (konsolidiert aus matrix_legend)'
+        );
+    }
+
+    public function testProTeaserTilesShowFictiveDemoNumbersInsteadOfDashPlaceholder(): void
+    {
+        // Felix-Feedback 2026-11-06: die Pro-Teaser-Kacheln im Firmen-
+        // Cockpit sollen keine "— €"-Platzhalter mehr zeigen, sondern
+        // ausgegraute, deutlich als Beispiel markierte Zahlen. CSS-Klasse
+        // .tile-value-demo macht das visuell (gestrichelte Unterstreichung,
+        // opacity .6).
+        $view = (string) file_get_contents(dirname(__DIR__) . '/views/cockpit/company.php');
+        $css  = (string) file_get_contents(dirname(__DIR__) . '/assets/app.css');
+
+        // Mindestens die drei prominenten Tiles haben konkrete Beispielzahlen.
+        self::assertStringContainsString('142.800 €', $view, 'Angebote-gewonnen-Teaser braucht fiktive Beispielzahl');
+        self::assertStringContainsString('98.650 €',  $view, 'Rechnungsstellung-Teaser braucht fiktive Beispielzahl');
+        self::assertStringContainsString('+ 38.250 €', $view, 'Ergebnis-Teaser braucht fiktive Beispielzahl inkl. Vorzeichen');
+
+        // Alle Werte tragen die CSS-Klasse "tile-value-demo", damit sie
+        // optisch als Beispiel durchgestrichen/ausgegraut werden.
+        self::assertMatchesRegularExpression(
+            '/tile-value tile-value-demo/',
+            $view,
+            'Teaser-Werte muessen die CSS-Klasse tile-value-demo tragen'
+        );
+
+        // Fallback-Platzhalter "— €" nur noch dort erlaubt, wo keine
+        // konkrete Beispielzahl Sinn ergibt (hier: nirgends im Firmen-
+        // Cockpit mehr).
+        self::assertStringNotContainsString(
+            '>— €</div>',
+            $view,
+            'Alte Dash-Platzhalter "— €" muessen aus den Teaser-Tiles raus'
+        );
+
+        // CSS kennt die Demo-Markierung (dashed underline + opacity).
+        self::assertMatchesRegularExpression(
+            '/\.tile-value-demo\s*\{[^}]*text-decoration:\s*underline\s+dashed/',
+            $css,
+            'CSS .tile-value-demo braucht dashed underline (visuell Beispiel-Markierung)'
+        );
+    }
 }

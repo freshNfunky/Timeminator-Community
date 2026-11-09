@@ -60,7 +60,12 @@ if ($__isCalendar) {
 </form>
 
 <?php if ($__isCalendar): ?>
-  <?php require __DIR__ . '/calendar_week.php'; ?>
+  <?php $__span = ($calendarSpan ?? 'week') === 'month' ? 'month' : 'week'; ?>
+  <?php if ($__span === 'month'): ?>
+    <?php require __DIR__ . '/calendar_month.php'; ?>
+  <?php else: ?>
+    <?php require __DIR__ . '/calendar_week.php'; ?>
+  <?php endif; ?>
 <?php else: ?>
 <?php
 // v1.0: Liste zeigt alle 3 Typen gemischt, nach Datum sortiert, mit Typ-Pill.
@@ -72,7 +77,7 @@ foreach ($entries as $__e) {
         'sort'  => (string) $__e['start_ts'],
         'start' => (string) $__e['start_ts'],
         'end'   => (string) ($__e['end_ts'] ?? ''),
-        'label' => (string) ($__e['client_name'] ?? '') . ' / ' . (string) ($__e['project_name'] ?? ''),
+        'label' => entry_client_display($__e) . ' / ' . (string) ($__e['project_name'] ?? ''),
         'sub'   => (string) ($__e['task_name'] ?? ''),
         'note'  => (string) ($__e['note'] ?? ''),
         'dur'   => (int) ($__e['duration_min'] ?? 0),
@@ -206,23 +211,30 @@ foreach (($processes ?? []) as $__p) {
       </select>
     </label>
 
-    <label id="calTaskWrap"><?= h(t('cal.dialog_task', 'Aufgabe')) ?>
-      <select id="calTask">
-        <option value=""><?= h(t('dash.task_placeholder', 'Aufgabe waehlen …')) ?></option>
-        <?php
-          $__curGroup = null;
-          foreach (($tasks ?? []) as $__t):
-            $__g = (string) ($__t['client_name'] ?? '') . ' / ' . (string) ($__t['project_name'] ?? '');
-            if ($__g !== $__curGroup) {
-              if ($__curGroup !== null) echo '</optgroup>';
-              echo '<optgroup label="' . h($__g) . '">';
-              $__curGroup = $__g;
-            }
-        ?>
-          <option value="<?= (int) $__t['id'] ?>"><?= h((string) $__t['name']) ?></option>
-        <?php endforeach; if ($__curGroup !== null) echo '</optgroup>'; ?>
-      </select>
-    </label>
+    <?php /* Felix-Feedback 2026-11-09 (Fix #149): Pro-Variante hat
+       hierarchische Auswahl Projektart -> Kunde -> Projekt -> Arbeitspaket
+       -> Aufgabe mit kaskadierender Filterung, plus "+ Neue Aufgabe" inline.
+       Statt hunderte flache Aufgaben-Optionen zu rendern, binden wir hier
+       das task_picker-Partial ein - das hat die kaskadierende UX bereits. */ ?>
+    <div id="calTaskWrap" class="cal-dialog-task-picker">
+      <?php /* Projektart-Filter als erster Schritt (noch einen Level oberhalb
+         von Kunde). Felix: "Internes Projekt braucht keinen Kunden; bei
+         Foerderprojekt steht statt Kunde der Projekttraeger." */ ?>
+      <label><?= h(t('projects.category', 'Projektart')) ?>
+        <select class="tp-cat" aria-label="<?= h(t('projects.category', 'Projektart')) ?>">
+          <option value=""><?= h(t('tp.all_categories', 'Alle Projektarten')) ?></option>
+          <?php foreach (($projectCategories ?? []) as $__pc): ?>
+            <option value="<?= (int) $__pc['id'] ?>"><?= h((string) $__pc['label']) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </label>
+      <?php
+        // Partial rendert die vier Kaskaden-Selects + Inline-"+ Neue Aufgabe".
+        $selectedTaskId = 0;
+        $wrapClass = 'tp-stack';
+        require __DIR__ . '/../partials/task_picker.php';
+      ?>
+    </div>
 
     <div class="row" id="calTimeRow">
       <label class="grow"><?= h(t('entries.start', 'Start')) ?>
@@ -285,6 +297,30 @@ foreach (($processes ?? []) as $__p) {
         'title_edit'     => t('cal.dialog_edit', 'Eintrag bearbeiten'),
         'confirm_delete' => t('cal.dialog_confirm_delete', 'Eintrag loeschen?'),
         'err_generic'    => t('cal.dialog_err_generic', 'Konnte nicht speichern.'),
+        // #146: Label des Abwesenheits-Optgroup, damit JS die Default-
+        // Urlaubsoption im Dialog findet.
+        'group_absences' => t('cal.group_absences', 'Abwesenheiten'),
+        // #184 i18n-Audit: JS-Validierungsmeldungen laufen jetzt auch ueber
+        // lang-Files, damit DE/EN-Switch keinen deutschen Rest zurueck laesst.
+        'err_task_time_required' => t('cal.err_task_time_required', 'Aufgabe, Start und Ende sind erforderlich.'),
+        'err_new_task_name'      => t('cal.err_new_task_name',      'Bitte Namen der neuen Aufgabe eingeben.'),
+        'err_new_task_project'   => t('cal.err_new_task_project',   'Fuer eine neue Aufgabe muss ein Projekt ausgewaehlt sein.'),
+        'err_time_required'      => t('cal.err_time_required',      'Start und Ende sind erforderlich.'),
+        'err_from_date_required' => t('cal.err_from_date_required', 'Von-Datum ist erforderlich.'),
+        'confirm_delete_fallback' => t('cal.confirm_delete_fallback','Wirklich loeschen?'),
+        'cat_foerder_label'      => t('cat.foerder_client_label',   'Projekttraeger'),
     ],
+    // #149/#150: Mapping project-category-id -> {ckey, needs_client,
+    // client_label}. Dialog braucht needs_client (bei Internes Projekt
+    // entfaellt das Kunde-Feld komplett) und client_label (bei
+    // Foerderprojekt steht statt "Kunde" dort "Projekttraeger").
+    'projectCats' => array_reduce(($projectCategories ?? []), static function (array $acc, array $c): array {
+        $acc[(string) $c['id']] = [
+            'ckey'         => (string) ($c['ckey'] ?? ''),
+            'needs_client' => (int) ($c['needs_client'] ?? 1),
+            'client_label' => (string) ($c['client_label'] ?? ''),
+        ];
+        return $acc;
+    }, []),
 ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
 <script src="<?= h(asset('calendar.js')) ?>" nonce="<?= h(csp_nonce()) ?>"></script>

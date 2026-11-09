@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 function ctrl_cockpit_company(): void
 {
-    require_perm('stats.view');
+    require_perm('cockpit.company.view');
 
     // Jahresauswahl: aktuelles Jahr als Default; Range 2020..aktuelles Jahr.
     $thisYear  = (int) (new DateTimeImmutable('today'))->format('Y');

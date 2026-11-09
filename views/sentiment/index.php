@@ -11,10 +11,17 @@
 $selectedMood = $today && isset($today['mood']) && $today['mood'] !== null ? (int) $today['mood'] : 0;
 $selectedFlow = $today && isset($today['flow']) && $today['flow'] !== null ? (int) $today['flow'] : 0;
 $noteValue    = (string) ($today['note'] ?? '');
+$canRecord    = $canRecord ?? Auth::can('sentiment.record');
+$__weekMode   = ($granularity ?? 'day') === 'week';
+$__cardTitle  = $__weekMode
+    ? t('sent.week_title', 'Dein Eintrag diese Woche')
+    : t('sent.today_title', 'Dein Eintrag heute');
+$__saveRoute  = $__weekMode ? route('sentiment_save_week') : route('sentiment_save');
 ?>
+<?php if ($canRecord): ?>
 <div class="card">
-  <h2><?= h(t('sent.today_title', 'Dein Eintrag heute')) ?><?= tip('sent.today_intro_v2') ?></h2>
-  <form method="post" action="<?= h(route('sentiment_save')) ?>" class="sentiment-form">
+  <h2><?= h($__cardTitle) ?><?= tip('sent.today_intro_v2') ?></h2>
+  <form method="post" action="<?= h($__saveRoute) ?>" class="sentiment-form">
     <?= csrf_field() ?>
     <input type="hidden" name="as_of" value="<?= h((new DateTimeImmutable('today'))->format('Y-m-d')) ?>">
 
@@ -69,31 +76,14 @@ $noteValue    = (string) ($today['note'] ?? '');
     <?php endif; ?>
   </form>
 </div>
+<?php endif; /* canRecord personal edit */ ?>
 
-<?php if (($granularity ?? 'day') === 'week'): ?>
-<div class="card">
-  <h2><?= h(t('sent.week_preset_h2', 'Wochen-Preset')) ?><?= tip('sent.week_preset_hint', 'Setzt eine Dimension (Mood oder Flow) auf einmal fuer alle noch leeren Tage der laufenden Woche. Tage mit bereits individuell gesetztem Wert bleiben unberuehrt.') ?></h2>
-  <div class="row">
-    <?php foreach (Sentiment::DIMENSIONS as $__dim): ?>
-      <form method="post" action="<?= h(route('sentiment_fill_week')) ?>" class="sentiment-week-form">
-        <?= csrf_field() ?>
-        <input type="hidden" name="dim" value="<?= h($__dim) ?>">
-        <h3 style="margin:0 0 8px"><?= h($__dim === 'mood' ? t('sent.mood_label', 'Mood') : t('sent.flow_label', 'Flow')) ?> <?= h(t('sent.for_week', 'fuer diese Woche')) ?></h3>
-        <div class="sentiment-scale" role="radiogroup">
-          <?php for ($__s = 1; $__s <= 5; $__s++): ?>
-            <label class="sentiment-pick">
-              <input type="radio" name="score" value="<?= $__s ?>" required>
-              <span class="sentiment-emoji" aria-hidden="true"><?= h($__dim === 'mood' ? Sentiment::moodEmoji($__s) : Sentiment::flowEmoji($__s)) ?></span>
-            </label>
-          <?php endfor; ?>
-        </div>
-        <div class="form-actions"><button class="btn btn-sm" type="submit"><?= h(t('sent.fill_week_btn', 'Woche vorbelegen')) ?></button></div>
-      </form>
-    <?php endforeach; ?>
-  </div>
-</div>
-<?php endif; ?>
+<?php /* Felix-Feedback 2026-11-09 (#117): "Wochen-Preset"-Karte komplett
+   entfernt. Die Entscheidung woechentlich-vs-taeglich liegt jetzt in den
+   Benutzereinstellungen, und die "Dein Eintrag heute"-Karte darueber ist
+   dynamisch - zweimal die gleichen Buttons waere redundant. */ ?>
 
+<?php if ($canRecord): ?>
 <div class="card">
   <h2><?= h(t('sent.history_title', 'Dein Verlauf (60 Tage)')) ?></h2>
   <?php if (!$history): ?>
@@ -176,6 +166,7 @@ $noteValue    = (string) ($today['note'] ?? '');
     </table>
   <?php endif; ?>
 </div>
+<?php endif; /* history card */ ?>
 
 <?php if ($canTeam): ?>
   <div class="card">
@@ -256,5 +247,42 @@ $noteValue    = (string) ($today['note'] ?? '');
         </div>
       </div>
     <?php endif; ?>
+
+    <?php /* Felix-Feedback 2026-11-08 (#101): "wer alles in diesem Team drin
+       ist" muss sichtbar werden. Die Liste erklaert, aus wessen Daten sich
+       die Aggregate zusammensetzen - und begrenzt Scope gegen Belegschaft. */ ?>
+    <?php if (!empty($teamLabels)): ?>
+      <h3><?= h(sprintf(t('sent.team_members_h3', 'Teammitglieder (%d)'), count($teamLabels))) ?></h3>
+      <ul class="sent-team-members">
+        <?php foreach ($teamLabels as $__u): ?>
+          <li><?= h((string) $__u['label']) ?></li>
+        <?php endforeach; ?>
+      </ul>
+    <?php endif; ?>
   </div>
+
+  <?php /* Felix-Feedback 2026-11-08 (#102): Mitarbeiter-x-Woche-Smiley-Matrix
+     (Team-Scope). Y = Teammitglieder, X = letzte 12 ISO-Wochen. */ ?>
+  <?php if (!empty($teamMatrix) && !empty($teamLabels)): ?>
+    <?php
+      $__matrixLabels = $teamLabels;
+      $__matrixData   = $teamMatrix;
+      $__matrixH2     = t('sent.matrix_team_title', 'Stimmungs-Matrix (Team)');
+      $__matrixHint   = t('sent.matrix_team_hint', 'Wochen-Durchschnitt pro Teammitglied. Smiley = gerundeter Durchschnitt; "—" = keine Antworten in dieser Woche.');
+      require __DIR__ . '/_mood_matrix.php';
+    ?>
+  <?php endif; ?>
+<?php endif; ?>
+
+<?php /* Felix-Feedback 2026-11-08 (#104): Belegschafts-Matrix - nur fuer
+   sentiment.view_company (Geschaeftsleitung-nah). Fuer Team-Meeting-
+   Moderation gedacht. */ ?>
+<?php if (!empty($canCompany) && !empty($companyMatrix) && !empty($companyLabels)): ?>
+  <?php
+    $__matrixLabels = $companyLabels;
+    $__matrixData   = $companyMatrix;
+    $__matrixH2     = t('sent.matrix_company_title', 'Stimmungs-Matrix (Belegschaft)');
+    $__matrixHint   = t('sent.matrix_company_hint', 'Wochen-Durchschnitt fuer alle aktiven Mitarbeiter. Fuer Team-Meeting-Moderation durch die Geschaeftsleitung.');
+    require __DIR__ . '/_mood_matrix.php';
+  ?>
 <?php endif; ?>

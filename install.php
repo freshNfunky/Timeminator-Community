@@ -57,9 +57,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $tz = trim((string) ($_POST['timezone'] ?? 'Europe/Berlin')) ?: 'Europe/Berlin';
 
         $defaultManifest = 'https://api.github.com/repos/freshNfunky/Timeminator-Community/releases/latest';
-        $defaultRegistration = 'https://license.felixschaller.com/timeminator-registry/register.php';
+        // Registration is opt-in only; no default endpoint is shipped. Admins
+        // that run their own license/registry server can fill this in.
+        $defaultRegistration = '';
         $manifestUrl = trim((string) ($_POST['update_manifest_url'] ?? $defaultManifest)) ?: $defaultManifest;
-        $registrationUrl = trim((string) ($_POST['registration_endpoint'] ?? $defaultRegistration)) ?: $defaultRegistration;
+        $registrationUrl = trim((string) ($_POST['registration_endpoint'] ?? $defaultRegistration));
         $updateDisabled = !empty($_POST['disable_update_check']);
         $registrationDisabled = !empty($_POST['disable_registration']);
         if ($manifestUrl !== '' && !preg_match('~^https?://~i', $manifestUrl)) {
@@ -86,7 +88,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             'secure_cookies' => (($_SERVER['HTTPS'] ?? '') === 'on'),
             'app_name' => trim((string) ($_POST['app_name'] ?? 'Timeminator Community')) ?: 'Timeminator Community',
             'debug' => false,
-            'pro_url' => 'https://timeminator.felixschaller.com',
+            'pro_url' => 'https://timeminator.com',
             'update_manifest_url' => $manifestUrl,
             'registration_endpoint' => $registrationUrl,
         ];

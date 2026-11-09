@@ -5,7 +5,10 @@ declare(strict_types=1);
 
 function ctrl_users_index(): void
 {
-    require_perm('admin.users');
+    // Felix-Feedback 2026-11-08 (#98): HR + GL + Admin kommen rein, um
+    // Vertragsdaten zu pflegen. Die reinen User-Felder (Username, Rolle,
+    // Passwort-Reset) bleiben via View-Gate Admin-only, siehe users.php.
+    require_any_perm('admin.users', 'employees.manage');
     $editId = (int) get('edit', 0);
     $edit = $editId ? DB::one('SELECT * FROM users WHERE id = ?', [$editId]) : null;
     $year = (int) (new DateTimeImmutable('today'))->format('Y');
@@ -14,7 +17,11 @@ function ctrl_users_index(): void
         'roles'         => DB::all('SELECT * FROM roles ORDER BY label'),
         'edit'          => $edit,
         'terms_history' => $edit ? EmployeeRepo::history($editId) : [],
-        'carryover'     => $edit ? EmployeeRepo::carryover($editId, $year) : ['vacation_days' => 0, 'overtime_hours' => 0],
+        // Felix-Feedback 2026-11-07: Default beim NEUEN Carryover soll der
+        // volle Jahres-Urlaubsanspruch sein, nicht 0. Dafuer muss die View
+        // "noch nie gespeichert" von "0 persistiert" unterscheiden koennen -
+        // wir reichen daher null durch, wenn in der DB keine Zeile existiert.
+        'carryover'     => $edit ? EmployeeRepo::carryoverRow($editId, $year) : null,
         'carryover_year'=> $year,
         'holiday_catalog' => class_exists('Holidays') ? Holidays::catalog() : [],
     ], t('nav.users'));
@@ -23,7 +30,7 @@ function ctrl_users_index(): void
 /** v1.0 F1: speichere Vertragsstand (Beschaeftigungsart, Wochenstunden, Urlaubsanspruch) ab Datum. */
 function ctrl_employee_terms_save(): void
 {
-    require_perm('admin.users');
+    require_perm('employees.manage');
     csrf_check();
     $userId = post_int('user_id');
     $validFrom = trim((string) post('valid_from'));
@@ -45,7 +52,7 @@ function ctrl_employee_terms_save(): void
 
 function ctrl_employee_terms_delete(): void
 {
-    require_perm('admin.users');
+    require_perm('employees.manage');
     csrf_check();
     $termId = post_int('id');
     $userId = post_int('user_id');
@@ -56,7 +63,7 @@ function ctrl_employee_terms_delete(): void
 /** v1.0 F1: Jahresuebertrag (Resturlaub, Ueberstundensaldo) fuer das laufende Jahr setzen. */
 function ctrl_account_carryover_save(): void
 {
-    require_perm('admin.users');
+    require_perm('employees.manage');
     csrf_check();
     $userId = post_int('user_id');
     $year = (int) post('year', (int) (new DateTimeImmutable('today'))->format('Y'));

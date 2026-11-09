@@ -5,7 +5,8 @@
  */
 $accounts = array_keys(AbsenceRepo::ACCOUNTS);
 ?>
-<h1 class="page-title"><?= h(t('absence_cat.h1', 'Abwesenheitsarten')) ?><?= tip('absence_cat.help', 'Vorlagen fuer Abwesenheiten. Konto steuert welche Logik (Urlaubskonto / Ueberstundenkonto / nur Statistik) spaeter in F1 angewendet wird — vorerst nur Anzeige.') ?></h1>
+<?php /* Fix #144: page-title via Layout-Shell + $__titleTip. */
+$__titleTip = 'absence_cat.help'; ?>
 
 <div class="card">
   <table class="table">

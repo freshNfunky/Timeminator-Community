@@ -19,13 +19,18 @@ $wrapClass = $wrapClass ?? '';
 // Derive the three parent sets from $tasks so the controllers don't have
 // to pass them separately. Each parent is sorted by name for the UI.
 $clients = [];       // id => name
-$projects = [];      // id => ['name', 'client_id']
+$projects = [];      // id => ['name', 'client_id', 'category_ckey', 'category_label']
 $workpackages = [];  // id => ['name', 'project_id', 'client_id']
 foreach ($tasks as $t) {
     $clients[(int) $t['client_id']] = (string) $t['client_name'];
     $projects[(int) $t['project_id']] = [
         'name' => (string) $t['project_name'],
         'client_id' => (int) $t['client_id'],
+        // Felix-Feedback 2026-11-09 (#143): Projektart in der Option-Label
+        // mitfuehren, damit Felix intern / extern / Foerder schon im
+        // Dropdown unterscheiden kann.
+        'category_label' => (string) ($t['project_category_label'] ?? $t['category_label'] ?? ''),
+        'category_ckey'  => (string) ($t['project_category_ckey']  ?? $t['category_ckey']  ?? ''),
     ];
     $wpId = (int) ($t['work_package_id'] ?? 0);
     if ($wpId > 0) {
@@ -50,8 +55,15 @@ foreach ($tasks as $t) {
     }
 }
 ?>
-<div class="task-picker <?= h($wrapClass) ?>" data-selected-task="<?= (int) $selectedTaskId ?>">
-  <label><?= h(t('nav.clients')) ?>
+<div class="task-picker <?= h($wrapClass) ?>" data-selected-task="<?= (int) $selectedTaskId ?>"
+     data-lock-hint-cat="<?= h(t('projects.client_lock_hint', 'Zuerst Projektart waehlen')) ?>"
+     data-lock-hint-client="<?= h(t('projects.client_lock_short', 'Zuerst Kunde waehlen')) ?>"
+     data-lock-hint-project="<?= h(t('projects.project_lock_hint', 'Zuerst Projekt waehlen')) ?>">
+  <?php /* Felix-Feedback 2026-11-09 (Fix #150): Label "Kunde" / "Projekt-
+     traeger" wird im Dialog dynamisch nach Projektart gesetzt; bei
+     internem Projekt wird das ganze Label versteckt. */ ?>
+  <label class="tp-client-label" data-base-label="<?= h(t('nav.clients')) ?>">
+    <span class="tp-client-label-text"><?= h(t('nav.clients')) ?></span>
     <select class="tp-client" aria-label="<?= h(t('tp.client_filter', 'Kunde filtern')) ?>">
       <option value=""><?= h(t('tp.all_clients', 'Alle Kunden')) ?></option>
       <?php foreach ($clients as $cid => $cname): ?>
@@ -62,8 +74,16 @@ foreach ($tasks as $t) {
   <label><?= h(t('projects.col_project')) ?>
     <select class="tp-project" aria-label="<?= h(t('tp.project_filter', 'Projekt filtern')) ?>">
       <option value=""><?= h(t('tp.all_projects', 'Alle Projekte')) ?></option>
+      <?php /* Felix-Feedback 2026-11-09 (Fix #159): Kategorie-Prefix im
+         Option-Text (z.B. "[Kundenprojekt] Antriebsstudie") ist
+         redundant - die Projektart wird oben bereits gewaehlt und
+         filtert die Projektliste. data-cat-ckey + data-cat-label
+         bleiben als Datenattribute (fuer JS-Filterung + Edit-Modus). */ ?>
       <?php foreach ($projects as $pid => $p): ?>
-        <option value="<?= (int) $pid ?>" data-client="<?= (int) $p['client_id'] ?>"><?= h($p['name']) ?></option>
+        <option value="<?= (int) $pid ?>"
+                data-client="<?= (int) $p['client_id'] ?>"
+                data-cat-ckey="<?= h($p['category_ckey']) ?>"
+                data-cat-label="<?= h($p['category_label']) ?>"><?= h($p['name']) ?></option>
       <?php endforeach; ?>
     </select>
   </label>
@@ -88,6 +108,29 @@ foreach ($tasks as $t) {
           data-wp="<?= (int) ($t['work_package_id'] ?? 0) ?>"
           <?= $selectedTaskId == (int) $t['id'] ? 'selected' : '' ?>><?= h($t['name']) ?></option>
       <?php endforeach; ?>
+      <?php /* Felix-Feedback 2026-11-09 (Fix #141): Pro-Variante erlaubt
+         "+ Neue Aufgabe" als letzter Option - Klick blendet unter dem
+         Select ein Inline-Input ein, das beim Speichern eine neue Task im
+         gefilterten Projekt anlegt. */ ?>
+      <option value="__new__" class="tp-opt-new">+ <?= h(t('tp.new_task', 'Neue Aufgabe')) ?></option>
     </select>
   </label>
+  <?php /* Inline-Create-Panel. Default versteckt, JS klappt es bei
+     task_id == __new__ aus und versteckt es sonst wieder. Die Parent-IDs
+     (Client/Projekt/Arbeitspaket) werden beim Submit per JS aus den
+     UX-Selects in die Hidden-Felder kopiert, damit der Server weiss, zu
+     welchem Projekt die neue Aufgabe gehoert. */ ?>
+  <div class="tp-new-task" hidden>
+    <label><?= h(t('tp.new_task_name', 'Name der neuen Aufgabe')) ?>
+      <input type="text" name="new_task_name" class="tp-new-task-name"
+             maxlength="120"
+             placeholder="<?= h(t('tp.new_task_placeholder', 'z.B. Konzept, Review, Deployment')) ?>">
+    </label>
+    <input type="hidden" name="new_task_project_id" class="tp-new-task-project" value="">
+    <input type="hidden" name="new_task_wp_id"       class="tp-new-task-wp"      value="">
+    <?php /* Felix-Feedback 2026-11-09 (Fix #150): Prosa-Hinweis "Waehle
+       Kunde und Projekt oben" entfernt - durch die Hierarchie-Enforce-
+       Logik kann "+ Neue Aufgabe" ohnehin erst gewaehlt werden, wenn der
+       Parent-Context steht. */ ?>
+  </div>
 </div>

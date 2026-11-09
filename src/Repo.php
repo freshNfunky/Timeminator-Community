@@ -182,7 +182,7 @@ final class Repo
      * delay / extension) + optionales neues Datum. `progress` bleibt
      * eigener Typ wegen der 0..100-Zahl.
      */
-    public const TRACKER_TYPES_COMMUNITY = ['status_report', 'progress', 'date_shift'];
+    public const TRACKER_TYPES_COMMUNITY = ['status_report', 'progress', 'date_shift', 'meeting'];
     public const TRACKER_STATUSES = ['on_plan', 'delay', 'extension'];
 
     /**
@@ -281,6 +281,14 @@ final class Repo
             if (is_string($d) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) {
                 $dateValue = $d;
             }
+        } elseif ($type === 'meeting') {
+            // Meeting-Protokoll (Community-light, Felix-Feedback 2026-11-03):
+            // note = Titel+Teilnehmer+Notizen (vom Controller zusammengebaut),
+            // date_value = Meeting-Datum. Kein status noetig.
+            $d = $extra['date_value'] ?? null;
+            if (is_string($d) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) {
+                $dateValue = $d;
+            }
         } else {
             $s = $extra['status'] ?? null;
             if ($s !== null && in_array($s, self::TRACKER_STATUSES, true)) {
@@ -346,6 +354,8 @@ final class Repo
             'note'           => (string) $r['note'],
             'value'          => $r['value']          !== null ? (float) $r['value']          : null,
             'value_forecast' => $r['value_forecast'] !== null ? (float) $r['value_forecast'] : null,
+            'project_mood'   => $r['project_mood']   !== null ? (int) $r['project_mood']   : null,
+            'customer_mood'  => $r['customer_mood']  !== null ? (int) $r['customer_mood']  : null,
             'user_id'        => $r['user_id']        !== null ? (int) $r['user_id']        : null,
             'user_username'  => $r['user_username']  !== null ? (string) $r['user_username'] : null,
             'created_at'     => (string) $r['created_at'],
@@ -378,6 +388,14 @@ final class Repo
         $value     = $row['value'];
         $forecast  = $row['value_forecast'];
 
+        $projectMood  = $row['project_mood']  ?? null;
+        $customerMood = $row['customer_mood'] ?? null;
+        $moodClamp = function ($raw) {
+            if ($raw === null || $raw === '') return null;
+            $n = (int) $raw;
+            return ($n >= 1 && $n <= 5) ? $n : null;
+        };
+
         if ($row['type'] === 'progress') {
             if (array_key_exists('value', $extra)) {
                 $v = $extra['value'];
@@ -389,6 +407,17 @@ final class Repo
                 $f = $extra['value_forecast'];
                 $forecast = $f !== null ? max(0.0, min(100.0, (float) $f)) : null;
             }
+            // Pro-UI-Paritaet: as_of ist fuer progress editierbar.
+            if (array_key_exists('date_value', $extra)) {
+                $d = $extra['date_value'];
+                if (is_string($d) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) {
+                    $dateValue = $d;
+                } elseif ($d === null || $d === '') {
+                    $dateValue = null;
+                }
+            }
+            if (array_key_exists('project_mood',  $extra)) { $projectMood  = $moodClamp($extra['project_mood']); }
+            if (array_key_exists('customer_mood', $extra)) { $customerMood = $moodClamp($extra['customer_mood']); }
         } else {
             if (array_key_exists('status', $extra)) {
                 $s = $extra['status'];
@@ -419,9 +448,10 @@ final class Repo
 
         DB::run(
             'UPDATE project_trackers
-                SET note = ?, status = ?, date_value = ?, value = ?, value_forecast = ?, created_at = ?
+                SET note = ?, status = ?, date_value = ?, value = ?, value_forecast = ?,
+                    project_mood = ?, customer_mood = ?, created_at = ?
               WHERE id = ?',
-            [$note, $status, $dateValue, $value, $forecast, $ts, $id]
+            [$note, $status, $dateValue, $value, $forecast, $projectMood, $customerMood, $ts, $id]
         );
     }
 
@@ -516,10 +546,15 @@ final class Repo
 
     public static function workPackages(bool $activeOnly = false): array
     {
-        $sql = 'SELECT w.*, p.name AS project_name, p.client_id, c.name AS client_name
+        // Fix #178: category_ckey + category_label mitreichen, damit die
+        // Liste bei intern "Internes Projekt" statt den Sentinel-Kunden
+        // rendern kann (via entry_client_display).
+        $sql = 'SELECT w.*, p.name AS project_name, p.client_id, c.name AS client_name,
+                       pc.ckey AS category_ckey, pc.label AS category_label
                   FROM work_packages w
                   JOIN projects p ON p.id = w.project_id
-                  JOIN clients  c ON c.id = p.client_id';
+                  JOIN clients  c ON c.id = p.client_id
+             LEFT JOIN project_categories pc ON pc.id = p.category_id';
         if ($activeOnly) {
             $sql .= ' WHERE w.active = 1';
         }
@@ -559,12 +594,17 @@ final class Repo
 
     public static function tasks(bool $activeOnly = false): array
     {
+        // Felix-Feedback 2026-11-09 (#143): Projektart (intern / extern /
+        // Foerder) muss durchgereicht werden, damit Task-Picker im Entry-
+        // Formular die Kategorie im Projekt-Dropdown anzeigen kann.
         $sql = 'SELECT t.*, p.name AS project_name, p.client_id, c.name AS client_name,
-                       w.name AS work_package_name, w.code AS work_package_code
+                       w.name AS work_package_name, w.code AS work_package_code,
+                       pc.label AS project_category_label, pc.ckey AS project_category_ckey
                   FROM tasks t
                   JOIN projects p ON p.id = t.project_id
                   JOIN clients  c ON c.id = p.client_id
-             LEFT JOIN work_packages w ON w.id = t.work_package_id';
+             LEFT JOIN work_packages w ON w.id = t.work_package_id
+             LEFT JOIN project_categories pc ON pc.id = p.category_id';
         if ($activeOnly) {
             $sql .= ' WHERE t.active = 1';
         }
@@ -634,6 +674,92 @@ final class Repo
         return $t;
     }
 
+    /**
+     * Eine Person hat zu jedem Zeitpunkt genau eine Buchung: Zeitbuchungen und
+     * interne Prozesse duerfen sich nicht ueberlappen (Aneinanderstossen ist
+     * erlaubt). Ein laufender Timer zaehlt bis jetzt. Externe Kalendertermine
+     * sind keine Buchungen und duerfen parallel liegen. Abwesenheiten sind
+     * tageweise und hier nicht betroffen. Portiert aus Pro-PR #444 (Felix-
+     * Feedback 2026-11-04: "keine parallel-buchung möglich").
+     *
+     * Liefert die fertige Fehlermeldung oder null.
+     * @param ?int $exceptEntryId Zeitbuchung, die beim Bearbeiten ausgenommen ist
+     * @param ?int $exceptProcessId Prozess-Eintrag, der beim Bearbeiten ausgenommen ist
+     */
+    public static function bookingConflict(int $userId, string $start, ?string $end, ?int $exceptEntryId = null, ?int $exceptProcessId = null): ?string
+    {
+        $c = self::conflictingBooking($userId, $start, $end, $exceptEntryId, $exceptProcessId);
+        if ($c === null) {
+            return null;
+        }
+        $when = (string) $c['start_ts'];
+        $fromHm = substr($when, 11, 5);
+        $toHm   = substr((string) $c['end_ts'], 11, 5);
+        $date   = substr($when, 0, 10);
+        try {
+            $date = (new DateTimeImmutable($date))->format('d.m.Y');
+        } catch (Throwable) {
+            // keep ISO
+        }
+        // Community t() hat keinen Platzhalter-Support - deshalb strtr nach dem
+        // Resolve. Fallback-Text landet unten als Default im t().
+        return strtr(
+            t('bk.err_overlap', 'Ueberlappt mit :what (:date, :from-:to). Bitte Buchungen nicht parallel anlegen.'),
+            [
+                ':what' => (string) $c['label'],
+                ':date' => $date,
+                ':from' => $fromHm,
+                ':to'   => $toHm,
+            ]
+        );
+    }
+
+    /**
+     * Fruehestes Buchungsintervall, das [$start, $end) schneidet (Zeitbuchung
+     * oder Prozess), oder null. Ein laufender Timer zaehlt bis jetzt.
+     * @return ?array{kind:string,id:int,start_ts:string,end_ts:string,label:string}
+     */
+    public static function conflictingBooking(int $userId, string $start, ?string $end, ?int $exceptEntryId = null, ?int $exceptProcessId = null): ?array
+    {
+        if ($end === null || $end <= $start) {
+            $end = (new DateTimeImmutable($start))->modify('+1 minute')->format('Y-m-d H:i:s');
+        }
+        $now = now();
+        $time = DB::one(
+            'SELECT e.id, e.start_ts, COALESCE(e.end_ts, ?) AS end_ts, p.name AS label
+               FROM time_entries e JOIN projects p ON p.id = e.project_id
+              WHERE e.user_id = ? AND e.id <> ? AND e.start_ts < ? AND COALESCE(e.end_ts, ?) > ?
+              ORDER BY e.start_ts LIMIT 1',
+            [$now, $userId, (int) $exceptEntryId, $end, $now, $start]
+        );
+        $proc = DB::one(
+            'SELECT pe.id, pe.start_ts, pe.end_ts, c.label AS label
+               FROM process_entries pe JOIN process_categories c ON c.id = pe.category_id
+              WHERE pe.user_id = ? AND pe.id <> ? AND pe.start_ts < ? AND pe.end_ts > ?
+              ORDER BY pe.start_ts LIMIT 1',
+            [$userId, (int) $exceptProcessId, $end, $start]
+        );
+        if ($time && (!$proc || (string) $time['start_ts'] <= (string) $proc['start_ts'])) {
+            return [
+                'kind'     => 'time',
+                'id'       => (int) $time['id'],
+                'start_ts' => (string) $time['start_ts'],
+                'end_ts'   => (string) $time['end_ts'],
+                'label'    => (string) $time['label'],
+            ];
+        }
+        if (!$proc) {
+            return null;
+        }
+        return [
+            'kind'     => 'process',
+            'id'       => (int) $proc['id'],
+            'start_ts' => (string) $proc['start_ts'],
+            'end_ts'   => (string) $proc['end_ts'],
+            'label'    => (string) $proc['label'],
+        ];
+    }
+
     public static function createEntry(int $userId, int $taskId, string $start, ?string $end, string $note, string $source = 'manual'): int
     {
         $ctx = self::taskContext($taskId);
@@ -672,12 +798,14 @@ final class Repo
     {
         return DB::one(
             'SELECT e.*, t.name AS task_name, p.name AS project_name, c.name AS client_name,
-                    w.name AS work_package_name, w.code AS work_package_code
+                    w.name AS work_package_name, w.code AS work_package_code,
+                    pc.ckey AS project_category_ckey, pc.label AS project_category_label
                FROM time_entries e
                JOIN tasks t    ON t.id = e.task_id
                JOIN projects p ON p.id = e.project_id
                JOIN clients  c ON c.id = e.client_id
           LEFT JOIN work_packages w ON w.id = e.work_package_id
+          LEFT JOIN project_categories pc ON pc.id = p.category_id
               WHERE e.id = ?',
             [$id]
         );
@@ -688,12 +816,14 @@ final class Repo
     {
         return DB::one(
             'SELECT e.*, t.name AS task_name, p.name AS project_name, c.name AS client_name,
-                    w.name AS work_package_name
+                    w.name AS work_package_name,
+                    pc.ckey AS project_category_ckey, pc.label AS project_category_label
                FROM time_entries e
                JOIN tasks t    ON t.id = e.task_id
                JOIN projects p ON p.id = e.project_id
                JOIN clients  c ON c.id = e.client_id
           LEFT JOIN work_packages w ON w.id = e.work_package_id
+          LEFT JOIN project_categories pc ON pc.id = p.category_id
               WHERE e.user_id = ? AND e.end_ts IS NULL
               ORDER BY e.start_ts DESC LIMIT 1',
             [$userId]
@@ -720,6 +850,12 @@ final class Repo
             return false;
         }
         $end = now();
+        // Wurde waehrend des Laufs eine spaetere Buchung eingetragen, endet der
+        // Timer dort - keine Parallelbuchung (Pro-PR #444).
+        $next = self::conflictingBooking($userId, (string) $run['start_ts'], $end, (int) $run['id']);
+        if ($next !== null && (string) $next['start_ts'] > (string) $run['start_ts']) {
+            $end = (string) $next['start_ts'];
+        }
         $dur = self::minutesBetween((string) $run['start_ts'], $end);
         DB::run(
             'UPDATE time_entries SET end_ts=?, duration_min=?, updated_at=? WHERE id=?',
@@ -747,12 +883,15 @@ final class Repo
                        c.name AS client_name,  c.code AS client_code,
                        c.color AS client_color, p.color AS project_color,
                        p.track AS project_track, c.track AS client_track,
-                       w.name AS work_package_name, w.code AS work_package_code
+                       w.name AS work_package_name, w.code AS work_package_code,
+                       pc.ckey  AS project_category_ckey,
+                       pc.label AS project_category_label
                   FROM time_entries e
                   JOIN tasks t    ON t.id = e.task_id
                   JOIN projects p ON p.id = e.project_id
                   JOIN clients  c ON c.id = e.client_id
              LEFT JOIN work_packages w ON w.id = e.work_package_id
+             LEFT JOIN project_categories pc ON pc.id = p.category_id
                  WHERE ' . implode(' AND ', $where) . '
                  ORDER BY e.start_ts DESC';
         if (!empty($f['limit'])) {

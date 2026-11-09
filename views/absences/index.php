@@ -2,7 +2,9 @@
 /** @var array $absences @var array $categories */
 $fmt = fn(string $d) => (new DateTimeImmutable($d))->format('d.m.Y');
 ?>
-<h1 class="page-title"><?= h(t('absences.h1', 'Abwesenheiten')) ?><?= tip('absences.help', 'Urlaub, Ausfall wegen Krankheit oder Ueberstundenabbau — getrennt von Projektbuchungen, taucht nirgends in Report/Statistik/Rechnungen auf.') ?></h1>
+<?php /* Felix-Feedback 2026-11-09 (Fix #144): Layout-Shell rendert den
+   page-title. Tooltip-Key per $__titleTip-Convention an die Layout-H1 geben. */
+$__titleTip = 'absences.help'; ?>
 
 <div class="cols">
   <div class="card col-form">

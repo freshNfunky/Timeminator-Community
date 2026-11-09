@@ -78,6 +78,12 @@ final class ProcessRepo
         if ($d['end_ts'] <= $d['start_ts']) {
             throw new RuntimeException('Ende muss nach dem Beginn liegen.');
         }
+        // Overlap-Check: ein Prozess darf nicht in eine andere Buchung ragen
+        // (Pro-PR #444). Beim Bearbeiten den eigenen Eintrag ausnehmen.
+        $msg = Repo::bookingConflict((int) $d['user_id'], (string) $d['start_ts'], (string) $d['end_ts'], null, $id);
+        if ($msg !== null) {
+            throw new RuntimeException($msg);
+        }
         $duration = Repo::minutesBetween($d['start_ts'], $d['end_ts']);
         if ($id) {
             DB::run(

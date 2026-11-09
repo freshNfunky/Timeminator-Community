@@ -7,7 +7,8 @@
  * geklickt wird. Portable: nutzt bestehende Community-CSS-Klassen.
  */
 ?>
-<h1 class="page-title"><?= h(t('project_cat.h1', 'Projektarten')) ?><?= tip('project_cat.help', 'Kategorie oberhalb von Kunde. Kundenprojekt (Normalfall) hat einen echten Kunden; braucht ein Projekt keinen Kunden, Kunde entfaellt im Projektformular (z. B. Internes Projekt). Kunde-Label kann ueberschrieben werden (z. B. Foerdermittelgeber fuer ein Foerderprojekt).') ?></h1>
+<?php /* Fix #144: page-title via Layout-Shell + $__titleTip. */
+$__titleTip = 'project_cat.help'; ?>
 
 <div class="card">
   <table class="table">

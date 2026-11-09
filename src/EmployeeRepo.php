@@ -75,6 +75,23 @@ final class EmployeeRepo
         return ['vacation_days' => (float) ($row['vacation_days'] ?? 0), 'overtime_hours' => (float) ($row['overtime_hours'] ?? 0)];
     }
 
+    /**
+     * Wie carryover(), aber liefert null wenn in der DB fuer diese Kombination
+     * (user, year) noch keine Zeile existiert. Fuer die Admin-View, die beim
+     * noch-nicht-gespeicherten Carryover den Jahres-Urlaubsanspruch als Default
+     * zeigen muss (Felix-Feedback 2026-11-07).
+     * @return array{vacation_days:float,overtime_hours:float}|null
+     */
+    public static function carryoverRow(int $userId, int $year): ?array
+    {
+        $row = DB::one('SELECT vacation_days, overtime_hours FROM account_carryovers WHERE user_id = ? AND year = ?', [$userId, $year]);
+        if (!$row) { return null; }
+        return [
+            'vacation_days'  => (float) $row['vacation_days'],
+            'overtime_hours' => (float) $row['overtime_hours'],
+        ];
+    }
+
     public static function saveCarryover(int $userId, int $year, float $vacationDays, float $overtimeHours): void
     {
         $existing = DB::one('SELECT id FROM account_carryovers WHERE user_id = ? AND year = ?', [$userId, $year]);
@@ -100,5 +117,41 @@ final class EmployeeRepo
     public static function dailyTarget(array $terms): float
     {
         return (float) $terms['weekly_hours'] / Workdays::perWeek();
+    }
+
+    /**
+     * Tagessoll in Minuten fuer einen User an einem bestimmten Tag.
+     *
+     * Felix-Feedback 2026-11-08 (#99): die Tagessoll-Klammer im Kalender
+     * braucht genau diesen Wert. Freelancer (kein employee_terms-Row,
+     * employment_type != EMPLOYEE) bekommen `null`, dann wird keine
+     * Klammer gerendert.
+     *
+     * Felix-Feedback 2026-11-09 (#119): Wochenenden (!working_days) und
+     * gesetzliche Feiertage (holiday_region des Nutzers) sind FREIE Tage
+     * -> Rueckgabe 0. Die View unterscheidet: null=kein Vertrag (kein Badge),
+     * 0=freier Tag (kein Badge, zaehlt nicht), >0=Werktag mit Sollwert.
+     */
+    public static function dailyTargetMinutes(int $userId, string $date): ?int
+    {
+        $terms = self::termsAt($userId, $date);
+        if (!$terms || $terms['employment_type'] !== self::TYPE_EMPLOYEE) {
+            return null;
+        }
+        // Wochenende: ISO-Dow (1..7) nicht in den konfigurierten working_days.
+        try {
+            $iso = (int) (new DateTimeImmutable($date))->format('N');
+        } catch (Throwable) {
+            return null;
+        }
+        if (!in_array($iso, Holidays::workingDays(), true)) {
+            return 0;
+        }
+        // Feiertag in der Region des Users.
+        $region = (string) ($terms['holiday_region'] ?? '');
+        if ($region !== '' && Holidays::on($region, $date) !== null) {
+            return 0;
+        }
+        return (int) round(self::dailyTarget($terms) * 60);
     }
 }

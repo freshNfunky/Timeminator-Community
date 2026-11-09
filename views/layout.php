@@ -31,8 +31,10 @@ $__banner    = Banners::isVisible();
     <?php require __DIR__ . '/partials/nav.php'; ?>
   </nav>
   <div class="userbox">
-    <span class="who"><?= h(Auth::user()['display_name'] ?: Auth::user()['username']) ?>
-      <em><?= h(Auth::user()['role_label'] ?? '') ?></em></span>
+    <?php /* Felix-Feedback 2026-11-09 (#111): Benutzername ist ein Link auf
+       das Profil (persoenliche Einstellungen, u.a. der Stimmungs-Rhythmus). */ ?>
+    <a class="who" href="<?= h(route('profile')) ?>"><?= h(Auth::user()['display_name'] ?: Auth::user()['username']) ?>
+      <em><?= h(Auth::user()['role_label'] ?? '') ?></em></a>
     <a class="btn btn-ghost" href="<?= h(route('logout')) ?>"><?= h(t('nav.logout')) ?></a>
   </div>
 </header>
@@ -44,12 +46,16 @@ $__banner    = Banners::isVisible();
   <?php foreach (flash_take() as $f): ?>
     <div class="flash flash-<?= h($f['type']) ?>"><?= h($f['msg']) ?></div>
   <?php endforeach; ?>
-  <h1 class="page-title"><?= h($__title) ?></h1>
+  <?php /* Felix-Feedback 2026-11-09 (Fix #144): Die EINZIGE page-title-H1
+     in der App. Views duerfen keine zweite rendern. Fuer Tooltip neben dem
+     Titel setzt die View $__titleTip = 'i18n.key' am Anfang (Variable
+     ueberlebt dank gemeinsamem view()-Scope ins Layout). */ ?>
+  <h1 class="page-title"><?= h($__title) ?><?php if (!empty($__titleTip ?? null)): ?><?= tip((string) $__titleTip) ?><?php endif; ?></h1>
   <?= $__content ?>
 </main>
 <?php if ($__banner): ?>
 <aside class="sidepanel" id="sidepanel">
-  <a class="sp-brand" href="https://felixschaller.com" target="_blank" rel="noopener"
+  <a class="sp-brand" href="<?= h(cfg('pro_demo_url', 'https://demo.timeminator.com')) ?>" target="_blank" rel="noopener"
      aria-label="<?= h(t('sidepanel.brand_aria')) ?>"></a>
   <div class="sp-rotator" id="spRotator" data-endpoint="<?= h(route('sidepanel')) ?>" data-interval="14000"></div>
 </aside>
@@ -58,8 +64,8 @@ $__banner    = Banners::isVisible();
 
 <footer class="foot">
   <?= h(cfg('app_name', 'Timeminator')) ?> <?= h(sprintf(t('footer.community_suffix'), app_version())) ?>
-  &middot; <a href="https://felixschaller.com" target="_blank" rel="noopener"><?= h(t('footer.made_by')) ?></a>
-  &middot; <a href="<?= h(cfg('pro_url', 'https://timeminator.felixschaller.com')) ?>" target="_blank" rel="noopener"><?= h(t('footer.more_features')) ?></a>
+  &middot; <span><?= h(t('footer.made_by')) ?></span>
+  &middot; <a href="<?= h(cfg('pro_demo_url', 'https://demo.timeminator.com')) ?>" target="_blank" rel="noopener"><?= h(t('footer.more_features')) ?></a>
 </footer>
 <script src="<?= h(asset('app.js')) ?>"></script>
 </body>

@@ -76,7 +76,7 @@
         </label>
         <label class="check"><input type="checkbox" name="disable_update_check" value="1" <?= !empty($post['disable_update_check']) ? 'checked' : '' ?>> <?= h(t('install.disable_update_check')) ?></label>
         <label><?= h(t('install.registration_endpoint')) ?>
-          <input type="url" name="registration_endpoint" value="<?= h($post['registration_endpoint'] ?? 'https://license.felixschaller.com/timeminator-registry/register.php') ?>">
+          <input type="url" name="registration_endpoint" value="<?= h($post['registration_endpoint'] ?? '') ?>" placeholder="https://your-license-server.example.com/timeminator-registry/register.php">
         </label>
         <label class="check"><input type="checkbox" name="disable_registration" value="1" <?= !empty($post['disable_registration']) ? 'checked' : '' ?>> <?= h(t('install.disable_registration')) ?></label>
       </details>

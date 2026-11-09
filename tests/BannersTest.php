@@ -86,17 +86,19 @@ final class BannersTest extends TestCase
 
     public function testHrefAllowsHttpsFirstPartyBrandsOnly(): void
     {
+        // Shipped allowlist: FelixSchallerCOM brand portfolio.
         self::assertTrue(Banners::isAllowedHref('https://felixschaller.com'));
-        self::assertTrue(Banners::isAllowedHref('https://timeminator.felixschaller.com/x'));
-        self::assertTrue(Banners::isAllowedHref('https://xixum.ai'));              // XIXUM product
-        self::assertTrue(Banners::isAllowedHref('https://app.xixum.ai/assess'));   // subdomain
-        self::assertTrue(Banners::isAllowedHref('https://af-ax.com'));             // AF-AX
-        self::assertTrue(Banners::isAllowedHref('https://umfrage.timeminator.com/01/index.html')); // Timeminator survey
-        self::assertTrue(Banners::isAllowedHref('https://claude.ai/artifact/x'));  // Claude artifact (Zeit-Check)
-        self::assertFalse(Banners::isAllowedHref('http://felixschaller.com'));       // not https
-        self::assertFalse(Banners::isAllowedHref('https://evil.example.com'));        // wrong host
-        self::assertFalse(Banners::isAllowedHref('https://felixschaller.com.evil.com')); // suffix trick
-        self::assertFalse(Banners::isAllowedHref('https://notxixum.ai'));             // not a subdomain
+        self::assertTrue(Banners::isAllowedHref('https://assets.felixschaller.com/feed.php'));
+        self::assertTrue(Banners::isAllowedHref('https://timeminator.com'));
+        self::assertTrue(Banners::isAllowedHref('https://umfrage.timeminator.com/01/x'));
+        self::assertTrue(Banners::isAllowedHref('https://xixum.ai'));
+        self::assertTrue(Banners::isAllowedHref('https://app.xixum.ai/assess'));
+        self::assertTrue(Banners::isAllowedHref('https://af-ax.com'));
+        self::assertTrue(Banners::isAllowedHref('https://claude.ai/artifact/x'));
+        self::assertFalse(Banners::isAllowedHref('http://felixschaller.com'));
+        self::assertFalse(Banners::isAllowedHref('https://evil.example.com'));
+        self::assertFalse(Banners::isAllowedHref('https://felixschaller.com.evil.com'));
+        self::assertFalse(Banners::isAllowedHref('https://notxixum.ai'));
         self::assertFalse(Banners::isAllowedHref('javascript:alert(1)'));
     }
 
@@ -123,6 +125,15 @@ final class BannersTest extends TestCase
         // Not localizable -> empty (caller uses the base feed).
         self::assertSame('', Banners::localeEndpoint('https://host/feed', 'de'));
         self::assertSame('', Banners::localeEndpoint('https://host/feed.json', 'x'));
+        // Felix-Feedback 2026-11-06: feed.php ist ebenfalls lokalisierbar.
+        self::assertSame(
+            'https://feed.example.com/feed-de.php',
+            Banners::localeEndpoint('https://feed.example.com/feed.php', 'de')
+        );
+        self::assertSame(
+            'https://feed.example.com/feed-en.php?v=1',
+            Banners::localeEndpoint('https://feed.example.com/feed.php?v=1', 'en')
+        );
     }
 
     public function testFeedCandidatesRestEndpointUsesLangQuery(): void
@@ -251,8 +262,8 @@ final class BannersTest extends TestCase
     {
         self::assertTrue(Banners::isAllowedIframe('https://assets.felixschaller.com/media/x/index.html'));
         self::assertTrue(Banners::isAllowedIframe('https://cdn.xixum.ai/b/index.html'));
-        self::assertFalse(Banners::isAllowedIframe('http://assets.felixschaller.com/x.html')); // not https
-        self::assertFalse(Banners::isAllowedIframe('https://evil.example.com/x.html'));         // wrong host
+        self::assertFalse(Banners::isAllowedIframe('http://assets.felixschaller.com/x.html'));
+        self::assertFalse(Banners::isAllowedIframe('https://evil.example.com/x.html'));
         self::assertFalse(Banners::isAllowedIframe('https://felixschaller.com.evil.com/x.html'));
     }
 

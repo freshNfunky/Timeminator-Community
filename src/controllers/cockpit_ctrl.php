@@ -159,7 +159,7 @@ function cockpit_review_due_projects(): array
 
 function ctrl_cockpit_project(): void
 {
-    require_perm('stats.view');
+    require_perm('cockpit.project.view');
     $id = (int) get('id');
     $project = $id ? Repo::project($id) : null;
     if (!$project) {
@@ -171,10 +171,32 @@ function ctrl_cockpit_project(): void
         if ($r['project_id'] === $id) { $row = $r; break; }
     }
 
-    // Soll/Ist-Matrix: 13 Wochen rueckwaerts bis +4 Wochen voraus.
+    // Soll/Ist-Matrix: ab Projektstart (= frueheste Buchung bzw. planned_start/
+    // kickoff_at, welches davon zuerst liegt) bis +4 Wochen nach heute, mindestens
+    // aber bis planned_end. Felix-Feedback 2026-11-03: "muss alle wochen
+    // bearbeiten koennen seit beginn" - frueher waren es nur 13 Wochen rueckwaerts,
+    // man kam gar nicht an den Projektanfang zurueck.
     $today    = new DateTimeImmutable('today');
-    $from     = $today->modify('monday this week')->modify('-12 weeks')->format('Y-m-d');
-    $to       = $today->modify('monday this week')->modify('+4 weeks')->format('Y-m-d');
+    $thisMon  = $today->modify('monday this week');
+    $firstBooking = DB::scalar(
+        'SELECT MIN(DATE(start_ts)) FROM time_entries WHERE project_id = ? AND duration_min IS NOT NULL',
+        [$id]
+    );
+    $starts = array_filter([
+        $firstBooking,
+        $project['planned_start'] ?? null,
+        !empty($project['kickoff_at']) ? substr((string) $project['kickoff_at'], 0, 10) : null,
+    ]);
+    $earliest = $starts ? min($starts) : $thisMon->modify('-12 weeks')->format('Y-m-d');
+    // Horizont rueckwaerts: nicht weiter als bis zum frueheren Datum - aber auch
+    // mindestens 4 Wochen rueckwaerts, falls das Projekt juenger ist.
+    $fallbackBack = $thisMon->modify('-4 weeks')->format('Y-m-d');
+    $from     = min($earliest, $fallbackBack);
+    // Horizont voraus: +4 Wochen nach heute, mindestens bis planned_end.
+    $to       = $thisMon->modify('+4 weeks')->format('Y-m-d');
+    if (!empty($project['planned_end']) && (string) $project['planned_end'] > $to) {
+        $to = (string) $project['planned_end'];
+    }
     $members  = PlanRepo::projectMembers($id);
     $weekKeys = PlanRepo::weekKeys($from, $to);
     $istMap   = PlanRepo::istByProjectUserWeek($from, $to)[$id] ?? [];
@@ -204,7 +226,7 @@ function ctrl_cockpit_project(): void
 
 function ctrl_cockpit_index(): void
 {
-    require_perm('stats.view');
+    require_perm('cockpit.project.view');
     view('cockpit/index', [
         'rows'   => cockpit_rows(),
         'dueIds' => array_column(cockpit_review_due_projects(), 'project_id'),
@@ -499,7 +521,6 @@ function cockpit_burnup_payload(int $projectId): array
             'h'  => round(((int) $p['cumulative_minutes']) / 60, 2),
         ];
     }
-    $n = count($labels);
 
     // Fortschritts-Tracker (type=progress) als Rohdaten; die Frontend-fertigen
     // Reihen (progress_line + progress_markers + forecast_rays) bauen wir
@@ -518,6 +539,41 @@ function cockpit_burnup_payload(int $projectId): array
             'forecast' => $t['forecast'] !== null ? (float) $t['forecast'] : null,
         ];
     }, $trackers);
+
+    // Review-Interval (fuer Prognose-Ray-Enden) brauchen wir schon beim Ausdehnen
+    // der Labels bis zum Horizont, damit kein Marker am rechten Rand klemmt.
+    $interval = $project['review_interval_days'] !== null
+        ? (int) $project['review_interval_days']
+        : COCKPIT_REVIEW_INTERVAL_DEFAULT_DAYS;
+
+    // Horizont ueber "heute" hinaus (Pro-Vorbild): mindestens planned_end, plus
+    // die am weitesten in die Zukunft reichende Prognose-Ray-Spitze. Sonst klemmt
+    // die Deadline-vline direkt am rechten Rand und die Ideal-Linie kann ihre
+    // 100% nicht mehr erreichen (Felix-Feedback 2026-11-03: "ideal muss am
+    // projektstart beginnen und bei der deadline mit 100% schneiden").
+    if ($labels) {
+        $today    = (new DateTimeImmutable('today'))->format('Y-m-d');
+        $horizon  = $labels[count($labels) - 1];
+        if ($today > $horizon) $horizon = $today;
+        if (!empty($project['planned_end']) && (string) $project['planned_end'] > $horizon) {
+            $horizon = (string) $project['planned_end'];
+        }
+        foreach ($trackers as $t) {
+            if ($t['forecast'] === null) continue;
+            $rayEnd = (new DateTimeImmutable($t['as_of']))->modify('+' . $interval . ' days')->format('Y-m-d');
+            if ($rayEnd > $horizon) $horizon = $rayEnd;
+        }
+        $last = new DateTimeImmutable($labels[count($labels) - 1]);
+        $horD = new DateTimeImmutable($horizon);
+        // Zukunfts-Tage auffuellen: h bleibt null (Ist-Linie endet bei today),
+        // die Serien fuer Ideal/Deadline/Rays koennen aber darauf landen.
+        while ($last < $horD) {
+            $last     = $last->modify('+1 day');
+            $labels[] = $last->format('Y-m-d');
+            $points[] = ['d' => $last->format('Y-m-d'), 'h' => null];
+        }
+    }
+    $n = count($labels);
 
     // Alten Marker-Shape beibehalten (Backwards-Compat fuer BurnupDataTest).
     $markers = array_map(fn($t) => [
@@ -553,10 +609,7 @@ function cockpit_burnup_payload(int $projectId): array
 
     // Prognose-Strahlen: jede Meldung mit forecast zeichnet einen EIGENEN,
     // unverbundenen Strahl von (as_of, percent) nach (as_of + review_interval, forecast).
-    // Review-Interval ist Pro-konform: pro Projekt ueberschreibbar, sonst Default 30 Tage.
-    $interval = $project['review_interval_days'] !== null
-        ? (int) $project['review_interval_days']
-        : COCKPIT_REVIEW_INTERVAL_DEFAULT_DAYS;
+    // $interval ist oben schon fuer die Horizont-Berechnung ermittelt worden.
     $forecastRays = [];
     foreach ($trackers as $t) {
         if ($t['forecast'] === null) continue;
@@ -567,13 +620,15 @@ function cockpit_burnup_payload(int $projectId): array
         $forecastRays[] = ['x0' => $x0, 'y0' => $t['percent'], 'x1' => $x1, 'y1' => $t['forecast']];
     }
 
-    // Ideal-Linie (0-100%): lineare Trajektorie vom Projektstart bis zur
-    // Deadline. Pro-konform: start-Fallback-Reihenfolge planned_start ->
-    // kickoff_at -> created_at. Ohne Start/Ende/Target bleibt sie leer.
+    // Ideal-Linie (0-100%): lineare Trajektorie von der ersten gezeichneten
+    // Woche (labels[0] = erste Buchung bzw. Projekt-Start im Chart) bis zur
+    // Deadline bei 100 %. Felix-Feedback 2026-11-03: die Linie muss am
+    // Projektstart beginnen und bei der Deadline exakt 100 % schneiden, auch
+    // wenn kickoff_at nachtraeglich auf ein spaeteres Datum gesetzt wurde -
+    // sonst beginnt die Ideal-Kurve mitten im Chart und erreicht am rechten
+    // Rand nicht die 100-%-Linie.
     $plannedEnd = $project['planned_end'] ?? null;
-    $start = $project['planned_start']
-        ?? ($project['kickoff_at'] ? substr((string) $project['kickoff_at'], 0, 10) : null)
-        ?? ($project['created_at']  ? substr((string) $project['created_at'],  0, 10) : null);
+    $start = $n > 0 ? $labels[0] : null;
     $idealLine = array_fill(0, $n, null);
     if ($start && $plannedEnd && $n > 0) {
         $tsStart = strtotime($start . ' 00:00:00');
@@ -581,8 +636,59 @@ function cockpit_burnup_payload(int $projectId): array
         if ($tsEnd > $tsStart) {
             foreach ($labels as $i => $ymd) {
                 $tsAt = strtotime($ymd . ' 00:00:00');
-                if ($tsAt < $tsStart || $tsAt > $tsEnd) continue;
+                if ($tsAt < $tsStart) continue;
+                // Nach dem Deadline-Datum bleibt die Linie auf 100 % stehen,
+                // damit sie sichtbar bis zum rechten Chart-Rand durchlaeuft.
+                if ($tsAt >= $tsEnd) { $idealLine[$i] = 100.0; continue; }
                 $idealLine[$i] = round(100.0 * ($tsAt - $tsStart) / ($tsEnd - $tsStart), 2);
+            }
+        }
+    }
+
+    // v1.0 Felix-Feedback 2026-11-06: Soll-Kurve = Integral der Plan-Matrix.
+    // Jede Woche in plan_allocations (period_kind='week') stapelt am Montag
+    // ihrer period_start-KW die geplanten Minuten auf die Soll-Reihe. So kann
+    // man im Chart Planung (Treppenkurve, gestrichelt) vs. Ist (Kurve)
+    // Woche fuer Woche vergleichen - die Summe landet am rechten Rand auf
+    // dem Projekt-Gesamt-Soll (horizontale target_h-Linie).
+    $sollCurve = array_fill(0, $n, null);
+    if ($n > 0) {
+        $weekly = DB::all(
+            "SELECT period_start, SUM(planned_minutes) AS mins
+               FROM plan_allocations
+              WHERE project_id = ? AND period_kind = 'week'
+           GROUP BY period_start
+           ORDER BY period_start",
+            [$projectId]
+        );
+        if ($weekly) {
+            // Lookup Label -> Index fuer O(n+m) Alignment statt O(n*m).
+            $labelIdx = array_flip($labels);
+            $cum = 0.0;
+            // Pro Woche: Start-Index = period_start, falls nicht im Label-Bereich,
+            // nimm den naechstgroesseren. Vor dem allerersten Label stapeln wir
+            // auf [0] (Backlog aus Vergangenheit).
+            $jumps = [];
+            foreach ($weekly as $w) {
+                $startYmd = (string) $w['period_start'];
+                $hrs = ((int) $w['mins']) / 60.0;
+                if (isset($labelIdx[$startYmd])) {
+                    $idx = (int) $labelIdx[$startYmd];
+                } else {
+                    // naechstgroesseres Label suchen (periode liegt zwischen Labels
+                    // - z. B. wenn Labels taeglich sind und period_start ein Sonntag).
+                    $idx = null;
+                    for ($i = 0; $i < $n; $i++) {
+                        if ($labels[$i] >= $startYmd) { $idx = $i; break; }
+                    }
+                    if ($idx === null) { $idx = $n - 1; } // Plan liegt jenseits des Horizonts.
+                }
+                $jumps[$idx] = ($jumps[$idx] ?? 0.0) + $hrs;
+            }
+            // Treppenkurve: cum erhoeht sich am jeweiligen Index und bleibt rechts konstant.
+            for ($i = 0; $i < $n; $i++) {
+                if (isset($jumps[$i])) { $cum += $jumps[$i]; }
+                $sollCurve[$i] = round($cum, 2);
             }
         }
     }
@@ -614,6 +720,7 @@ function cockpit_burnup_payload(int $projectId): array
         'progress_markers' => $progressMarkers,    // Punkte auf der Linie.
         'forecast_rays'    => $forecastRays,       // Strahlen im Review-Turnus-Abstand.
         'ideal_line'       => $idealLine,          // 0-100% lineare Trajektorie.
+        'soll_curve'       => $sollCurve,          // Kumulierte Plan-Stunden (Integral der Plan-Matrix).
         'review_interval'  => $interval,
         'planned_end'      => $plannedEnd,         // = Delay-Datum wenn verschoben, sonst = Deadline.
         'deadline'         => $deadlineInfo,       // urspruengliches Enddatum (grau).
@@ -624,9 +731,137 @@ function cockpit_burnup_payload(int $projectId): array
 /** v1.0 F2.4: Burn-Up JSON (kumulative Stunden ueber Zeit). */
 function ctrl_cockpit_burnup_data(): void
 {
-    require_perm('stats.view');
+    require_perm('cockpit.project.view');
     $id = (int) get('id');
     $payload = cockpit_burnup_payload($id);
+    if (!($payload['ok'] ?? false)) {
+        json_out($payload, 404);
+    }
+    json_out($payload);
+}
+
+/**
+ * Projekt-Sentiment-Payload (Felix-Feedback 2026-11-03/04): Projekt-/Kunden-
+ * Stimmung je Fortschrittsmeldung als zwei Linien ueber die Zeit, mit Markern
+ * an den Meldungs-Punkten. Skala 1..5. Rohdaten kommen aus project_trackers.
+ *
+ * @return array{ok:bool,points?:list<array{d:string,pm:int|null,cm:int|null,note:string}>,latest?:array}
+ */
+function cockpit_sentiment_payload(int $projectId): array
+{
+    $project = Repo::project($projectId);
+    if (!$project) {
+        return ['ok' => false, 'error' => 'not_found'];
+    }
+    $rows = DB::all(
+        "SELECT date_value AS as_of, created_at, project_mood, customer_mood, note
+           FROM project_trackers
+          WHERE project_id = ? AND type = 'progress'
+            AND (project_mood IS NOT NULL OR customer_mood IS NOT NULL)
+          ORDER BY (COALESCE(date_value, substr(created_at,1,10))) ASC, created_at ASC",
+        [$projectId]
+    );
+    $points = array_map(static function (array $r): array {
+        return [
+            'd'    => (string) ($r['as_of'] ?: substr((string) $r['created_at'], 0, 10)),
+            'pm'   => $r['project_mood']  !== null ? (int) $r['project_mood']  : null,
+            'cm'   => $r['customer_mood'] !== null ? (int) $r['customer_mood'] : null,
+            'note' => (string) ($r['note'] ?? ''),
+        ];
+    }, $rows);
+    $latest = null;
+    if ($points) {
+        $last = $points[count($points) - 1];
+        $latest = ['d' => $last['d'], 'pm' => $last['pm'], 'cm' => $last['cm']];
+    }
+
+    // Felix-Feedback 2026-11-06: der Chart darf Meldungen nicht gleichmaessig
+    // auf der X-Achse stapeln - ein ausgelassener Meldetag muss als tatsaech-
+    // liche Zeit-Luecke sichtbar werden, zwischen vorangegangenem und nach-
+    // folgendem Wert wird linear interpoliert. Dafuer fuellen wir labels
+    // Tag-fuer-Tag von der ersten bis zur letzten Meldung und berechnen
+    // interpolierte pm_series/cm_series. Marker-Punkte sitzen weiterhin nur
+    // an den echten Meldetagen.
+    $labels = [];
+    $pmSeries = [];
+    $cmSeries = [];
+    $markers = [];
+    if (count($points) >= 1) {
+        // Bei Mehrfachmeldungen am gleichen Tag gewinnt die zuletzt gespeicherte
+        // (die Query sortiert aufsteigend nach date, created_at). Interpolation
+        // auf dem Tages-Bucket.
+        $byDate = [];
+        foreach ($points as $p) { $byDate[$p['d']] = $p; }
+        ksort($byDate);
+        $dates = array_keys($byDate);
+        $start = new DateTimeImmutable($dates[0]);
+        $end   = new DateTimeImmutable($dates[count($dates) - 1]);
+        $span  = (int) $start->diff($end)->days;
+        // Harter Cap, damit ein 5-Jahres-Projekt nicht tausende Punkte serialisiert.
+        if ($span > 1095) {
+            $start = $end->modify('-1095 days');
+            $span  = 1095;
+        }
+        $labelIdx = [];
+        for ($i = 0; $i <= $span; $i++) {
+            $d = $start->modify('+' . $i . ' days')->format('Y-m-d');
+            $labels[]       = $d;
+            $labelIdx[$d]   = $i;
+            $pmSeries[]     = null;
+            $cmSeries[]     = null;
+        }
+        $interpolate = static function (array $knownX, array $knownY, int $i): ?float {
+            // Linear zwischen den Known-Punkten; vor dem ersten und nach dem
+            // letzten Known-Punkt: null (Linie bricht).
+            $n = count($knownX);
+            if ($n === 0) { return null; }
+            if ($i < $knownX[0] || $i > $knownX[$n - 1]) { return null; }
+            // Finde Segment [knownX[k], knownX[k+1]] mit knownX[k] <= $i <= knownX[k+1]
+            for ($k = 0; $k < $n - 1; $k++) {
+                $x0 = $knownX[$k]; $x1 = $knownX[$k + 1];
+                if ($i >= $x0 && $i <= $x1) {
+                    $span = $x1 - $x0;
+                    if ($span === 0) { return (float) $knownY[$k]; }
+                    $t = ($i - $x0) / $span;
+                    return $knownY[$k] + $t * ($knownY[$k + 1] - $knownY[$k]);
+                }
+            }
+            return (float) $knownY[$n - 1];
+        };
+        $pmKnownX = []; $pmKnownY = [];
+        $cmKnownX = []; $cmKnownY = [];
+        foreach ($dates as $d) {
+            $idx = $labelIdx[$d];
+            $p   = $byDate[$d];
+            if ($p['pm'] !== null) { $pmKnownX[] = $idx; $pmKnownY[] = (float) $p['pm']; }
+            if ($p['cm'] !== null) { $cmKnownX[] = $idx; $cmKnownY[] = (float) $p['cm']; }
+            $markers[] = ['x' => $idx, 'd' => $d, 'pm' => $p['pm'], 'cm' => $p['cm']];
+        }
+        for ($i = 0; $i <= $span; $i++) {
+            $pm = $interpolate($pmKnownX, $pmKnownY, $i);
+            $cm = $interpolate($cmKnownX, $cmKnownY, $i);
+            $pmSeries[$i] = $pm !== null ? round($pm, 2) : null;
+            $cmSeries[$i] = $cm !== null ? round($cm, 2) : null;
+        }
+    }
+
+    return [
+        'ok'        => true,
+        'points'    => $points,       // Legacy-Shape: Meldungen in Rohform.
+        'latest'    => $latest,
+        'labels'    => $labels,       // Tagesraster von der ersten bis zur letzten Meldung.
+        'pm_series' => $pmSeries,     // linear interpoliert pro Tag, null ausserhalb.
+        'cm_series' => $cmSeries,
+        'markers'   => $markers,      // {x: Index in labels, d, pm, cm} nur an echten Meldetagen.
+    ];
+}
+
+/** JSON-Endpunkt fuer den Sentiment-Trend-Chart im Projekt-Cockpit. */
+function ctrl_cockpit_sentiment_data(): void
+{
+    require_perm('cockpit.project.view');
+    $id = (int) get('id');
+    $payload = cockpit_sentiment_payload($id);
     if (!($payload['ok'] ?? false)) {
         json_out($payload, 404);
     }
