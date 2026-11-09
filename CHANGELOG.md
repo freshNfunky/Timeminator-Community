@@ -8,17 +8,37 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Unreleased changes live in the `[Unreleased]` section and move under a
 version heading when a release is cut.
 
-> **Status: pre-1.0 (alpha / beta).**
-> Every `0.x` release is considered pre-stable. Data model, config keys,
-> permission codes, HTTP routes and the on-disk layout can still change in
-> incompatible ways between minor versions — each such change will be
-> called out in the changelog. Version `1.0.0` will mark the first
-> release with an API and data-model stability commitment. Until then,
-> pin an exact version in production and read the release notes before
-> updating. The initial commit was mislabelled "v1.0.0"; the `VERSION`
-> file is authoritative.
+> **Status: 1.0.0 released on 2026-11-09.**
+> Data model, config keys, permission codes and HTTP routes are now
+> stable; breaking changes land only on a new major version. Pin an
+> exact version in production and read the release notes before
+> updating.
 
 ## [Unreleased]
+
+## [1.0.0] — 2026-11-09
+
+First official release. 153 commits since v0.9.1 (43 feat, 67 fix, 474 regression tests, 3076 assertions). Highlights:
+
+- **Kalender-Overhaul with Pro-Parity**: sticky week header, click-and-drag in the hour grid with live preview, now-line, daily workload badges (green/yellow/red), target bracket, Gantt-stacked all-day absence pills.
+- **Project-type hierarchy** (Customer / Internal / Grant) with strict cascade in entry dialog and project form; internal projects have no customer; grant projects re-label the client select to "Grant provider".
+- **Six-role permission system** (Admin, Management, HR, Project Manager, Assistant, User) with granular catalogue, nav and route guards.
+- **Employee + Company cockpits** with KPIs, donuts, stacked-area charts, absolute sentiment timeline.
+- **Mood + Flow sentiment tracking** per day or week, with team + company aggregates and employee-by-week matrix.
+- **Overtime compensation as time block** (time-based, separate from workload, does not count toward daily target).
+- **Absence overlap guard**: cannot book two vacations on the same day.
+- **Dashboard timer for internal processes** (hierarchy-free, type switcher: Project-time / Internal process).
+- **i18n audit**: no hard-coded UI strings; DE/EN parity enforced by `I18nTest`.
+- **CSP-strict throughout** (nonce-authorized inline scripts, no inline style attributes).
+
+Migrations added in 1.0.0:
+
+- `2026-11-09-01-sonderurlaub-category`
+- `2026-11-09-02-absence-start-end-ts` (nullable start_ts/end_ts for overtime)
+- `2026-11-09-03-absence-krankheit-dedup` + `-04-absence-sick-consolidate` (one sick category)
+- `2026-11-09-05-process-entries-timer` (nullable end_ts/duration_min for running internal-process timer)
+
+Full release notes: [v1.0.0](https://github.com/freshNfunky/Timeminator-Community/releases/tag/v1.0.0).
 
 ### Changed
 - **Feiertagskalender: Region-basierte Auswahl**. Die statische DACH/US-
