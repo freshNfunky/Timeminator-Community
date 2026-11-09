@@ -781,6 +781,9 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .cal-event{appearance:none;border:none;font:inherit;text-align:left;cursor:pointer;color:inherit}
 .cal-event.cal-process{background:#f59e0b;color:#1f2937}
 :root[data-theme="dark"] .cal-event.cal-process{background:#92400e;color:#fde68a}
+/* Fix #180: Ueberstundenabbau als Zeit-Block im Grid, grauer als Prozesse. */
+.cal-event.cal-overtime{background:#94a3b8;color:#1f2937}
+:root[data-theme="dark"] .cal-event.cal-overtime{background:#475569;color:#e2e8f0}
 .cal-day-absence{display:block;width:calc(100% - 8px);margin:4px;padding:3px 6px;background:#10b981;color:#fff;border:none;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;text-align:left;line-height:1.2}
 :root[data-theme="dark"] .cal-day-absence{background:#065f46;color:#d1fae5}
 .cal-day-absence:hover{opacity:.85}

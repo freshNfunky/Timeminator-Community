@@ -127,6 +127,45 @@ foreach ($entries as $__e) {
     ];
 }
 
+// Felix-Feedback 2026-11-09 (Fix #180): Ueberstundenabbau-Entries werden
+// Zeit-basiert erfasst (Fix #171) und muessen im Grid als Zeit-Block
+// (nicht ganztaegige Pille) erscheinen. Ein overtime-Entry ist eine
+// Abwesenheit mit category_account='overtime' und gesetzten start_ts/end_ts.
+// Diese Entries NICHT ins ganztaegige $__absBand - sie werden unten als
+// $__overtimePerDay im Grid platziert.
+$__overtimePerDay = [];
+$__overtimeAbsIds = [];
+foreach (($absences ?? []) as $__a) {
+    if (($__a['category_account'] ?? '') !== 'overtime') { continue; }
+    if (empty($__a['start_ts']) || empty($__a['end_ts']))  { continue; }
+    try {
+        $__s   = new DateTimeImmutable((string) $__a['start_ts']);
+        $__eEnd = new DateTimeImmutable((string) $__a['end_ts']);
+    } catch (Throwable) { continue; }
+    if ($__eEnd <= $__s) { continue; }
+    $__sTs = $__s->getTimestamp();
+    $__dayOffset = (int) floor(($__sTs - $__weekMid) / 86400);
+    if ($__dayOffset < 0 || $__dayOffset > 6) { continue; }
+    $__dayStart = (int) $week_start->modify('+' . $__dayOffset . ' days')->setTime(0, 0)->getTimestamp();
+    $__dayEnd   = $__dayStart + 86400;
+    $__vs = max($__sTs, $__dayStart);
+    $__ve = min($__eEnd->getTimestamp(), $__dayEnd);
+    $__topPct = (($__vs - $__dayStart) / 86400) * 100.0;
+    $__hPct   = (($__ve - $__vs) / 86400) * 100.0;
+    if ($__hPct < 1.2) { $__hPct = 1.2; }
+    if ($__topPct < $__minTop) { $__minTop = $__topPct; }
+    $__overtimePerDay[$__dayOffset][] = [
+        'id'     => (int) $__a['id'],
+        'top'    => round($__topPct, 3),
+        'height' => round($__hPct, 3),
+        'start'  => $__s->format('H:i'),
+        'end'    => $__eEnd->format('H:i'),
+        'label'  => (string) ($__a['category_label'] ?? ''),
+        'note'   => (string) ($__a['note'] ?? ''),
+    ];
+    $__overtimeAbsIds[(int) $__a['id']] = true;
+}
+
 // v1.0 Kalender-Dialog: Interne Prozesse als farblich getrennte Bloecke
 // im selben Grid rendern (gleiche top/height-Mathematik wie entries).
 $__procPerDay = [];
@@ -259,6 +298,9 @@ foreach (($holidays ?? []) as $__k => $__v) { $__holidayFlags[(string) $__k] = t
 $__absBand = []; // list<array{abs_id,cat,cat_ckey,span,from,to,note,row}>
 $__absBandByYmd = []; // ymd (from) => list<idx in $__absBand>
 foreach (($absences ?? []) as $__a) {
+    // Fix #180: Ueberstundenabbau-Entries erscheinen im Zeit-Grid, nicht
+    // als ganztaegige Pille.
+    if (isset($__overtimeAbsIds[(int) $__a['id']])) { continue; }
     $__aFrom = max((string) $__a['start_date'], $__weekStartYmd);
     $__aTo   = min((string) ($__a['end_date'] ?? $__a['start_date']), $__weekEndYmd);
     if ($__aFrom > $__aTo) { continue; }
@@ -349,6 +391,10 @@ $__calInk = static function (string $hex): string {
 <?php endforeach; endforeach; ?>
 <?php foreach ($__procPerDay as $__dayOffset => $__events): foreach ($__events as $__ev): ?>
 .cal-process-<?= (int) $__ev['id'] ?>{top:<?= $__ev['top'] ?>%;height:<?= $__ev['height'] ?>%}
+<?php endforeach; endforeach; ?>
+<?php /* Fix #180: Ueberstundenabbau als Zeit-Block im Grid. */ ?>
+<?php foreach ($__overtimePerDay as $__dayOffset => $__events): foreach ($__events as $__ev): ?>
+.cal-overtime-<?= (int) $__ev['id'] ?>{top:<?= $__ev['top'] ?>%;height:<?= $__ev['height'] ?>%}
 <?php endforeach; endforeach; ?>
 <?php /* Felix-Feedback 2026-11-08 (#99): Tagessoll-Klammer pro Day-Column.
    Top/Height in Prozent eines 24-h-Tags (konsistent zu den Events). */ ?>
@@ -607,6 +653,17 @@ $__calInk = static function (string $hex): string {
               <button type="button" class="cal-event cal-process cal-process-<?= (int) $__ev['id'] ?>"
                  data-entry-type="process"
                  data-entry-id="<?= (int) $__ev['id'] ?>"
+                 title="<?= h($__ev['label'] . ($__ev['note'] !== '' ? ' · ' . $__ev['note'] : '')) ?>&#10;<?= h($__ev['start']) ?> – <?= h($__ev['end']) ?>">
+                <span class="cal-event-time"><?= h($__ev['start']) ?></span>
+                <span class="cal-event-label"><?= h($__ev['label']) ?></span>
+              </button>
+            <?php endforeach; ?>
+            <?php /* Fix #180: Ueberstundenabbau als Zeit-Block, grau wie
+               Prozesse, aber mit data-entry-type=absence fuer den Edit. */ ?>
+            <?php foreach ($__overtimePerDay[$__i] ?? [] as $__ev): ?>
+              <button type="button" class="cal-event cal-overtime cal-overtime-<?= (int) $__ev['id'] ?>"
+                 data-entry-type="absence"
+                 data-absence-id="<?= (int) $__ev['id'] ?>"
                  title="<?= h($__ev['label'] . ($__ev['note'] !== '' ? ' · ' . $__ev['note'] : '')) ?>&#10;<?= h($__ev['start']) ?> – <?= h($__ev['end']) ?>">
                 <span class="cal-event-time"><?= h($__ev['start']) ?></span>
                 <span class="cal-event-label"><?= h($__ev['label']) ?></span>

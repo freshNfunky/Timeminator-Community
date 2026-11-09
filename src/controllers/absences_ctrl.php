@@ -94,6 +94,8 @@ function ctrl_absence_api_save(): void
     $end     = trim((string) post('end_date'));
     $note    = trim((string) post('note'));
     $hoursPost = post('hours');
+    $startTsPersist = null;
+    $endTsPersist   = null;
     if ($startTs !== '' && $endTs !== '') {
         // Zeit-basierte Eingabe: Datum aus start_ts ableiten, hours aus
         // Diff in Minuten.
@@ -112,6 +114,11 @@ function ctrl_absence_api_save(): void
         $end   = $eObj->format('Y-m-d');
         $diffMin = (int) round(($eObj->getTimestamp() - $sObj->getTimestamp()) / 60);
         $hoursPost = $diffMin / 60.0;
+        // Fix #180: Zeit-basierte Abwesenheiten (Ueberstundenabbau) speichern
+        // start_ts/end_ts zusaetzlich, damit der Kalender-View sie als
+        // Zeit-Block statt ganztaegige Pille rendern kann.
+        $startTsPersist = $sObj->format('Y-m-d H:i:s');
+        $endTsPersist   = $eObj->format('Y-m-d H:i:s');
     } else {
         $end = $end !== '' ? $end : $start;
     }
@@ -133,6 +140,8 @@ function ctrl_absence_api_save(): void
             'category_id' => $categoryId,
             'start_date'  => $start,
             'end_date'    => $end,
+            'start_ts'    => $startTsPersist,
+            'end_ts'      => $endTsPersist,
             'note'        => $note ?: null,
             'hours'       => AbsenceRepo::parseHours($hoursPost, $cat),
         ], $id ?: null);

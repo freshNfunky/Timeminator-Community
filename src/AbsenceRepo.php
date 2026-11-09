@@ -161,17 +161,19 @@ final class AbsenceRepo
                 $conflict['end_date']
             ));
         }
+        $startTs = $d['start_ts'] ?? null;
+        $endTs   = $d['end_ts']   ?? null;
         if ($id) {
             DB::run(
-                'UPDATE absences SET category_id=?, start_date=?, end_date=?, note=?, hours=?, updated_at=? WHERE id=?',
-                [$d['category_id'], $d['start_date'], $d['end_date'], $d['note'], $d['hours'] ?? null, now(), $id]
+                'UPDATE absences SET category_id=?, start_date=?, end_date=?, start_ts=?, end_ts=?, note=?, hours=?, updated_at=? WHERE id=?',
+                [$d['category_id'], $d['start_date'], $d['end_date'], $startTs, $endTs, $d['note'], $d['hours'] ?? null, now(), $id]
             );
             return $id;
         }
         return DB::insert(
-            'INSERT INTO absences (user_id, category_id, start_date, end_date, note, hours, created_at, updated_at)
-             VALUES (?,?,?,?,?,?,?,?)',
-            [$d['user_id'], $d['category_id'], $d['start_date'], $d['end_date'], $d['note'], $d['hours'] ?? null, now(), now()]
+            'INSERT INTO absences (user_id, category_id, start_date, end_date, start_ts, end_ts, note, hours, created_at, updated_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?)',
+            [$d['user_id'], $d['category_id'], $d['start_date'], $d['end_date'], $startTs, $endTs, $d['note'], $d['hours'] ?? null, now(), now()]
         );
     }
 
