@@ -589,12 +589,17 @@ final class Repo
 
     public static function tasks(bool $activeOnly = false): array
     {
+        // Felix-Feedback 2026-11-09 (#143): Projektart (intern / extern /
+        // Foerder) muss durchgereicht werden, damit Task-Picker im Entry-
+        // Formular die Kategorie im Projekt-Dropdown anzeigen kann.
         $sql = 'SELECT t.*, p.name AS project_name, p.client_id, c.name AS client_name,
-                       w.name AS work_package_name, w.code AS work_package_code
+                       w.name AS work_package_name, w.code AS work_package_code,
+                       pc.label AS project_category_label, pc.ckey AS project_category_ckey
                   FROM tasks t
                   JOIN projects p ON p.id = t.project_id
                   JOIN clients  c ON c.id = p.client_id
-             LEFT JOIN work_packages w ON w.id = t.work_package_id';
+             LEFT JOIN work_packages w ON w.id = t.work_package_id
+             LEFT JOIN project_categories pc ON pc.id = p.category_id';
         if ($activeOnly) {
             $sql .= ' WHERE t.active = 1';
         }

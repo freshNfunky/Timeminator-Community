@@ -6,6 +6,7 @@ $list_edit  = $edit;
 $list_headers = [
     t('struct.client'),
     t('projects.col_project', 'Projekt'),
+    t('projects.category', 'Projektart'),
     t('clients.track_short'),
     t('planning.col_target', 'Soll (h)'),
     t('planning.col_deadline', 'Deadline'),
@@ -17,6 +18,14 @@ $list_row_renderer = static function (array $p): string {
           . '<a href="' . h(route('project_show', ['id' => (int) $p['id']])) . '">' . h($p['name']) . '</a>'
           . ($p['active'] ? '' : ' <span class="pill">' . h(t('struct.inactive')) . '</span>')
           . '</td>';
+    // Felix-Feedback 2026-11-09 (#143): Projektart-Spalte, damit intern /
+    // extern / Foerderprojekt auf einen Blick erkennbar sind - war in der
+    // Liste bisher unsichtbar.
+    $__catLabel = (string) ($p['category_label'] ?? '');
+    $__catCkey  = (string) ($p['category_ckey'] ?? '');
+    $out .= '<td>' . ($__catLabel !== ''
+        ? '<span class="pill pill-cat pill-cat-' . h($__catCkey) . '">' . h($__catLabel) . '</span>'
+        : '<span class="muted">—</span>') . '</td>';
     $out .= '<td>' . h($p['track'] ?: ($p['client_track'] ?? '')) . '</td>';
     $out .= '<td class="r">' . ($p['target_hours'] !== null
         ? h(number_format((float) $p['target_hours'], 2, ',', '.') . ' h')

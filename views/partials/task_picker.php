@@ -19,13 +19,18 @@ $wrapClass = $wrapClass ?? '';
 // Derive the three parent sets from $tasks so the controllers don't have
 // to pass them separately. Each parent is sorted by name for the UI.
 $clients = [];       // id => name
-$projects = [];      // id => ['name', 'client_id']
+$projects = [];      // id => ['name', 'client_id', 'category_ckey', 'category_label']
 $workpackages = [];  // id => ['name', 'project_id', 'client_id']
 foreach ($tasks as $t) {
     $clients[(int) $t['client_id']] = (string) $t['client_name'];
     $projects[(int) $t['project_id']] = [
         'name' => (string) $t['project_name'],
         'client_id' => (int) $t['client_id'],
+        // Felix-Feedback 2026-11-09 (#143): Projektart in der Option-Label
+        // mitfuehren, damit Felix intern / extern / Foerder schon im
+        // Dropdown unterscheiden kann.
+        'category_label' => (string) ($t['project_category_label'] ?? $t['category_label'] ?? ''),
+        'category_ckey'  => (string) ($t['project_category_ckey']  ?? $t['category_ckey']  ?? ''),
     ];
     $wpId = (int) ($t['work_package_id'] ?? 0);
     if ($wpId > 0) {
@@ -62,8 +67,17 @@ foreach ($tasks as $t) {
   <label><?= h(t('projects.col_project')) ?>
     <select class="tp-project" aria-label="<?= h(t('tp.project_filter', 'Projekt filtern')) ?>">
       <option value=""><?= h(t('tp.all_projects', 'Alle Projekte')) ?></option>
-      <?php foreach ($projects as $pid => $p): ?>
-        <option value="<?= (int) $pid ?>" data-client="<?= (int) $p['client_id'] ?>"><?= h($p['name']) ?></option>
+      <?php foreach ($projects as $pid => $p):
+        // #143: Kategorie-Prefix direkt im Option-Text, damit intern /
+        // extern / Foerder sofort sichtbar sind ("[Intern] Robotik-Beratung").
+        $__optLabel = $p['category_label'] !== ''
+            ? '[' . $p['category_label'] . '] ' . $p['name']
+            : $p['name'];
+      ?>
+        <option value="<?= (int) $pid ?>"
+                data-client="<?= (int) $p['client_id'] ?>"
+                data-cat-ckey="<?= h($p['category_ckey']) ?>"
+                data-cat-label="<?= h($p['category_label']) ?>"><?= h($__optLabel) ?></option>
       <?php endforeach; ?>
     </select>
   </label>
