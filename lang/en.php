@@ -283,6 +283,8 @@ return [
     'projects.pick_client'      => 'Pick a client …',
     'projects.pick_category'    => 'Pick a project category …',
     'projects.client_lock_hint' => 'Pick a project category first',
+    'projects.client_lock_short'=> 'Pick a client first',
+    'projects.project_lock_hint'=> 'Pick a project first',
     'projects.track_override'   => 'Track / group (overrides client)',
     'projects.col_project'      => 'Project',
     'projects.budget_note_pro'  => 'Time + money budgets, planning and progress reports are part of <b>Timeminator Pro</b>.',
@@ -351,6 +353,10 @@ return [
     'imports.err_too_big'       => 'CSV too large (max 5 MB).',
     'imports.err_no_preview'    => 'No preview available.',
     'imports.err_no_valid_row'  => 'No valid row in the CSV.',
+    'imports.err_client_not_found'   => 'Client not found',
+    'imports.err_project_wrong_client' => 'Project belongs to a different client',
+    'imports.err_project_not_found'    => 'Project not found',
+    'imports.err_task_not_found'       => 'Task not found',
     'imports.flash_discarded'   => 'Preview discarded.',
     'imports.err_csv_read'      => 'Could not read CSV: %s',
     'imports.first_200_short'   => 'Showing the first 200 rows.',
@@ -982,6 +988,15 @@ return [
     'projects.category_lock_hint'   => 'Switching internal <-> non-internal will be available from v1.2 (Pro issue).',
     'projects.err_category_lock'    => 'Switching between internal and external projects is not allowed in v1.0. Tracked for Pro v1.2.',
 
+    // #184 JS validation in entry dialog
+    'cal.err_task_time_required'    => 'Task, start and end are required.',
+    'cal.err_new_task_name'         => 'Please enter a name for the new task.',
+    'cal.err_new_task_project'      => 'A project must be selected for the new task.',
+    'cal.err_time_required'         => 'Start and end are required.',
+    'cal.err_from_date_required'    => 'From-date is required.',
+    'cal.confirm_delete_fallback'   => 'Really delete?',
+    'cat.foerder_client_label'      => 'Grant provider',
+
     'process_cat.title'             => 'Process categories',
     'process_cat.h1'                => 'Process categories',
     'process_cat.help'              => 'Non-project activities like proposal writing, acquisition, training. Booked via the „Internal processes" menu item.',
@@ -1016,6 +1031,9 @@ return [
 
     // ---------- v1.0 F5: Absences (vacation, sick, overtime drawdown) ----------
     'absences.title'                => 'Absences',
+    'absences.err_end_before_start' => 'End date must not be before start date.',
+    'absences.err_overlap_fmt'      => 'Overlaps with existing absence "%s" (%s - %s).',
+    'absences.label_fallback'       => 'Absence',
     'absences.h1'                   => 'Absences',
     'absences.help'                 => 'Vacation, sick leave or overtime drawdown — separate from project bookings, never appears in reports/stats/invoices.',
     'absences.new_h2'               => 'New absence',

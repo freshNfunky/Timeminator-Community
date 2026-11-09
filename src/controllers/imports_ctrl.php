@@ -278,7 +278,8 @@ function imports_resolve_row(
     } elseif ($name !== '' && isset($clientsByName[$name])) {
         $client = $clientsByName[$name];
     } else {
-        $errs[] = 'Kunde nicht gefunden';
+        // #184 i18n-Audit: Import-Fehlermeldungen jetzt auch i18n-fähig.
+        $errs[] = t('imports.err_client_not_found', 'Kunde nicht gefunden');
     }
 
     $project = null;
@@ -288,7 +289,7 @@ function imports_resolve_row(
         if ($pcode !== '' && isset($projectsByCode[$pcode])) {
             $project = $projectsByCode[$pcode];
             if ((int) $project['client_id'] !== (int) $client['id']) {
-                $errs[] = 'Projekt gehoert zu anderem Kunden';
+                $errs[] = t('imports.err_project_wrong_client', 'Projekt gehoert zu anderem Kunden');
                 $project = null;
             }
         } else {
@@ -296,7 +297,7 @@ function imports_resolve_row(
             if ($pname !== '' && isset($lookup[strtolower($pname)])) {
                 $project = $lookup[strtolower($pname)];
             } else {
-                $errs[] = 'Projekt nicht gefunden';
+                $errs[] = t('imports.err_project_not_found', 'Projekt nicht gefunden');
             }
         }
     }
@@ -308,7 +309,7 @@ function imports_resolve_row(
         if ($tname !== '' && isset($lookup[strtolower($tname)])) {
             $task = $lookup[strtolower($tname)];
         } else {
-            $errs[] = 'Aufgabe nicht gefunden';
+            $errs[] = t('imports.err_task_not_found', 'Aufgabe nicht gefunden');
         }
     }
 

@@ -55,7 +55,10 @@ foreach ($tasks as $t) {
     }
 }
 ?>
-<div class="task-picker <?= h($wrapClass) ?>" data-selected-task="<?= (int) $selectedTaskId ?>">
+<div class="task-picker <?= h($wrapClass) ?>" data-selected-task="<?= (int) $selectedTaskId ?>"
+     data-lock-hint-cat="<?= h(t('projects.client_lock_hint', 'Zuerst Projektart waehlen')) ?>"
+     data-lock-hint-client="<?= h(t('projects.client_lock_short', 'Zuerst Kunde waehlen')) ?>"
+     data-lock-hint-project="<?= h(t('projects.project_lock_hint', 'Zuerst Projekt waehlen')) ?>">
   <?php /* Felix-Feedback 2026-11-09 (Fix #150): Label "Kunde" / "Projekt-
      traeger" wird im Dialog dynamisch nach Projektart gesetzt; bei
      internem Projekt wird das ganze Label versteckt. */ ?>

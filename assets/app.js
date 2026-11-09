@@ -378,10 +378,15 @@
       // waehlen" + wird disabled. Sonst wirkt "Alle Kunden" wie eine
       // sinnvolle Vorbelegung, obwohl die ganze Kaskade noch wartet.
       var catFilterCkey = root.getAttribute('data-cat-filter') || '';
-      updateLockState(client,  !clientSkipped && !catFilterCkey, 'Zuerst Projektart waehlen');
-      updateLockState(project, !clientSkipped && !client.value, 'Zuerst Kunde waehlen');
-      updateLockState(wp,      !project.value, 'Zuerst Projekt waehlen');
-      updateLockState(task,    !project.value, 'Zuerst Projekt waehlen');
+      // #184: Lock-Hints kommen aus data-Attributen (i18n in PHP gewrappt),
+      // damit DE/EN-Switch keine deutschen Reste im JS laesst.
+      var hintCat     = root.getAttribute('data-lock-hint-cat')     || 'Zuerst Projektart waehlen';
+      var hintClient  = root.getAttribute('data-lock-hint-client')  || 'Zuerst Kunde waehlen';
+      var hintProject = root.getAttribute('data-lock-hint-project') || 'Zuerst Projekt waehlen';
+      updateLockState(client,  !clientSkipped && !catFilterCkey, hintCat);
+      updateLockState(project, !clientSkipped && !client.value, hintClient);
+      updateLockState(wp,      !project.value, hintProject);
+      updateLockState(task,    !project.value, hintProject);
     }
     function updateLockState(sel, lock, placeholderText) {
       sel.disabled = lock;

@@ -132,11 +132,16 @@ final class EntryDialogHierarchyTest extends TestCase
             $js,
             'intern muss needsClient:false hardcoded sein'
         );
+        // #184 i18n-Audit: foerderung-Label kommt jetzt aus D.i18n.cat_foerder_label,
+        // nicht mehr hartkodiert "Projekttraeger" im JS. Hardcode-Config traegt
+        // weiterhin needsClient:true; clientLabel ist leer + Lookup zur Laufzeit.
         self::assertMatchesRegularExpression(
-            "~'foerderung':\\s*\\{needsClient:\\s*true,\\s*clientLabel:\\s*'Projekttraeger'~",
+            "~'foerderung':\\s*\\{needsClient:\\s*true~",
             $js,
-            'foerderung muss clientLabel:Projekttraeger hardcoded sein'
+            'foerderung muss needsClient:true in HARDCODED_CAT_CONFIG haben'
         );
+        self::assertStringContainsString('D.i18n.cat_foerder_label', $js,
+            'foerderung clientLabel kommt jetzt aus D.i18n.cat_foerder_label (nicht mehr hardcoded)');
         self::assertMatchesRegularExpression(
             "~'kunde':\\s*\\{needsClient:\\s*true~",
             $js,

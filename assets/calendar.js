@@ -68,7 +68,7 @@
   var HARDCODED_CAT_CONFIG = {
     'kunde':      {needsClient: true,  clientLabel: ''},
     'intern':     {needsClient: false, clientLabel: ''},
-    'foerderung': {needsClient: true,  clientLabel: 'Projekttraeger'}
+    'foerderung': {needsClient: true,  clientLabel: ''} // Label aus D.i18n.cat_foerder_label beim Lookup
   };
   function catConfig(ckey) {
     return HARDCODED_CAT_CONFIG[ckey] || HARDCODED_CAT_CONFIG['kunde'];
@@ -86,7 +86,13 @@
     // greift die Default-Logik "wie kunde".
     var cfg = catEntry ? catConfig(wantCkey) : {needsClient: true, clientLabel: ''};
     var needsClient = cfg.needsClient;
+    // #184: Label fuer Foerderprojekt kommt aus i18n (D.i18n.cat_foerder_label),
+    // nicht mehr hartkodiert "Projekttraeger" im JS - sonst waere die Oberflaeche
+    // auch auf EN noch deutsch gelabelt.
     var clientLabelOverride = cfg.clientLabel;
+    if (wantCkey === 'foerderung' && !clientLabelOverride) {
+      clientLabelOverride = (D.i18n && D.i18n.cat_foerder_label) || '';
+    }
 
     // #158: Projektart-Filter wird am Picker-Root als data-cat-filter
     // persistiert, damit applyFilters() in app.js den Filter beim
@@ -669,7 +675,7 @@
 
     if (k === 'project') {
       if (!taskSel || !taskSel.value || !startIn.value || !endIn.value) {
-        showError('Aufgabe, Start und Ende sind erforderlich.');
+        showError(D.i18n.err_task_time_required || 'Aufgabe, Start und Ende sind erforderlich.');
         return;
       }
       // #149/#141: "+ Neue Aufgabe"-Fall - name + parent IDs mitgeben.
@@ -681,8 +687,8 @@
         var ni = taskPicker.querySelector('.tp-new-task-name');
         var np = taskPicker.querySelector('.tp-new-task-project');
         var nw = taskPicker.querySelector('.tp-new-task-wp');
-        if (!ni || !ni.value.trim()) { showError('Bitte Namen der neuen Aufgabe eingeben.'); return; }
-        if (!projectSel || !projectSel.value) { showError('Fuer eine neue Aufgabe muss ein Projekt ausgewaehlt sein.'); return; }
+        if (!ni || !ni.value.trim()) { showError(D.i18n.err_new_task_name || 'Bitte Namen der neuen Aufgabe eingeben.'); return; }
+        if (!projectSel || !projectSel.value) { showError(D.i18n.err_new_task_project || 'Fuer eine neue Aufgabe muss ein Projekt ausgewaehlt sein.'); return; }
         payload.new_task_name       = ni.value.trim();
         payload.new_task_project_id = (np && np.value) || projectSel.value;
         payload.new_task_wp_id      = (nw && nw.value) || (wpSel ? wpSel.value : '');
@@ -693,7 +699,7 @@
       });
     } else if (k === 'process') {
       if (!startIn.value || !endIn.value) {
-        showError('Start und Ende sind erforderlich.');
+        showError(D.i18n.err_time_required || 'Start und Ende sind erforderlich.');
         return;
       }
       postForm(D.urls.process_save, {
@@ -709,7 +715,7 @@
       // weiterhin ganztaegig mit start_date/end_date.
       var isOvertime = (absenceAccountOf(typeSel.value) === 'overtime');
       if (isOvertime) {
-        if (!startIn.value || !endIn.value) { showError('Start und Ende sind erforderlich.'); return; }
+        if (!startIn.value || !endIn.value) { showError(D.i18n.err_time_required || 'Start und Ende sind erforderlich.'); return; }
         postForm(D.urls.absence_save, {
           id: id, category_id: typeSel.value,
           start_ts: startIn.value, end_ts: endIn.value,
@@ -719,7 +725,7 @@
           window.location.reload();
         });
       } else {
-        if (!fromIn.value) { showError('Von-Datum ist erforderlich.'); return; }
+        if (!fromIn.value) { showError(D.i18n.err_from_date_required || 'Von-Datum ist erforderlich.'); return; }
         postForm(D.urls.absence_save, {
           id: id, category_id: typeSel.value,
           start_date: fromIn.value, end_date: toIn.value || fromIn.value,
@@ -752,7 +758,7 @@
     if (!idInput.value) return;
     if (!deleteConfirmArmed) {
       if (deleteOrigLabel === null) { deleteOrigLabel = deleteBtn.textContent; }
-      deleteBtn.textContent = D.i18n.confirm_delete || 'Wirklich loeschen?';
+      deleteBtn.textContent = D.i18n.confirm_delete || D.i18n.confirm_delete_fallback || 'Wirklich loeschen?';
       deleteBtn.classList.add('is-confirm-armed');
       deleteConfirmArmed = true;
       return;

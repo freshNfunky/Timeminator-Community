@@ -139,7 +139,7 @@ final class AbsenceRepo
     public static function save(array $d, ?int $id = null): int
     {
         if ($d['end_date'] < $d['start_date']) {
-            throw new RuntimeException('Bis-Datum darf nicht vor dem Von-Datum liegen.');
+            throw new RuntimeException(t('absences.err_end_before_start', 'Bis-Datum darf nicht vor dem Von-Datum liegen.'));
         }
         // Felix-Feedback 2026-11-09 (Fix #170): Overlap-Guard. Zwei
         // Abwesenheiten desselben Users duerfen sich nicht ueberlappen
@@ -153,9 +153,9 @@ final class AbsenceRepo
             $id ?: null
         );
         if ($conflict !== null) {
-            $label = (string) ($conflict['category_label'] ?? 'Abwesenheit');
+            $label = (string) ($conflict['category_label'] ?? t('absences.label_fallback', 'Abwesenheit'));
             throw new RuntimeException(sprintf(
-                'Ueberlappt mit bestehender Abwesenheit "%s" (%s - %s).',
+                t('absences.err_overlap_fmt', 'Ueberlappt mit bestehender Abwesenheit "%s" (%s - %s).'),
                 $label,
                 $conflict['start_date'],
                 $conflict['end_date']

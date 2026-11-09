@@ -300,6 +300,15 @@ foreach (($processes ?? []) as $__p) {
         // #146: Label des Abwesenheits-Optgroup, damit JS die Default-
         // Urlaubsoption im Dialog findet.
         'group_absences' => t('cal.group_absences', 'Abwesenheiten'),
+        // #184 i18n-Audit: JS-Validierungsmeldungen laufen jetzt auch ueber
+        // lang-Files, damit DE/EN-Switch keinen deutschen Rest zurueck laesst.
+        'err_task_time_required' => t('cal.err_task_time_required', 'Aufgabe, Start und Ende sind erforderlich.'),
+        'err_new_task_name'      => t('cal.err_new_task_name',      'Bitte Namen der neuen Aufgabe eingeben.'),
+        'err_new_task_project'   => t('cal.err_new_task_project',   'Fuer eine neue Aufgabe muss ein Projekt ausgewaehlt sein.'),
+        'err_time_required'      => t('cal.err_time_required',      'Start und Ende sind erforderlich.'),
+        'err_from_date_required' => t('cal.err_from_date_required', 'Von-Datum ist erforderlich.'),
+        'confirm_delete_fallback' => t('cal.confirm_delete_fallback','Wirklich loeschen?'),
+        'cat_foerder_label'      => t('cat.foerder_client_label',   'Projekttraeger'),
     ],
     // #149/#150: Mapping project-category-id -> {ckey, needs_client,
     // client_label}. Dialog braucht needs_client (bei Internes Projekt
