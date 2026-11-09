@@ -50,6 +50,17 @@ for ($i = 0; $i < 7; $i++) {
 
 $__nowTs   = time();
 $__weekMid = (int) $week_start->setTime(0, 0)->getTimestamp();
+
+// Felix-Feedback 2026-11-09 (#138): rote "Jetzt"-Linie im heutigen
+// Spalten-Grid, Pro-Parity. Nur rendern, wenn TODAY in der aktuell
+// sichtbaren Woche liegt (sonst ist die Linie sinnlos).
+$__nowDt       = new DateTimeImmutable();
+$__isCurWeek   = ($__nowDt >= $week_start) && ($__nowDt < $week_start->modify('+7 days'));
+$__nowPct      = null;
+if ($__isCurWeek) {
+    $__nowMin = (int) $__nowDt->format('G') * 60 + (int) $__nowDt->format('i');
+    $__nowPct = round($__nowMin / (24 * 60) * 100, 3);
+}
 $__perDay  = [];
 $__minTop  = 100.0;
 foreach ($entries as $__e) {
@@ -278,6 +289,11 @@ $__calInk = static function (string $hex): string {
 ?>
 .cal-day-bracket-over-<?= (int) $__off ?>{top:<?= $__oTopPct ?>%;height:<?= $__oHgtPct ?>%}
 <?php endif; endforeach; ?>
+<?php /* Felix-Feedback 2026-11-09 (#138): Jetzt-Linie, Position in Prozent
+   des 24h-Tages, nonce-authorized (CSP-strict). */ ?>
+<?php if ($__nowPct !== null): ?>
+.cal-now-line{top:<?= $__nowPct ?>%}
+<?php endif; ?>
 </style>
 
 <div class="card">
@@ -438,6 +454,11 @@ $__calInk = static function (string $hex): string {
             <?php for ($h = 1; $h < 24; $h++): ?>
               <div class="cal-day-line"></div>
             <?php endfor; ?>
+            <?php /* Felix-Feedback 2026-11-09 (#138): rote Jetzt-Linie nur im
+               heutigen Tag, positioniert per nonce-Style oben im Block. */ ?>
+            <?php if ($__day['isToday'] && $__nowPct !== null): ?>
+              <div class="cal-now-line" aria-hidden="true" title="<?= h(t('cal.now_line', 'Jetzt')) ?>"></div>
+            <?php endif; ?>
             <?php /* Felix-Feedback 2026-11-08 (#99): Tagessoll-Klammer rechts
                neben den Events. Zwei moegliche Klammern: Target (Standard)
                und Over (gestrichelt), sitzen am rechten Rand der Day-Column. */ ?>

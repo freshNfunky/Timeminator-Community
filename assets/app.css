@@ -963,6 +963,16 @@ body:has(.sidepanel) .foot{padding-right:200px}
 /* Felix-Feedback 2026-11-08 (#99): Tagessoll-Klammer rechts der Buchungen.
    Target = brand-farbene Klammer; Over = gestrichelt, warnfarben. Beide
    sind absolut im Day-Grid, top/height kommen aus dem nonce-Style. */
+/* Felix-Feedback 2026-11-09 (#138): Jetzt-Linie - 2px rote Linie quer durch
+   die heutige Tag-Column, mit kleinem Dot am linken Rand. Pro-Parity. */
+.cal-now-line{position:absolute;left:-3px;right:0;height:2px;background:#ef4444;pointer-events:none;z-index:3}
+.cal-now-line::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:#ef4444}
+:root[data-theme="dark"] .cal-now-line,
+:root[data-theme="dark"] .cal-now-line::before{background:#f87171}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .cal-now-line,
+  :root:not([data-theme="light"]) .cal-now-line::before{background:#f87171}
+}
 .cal-day-bracket{position:absolute;right:-2px;width:5px;border:1px solid var(--brand);border-left:0;border-radius:0 3px 3px 0;pointer-events:none;z-index:2}
 .cal-day-bracket-target{border-color:var(--brand)}
 .cal-day-bracket-over{border-style:dashed;border-color:#f59e0b}
