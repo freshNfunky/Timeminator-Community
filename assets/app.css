@@ -603,6 +603,12 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--focus-ring);bord
 .cal-dialog-task-picker > label[hidden],
 .task-picker label[hidden],
 .task-picker .tp-client-label[hidden]{display:none}
+/* Fix #186: .task-picker{display:grid} und .tp-stack{display:flex}
+   ueberschreiben das Browser-default [hidden]{display:none}. Mit dieser
+   Regel verschwindet der ganze Task-Picker, wenn das Script hidden=true
+   setzt (bei Internem Prozess im Timer-Typ-Switcher). */
+.task-picker[hidden],
+.task-picker.tp-stack[hidden]{display:none}
 /* Felix-Feedback 2026-11-09 (Fix #150/#151): [hidden] ist default
    display:none, aber die Klassenregel oben (display:flex) ueberschreibt
    das mit gleicher Spezifitaet. Deshalb hier den Hidden-Zustand explizit
