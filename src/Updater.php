@@ -123,37 +123,57 @@ final class Updater
                 return ['ok' => false, 'error' => sprintf(t('updater.err_http_status', 'Release-Server antwortete mit HTTP %d.'), $status)];
             }
             $data = json_decode($body, true);
-            if (!is_array($data) || empty($data['tag_name'])) {
+            if (!is_array($data)) {
                 return ['ok' => false, 'error' => t('updater.err_bad_response', 'Unerwartete Antwort vom Release-Server.')];
             }
-            $latest = self::normalize((string) $data['tag_name']);
-            $assets = (array) ($data['assets'] ?? []);
-            $asset = null;
-            $assetName = '';
-            foreach ($assets as $a) {
-                if (isset($a['browser_download_url']) && str_ends_with((string) $a['name'], '.zip')) {
-                    $asset = (string) $a['browser_download_url'];
-                    $assetName = (string) $a['name'];
-                    break;
-                }
+            $result = self::parseRelease($data, self::current());
+            if (empty($result['ok'])) {
+                return $result;
             }
-            $result = [
-                'ok'           => true,
-                'current'      => self::current(),
-                'latest'       => $latest,
-                'newer'        => version_compare($latest, self::normalize(self::current()), '>'),
-                'url'          => (string) ($data['html_url'] ?? ''),
-                'notes'        => (string) ($data['body'] ?? ''),
-                'download'     => $asset ?: (string) ($data['zipball_url'] ?? ''),
-                'asset_name'   => $assetName,
-                'checksum_url' => self::findChecksumUrl($assets, $assetName),
-                'checked_at'   => now(),
-            ];
+            $result['checked_at'] = now();
             Settings::set('update', $result);
             return $result;
         } catch (Throwable $e) {
             return ['ok' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Turn a decoded GitHub-Releases `releases/latest` payload into an update
+     * result, comparing the advertised tag against $current. Pure and free of
+     * network/Settings side effects so the version, asset-picking and checksum
+     * logic can be regression-tested against a captured fixture (the network
+     * `check()` wraps this). Returns ['ok' => false, 'error' => ...] when the
+     * payload carries no usable `tag_name`. The caller adds 'checked_at' and
+     * persists the cache.
+     */
+    public static function parseRelease(array $data, string $current): array
+    {
+        if (empty($data['tag_name'])) {
+            return ['ok' => false, 'error' => t('updater.err_bad_response', 'Unerwartete Antwort vom Release-Server.')];
+        }
+        $latest = self::normalize((string) $data['tag_name']);
+        $assets = (array) ($data['assets'] ?? []);
+        $asset = null;
+        $assetName = '';
+        foreach ($assets as $a) {
+            if (isset($a['browser_download_url']) && str_ends_with((string) ($a['name'] ?? ''), '.zip')) {
+                $asset = (string) $a['browser_download_url'];
+                $assetName = (string) $a['name'];
+                break;
+            }
+        }
+        return [
+            'ok'           => true,
+            'current'      => $current,
+            'latest'       => $latest,
+            'newer'        => version_compare($latest, self::normalize($current), '>'),
+            'url'          => (string) ($data['html_url'] ?? ''),
+            'notes'        => (string) ($data['body'] ?? ''),
+            'download'     => $asset ?: (string) ($data['zipball_url'] ?? ''),
+            'asset_name'   => $assetName,
+            'checksum_url' => self::findChecksumUrl($assets, $assetName),
+        ];
     }
 
     public static function cached(): ?array
