@@ -106,4 +106,22 @@ final class TimerInternalProcessTest extends TestCase
         self::assertStringContainsString("kind === 'process'", $view,
             'Script muss den process-Branch erkennen');
     }
+
+    public function testTaskPickerHiddenRuleOverridesGridDisplay(): void
+    {
+        // Felix-Feedback 2026-11-09 Hardening (#186): .task-picker{display:grid}
+        // und .tp-stack{display:flex} ueberschreiben das Browser-default
+        // [hidden]{display:none}. Ohne explizite Regel wuerde der Task-Picker
+        // bei Prozess-Auswahl zwar hidden=true bekommen, aber sichtbar
+        // bleiben (CSS-Spezifitaets-Konflikt).
+        $css = (string) file_get_contents(dirname(__DIR__) . '/assets/app.css');
+        self::assertMatchesRegularExpression(
+            '~\.task-picker\[hidden\][^{]*\{[^}]*display:\s*none~s',
+            $css,
+            '.task-picker[hidden] muss display:none explizit setzen, sonst '.
+            'ueberschreibt der grid/flex-Standard das Browser-default.'
+        );
+        self::assertStringContainsString('.task-picker.tp-stack[hidden]', $css,
+            '.tp-stack[hidden] muss ebenfalls display:none erzwingen (Dashboard-Timer)');
+    }
 }
