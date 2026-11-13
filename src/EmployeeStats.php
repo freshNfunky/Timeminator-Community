@@ -93,8 +93,8 @@ final class EmployeeStats
         }
         for ($d = new DateTimeImmutable($from); $d->format('Y-m-d') <= $to; $d = $d->modify('+1 day')) {
             $day = $d->format('Y-m-d');
-            if (!Workdays::isWorkday($d)) { continue; }
             $t = $termsAt($day);
+            if (!Workdays::isWorkdayFromTerms($t, $d)) { continue; }
             if ($t === null || $t['employment_type'] === EmployeeRepo::TYPE_FREELANCER) { continue; }
             $i = $weekIndex($day);
             $daily = EmployeeRepo::dailyTarget($t);

@@ -39,13 +39,16 @@ function ctrl_employee_terms_save(): void
     $vacation = (float) post('vacation_days', 25);
     $region = trim((string) post('holiday_region', ''));
     if ($region === '' || $region === '__none__') { $region = null; }
+    // M1.1 #192: workday_mask aus Checkboxen (ISO-Dow 1..7). Leer = globaler Default.
+    $workdayRaw = $_POST['workday_mask'] ?? null;
+    $workday = is_array($workdayRaw) ? $workdayRaw : null;
     if (!$userId || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $validFrom)) {
         flash(t('employee.err_invalid_date', 'Ungueltiges Gueltig-ab-Datum.'), 'err');
         redirect_route('admin_users', ['edit' => $userId]);
     }
     if ($weekly < 0 || $weekly > 80) { $weekly = 40; }
     if ($vacation < 0 || $vacation > 60) { $vacation = 25; }
-    EmployeeRepo::saveTerms($userId, $validFrom, $type, $weekly, $vacation, $region);
+    EmployeeRepo::saveTerms($userId, $validFrom, $type, $weekly, $vacation, $region, $workday);
     flash(t('employee.flash_terms_saved', 'Vertragsdaten gespeichert.'));
     redirect_route('admin_users', ['edit' => $userId]);
 }
