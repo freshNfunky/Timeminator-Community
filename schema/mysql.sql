@@ -328,6 +328,7 @@ CREATE TABLE IF NOT EXISTS employee_terms (
   weekly_hours    DECIMAL(5,2) NOT NULL DEFAULT 40,
   vacation_days   DECIMAL(5,2) NOT NULL DEFAULT 25,
   holiday_region  VARCHAR(32) NULL,
+  workday_mask    VARCHAR(32) NULL,
   created_at      DATETIME NOT NULL,
   INDEX idx_employee_terms_user_from (user_id, valid_from),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

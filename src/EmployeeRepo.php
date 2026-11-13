@@ -46,7 +46,10 @@ final class EmployeeRepo
         return DB::all('SELECT * FROM employee_terms WHERE user_id = ? ORDER BY valid_from DESC, id DESC', [$userId]);
     }
 
-    public static function saveTerms(int $userId, string $validFrom, string $type, float $weeklyHours, float $vacationDays, ?string $holidayRegion = null): void
+    /**
+     * @param ?array<mixed> $workdayMask ISO-Dow Liste (z.B. [1,2,3,4,5]). null/leer => globaler Default.
+     */
+    public static function saveTerms(int $userId, string $validFrom, string $type, float $weeklyHours, float $vacationDays, ?string $holidayRegion = null, ?array $workdayMask = null): void
     {
         if (class_exists('Holidays') && $holidayRegion !== null && !Holidays::isValidRegion($holidayRegion)) {
             $holidayRegion = null;
@@ -54,14 +57,15 @@ final class EmployeeRepo
         if (!isset(self::TYPES[$type])) {
             $type = self::TYPE_EMPLOYEE;
         }
+        $maskCsv = $workdayMask === null ? null : Workdays::maskToCsv($workdayMask);
         $existing = DB::one('SELECT id FROM employee_terms WHERE user_id = ? AND valid_from = ?', [$userId, $validFrom]);
         if ($existing) {
-            DB::run('UPDATE employee_terms SET employment_type = ?, weekly_hours = ?, vacation_days = ?, holiday_region = ? WHERE id = ?',
-                [$type, $weeklyHours, $vacationDays, $holidayRegion, $existing['id']]);
+            DB::run('UPDATE employee_terms SET employment_type = ?, weekly_hours = ?, vacation_days = ?, holiday_region = ?, workday_mask = ? WHERE id = ?',
+                [$type, $weeklyHours, $vacationDays, $holidayRegion, $maskCsv, $existing['id']]);
             return;
         }
-        DB::insert('INSERT INTO employee_terms (user_id, valid_from, employment_type, weekly_hours, vacation_days, holiday_region, created_at) VALUES (?,?,?,?,?,?,?)',
-            [$userId, $validFrom, $type, $weeklyHours, $vacationDays, $holidayRegion, now()]);
+        DB::insert('INSERT INTO employee_terms (user_id, valid_from, employment_type, weekly_hours, vacation_days, holiday_region, workday_mask, created_at) VALUES (?,?,?,?,?,?,?,?)',
+            [$userId, $validFrom, $type, $weeklyHours, $vacationDays, $holidayRegion, $maskCsv, now()]);
     }
 
     public static function deleteTerms(int $id): void
@@ -113,10 +117,16 @@ final class EmployeeRepo
         return $terms !== null && $terms['employment_type'] === self::TYPE_EMPLOYEE;
     }
 
-    /** Tagessoll in Stunden (Wochenarbeitszeit / Arbeitstage je Woche laut Preset). */
+    /**
+     * Tagessoll in Stunden (Wochenarbeitszeit / Arbeitstage je Woche).
+     * Wenn der Vertragsstand eine eigene workday_mask hat, zaehlen deren
+     * Tage; sonst globaler Default.
+     */
     public static function dailyTarget(array $terms): float
     {
-        return (float) $terms['weekly_hours'] / Workdays::perWeek();
+        $mask = Workdays::parseMask($terms['workday_mask'] ?? null);
+        $perWeek = $mask !== null ? max(1, count($mask)) : Workdays::perWeek();
+        return (float) $terms['weekly_hours'] / $perWeek;
     }
 
     /**
@@ -138,13 +148,16 @@ final class EmployeeRepo
         if (!$terms || $terms['employment_type'] !== self::TYPE_EMPLOYEE) {
             return null;
         }
-        // Wochenende: ISO-Dow (1..7) nicht in den konfigurierten working_days.
+        // Wochenende: ISO-Dow (1..7) nicht in den Werktagen des Users.
+        // Pro-User-Mask (workday_mask) gewinnt vor globalem Default.
         try {
             $iso = (int) (new DateTimeImmutable($date))->format('N');
         } catch (Throwable) {
             return null;
         }
-        if (!in_array($iso, Holidays::workingDays(), true)) {
+        $userMask = Workdays::parseMask($terms['workday_mask'] ?? null);
+        $workdays = $userMask ?? Holidays::workingDays();
+        if (!in_array($iso, $workdays, true)) {
             return 0;
         }
         // Feiertag in der Region des Users.

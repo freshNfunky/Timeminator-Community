@@ -28,6 +28,7 @@ $today = (new DateTimeImmutable('today'))->format('Y-m-d');
           <th class="r"><?= h(t('employee.col_weekly_hours',  'Wochenstunden')) ?></th>
           <th class="r"><?= h(t('employee.col_vacation_days', 'Urlaubsanspruch')) ?></th>
           <th><?= h(t('employee.col_region',         'Feiertagsregion')) ?></th>
+          <th><?= h(t('employee.col_workdays',       'Werktage')) ?></th>
           <th></th>
         </tr>
       </thead>
@@ -39,6 +40,18 @@ $today = (new DateTimeImmutable('today'))->format('Y-m-d');
           <td class="r"><?= h(number_format((float) $__t['weekly_hours'], 1, ',', '.')) ?></td>
           <td class="r"><?= h(number_format((float) $__t['vacation_days'], 1, ',', '.')) ?></td>
           <td><?= h($__t['holiday_region'] ?? '-') ?></td>
+          <td><?php
+            $__mask = Workdays::parseMask($__t['workday_mask'] ?? null);
+            if ($__mask === null) {
+                echo h(t('employee.workdays_default', 'System-Default'));
+            } else {
+                $__short = [1 => 'Mo', 2 => 'Di', 3 => 'Mi', 4 => 'Do', 5 => 'Fr', 6 => 'Sa', 7 => 'So'];
+                $__en    = [1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat', 7 => 'Sun'];
+                $__labels = (I18n::current() === 'en') ? $__en : $__short;
+                $__parts = [];
+                foreach ($__mask as $__d) { $__parts[] = $__labels[$__d] ?? (string) $__d; }
+                echo h(implode(', ', $__parts));
+            } ?></td>
           <td class="r">
             <form method="post" action="<?= h(route('employee_terms_delete')) ?>" onsubmit="return confirm('<?= h(t('employee.confirm_delete', 'Vertragsstand entfernen?')) ?>');" style="display:inline">
               <?= csrf_field() ?>
@@ -71,6 +84,25 @@ $today = (new DateTimeImmutable('today'))->format('Y-m-d');
       ?> <input type="number" name="weekly_hours" min="0" max="80" step="0.5" value="<?= h((string) ($current['weekly_hours'] ?? '40')) ?>"></label>
     <label><?= h(t('employee.form_vacation_days', 'Urlaubsanspruch (Tage)'))
       ?> <input type="number" name="vacation_days" min="0" max="60" step="0.5" value="<?= h((string) ($current['vacation_days'] ?? '25')) ?>"></label>
+    <?php
+      // M1.1 #192: Werktage pro Mitarbeiter. Default beim NEUEN Stand = globaler Default.
+      $__currentMask = Workdays::parseMask($current['workday_mask'] ?? null);
+      $__defaultMask = $__currentMask ?? Workdays::days();
+      $__dayLabels = [
+          1 => t('workday.mon', 'Mo'), 2 => t('workday.tue', 'Di'), 3 => t('workday.wed', 'Mi'),
+          4 => t('workday.thu', 'Do'), 5 => t('workday.fri', 'Fr'), 6 => t('workday.sat', 'Sa'),
+          7 => t('workday.sun', 'So'),
+      ];
+    ?>
+    <fieldset class="employee-workdays">
+      <legend><?= h(t('employee.form_workdays', 'Werktage')) ?><?= tip('employee.form_workdays_tip') ?></legend>
+      <?php for ($__i = 1; $__i <= 7; $__i++): ?>
+        <label class="inline">
+          <input type="checkbox" name="workday_mask[]" value="<?= $__i ?>" <?= in_array($__i, $__defaultMask, true) ? 'checked' : '' ?>>
+          <?= h($__dayLabels[$__i]) ?>
+        </label>
+      <?php endfor; ?>
+    </fieldset>
     <label><?= h(t('employee.form_region', 'Feiertagsregion'))
       ?>
       <select name="holiday_region">

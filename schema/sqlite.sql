@@ -326,6 +326,7 @@ CREATE TABLE IF NOT EXISTS employee_terms (
   weekly_hours    REAL    NOT NULL DEFAULT 40,
   vacation_days   REAL    NOT NULL DEFAULT 25,
   holiday_region  TEXT    NULL,
+  workday_mask    TEXT    NULL,
   created_at      TEXT    NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

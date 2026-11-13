@@ -121,7 +121,7 @@ final class AccountRepo
 
     public static function dayTarget(array $terms, string $date): float
     {
-        if (!Workdays::isWorkday($date)) {
+        if (!Workdays::isWorkdayFromTerms($terms, $date)) {
             return 0.0;
         }
         if (Holidays::on($terms['holiday_region'] ?? null, $date) !== null) {
@@ -142,7 +142,7 @@ final class AccountRepo
         for ($d = new DateTimeImmutable($weekStart); $d->format('Y-m-d') <= $weekEnd; $d = $d->modify('+1 day')) {
             $day = $d->format('Y-m-d');
             $t = self::termsFrom($history, $day);
-            if ($t === null || $t['employment_type'] === EmployeeRepo::TYPE_FREELANCER || !Workdays::isWorkday($d)) {
+            if ($t === null || $t['employment_type'] === EmployeeRepo::TYPE_FREELANCER || !Workdays::isWorkdayFromTerms($t, $d)) {
                 continue;
             }
             $daily = EmployeeRepo::dailyTarget($t);
@@ -190,10 +190,10 @@ final class AccountRepo
             $end = new DateTimeImmutable(min(substr((string) $r['end_date'], 0, 10), $to));
             for (; $d <= $end; $d = $d->modify('+1 day')) {
                 $day = $d->format('Y-m-d');
-                if (!Workdays::isWorkday($d)) {
+                $terms = self::termsFrom($history, $day);
+                if (!Workdays::isWorkdayFromTerms($terms, $d)) {
                     continue;
                 }
-                $terms = self::termsFrom($history, $day);
                 if (Holidays::on($terms['holiday_region'] ?? null, $day) !== null) {
                     continue;
                 }
