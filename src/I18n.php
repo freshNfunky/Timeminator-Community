@@ -49,7 +49,8 @@ final class I18n
 
     /**
      * Pick a locale for this request. `?lang=` wins (and gets stored),
-     * then session, then Accept-Language, then default.
+     * then session, then persisted user pref (M1.1 #191), then
+     * Accept-Language, then default.
      */
     public static function detect(): string
     {
@@ -71,16 +72,44 @@ final class I18n
             }
         }
 
-        // 3) Accept-Language header
+        // 3) persistente User-Pref (M1.1 #191): wer eingeloggt ist und seine
+        //    Sprache explizit im Profil gesetzt hat, bekommt die vor
+        //    Accept-Language. So sieht der User nach Login/Device-Wechsel
+        //    seine gewaehlte Sprache ohne URL-Hack.
+        $uid = self::currentUserId();
+        if ($uid !== null && class_exists('UserPrefs')) {
+            try {
+                $pref = UserPrefs::locale($uid);
+                if ($pref !== null) {
+                    $sane = self::sanitize($pref);
+                    if ($sane !== null) {
+                        return $sane;
+                    }
+                }
+            } catch (Throwable) {
+                // DB nicht verfuegbar (Installer, Tests ohne user_prefs):
+                // einfach weiterfallen, Accept-Language entscheidet.
+            }
+        }
+
+        // 4) Accept-Language header
         $accept = (string) ($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '');
         $picked = self::fromAcceptLanguage($accept);
         if ($picked !== null) {
             return $picked;
         }
 
-        // 4) config default (always ends up a supported code)
+        // 5) config default (always ends up a supported code)
         $cfg = self::sanitize((string) cfg('locale_default', self::DEFAULT));
         return $cfg ?? self::DEFAULT;
+    }
+
+    /** Liefert die aktuelle User-ID wenn eingeloggt, sonst null. */
+    private static function currentUserId(): ?int
+    {
+        if (!class_exists('Auth')) { return null; }
+        $id = Auth::id();
+        return is_int($id) && $id > 0 ? $id : null;
     }
 
     /**

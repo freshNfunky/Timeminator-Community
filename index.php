@@ -28,6 +28,7 @@ require __DIR__ . '/src/Workdays.php';
 require __DIR__ . '/src/EmployeeRepo.php';
 require __DIR__ . '/src/AccountRepo.php';
 require __DIR__ . '/src/EmployeeStats.php';
+require __DIR__ . '/src/UserPrefs.php';
 require __DIR__ . '/src/DateShiftRepo.php';
 require __DIR__ . '/src/PlanRepo.php';
 require __DIR__ . '/src/seed.php';

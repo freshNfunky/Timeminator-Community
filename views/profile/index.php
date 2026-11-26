@@ -2,13 +2,39 @@
 /**
  * Benutzer-Profil / Meine Einstellungen (Felix-Feedback 2026-11-09, #111).
  *
- * @var string $sentimentGranularity  aktuelle User-Preference ('day' | 'week')
+ * Persoenliche Darstellungs-Praeferenzen nach der 3-Schichten-Trennung
+ * (siehe Memory settings-layer-classification): alles, was nur das
+ * subjektive Erleben betrifft. Vertragsdaten (Werktage, Wochenstunden,
+ * Urlaub) macht HR/GL. System (Mail, Banner, Update) macht Admin.
+ *
+ * @var string  $sentimentGranularity  'day' | 'week'
+ * @var ?string $userLocale            vom User gesetzte Sprache oder null (= Default)
  */
 ?>
 <?php /* Felix-Feedback 2026-11-09 (Fix #135): kein zweites <h1
    class="page-title"> hier - die Layout-Shell rendert den Titel bereits
    aus dem view()-Call. Vorher gab's zwei "Meine Einstellungen"-H1s
    uebereinander. */ ?>
+
+<div class="card profile-card">
+  <h2 class="profile-section-title"><?= h(t('profile.language_section', 'Sprache')) ?><?= tip('profile.language_tip') ?></h2>
+  <form method="post" action="<?= h(route('profile_save')) ?>" class="profile-form">
+    <?= csrf_field() ?>
+    <div class="profile-radio-row" role="radiogroup" aria-label="<?= h(t('profile.language_section', 'Sprache')) ?>">
+      <label class="profile-radio">
+        <input type="radio" name="locale" value="" <?= $userLocale === null ? 'checked' : '' ?>>
+        <span><?= h(t('profile.language_auto', 'Browser-Default')) ?></span>
+      </label>
+      <?php foreach (I18n::available() as $__lang): ?>
+        <label class="profile-radio">
+          <input type="radio" name="locale" value="<?= h($__lang['code']) ?>" <?= $userLocale === $__lang['code'] ? 'checked' : '' ?>>
+          <span><?= h($__lang['native']) ?></span>
+        </label>
+      <?php endforeach; ?>
+      <button class="btn btn-primary profile-save" type="submit"><?= h(t('common.save', 'Speichern')) ?></button>
+    </div>
+  </form>
+</div>
 
 <div class="card profile-card">
   <h2 class="profile-section-title"><?= h(t('profile.sentiment_section', 'Stimmungs-Rhythmus')) ?><?= tip('profile.sentiment_tip') ?></h2>
