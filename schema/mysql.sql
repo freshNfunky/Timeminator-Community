@@ -42,6 +42,12 @@ CREATE TABLE IF NOT EXISTS users (
   FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS user_prefs (
+  user_id INT PRIMARY KEY,
+  locale  VARCHAR(8) NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ---------- Domain: clients / projects / tasks / entries ----------
 
 CREATE TABLE IF NOT EXISTS clients (

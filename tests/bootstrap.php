@@ -42,6 +42,8 @@ require APP_ROOT . '/src/Workdays.php';
 require APP_ROOT . '/src/EmployeeRepo.php';
 require APP_ROOT . '/src/AccountRepo.php';
 require APP_ROOT . '/src/EmployeeStats.php';
+require APP_ROOT . '/src/UserPrefs.php';
+require APP_ROOT . '/src/auth.php';
 require APP_ROOT . '/src/DateShiftRepo.php';
 require APP_ROOT . '/src/PlanRepo.php';
 require APP_ROOT . '/src/AbsenceRepo.php';
