@@ -311,24 +311,29 @@ final class Banners
 
     /**
      * Coarsen an IP so it identifies a network, not a device: IPv4 drops the
-     * last octet, IPv6 keeps only the first three hextets (/48).
+     * last octet, IPv6 keeps only the first three hextets (/48). The input is
+     * parsed (not string-split), so shorthand forms like `::1` yield a valid
+     * address instead of garbage like `::1::` that downstream tools (Matomo)
+     * turn into `0.0.0.0`. IPv4-mapped IPv6 (`::ffff:1.2.3.4`) is handled as
+     * IPv4. Returns '' for anything that is not an IP address.
      */
     public static function truncateIp(string $ip): string
     {
-        $ip = trim($ip);
-        if ($ip === '') {
+        $packed = @inet_pton(trim($ip));
+        if ($packed === false) {
             return '';
         }
-        if (strpos($ip, ':') !== false) {
-            $groups = explode(':', $ip);
-            return implode(':', array_slice($groups, 0, 3)) . '::';
+        if (strlen($packed) === 16 && str_starts_with($packed, str_repeat("\0", 10) . "\xff\xff")) {
+            $packed = substr($packed, 12); // IPv4-mapped IPv6 -> plain IPv4
         }
-        $octets = explode('.', $ip);
-        if (count($octets) === 4) {
-            $octets[3] = '0';
-            return implode('.', $octets);
+        if (strlen($packed) === 4) {
+            return ord($packed[0]) . '.' . ord($packed[1]) . '.' . ord($packed[2]) . '.0';
         }
-        return '';
+        $hextets = [];
+        foreach (str_split(bin2hex(substr($packed, 0, 6)), 4) as $h) {
+            $hextets[] = ltrim($h, '0') === '' ? '0' : ltrim($h, '0');
+        }
+        return $hextets === ['0', '0', '0'] ? '::' : implode(':', $hextets) . '::';
     }
 
     // ---------- Sanitizing ----------
