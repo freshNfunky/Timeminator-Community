@@ -76,6 +76,22 @@ final class BannersTest extends TestCase
         self::assertSame('2001:db8:1234::', Banners::truncateIp('2001:db8:1234:5678:9abc:def0:1234:5678'));
     }
 
+    public function testTruncateIpLoopbackAndShorthandStayValid(): void
+    {
+        // `::1` used to become the invalid `::1::`, which Matomo reports as 0.0.0.0.
+        self::assertSame('::', Banners::truncateIp('::1'));
+        self::assertSame('2001:db8:0::', Banners::truncateIp('2001:db8::1'));
+        self::assertSame('127.0.0.0', Banners::truncateIp('127.0.0.1'));
+        foreach (['::1', '2001:db8::1', 'fe80::1:2:3:4'] as $in) {
+            self::assertNotFalse(inet_pton(Banners::truncateIp($in)), $in);
+        }
+    }
+
+    public function testTruncateIpTreatsMappedIpv4AsIpv4(): void
+    {
+        self::assertSame('192.168.65.0', Banners::truncateIp('::ffff:192.168.65.7'));
+    }
+
     public function testTruncateIpHandlesEmptyAndGarbage(): void
     {
         self::assertSame('', Banners::truncateIp(''));
