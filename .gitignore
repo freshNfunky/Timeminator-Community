@@ -1,5 +1,6 @@
-# Local configuration with credentials
+# Local configuration with credentials (web root or persisted under data/)
 /config.php
+/data/config.php
 
 # Local SQLite database + any data artifacts
 /data/*.sqlite

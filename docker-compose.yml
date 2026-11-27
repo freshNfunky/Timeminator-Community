@@ -6,10 +6,10 @@
 #   docker compose --profile mysql  up --build   # app + MariaDB (persisted volume)
 #
 # On first visit, open http://localhost:8080/ and finish the installer.
-# The named volume `tm_data` keeps your SQLite file, settings and update
-# cache across restarts. The installer-generated `config.php` is NOT
-# persisted by default — see the comment on the `app-*` services for how
-# to pin it to a host file.
+# The named volume `tm_data` keeps your SQLite file, settings, update cache
+# AND the installer-generated `config.php` across restarts, container
+# re-creation and image updates — the installer writes config.php into data/
+# (web-protected by data/.htaccess) whenever that directory is writable.
 
 services:
   app-sqlite:
@@ -20,10 +20,6 @@ services:
       - "8080:80"
     volumes:
       - tm_data:/var/www/html/data
-      # Uncomment to pin config.php to a host file so it survives
-      # `docker compose down`. Create the file empty first:
-      #   touch .docker/sqlite.config.php
-      # - ./.docker/sqlite.config.php:/var/www/html/config.php
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost/install.php > /dev/null || curl -fsS http://localhost/index.php > /dev/null"]
@@ -51,7 +47,6 @@ services:
       TM_DB_USER: timeminator
     volumes:
       - tm_data:/var/www/html/data
-      # - ./.docker/mysql.config.php:/var/www/html/config.php
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost/install.php > /dev/null || curl -fsS http://localhost/index.php > /dev/null"]
