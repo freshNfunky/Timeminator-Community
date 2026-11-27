@@ -16,6 +16,22 @@ version heading when a release is cut.
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-11-27
+
+Patch release. Fixes Docker persistence so the "one container" story holds.
+
+### Fixed
+
+- **Docker: config.php now persists in the data volume.** The installer wrote
+  `config.php` to the web root, outside the `tm_data:/var/www/html/data` volume.
+  Re-creating the container (or pulling a new image tag to update) dropped it
+  while the SQLite database and settings survived, so the installer re-appeared
+  as if nothing was installed. The installer now writes `config.php` into
+  `data/` whenever that directory is writable (web-protected by
+  `data/.htaccess`), and falls back to the web root otherwise so classic
+  shared-hosting installs are unchanged. Existing installs keep their web-root
+  `config.php` — it is read first. (#192)
+
 ## [1.0.0] — 2026-11-09
 
 First official release. 153 commits since v0.9.1 (43 feat, 67 fix, 474 regression tests, 3076 assertions). Highlights:
