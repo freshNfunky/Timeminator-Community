@@ -15,16 +15,30 @@ require __DIR__ . '/auth.php';
 require __DIR__ . '/LoginThrottle.php';
 require __DIR__ . '/I18n.php';
 
+/**
+ * Absolute path of the active configuration file.
+ *
+ * Existing installs keep config.php at the web root; new installs persist it in
+ * data/config.php so a Docker data volume (or any backed-up data dir) keeps it
+ * across container re-creation and in-app updates, and data/.htaccess shields it
+ * from the web. The web-root copy wins if both happen to exist.
+ */
+function config_file(): string
+{
+    $legacy = APP_ROOT . '/config.php';
+    return is_file($legacy) ? $legacy : APP_ROOT . '/data/config.php';
+}
+
 function config_exists(): bool
 {
-    return is_file(APP_ROOT . '/config.php');
+    return is_file(config_file());
 }
 
 /** Load config into the global used by cfg(). */
 function load_config(): array
 {
     global $APP_CONFIG;
-    $APP_CONFIG = require APP_ROOT . '/config.php';
+    $APP_CONFIG = require config_file();
     return $APP_CONFIG;
 }
 
